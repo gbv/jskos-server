@@ -11,8 +11,15 @@ const express = require("express")
 const app = express()
 const mongo = require("mongodb").MongoClient
 
-mongo.connect("mongodb://localhost", (err, client) => {
-  if (err) return console.log(err)
+mongo.connect("mongodb://localhost", {
+  reconnectTries: 60,
+  reconnectInterval: 1000,
+  bufferMaxEntries: 0
+}, (err, client) => {
+  if (err) {
+    console.log(err)
+    process.exit(1)
+  }
   db = client.db("rvk_gnd_ubregensburg")
   app.listen(3000, () => {
     console.log("listening on port 3000")
