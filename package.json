@@ -1,0 +1,19 @@
+{
+  "name": "rvk_gnd_ubregensburg-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon server.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^1.17.5"
+  },
+  "dependencies": {
+    "eslint": "^4.19.1",
+    "express": "^4.16.3",
+    "mongodb": "~3.0.8"
+  }
+}
