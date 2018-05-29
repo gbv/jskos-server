@@ -1,7 +1,8 @@
 .DS_Store
 node_modules/
-/dist/
-/styleguide/
+config.user.js
+rvk_gnd_ubregensburg.ndjson
+
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

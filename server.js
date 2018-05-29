@@ -1,5 +1,5 @@
 /**
- * Simple GET only API for RVK-GND concordances.
+ * Simple JSON API to retrieve JSKOS Concept Mappings for mappings between RVK and GND.
  *
  * If the database doesn't exist yet, import the mappings like this:
  * mongoimport --db rvk_gnd_ubregensburg --collection mappings --file rvk_gnd_ubregensburg.ndjson
@@ -10,8 +10,11 @@
 const express = require("express")
 const app = express()
 const mongo = require("mongodb").MongoClient
+const config = require("./config")
 
-mongo.connect("mongodb://localhost", {
+let url = `mongodb://${config.mongodb.host}:${config.mongodb.port}`
+
+mongo.connect(url, {
   reconnectTries: 60,
   reconnectInterval: 1000,
   bufferMaxEntries: 0
@@ -20,9 +23,9 @@ mongo.connect("mongodb://localhost", {
     console.log(err)
     process.exit(1)
   }
-  db = client.db("rvk_gnd_ubregensburg")
-  app.listen(3000, () => {
-    console.log("listening on port 3000")
+  db = client.db(config.mongodb.db)
+  app.listen(config.port, () => {
+    console.log(`listening on port ${config.port}`)
   })
 })
 
@@ -34,7 +37,7 @@ app.use(function (req, res, next) {
 
 app.get("/mappings", (req, res) => {
   let uri = req.query.uri
-  db.collection("mappings").find({ "from.memberSet.uri": uri }).toArray(function(err, results) {
+  db.collection(config.mongodb.collection).find({ "from.memberSet.uri": uri }).toArray(function(err, results) {
     if (err) {
       res.send(err)
     } else {
