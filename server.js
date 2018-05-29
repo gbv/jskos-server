@@ -25,7 +25,7 @@ mongo.connect(url, {
     process.exit(1)
   }
   db = client.db(config.mongodb.db)
-  provider = new MappingProvider(db.collection(config.mongodb.collection))
+  provider = new MappingProvider(db.collection("mappings"))
   app.listen(config.port, () => {
     console.log(`listening on port ${config.port}`)
   })

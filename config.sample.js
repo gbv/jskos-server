@@ -2,8 +2,7 @@ module.exports = {
   mongodb: {
     host: null,
     port: null,
-    db: null,
-    collection: null
+    db: null
   },
   port: null
 }
