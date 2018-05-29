@@ -4,8 +4,22 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "forever --minUptime 2000 --spinSleepTime 2000 -c 'nodemon --exitcrash' server.js"
+    "start": "forever --minUptime 2000 --spinSleepTime 2000 -c 'nodemon --exitcrash' server.js",
+    "lint": "./node_modules/.bin/eslint ./*.js ./**/*.js",
+    "fix": "./node_modules/.bin/eslint --fix ./*.js ./**/*.js",
+    "lint-staged": "lint-staged"
   },
+  "lint-staged": {
+    "**/*.js": [
+      "eslint --fix",
+      "git add"
+    ],
+    "*.js": [
+      "eslint --fix",
+      "git add"
+    ]
+  },
+  "pre-commit": "lint-staged",
   "author": "",
   "license": "ISC",
   "devDependencies": {
@@ -15,6 +29,8 @@
     "eslint": "^4.19.1",
     "express": "^4.16.3",
     "forever": "^0.15.3",
-    "mongodb": "~3.0.8"
+    "lint-staged": "^7.1.2",
+    "mongodb": "~3.0.8",
+    "pre-commit": "^1.2.2"
   }
 }
