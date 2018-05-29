@@ -1,4 +1,8 @@
-Simple JSON API to retrieve [JSKOS Concept Mappings](https://gbv.github.io/jskos/jskos.html#concept-mappings) for mappings between RVK and GND.
+# mapping-api
+
+Simple JSKOS Mapping Provider to retrieve [JSKOS Concept Mappings] via HTTP.
+
+[JSKOS Concept Mappings]: https://gbv.github.io/jskos/jskos.html#concept-mappings
 
 ## Prerequisites
 
@@ -6,13 +10,13 @@ You need to have access to a [MongoDB database](https://docs.mongodb.com/manual/
 
 ## Database Setup
 
-``` bash
-# download the mappings
-wget http://coli-conc.gbv.de/concordances/csv/rvk_gnd_ubregensburg.ndjson
+First download mappings, for instance from <https://coli-conc.gbv.de/concordances/> and import the into a MongoDB collection:
 
-# import the mapping into MongoDB
+``` bash
+wget http://coli-conc.gbv.de/concordances/csv/rvk_gnd_ubregensburg.ndjson
 mongoimport --db rvk_gnd_ubregensburg --collection mappings --file rvk_gnd_ubregensburg.ndjson
 ```
+
 You can change the MongoDB database and collection for the import, but then you'll need to create a custom configuration file (see below).
 
 ## Build Setup
@@ -53,7 +57,7 @@ cp config.sample.js config.user.js
   
   **Code:** 200
   
-  **Concent:** JSON array of [Concept Mappings in JSKOS format](https://gbv.github.io/jskos/jskos.html#concept-mappings)
+  **Concent:** JSON array of [JSKOS Concept Mappings]
 
 * **Sample Call**
   
