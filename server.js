@@ -11,6 +11,7 @@ const express = require("express")
 const app = express()
 const mongo = require("mongodb").MongoClient
 const config = require("./config")
+const MappingProvider = require("./lib/mapping-provider")
 
 let url = `mongodb://${config.mongodb.host}:${config.mongodb.port}`
 
@@ -24,6 +25,7 @@ mongo.connect(url, {
     process.exit(1)
   }
   db = client.db(config.mongodb.db)
+  provider = new MappingProvider(db.collection(config.mongodb.collection))
   app.listen(config.port, () => {
     console.log(`listening on port ${config.port}`)
   })
@@ -36,19 +38,13 @@ app.use(function (req, res, next) {
 })
 
 app.get("/mappings", (req, res) => {
-  db.collection(config.mongodb.collection).find({
-    $or: [
-      { "from.memberSet.uri": req.query.from },
-      { "to.memberSet.uri": req.query.to }
-    ]}).toArray(function(err, results) {
-    if (err) {
-      res.send(err)
-    } else {
+  provider.getMappings(req.query)
+    .catch(err => res.send(err))
+    .then(results => {
       // Remove MongoDB id property from objects
-      results.forEach(element => {
-        delete element._id
+      results.forEach(mapping => {
+        delete mapping._id
       })
       res.json(results)
-    }
-  })
+    })
 })
