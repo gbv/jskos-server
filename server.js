@@ -44,6 +44,10 @@ app.get("/mappings", (req, res) => {
     if (err) {
       res.send(err)
     } else {
+      // Remove MongoDB id property from objects
+      results.forEach(element => {
+        delete element._id
+      })
       res.json(results)
     }
   })
