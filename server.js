@@ -36,8 +36,11 @@ app.use(function (req, res, next) {
 })
 
 app.get("/mappings", (req, res) => {
-  let uri = req.query.uri
-  db.collection(config.mongodb.collection).find({ "from.memberSet.uri": uri }).toArray(function(err, results) {
+  db.collection(config.mongodb.collection).find({
+    $or: [
+      { "from.memberSet.uri": req.query.from },
+      { "to.memberSet.uri": req.query.to }
+    ]}).toArray(function(err, results) {
     if (err) {
       res.send(err)
     } else {
