@@ -77,3 +77,12 @@ The application is currently deployed at http://coli-conc.gbv.de/api/mappings. A
 
 ### Notes about depolyment on Ubuntu
 It is recommended to use a [newer version of Node.js](https://nodejs.org/en/download/package-manager/#debian-and-ubuntu-based-linux-distributions). Installing the dependencies might also require installing nodejs-legacy: `sudo apt-get install nodejs-legacy` ([more info here](https://stackoverflow.com/questions/21168141/cannot-install-packages-using-node-package-manager-in-ubuntu)). One possibility for running the application in production on Ubuntu 16.04 is described [here](https://www.digitalocean.com/community/tutorials/how-to-set-up-a-node-js-application-for-production-on-ubuntu-16-04).
+
+### Update an instances deployed with PM2
+```
+# get updates from repository
+git pull
+
+# restart the process (adjust process name if needed)
+pm2 restart mappings-api
+```
