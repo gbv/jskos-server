@@ -22,6 +22,10 @@ You can change the MongoDB database and collection for the import, but then you'
 ## Build Setup
 
 ``` bash
+# clone the repository
+git clone https://github.com/gbv/mappings-api.git
+cd mappings-api/
+
 # install dependencies
 npm install
 
@@ -40,28 +44,34 @@ cp config.sample.js config.user.js
 ## API Usage
 
 * **URL**
-  
+
   /mappings
 
 * **Method**
-  
+
   `GET`
 
 * **URL Params**
-  
+
   `from=[uri]` or `to=[uri]`
-  
+
   Missing parameters will result in an empty response array.
 
 * **Success Response**
-  
+
   **Code:** 200
-  
+
   **Concent:** JSON array of [JSKOS Concept Mappings]
 
 * **Sample Call**
-  
+
   ``` bash
   curl http://localhost:3000/mappings?from=http://rvk.uni-regensburg.de/nt/DD_2000
   ```
 
+## Deployment
+
+The application is currently deployed at http://coli-conc.gbv.de/api/mappings. At the moment, there is no automatic deployment of new versions.
+
+### Notes about depolyment on Ubuntu
+It is recommended to use a [newer version of Node.js](https://nodejs.org/en/download/package-manager/#debian-and-ubuntu-based-linux-distributions). Installing the dependencies might also require installing nodejs-legacy: `sudo apt-get install nodejs-legacy` ([more info here](https://stackoverflow.com/questions/21168141/cannot-install-packages-using-node-package-manager-in-ubuntu)). One possibility for running the application in production on Ubuntu 16.04 is described [here](https://www.digitalocean.com/community/tutorials/how-to-set-up-a-node-js-application-for-production-on-ubuntu-16-04).
