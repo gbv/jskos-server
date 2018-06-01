@@ -53,9 +53,11 @@ cp config.sample.js config.user.js
 
 * **URL Params**
 
-  `from=[uri]` or `to=[uri]`
+  `from=[uri]` specify the source URI
 
-  Missing parameters will result in an empty response array.
+  `to=[uri]` specify the target URI
+
+  `limit=[number]` limits the number of results (default 100)
 
 * **Success Response**
 
