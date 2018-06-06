@@ -31,9 +31,10 @@ mongo.connect(url, {
   })
 })
 
-// Add headers
+// Add default headers
 app.use(function (req, res, next) {
   res.setHeader("Access-Control-Allow-Origin", "*")
+  res.setHeader("Content-Type", "application/ld+json")
   next()
 })
 
@@ -41,9 +42,10 @@ app.get("/mappings", (req, res) => {
   provider.getMappings(req.query)
     .catch(err => res.send(err))
     .then(results => {
-      // Remove MongoDB id property from objects
+      // Remove MongoDB specific fields, add JSKOS specific fields
       results.forEach(mapping => {
         delete mapping._id
+        mapping["@context"] = "https://gbv.github.io/jskos/context.json"
       })
       res.json(results)
     })
