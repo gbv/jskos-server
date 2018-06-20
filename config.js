@@ -14,7 +14,7 @@ module.exports = {
   mongodb: {
     host: userConfig.mongodb.host || "localhost",
     port: userConfig.mongodb.port || 27017,
-    db: userConfig.mongodb.db || "rvk_gnd_ubregensburg"
+    db: userConfig.mongodb.db || "cocoda_api"
   },
   port: userConfig.port || 3000
 }
