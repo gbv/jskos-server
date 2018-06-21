@@ -1,7 +1,6 @@
 .DS_Store
 node_modules/
 config.user.js
-rvk_gnd_ubregensburg.ndjson
 
 npm-debug.log*
 yarn-debug.log*

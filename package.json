@@ -1,8 +1,8 @@
 {
-  "name": "rvk_gnd_ubregensburg-api",
+  "name": "jskos-server",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
     "start": "forever --minUptime 2000 --spinSleepTime 2000 -c 'nodemon --exitcrash' server.js",
     "lint": "./node_modules/.bin/eslint ./*.js ./**/*.js",
