@@ -7,7 +7,8 @@
     "start": "forever --minUptime 2000 --spinSleepTime 2000 -c 'nodemon --exitcrash' server.js",
     "lint": "./node_modules/.bin/eslint ./*.js ./**/*.js",
     "fix": "./node_modules/.bin/eslint --fix ./*.js ./**/*.js",
-    "lint-staged": "lint-staged"
+    "lint-staged": "lint-staged",
+    "import": "node import.js"
   },
   "lint-staged": {
     "**/*.js": [
@@ -30,6 +31,7 @@
     "express": "^4.16.3",
     "forever": "^0.15.3",
     "lint-staged": "^7.1.2",
+    "meow": "^5.0.0",
     "mongodb": "~3.0.8",
     "pre-commit": "^1.2.2"
   }
