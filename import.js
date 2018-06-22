@@ -166,6 +166,10 @@ mongo.connect(url, {
             // Read file as normal JSON
             json = JSON.parse(data)
           }
+          // Convert single object to array
+          if (typeof json === "object") {
+            json = [json]
+          }
           // Add URIs as _id for all concepts and terminologies
           if (type == "concepts" || type == "terminologies") {
             for(let object of json) {
