@@ -61,7 +61,7 @@ if (cli.flags.help) {
   process.exit(0)
 }
 // Check if at least one of the arguments are given
-if (!cli.flags.concepts && !cli.flags.terminologies && !cli.flags.mappings && !cli.flags.indexes) {
+if (!cli.flags.concepts && !cli.flags.terminologies && !cli.flags.mappings && !cli.flags.indexes && !cli.flags.remove) {
   cli.showHelp()
   process.exit(1)
 }
@@ -72,7 +72,9 @@ for (let type of Object.keys(files)) {
   if (cli.flags[type]) {
     files[type] = Array.isArray(cli.flags[type]) ? cli.flags[type] : [cli.flags[type]]
   } else {
-    typesToDelete.push(type)
+    if (cli.flags[type] != "") {
+      typesToDelete.push(type)
+    }
   }
 }
 
@@ -86,9 +88,11 @@ for (let file of [].concat(files.concepts, files.terminologies, files.mappings))
 if (isError) {
   process.exit(1)
 }
-// Delete unused keys from files
-for(let type of typesToDelete) {
-  delete files[type]
+// Delete unused keys from files if at least one stays
+if (typesToDelete.length < Object.keys(files).length) {
+  for(let type of typesToDelete) {
+    delete files[type]
+  }
 }
 
 const mongo = require("mongodb").MongoClient
@@ -167,7 +171,7 @@ mongo.connect(url, {
             json = JSON.parse(data)
           }
           // Convert single object to array
-          if (typeof json === "object") {
+          if (!Array.isArray(json) && typeof json === "object") {
             json = [json]
           }
           // Add URIs as _id for all concepts and terminologies
