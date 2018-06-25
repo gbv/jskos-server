@@ -16,3 +16,4 @@ yarn-error.log*
 
 # Lists for import script
 scripts/*.txt
+scripts/*.log

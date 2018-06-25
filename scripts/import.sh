@@ -8,7 +8,7 @@
 #    IF script is not under scripts/ in jskos-server, you need to specify its path:
 #    $ ./scripts/import.sh /path/to/jskos-server
 
-CURRENT_DIR=$(dirname $0)
+CURRENT_DIR=$(pwd)/$(dirname $0)
 IMPORT_DIR=$CURRENT_DIR"/.files_to_import"
 # Server directory
 if [ "$#" -eq  "0" ]
@@ -21,6 +21,13 @@ if [[ ! -d $SERVER_DIR ]]; then
   echo "Server directory does not exist."
   exit 1
 fi
+
+# Logging
+LOGFILE=$CURRENT_DIR"/import.log"
+log() {
+  echo "$(date): $1" >> $LOGFILE
+}
+log "----- Import started. -----"
 
 # Create import directory
 [[ -d $IMPORT_DIR ]] || mkdir $IMPORT_DIR
@@ -52,10 +59,20 @@ download_import() {
       ### Download file if it starts with http
       local EXT="${FILE##*.}"
       wget -q $FILE -O $IMPORT_DIR"/file."$EXT
-      FILE=$IMPORT_DIR"/file."$EXT
+      FILETOIMPORT=$IMPORT_DIR"/file."$EXT
+    else
+      FILETOIMPORT=$FILE
     fi
     ### Import file
-    npm rum import -- $OPT $FILE
+    npm rum import -- $OPT $FILETOIMPORT
+    ### Log on error
+    if [ $? -ne 0 ]; then
+      log "ERROR: Failed to import $FILE."
+    fi
+    ### Delete downloaded file
+    if [[ $FILE == http* ]]; then
+      rm $FILETOIMPORT
+    fi
   done
 }
 
@@ -78,5 +95,7 @@ IFS=$OLD_IFS
 # Delete import directory
 rm -r $IMPORT_DIR
 cd $CURRENT_DIR
+
+log "----- Import finished. -----"
 
 echo "##### Importing done! #####"
