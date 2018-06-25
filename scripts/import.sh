@@ -8,7 +8,7 @@
 #    IF script is not under scripts/ in jskos-server, you need to specify its path:
 #    $ ./scripts/import.sh /path/to/jskos-server
 
-CURRENT_DIR=$(pwd)/$(dirname $0)
+CURRENT_DIR=$(dirname $(realpath $0))
 IMPORT_DIR=$CURRENT_DIR"/.files_to_import"
 # Server directory
 if [ "$#" -eq  "0" ]
