@@ -129,3 +129,11 @@ app.get("/suggest", (req, res) => {
       res.json(results)
     })
 })
+
+app.get("/search", (req, res) => {
+  terminologyProvider.search(req.query)
+    .catch(err => res.send(err))
+    .then(results => {
+      res.json(results)
+    })
+})
