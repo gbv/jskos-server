@@ -132,6 +132,17 @@ mongo.connect(url, {
         return
       }
       let promises = []
+      // Drop all indexes
+      for(let type of Object.keys(files)) {
+        promises.push(db.collection(type).dropIndexes())
+      }
+      return Promise.all(promises)
+    })
+    .then(() => {
+      if (!cli.flags.indexes) {
+        return
+      }
+      let promises = []
       // Create indexes
       for(let type of Object.keys(files)) {
         let indexes = []
@@ -143,7 +154,6 @@ mongo.connect(url, {
           indexes.push({ "notation": 1 })
           indexes.push({ "prefLabel.de": 1 })
           indexes.push({ "prefLabel.en": 1 })
-          indexes.push({ "notation": 1, "prefLabel.de": 1, "prefLabel.en": 1 })
         }
         for(let index of indexes) {
           promises.push(db.collection(type).createIndex(index).then(() => { console.log("Created index on", type) }))
@@ -188,6 +198,7 @@ mongo.connect(url, {
               }
             }
           }
+          let lastId = null
           promises.push(
             db.collection(type).insertMany(json).then(result => {
               console.log("", result.insertedCount, type, "inserted, doing adjustments now...")
@@ -199,6 +210,7 @@ mongo.connect(url, {
                     return Promise.resolve()
                   } else {
                     let _id = ids[index]
+                    lastId = _id
                     return terminologyProvider.getNarrower({ uri: _id }).then(result => {
                       // Add narrower field to object, either [] or [null]
                       let narrower = result.length == 0 ? [] : [null]
@@ -219,6 +231,9 @@ mongo.connect(url, {
               }
             }).then(() => {
               console.log(" ... adjustments done.")
+            }).catch(error => {
+              console.log("Error with", lastId)
+              console.log(error)
             })
           )
 
