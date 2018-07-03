@@ -118,7 +118,7 @@ mongo.connect(url, {
   let promises = []
   if (cli.flags.remove) {
     for(let type of Object.keys(files)) {
-      promises.push(db.collection(type).remove({}).then(() => { console.log("Cleared collection", type) }))
+      promises.push(db.collection(type).drop().then(() => { console.log("Dropped collection", type) }))
     }
   }
 
@@ -131,10 +131,11 @@ mongo.connect(url, {
       if (!cli.flags.indexes) {
         return
       }
+      console.log("Dropping indexes...")
       let promises = []
       // Drop all indexes
       for(let type of Object.keys(files)) {
-        promises.push(db.collection(type).dropIndexes())
+        promises.push(db.collection(type).dropIndexes().catch(() => null))
       }
       return Promise.all(promises)
     })
@@ -142,21 +143,45 @@ mongo.connect(url, {
       if (!cli.flags.indexes) {
         return
       }
+      console.log("Creating indexes...")
       let promises = []
       // Create indexes
       for(let type of Object.keys(files)) {
         let indexes = []
         if (type == "concepts") {
-          indexes.push({ "broader.uri": 1 })
-          indexes.push({ "topConceptOf.uri": 1 })
-          indexes.push({ "inScheme.uri": 1 })
-          indexes.push({ "uri": 1 })
-          indexes.push({ "notation": 1 })
-          indexes.push({ "prefLabel.de": 1 })
-          indexes.push({ "prefLabel.en": 1 })
+          indexes.push([{ "broader.uri": 1 }, {}])
+          indexes.push([{ "topConceptOf.uri": 1 }, {}])
+          indexes.push([{ "inScheme.uri": 1 }, {}])
+          indexes.push([{ "uri": 1 }, {}])
+          indexes.push([{ "notation": 1 }, {}])
+          indexes.push([{ "_keywordsNotation": 1 }, {}])
+          indexes.push([
+            {
+              "_keywordsNotation": "text",
+              "_keywordsPrefLabel": "text",
+              "_keywordsAltLabel": "text",
+              "scopeNote.de": "text",
+              "scopeNote.en": "text",
+              "editorialNote.de": "text",
+              "editorialNote.en": "text"
+            },
+            {
+              name: "text",
+              default_language: "german",
+              weights: {
+                "_keywordsNotation": 10,
+                "_keywordsPrefLabel": 6,
+                "_keywordsAltLabel": 4,
+                "scopeNote.de": 2,
+                "scopeNote.en": 1,
+                "editorialNote.de": 2,
+                "editorialNote.en": 1
+              }
+            }
+          ])
         }
-        for(let index of indexes) {
-          promises.push(db.collection(type).createIndex(index).then(() => { console.log("Created index on", type) }))
+        for(let [index, options] of indexes) {
+          promises.push(db.collection(type).createIndex(index, options).then(() => { console.log("Created index on", type) }).catch(error => { console.log(error); process.exit(1) }))
         }
       }
       return Promise.all(promises)
@@ -211,7 +236,18 @@ mongo.connect(url, {
                   } else {
                     let _id = ids[index]
                     lastId = _id
-                    return terminologyProvider.getNarrower({ uri: _id }).then(result => {
+                    return db.collection(type).find({ _id: _id }).toArray().then(result => {
+                      if (result.length == 0) return
+                      let concept = result[0]
+                      let keywords = []
+                      // Notation, prefLabel, altLabel
+                      keywordsNotation = keywords.concat(concept.notation || [])
+                      keywordsPrefLabel = keywords.concat((concept.prefLabel && concept.prefLabel.de) ? (Array.isArray(concept.prefLabel.de) ? concept.prefLabel.de : [concept.prefLabel.de]) : [])
+                      keywordsAltLabel = keywords.concat((concept.altLabel && concept.altLabel.de) ? (Array.isArray(concept.altLabel.de) ? concept.altLabel.de : [concept.altLabel.de]) : [])
+                      return db.collection(type).update({ _id: _id }, { $set: { _keywordsNotation: makePrefixes(keywordsNotation), _keywordsPrefLabel: makeGrams(keywordsPrefLabel), _keywordsAltLabel: makeGrams(keywordsAltLabel),  } })
+                    }).then(() => {
+                      return terminologyProvider.getNarrower({ uri: _id })
+                    }).then(result => {
                       // Add narrower field to object, either [] or [null]
                       let narrower = result.length == 0 ? [] : [null]
                       return db.collection(type).update({ _id: _id }, { $set: { narrower: narrower } })
@@ -245,3 +281,36 @@ mongo.connect(url, {
       client.close()
     })
 })
+
+// Helper functions
+
+// from https://web.archive.org/web/20170609122132/http://jam.sg/blog/efficient-partial-keyword-searches/
+function makeSuffixes(values) {
+  var results = []
+  values.sort().reverse().forEach(function(val) {
+    var tmp, hasSuffix
+    for (var i=0; i<val.length-1; i++) {
+      tmp = val.substr(i).toUpperCase()
+      hasPrefix = results.includes(tmp)
+      if (!hasSuffix) results.push(tmp)
+    }
+  })
+  return results
+}
+// adapted from above
+function makePrefixes(values) {
+  var results = []
+  values.sort().reverse().forEach(function(val) {
+    var tmp, hasPrefix
+    results.push(val)
+    for (var i=2; i<val.length; i++) {
+      tmp = val.substr(0, i).toUpperCase()
+      hasPrefix = results.includes(tmp)
+      if (!hasPrefix) results.push(tmp)
+    }
+  })
+  return results
+}
+function makeGrams(values) {
+  return makeSuffixes(values).concat(makePrefixes(values))
+}
