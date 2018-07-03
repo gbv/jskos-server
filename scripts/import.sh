@@ -80,16 +80,22 @@ OLD_IFS=$IFS
 IFS=$'\n'
 
 # Import mappings
-FILES=( $(cat $CURRENT_DIR/import_mappings.txt) )
-download_import -m ${FILES[@]}
+FILES=( $(cat $CURRENT_DIR/import_mappings.txt | grep "^[^#;]") )
+if [ -n "$FILES" ]; then
+  download_import -m ${FILES[@]}
+fi
 
 # Import terminologies
-FILES=( $(cat $CURRENT_DIR/import_terminologies.txt) )
-download_import -t ${FILES[@]}
+FILES=( $(cat $CURRENT_DIR/import_terminologies.txt | grep "^[^#;]") )
+if [ -n "$FILES" ]; then
+  download_import -t ${FILES[@]}
+fi
 
 # Import concepts
-FILES=( $(cat $CURRENT_DIR/import_concepts.txt) )
-download_import -c ${FILES[@]}
+FILES=( $(cat $CURRENT_DIR/import_concepts.txt | grep "^[^#;]") )
+if [ -n "$FILES" ]; then
+  download_import -c ${FILES[@]}
+fi
 
 IFS=$OLD_IFS
 # Delete import directory
