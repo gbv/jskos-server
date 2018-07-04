@@ -103,7 +103,6 @@ const TerminologyProvider = require("./lib/terminology-provider")
 mongo.connect(url, {
   reconnectTries: 60,
   reconnectInterval: 1000,
-  bufferMaxEntries: 0
 }, (err, client) => {
   if (err) {
     console.log(err)
