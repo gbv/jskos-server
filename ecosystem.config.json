@@ -1,0 +1,4 @@
+{
+  "name": "jskos-server",
+  "script": "./server.js"
+}
