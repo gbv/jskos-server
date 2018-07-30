@@ -179,15 +179,11 @@ mongo.connect(url, {
             }
           ])
         } else if (type == "mappings") {
-          indexes.push([{ "from.memberSet.notation": 1 }, {}])
-          indexes.push([{ "to.memberSet.notation": 1 }, {}])
-          indexes.push([{ "to.memberList.notation": 1 }, {}])
-          indexes.push([{ "to.memberChoice.notation": 1 }, {}])
-          indexes.push([{ "from.memberSet.notation": 1 }, {}])
-          indexes.push([{ "fromScheme.uri": 1 }, {}])
-          indexes.push([{ "fromScheme.notation": 1 }, {}])
-          indexes.push([{ "toScheme.uri": 1 }, {}])
-          indexes.push([{ "toScheme.notation": 1 }, {}])
+          for (let path of ["from.memberSet", "from.memberList", "from.memberChoice", "to.memberSet", "to.memberList", "to.memberChoice", "fromScheme", "toScheme"]) {
+            for (let type of ["notation", "uri"]) {
+              indexes.push([{ [`${path}.${type}`]: 1 }, {}])
+            }
+          }
         }
         for(let [index, options] of indexes) {
           promises.push(db.collection(type).createIndex(index, options).then(() => { console.log("Created index on", type) }).catch(error => { console.log(error); process.exit(1) }))
