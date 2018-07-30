@@ -56,6 +56,14 @@ app.get("/mappings", (req, res) => {
     })
 })
 
+app.get("/mappings/suggest", (req, res) => {
+  mappingProvider.getNotationSuggestions(req.query)
+    .catch(err => res.send(err))
+    .then(results => {
+      res.json(results)
+    })
+})
+
 app.get("/voc", (req, res) => {
   terminologyProvider.getVocabularies(req.query)
     .catch(err => res.send(err))
