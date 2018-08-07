@@ -31,6 +31,9 @@ npm install
 
 # serve with hot reload and auto reconnect at localhost:3000 (default)
 npm run start
+
+# run tests (tests will use the real MongoDB with `-test` appended to the database name)
+npm test
 ```
 
 ## Configuration

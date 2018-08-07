@@ -20,28 +20,32 @@ const TerminologyProvider = require("./lib/terminology-provider")
 // Configuration
 require("dotenv").config()
 const
+  env = process.env.NODE_ENV || "development",
   port = process.env.PORT || 3000,
   mongoHost = process.env.MONGO_HOST || "localhost",
   mongoPort = process.env.MONGO_PORT || 27017,
-  mongoDb = process.env.MONGO_DB || "cocoda_api",
+  mongoDb = (process.env.MONGO_DB || "cocoda_api") + (env == "test" ? "-test" : ""),
   mongoUrl = `mongodb://${mongoHost}:${mongoPort}`,
   mongoOptions = {
     reconnectTries: 60,
     reconnectInterval: 1000,
     useNewUrlParser: true
   }
+console.log(`running in ${env} mode`)
 
-mongo.connect(mongoUrl, mongoOptions, (err, client) => {
-  if (err) {
-    console.log(err)
-    process.exit(1)
-  }
-  db = client.db(mongoDb)
-  console.log(`connected to MongoDB ${mongoUrl} (database: ${mongoDb})`)
+// Promise for MongoDB db
+const db = mongo.connect(mongoUrl, mongoOptions).then(client => {
+  return client.db(mongoDb)
+}).catch(error => {
+  throw error
+})
+
+db.then(db => {
+  if (env != "test") console.log(`connected to MongoDB ${mongoUrl} (database: ${mongoDb})`)
   mappingProvider = new MappingProvider(db.collection("mappings"))
   terminologyProvider = new TerminologyProvider(db.collection("terminologies"), db.collection("concepts"))
   app.listen(port, () => {
-    console.log(`listening on port ${port}`)
+    if (env != "test") console.log(`listening on port ${port}`)
   })
 })
 
@@ -153,3 +157,7 @@ app.get("/search", (req, res) => {
       res.json(results)
     })
 })
+
+module.exports = {
+  db, app
+}
