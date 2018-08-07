@@ -6,6 +6,7 @@
  * $ npm run import -- -h
  */
 
+const config = require("./config")
 const meow = require("meow")
 var fs = require("fs")
 
@@ -96,7 +97,6 @@ if (typesToDelete.length < Object.keys(files).length) {
 }
 
 const mongo = require("mongodb").MongoClient
-const config = require("./config")
 const TerminologyProvider = require("./lib/terminology-provider")
 
 mongo.connect(config.mongoUrl, config.mongoOptions, (err, client) => {
@@ -113,7 +113,7 @@ mongo.connect(config.mongoUrl, config.mongoOptions, (err, client) => {
   let promises = []
   if (cli.flags.remove) {
     for(let type of Object.keys(files)) {
-      promises.push(db.collection(type).drop().then(() => { config.log("Dropped collection", type) }))
+      promises.push(db.collection(type).drop().then(() => { config.log("Dropped collection", type) }).catch(() => { config.log("Could not drop collection", type) }))
     }
   }
 
