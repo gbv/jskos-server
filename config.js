@@ -1,6 +1,7 @@
 require("dotenv").config()
 const
   env = process.env.NODE_ENV || "development",
+  verbosity = process.env.VERBOSITY,
   port = process.env.PORT || 3000,
   mongoHost = process.env.MONGO_HOST || "localhost",
   mongoPort = process.env.MONGO_PORT || 27017,
@@ -14,11 +15,11 @@ const
 console.log(`running in ${env} mode`)
 
 const log = (...args) => {
-  if (env != "test") {
+  if (env != "test" || verbosity) {
     console.log(...args)
   }
 }
 
 module.exports = {
-  env, port, mongoHost, mongoPort, mongoDb, mongoUrl, mongoOptions, log
+  env, verbosity, port, mongoHost, mongoPort, mongoDb, mongoUrl, mongoOptions, log
 }
