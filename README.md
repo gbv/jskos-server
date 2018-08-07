@@ -1,4 +1,5 @@
-# mapping-api
+# JSKOS Server
+[![Build Status](https://travis-ci.com/gbv/jskos-server.svg?branch=master)](https://travis-ci.com/gbv/jskos-server)
 
 Simple JSKOS Mapping Provider to retrieve [JSKOS Concept Mappings] via HTTP.
 
