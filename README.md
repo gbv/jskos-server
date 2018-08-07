@@ -35,10 +35,13 @@ npm run start
 
 ## Configuration
 
-You can customize the port and the MongoDB connection settings in config.user.js:
+You can customize the port and the MongoDB connection settings via environment variables, for example through a `.env` file:
 
-``` bash
-cp config.sample.js config.user.js
+```bash
+PORT=__EXPRESS_PORT__
+MONGO_HOST=__MONGODB_HOSTNAME__
+MONGO_PORT=__MONGODB_PORT__
+MONGO_DB=__MONGODB_DATABASE__
 ```
 
 ## API Usage

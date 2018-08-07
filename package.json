@@ -29,6 +29,7 @@
     "pre-commit": "^1.2.2"
   },
   "dependencies": {
+    "dotenv": "^6.0.0",
     "express": "^4.16.3",
     "lint-staged": "^7.1.2",
     "lodash": "^4.17.10",

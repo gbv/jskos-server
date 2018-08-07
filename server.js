@@ -14,25 +14,34 @@
 const express = require("express")
 const app = express()
 const mongo = require("mongodb").MongoClient
-const config = require("./config")
 const MappingProvider = require("./lib/mapping-provider")
 const TerminologyProvider = require("./lib/terminology-provider")
 
-let url = `mongodb://${config.mongodb.host}:${config.mongodb.port}`
+// Configuration
+require("dotenv").config()
+const
+  port = process.env.PORT || 3000,
+  mongoHost = process.env.MONGO_HOST || "localhost",
+  mongoPort = process.env.MONGO_PORT || 27017,
+  mongoDb = process.env.MONGO_DB || "cocoda_api",
+  mongoUrl = `mongodb://${mongoHost}:${mongoPort}`,
+  mongoOptions = {
+    reconnectTries: 60,
+    reconnectInterval: 1000,
+    useNewUrlParser: true
+  }
 
-mongo.connect(url, {
-  reconnectTries: 60,
-  reconnectInterval: 1000,
-}, (err, client) => {
+mongo.connect(mongoUrl, mongoOptions, (err, client) => {
   if (err) {
     console.log(err)
     process.exit(1)
   }
-  db = client.db(config.mongodb.db)
+  db = client.db(mongoDb)
+  console.log(`connected to MongoDB ${mongoUrl} (database: ${mongoDb})`)
   mappingProvider = new MappingProvider(db.collection("mappings"))
   terminologyProvider = new TerminologyProvider(db.collection("terminologies"), db.collection("concepts"))
-  app.listen(config.port, () => {
-    console.log(`listening on port ${config.port}`)
+  app.listen(port, () => {
+    console.log(`listening on port ${port}`)
   })
 })
 
