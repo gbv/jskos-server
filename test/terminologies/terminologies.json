@@ -1,0 +1,34 @@
+[
+  {
+    "uri": "http://dewey.info/scheme/edition/e23/",
+    "prefLabel": {
+      "de": "Dewey-Dezimalklassifikation",
+      "en": "Dewey Decimal Classification"
+    },
+    "notation": [
+      "DDC"
+    ],
+    "identifier": [
+      "http://bartoc.org/en/node/241"
+    ],
+    "license": [
+      {
+        "uri": "http://creativecommons.org/licenses/by-nc-nd/3.0/"
+      }
+    ],
+    "publisher": [
+      {
+        "uri": "http://d-nb.info/gnd/1086052218",
+        "prefLabel": {
+          "de": "OCLC"
+        },
+        "altLabel": {
+          "de": [
+            "OCLC Online Computer Library Center"
+          ]
+        },
+        "url": "https://www.oclc.org/"
+      }
+    ]
+  }
+]
