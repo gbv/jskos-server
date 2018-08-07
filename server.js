@@ -11,41 +11,26 @@
  * Download the file from here: http://coli-conc.gbv.de/concordances/
  */
 
+const config = require("./config")
 const express = require("express")
 const app = express()
 const mongo = require("mongodb").MongoClient
 const MappingProvider = require("./lib/mapping-provider")
 const TerminologyProvider = require("./lib/terminology-provider")
 
-// Configuration
-require("dotenv").config()
-const
-  env = process.env.NODE_ENV || "development",
-  port = process.env.PORT || 3000,
-  mongoHost = process.env.MONGO_HOST || "localhost",
-  mongoPort = process.env.MONGO_PORT || 27017,
-  mongoDb = (process.env.MONGO_DB || "cocoda_api") + (env == "test" ? "-test" : ""),
-  mongoUrl = `mongodb://${mongoHost}:${mongoPort}`,
-  mongoOptions = {
-    reconnectTries: 60,
-    reconnectInterval: 1000,
-    useNewUrlParser: true
-  }
-console.log(`running in ${env} mode`)
-
 // Promise for MongoDB db
-const db = mongo.connect(mongoUrl, mongoOptions).then(client => {
-  return client.db(mongoDb)
+const db = mongo.connect(config.mongoUrl, config.mongoOptions).then(client => {
+  return client.db(config.mongoDb)
 }).catch(error => {
   throw error
 })
 
 db.then(db => {
-  if (env != "test") console.log(`connected to MongoDB ${mongoUrl} (database: ${mongoDb})`)
+  config.log(`connected to MongoDB ${config.mongoUrl} (database: ${config.mongoDb})`)
   mappingProvider = new MappingProvider(db.collection("mappings"))
   terminologyProvider = new TerminologyProvider(db.collection("terminologies"), db.collection("concepts"))
-  app.listen(port, () => {
-    if (env != "test") console.log(`listening on port ${port}`)
+  app.listen(config.port, () => {
+    config.log(`listening on port ${config.port}`)
   })
 })
 

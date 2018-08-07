@@ -82,7 +82,7 @@ let isError = false
 for (let file of [].concat(files.concepts, files.terminologies, files.mappings)) {
   if (!fs.existsSync(file)) {
     isError = true
-    console.log("Error: File", file, "does not exist.")
+    config.log("Error: File", file, "does not exist.")
   }
 }
 if (isError) {
@@ -97,40 +97,36 @@ if (typesToDelete.length < Object.keys(files).length) {
 
 const mongo = require("mongodb").MongoClient
 const config = require("./config")
-const url = `mongodb://${config.mongodb.host}:${config.mongodb.port}`
 const TerminologyProvider = require("./lib/terminology-provider")
 
-mongo.connect(url, {
-  reconnectTries: 60,
-  reconnectInterval: 1000,
-}, (err, client) => {
+mongo.connect(config.mongoUrl, config.mongoOptions, (err, client) => {
   if (err) {
-    console.log(err)
+    config.log(err)
     process.exit(1)
   }
 
-  let db = client.db(config.mongodb.db)
-  console.log("Connected to database", config.mongodb.db)
+  let db = client.db(config.mongoDb)
+  config.log("Connected to database", config.mongoDb)
   let terminologyProvider = new TerminologyProvider(db.collection("terminologies"), db.collection("concepts"))
 
   // Remove if necessary
   let promises = []
   if (cli.flags.remove) {
     for(let type of Object.keys(files)) {
-      promises.push(db.collection(type).drop().then(() => { console.log("Dropped collection", type) }))
+      promises.push(db.collection(type).drop().then(() => { config.log("Dropped collection", type) }))
     }
   }
 
   Promise.all(promises)
     .catch(error => {
-      console.log("Error:", error)
+      config.log("Error:", error)
       client.close()
     })
     .then(() => {
       if (!cli.flags.indexes) {
         return
       }
-      console.log("Dropping indexes...")
+      config.log("Dropping indexes...")
       let promises = []
       // Drop all indexes
       for(let type of Object.keys(files)) {
@@ -142,7 +138,7 @@ mongo.connect(url, {
       if (!cli.flags.indexes) {
         return
       }
-      console.log("Creating indexes...")
+      config.log("Creating indexes...")
       let promises = []
       // Create indexes
       for(let type of Object.keys(files)) {
@@ -186,7 +182,7 @@ mongo.connect(url, {
           }
         }
         for(let [index, options] of indexes) {
-          promises.push(db.collection(type).createIndex(index, options).then(() => { console.log("Created index on", type) }).catch(error => { console.log(error); process.exit(1) }))
+          promises.push(db.collection(type).createIndex(index, options).then(() => { config.log("Created index on", type) }).catch(error => { config.log(error); process.exit(1) }))
         }
       }
       return Promise.all(promises)
@@ -195,7 +191,7 @@ mongo.connect(url, {
       let promises = []
       for (let type of Object.keys(files)) {
         for (let file of files[type]) {
-          console.log("Reading", file)
+          config.log("Reading", file)
           let data = fs.readFileSync(file, "utf8")
           let json
           if (file.endsWith("ndjson")) {
@@ -231,7 +227,7 @@ mongo.connect(url, {
           let lastId = null
           promises.push(
             db.collection(type).insertMany(json).then(result => {
-              console.log("", result.insertedCount, type, "inserted, doing adjustments now...")
+              config.log("", result.insertedCount, type, "inserted, doing adjustments now...")
               if (type == "concepts") {
                 let done = 0
                 let ids = Object.values(result.insertedIds)
@@ -259,11 +255,11 @@ mongo.connect(url, {
                     }).then(() => {
                       done += 1
                       if (done % 5000 == 0) {
-                        console.log(" -", done, "objects done.")
+                        config.log(" -", done, "objects done.")
                       }
                       return dealWithNext(index + 1)
                     }).catch(error => {
-                      console.log(error)
+                      config.log(error)
                     })
                   }
                 }
@@ -271,10 +267,10 @@ mongo.connect(url, {
                 return promise
               }
             }).then(() => {
-              console.log(" ... adjustments done.")
+              config.log(" ... adjustments done.")
             }).catch(error => {
-              console.log("Error with", lastId)
-              console.log(error)
+              config.log("Error with", lastId)
+              config.log(error)
             })
           )
 
@@ -282,7 +278,7 @@ mongo.connect(url, {
       }
       return Promise.all(promises)
     }).then(() => {
-      console.log("Closing database")
+      config.log("Closing database")
       client.close()
     })
 })
