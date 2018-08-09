@@ -121,19 +121,21 @@ describe("Express Server", () => {
         })
     })
 
-  })
-
-  describe("GET /mappings/voc", () => {
-
-    it("should GET appropriate results", done => {
-      // Add mapping to database
-      exec("NODE_ENV=test npm run import -- -r -m ./test/mappings/mappings-ddc-rvk.json", (err) => {
+    it("should GET only mappings from GND", done => {
+      // Add mappings to database
+      exec("NODE_ENV=test npm run import -- -r -m ./test/mappings/mappings-ddc.json", (err) => {
         if (err) {
           done(err)
           return
         }
         chai.request(server.app)
-          .get("/mappings/voc")
+          .get("/mappings")
+          .query({
+            from: "612.112",
+            to: "612.112",
+            mode: "or",
+            fromScheme: "GND"
+          })
           .end((err, res) => {
             res.should.have.status(200)
             res.body.should.be.a("array")
@@ -141,6 +143,21 @@ describe("Express Server", () => {
             done()
           })
       })
+    })
+
+  })
+
+  describe("GET /mappings/voc", () => {
+
+    it("should GET appropriate results", done => {
+      chai.request(server.app)
+        .get("/mappings/voc")
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.body.should.be.a("array")
+          res.body.length.should.be.eql(3)
+          done()
+        })
     })
 
     it("should GET appropriate results with mode=and", done => {
