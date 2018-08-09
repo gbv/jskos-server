@@ -89,7 +89,7 @@ describe("Express Server", () => {
     })
 
     it("should GET three mappings", done => {
-      // Add one vocabulary to database
+      // Add mappings to database
       exec("NODE_ENV=test npm run import -- -m ./test/mappings/mapping-ddc-gnd.json", (err) => {
         if (err) {
           done(err)
@@ -119,6 +119,30 @@ describe("Express Server", () => {
           _.get(res, "body[0].from.memberChoice[0].uri").should.be.eql("http://dewey.info/class/612.112/e22/")
           done()
         })
+    })
+
+  })
+
+  describe("GET /mappings/voc", () => {
+
+    before(clearDatabase)
+
+    it("should GET appropriate results", done => {
+      // Add mapping to database
+      exec("NODE_ENV=test npm run import -- -m ./test/mappings/ddc-gnd-1.mapping.json", (err) => {
+        if (err) {
+          done(err)
+          return
+        }
+        chai.request(server.app)
+          .get("/mappings/voc")
+          .end((err, res) => {
+            res.should.have.status(200)
+            res.body.should.be.a("array")
+            res.body.length.should.be.eql(2)
+            done()
+          })
+      })
     })
 
   })
