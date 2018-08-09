@@ -269,25 +269,416 @@ Lists all concept schemes used in mappings.
   ```
 
 ### /voc
-TODO
+Lists all supported terminologies (concept schemes).
+
+* **URL Params**
+
+  `limit=[number]` limits the number of results (default: 100)
+
+* **Success Response**
+
+  JSON array of [JSKOS Concept Schemes]
+
+* **Sample Call**
+
+  ```bash
+  curl https://coli-conc.gbv.de/api/voc?limit=1
+  ```
+
+  ```json
+  [
+    {
+      "uri": "http://dewey.info/scheme/edition/e23/",
+      "prefLabel": {
+        "de": "Dewey-Dezimalklassifikation",
+        "en": "Dewey Decimal Classification"
+      },
+      "notation": [
+        "DDC"
+      ],
+      "identifier": [
+        "http://bartoc.org/en/node/241"
+      ],
+      "license": [
+        {
+          "uri": "http://creativecommons.org/licenses/by-nc-nd/3.0/"
+        }
+      ],
+      "publisher": [
+        {
+          "uri": "http://d-nb.info/gnd/1086052218",
+          "prefLabel": {
+            "de": "OCLC"
+          },
+          "altLabel": {
+            "de": [
+              "OCLC Online Computer Library Center"
+            ]
+          },
+          "url": "https://www.oclc.org/"
+        }
+      ],
+      "@context": "https://gbv.github.io/jskos/context.json"
+    }
+  ]
+  ```
 
 ### /voc/top
-TODO
+Lists top concepts for a concept scheme.
+
+* **URL Params**
+
+  `uri=[uri]` URI for a concept scheme
+
+* **Success Response**
+
+  JSON array of [JSKOS Concepts]
+
+* **Sample Call**
+
+  ```bash
+  curl https://coli-conc.gbv.de/api/voc/top?uri=http://dewey.info/scheme/edition/e23/
+  ```
 
 ### /data
-TODO
+Returns detailed data for a concept.
+
+* **URL Params**
+
+  `uri=[uri]` URI for a concept
+
+* **Success Response**
+
+  JSON array of [JSKOS Concepts] (should be of length 1)
+
+* **Sample Call**
+
+  ```bash
+  curl https://coli-conc.gbv.de/api/data?uri=http://dewey.info/class/612.112/e23/
+  ```
+
+  ```json
+  [
+    {
+      "@context": "https://gbv.github.io/jskos/context.json",
+      "broader": [
+        {
+          "uri": "http://dewey.info/class/612.11/e23/"
+        }
+      ],
+      "created": "2000-02-02",
+      "identifier": [
+        "16d595ff-ec01-3e55-b425-016cf92bb950"
+      ],
+      "inScheme": [
+        {
+          "uri": "http://dewey.info/scheme/edition/e23/"
+        }
+      ],
+      "modified": "2013-12-04",
+      "notation": [
+        "612.112"
+      ],
+      "prefLabel": {
+        "de": "Leukozyten (Weiße Blutkörperchen)"
+      },
+      "type": [
+        "http://www.w3.org/2004/02/skos/core#Concept"
+      ],
+      "uri": "http://dewey.info/class/612.112/e23/",
+      "narrower": [
+        null
+      ]
+    }
+  ]
+  ```
 
 ### /narrower
-TODO
+Returns narrower concepts for a concept.
+
+* **URL Params**
+
+  `uri=[uri]` URI for a concept
+
+* **Success Response**
+
+  JSON array of [JSKOS Concepts]
+
+* **Sample Call**
+
+  ```bash
+  curl https://coli-conc.gbv.de/api/narrower?uri=http://dewey.info/class/612.112/e23/
+  ```
+
+  ```json
+  [
+    {
+      "@context": "https://gbv.github.io/jskos/context.json",
+      "broader": [
+        {
+          "uri": "http://dewey.info/class/612.112/e23/"
+        }
+      ],
+      "created": "2000-02-02",
+      "identifier": [
+        "cf6faa73-e5e7-3856-9429-611a8a39d253"
+      ],
+      "inScheme": [
+        {
+          "uri": "http://dewey.info/scheme/edition/e23/"
+        }
+      ],
+      "modified": "2005-11-02",
+      "notation": [
+        "612.1121"
+      ],
+      "prefLabel": {
+        "de": "Biochemie"
+      },
+      "type": [
+        "http://www.w3.org/2004/02/skos/core#Concept"
+      ],
+      "uri": "http://dewey.info/class/612.1121/e23/",
+      "narrower": []
+    },
+    {
+      "@context": "https://gbv.github.io/jskos/context.json",
+      "broader": [
+        {
+          "uri": "http://dewey.info/class/612.112/e23/"
+        }
+      ],
+      "created": "2000-02-02",
+      "http://www.w3.org/2002/07/owl#deprecated": true,
+      "identifier": [
+        "23519115-b023-3812-a2c1-6fc99e169ae3"
+      ],
+      "inScheme": [
+        {
+          "uri": "http://dewey.info/scheme/edition/e23/"
+        }
+      ],
+      "modified": "2005-11-02",
+      "notation": [
+        "612.1122"
+      ],
+      "prefLabel": {
+        "de": "Biophysik"
+      },
+      "type": [
+        "http://www.w3.org/2004/02/skos/core#Concept"
+      ],
+      "uri": "http://dewey.info/class/612.1122/e23/",
+      "narrower": []
+    },
+    {
+      "@context": "https://gbv.github.io/jskos/context.json",
+      "broader": [
+        {
+          "uri": "http://dewey.info/class/612.112/e23/"
+        }
+      ],
+      "created": "2000-02-02",
+      "identifier": [
+        "4a070e77-094c-3638-9067-2b3625d612e9"
+      ],
+      "inScheme": [
+        {
+          "uri": "http://dewey.info/scheme/edition/e23/"
+        }
+      ],
+      "modified": "2005-11-02",
+      "notation": [
+        "612.1127"
+      ],
+      "prefLabel": {
+        "de": "Anzahl und Auszählung"
+      },
+      "type": [
+        "http://www.w3.org/2004/02/skos/core#Concept"
+      ],
+      "uri": "http://dewey.info/class/612.1127/e23/",
+      "narrower": []
+    }
+  ]
+  ```
 
 ### /ancestors
-TODO
+Returns ancestor concepts for a concept.
+
+* **URL Params**
+
+  `uri=[uri]` URI for a concept
+
+* **Success Response**
+
+  JSON array of [JSKOS Concepts]
+
+* **Sample Call**
+
+  ```bash
+  curl https://coli-conc.gbv.de/api/ancestors?uri=http://dewey.info/class/61/e23/
+  ```
+
+  ```json
+  [
+    {
+      "@context": "https://gbv.github.io/jskos/context.json",
+      "created": "2000-02-02",
+      "identifier": [
+        "856c92e9-8b1f-3131-bfbe-f2d2266527d3"
+      ],
+      "modified": "2005-11-02",
+      "notation": [
+        "6"
+      ],
+      "prefLabel": {
+        "de": "Technik, Medizin, angewandte Wissenschaften"
+      },
+      "topConceptOf": [
+        {
+          "uri": "http://dewey.info/scheme/edition/e23/"
+        }
+      ],
+      "type": [
+        "http://www.w3.org/2004/02/skos/core#Concept"
+      ],
+      "uri": "http://dewey.info/class/6/e23/",
+      "inScheme": [
+        {
+          "uri": "http://dewey.info/scheme/edition/e23/"
+        }
+      ],
+      "narrower": [
+        null
+      ]
+    }
+  ]
+  ```
 
 ### /suggest
-TODO
+Returns concept suggestions.
+
+* **URL Params**
+
+  `search=[notation]` specifies the notation (prefix) to search for
+
+  `limit=[number]` limits the number of results (default: 100)
+
+  `format=[string]` return format for suggestions: `jskos` or [`opensearch`]((http://www.opensearch.org/Specifications/OpenSearch/Extensions/Suggestions/1.1#Response_format)) (default)
+
+* **Success Response**
+
+  JSON array of suggestions.
+
+* **Sample Calls**
+
+  ```bash
+  curl https://coli-conc.gbv.de/api/suggest?search=Krebs&limit=5
+  ```
+
+  ```json
+  [
+    "Krebs",
+    [
+      "133.5265 Krebs",
+      "639.5 Krebstierfang",
+      "639.6 Krebstierzucht",
+      "616.994 Krebserkrankungen",
+      "641.695 Krebstiere"
+    ],
+    [
+      "",
+      "",
+      "",
+      "",
+      ""
+    ],
+    [
+      "http://dewey.info/class/133.5265/e23/",
+      "http://dewey.info/class/639.5/e23/",
+      "http://dewey.info/class/639.6/e23/",
+      "http://dewey.info/class/616.994/e23/",
+      "http://dewey.info/class/641.695/e23/"
+    ]
+  ]
+  ```
+
+  ```bash
+  curl https://coli-conc.gbv.de/api/suggest?search=Krebs&limit=2&format=jskos
+  ```
+
+  ```json
+  [
+    {
+      "_id": "http://dewey.info/class/133.5265/e23/",
+      "@context": "https://gbv.github.io/jskos/context.json",
+      "broader": [
+        {
+          "uri": "http://dewey.info/class/133.526/e23/"
+        }
+      ],
+      "created": "2000-02-02",
+      "identifier": [
+        "57e89e64-9de0-35c1-88da-856529d547c8"
+      ],
+      "inScheme": [
+        {
+          "uri": "http://dewey.info/scheme/edition/e23/"
+        }
+      ],
+      "modified": "2005-11-02",
+      "notation": [
+        "133.5265"
+      ],
+      "prefLabel": {
+        "de": "Krebs"
+      },
+      "type": [
+        "http://www.w3.org/2004/02/skos/core#Concept"
+      ],
+      "uri": "http://dewey.info/class/133.5265/e23/",
+      "narrower": [],
+      "priority": 292
+    },
+    {
+      "_id": "http://dewey.info/class/639.5/e23/",
+      "@context": "https://gbv.github.io/jskos/context.json",
+      "broader": [
+        {
+          "uri": "http://dewey.info/class/639/e23/"
+        }
+      ],
+      "created": "2000-02-02",
+      "identifier": [
+        "8b1dc20e-5d1e-34f4-8478-3fa022ba6fe0"
+      ],
+      "inScheme": [
+        {
+          "uri": "http://dewey.info/scheme/edition/e23/"
+        }
+      ],
+      "modified": "2005-11-02",
+      "notation": [
+        "639.5"
+      ],
+      "prefLabel": {
+        "de": "Krebstierfang"
+      },
+      "type": [
+        "http://www.w3.org/2004/02/skos/core#Concept"
+      ],
+      "uri": "http://dewey.info/class/639.5/e23/",
+      "narrower": [
+        null
+      ],
+      "priority": 195
+    }
+  ]
+  ```
 
 ### /search
-TODO
+Currently the same as `/suggest` with parameter `format=jskos`.
 
 ## Deployment
 The application is currently deployed at http://coli-conc.gbv.de/api/. At the moment, there is no automatic deployment of new versions.
@@ -307,3 +698,4 @@ pm2 restart jskos-server
 [JSKOS]: https://gbv.github.io/jskos/jskos.html
 [JSKOS Concept Mappings]: https://gbv.github.io/jskos/jskos.html#concept-mappings
 [JSKOS Concept Schemes]: https://gbv.github.io/jskos/jskos.html#concept-schemes
+[JSKOS Concepts]: https://gbv.github.io/jskos/jskos.html#concept
