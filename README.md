@@ -6,8 +6,6 @@
 
 JSKOS Server is a web server for [JSKOS] data. It is currently under development.
 
-[JSKOS]: https://gbv.github.io/jskos/jskos.html
-
 ## Table of Contents
 - [Install](#install)
   - [Dependencies](#dependencies)
@@ -18,6 +16,17 @@ JSKOS Server is a web server for [JSKOS] data. It is currently under development
   - [Run Server](#run-server)
   - [Run Tests](#run-tests)
 - [API](#api)
+  - [/status](#status)
+  - [/mappings](#mappings)
+  - [/mappings/suggest](#mappingssuggest)
+  - [/mappings/voc](#mappingsvoc)
+  - [/voc](#voc)
+  - [/voc/top](#voctop)
+  - [/data](#data)
+  - [/narrower](#narrower)
+  - [/ancestors](#ancestors)
+  - [/suggest](#suggest)
+  - [/search](#search)
 - [Deployment](#deployment)
   - [Notes about depolyment on Ubuntu](#notes-about-depolyment-on-ubuntu)
   - [Update an instances deployed with PM2](#update-an-instances-deployed-with-pm2)
@@ -67,35 +76,218 @@ npm test
 ```
 
 ## API
-TODO: This section needs to be updated.
+Unless otherwise specified:
+- All endpoints are `GET` endpoints.
+- All responses return code 200.
+- All URL parameters are optional.
 
-* **URL**
+### /status
+Returns a status object.
 
-  /mappings
+* **Success Response**
 
-* **Method**
+  ```json
+  {
+    "db": "example_db",
+    "collections": [
+      {
+        "name": "example_collection1",
+        "count": 50
+      },
+      {
+        "name": "example_collection2",
+        "count": 100
+      }
+    ],
+    "objects": 150,
+    "ok": 1
+  }
+  ```
+  (other properties omitted)
 
-  `GET`
+* **Error Response**
+
+  ```json
+  {
+    "ok": 0
+  }
+  ```
+
+### /mappings
+Returns an array of mappings.
 
 * **URL Params**
 
-  `from=[uri]` specify the source URI
+  `from=[uri|notation]` specify the source URI or notation
 
-  `to=[uri]` specify the target URI
+  `to=[uri|notation]` specify the target URI or notation
+
+  `mode=[mode]` specify the mode for `from` and `to`, one of `and` (default) and `or`
+
+  `fromScheme=[uri|notation]` only show mappings from concept scheme (URI or notation)
+
+  `toScheme=[uri|notation]` only show mappings to concept scheme (URI or notation)
 
   `limit=[number]` limits the number of results (default 100)
 
 * **Success Response**
 
-  **Code:** 200
-
-  **Concent:** JSON array of [JSKOS Concept Mappings]
+  JSON array of [JSKOS Concept Mappings]
 
 * **Sample Call**
 
-  ``` bash
-  curl http://localhost:3000/mappings?from=http://rvk.uni-regensburg.de/nt/DD_2000
+  ```bash
+  curl https://coli-conc.gbv.de/api/mappings?from=http://dewey.info/class/612.116/e23/
   ```
+
+  ```json
+  [
+    {
+      "from": {
+        "memberSet": [
+          {
+            "uri": "http://dewey.info/class/612.116/e23/",
+            "notation": [
+              "612.116"
+            ]
+          }
+        ]
+      },
+      "to": {
+        "memberSet": [
+          {
+            "uri": "http://rvk.uni-regensburg.de/nt/WW_8800-WW_8839",
+            "notation": [
+              "WW 8800-WW 8839"
+            ]
+          }
+        ]
+      },
+      "fromScheme": {
+        "uri": "http://bartoc.org/en/node/241",
+        "notation": [
+          "DDC"
+        ]
+      },
+      "toScheme": {
+        "uri": "http://bartoc.org/en/node/533",
+        "notation": [
+          "RVK"
+        ]
+      },
+      "@context": "https://gbv.github.io/jskos/context.json"
+    }
+  ]
+  ```
+
+### /mappings/suggest
+Suggests notations used in mappings.
+
+* **URL Params**
+
+  `search=[notation]` specifies the notation (prefix) to search for
+
+  `limit=[number]` limits the number of results (default: 100)
+
+* **Success Response**
+
+  JSON array of suggestions in [OpenSearch Suggest Format](http://www.opensearch.org/Specifications/OpenSearch/Extensions/Suggestions/1.1#Response_format).
+
+* **Sample Call**
+
+  ```bash
+  curl https://coli-conc.gbv.de/api/mappings/suggest?search=A&limit=5
+  ```
+
+  ```json
+  [
+    "A",
+    [
+      "AN 74800",
+      "AN 78950",
+      "AN 70000",
+      "AN 71000",
+      "AN 96900"
+    ],
+    [
+      42,
+      25,
+      19,
+      18,
+      17
+    ],
+    []
+  ]
+  ```
+
+### /mappings/voc
+Lists all concept schemes used in mappings.
+
+* **URL Params**
+
+  `from=[uri|notation]` restrict mappings to those from a concept
+
+  `to=[uri|notation]` restrict mappings to those to a concept
+
+  `mode=[mode]` specify the mode for `from` and `to`, one of `and` and `or` (default)
+
+* **Success Response**
+
+  JSON array of [JSKOS Concept Schemes]
+
+* **Sample Call**
+
+  ```bash
+  curl https://coli-conc.gbv.de/api/mappings/voc?from=612.112&to=612.112
+  ```
+
+  ```json
+  [
+    {
+      "uri": "http://bartoc.org/en/node/430",
+      "notation": [
+        "GND"
+      ],
+      "fromCount": 2
+    },
+    {
+      "uri": "http://bartoc.org/en/node/241",
+      "notation": [
+        "DDC"
+      ],
+      "fromCount": 2,
+      "toCount": 2
+    },
+    {
+      "uri": "http://bartoc.org/en/node/533",
+      "notation": [
+        "RVK"
+      ],
+      "toCount": 2
+    }
+  ]
+  ```
+
+### /voc
+TODO
+
+### /voc/top
+TODO
+
+### /data
+TODO
+
+### /narrower
+TODO
+
+### /ancestors
+TODO
+
+### /suggest
+TODO
+
+### /search
+TODO
 
 ## Deployment
 The application is currently deployed at http://coli-conc.gbv.de/api/. At the moment, there is no automatic deployment of new versions.
@@ -111,3 +303,7 @@ git pull
 # restart the process (adjust process name if needed)
 pm2 restart jskos-server
 ```
+
+[JSKOS]: https://gbv.github.io/jskos/jskos.html
+[JSKOS Concept Mappings]: https://gbv.github.io/jskos/jskos.html#concept-mappings
+[JSKOS Concept Schemes]: https://gbv.github.io/jskos/jskos.html#concept-schemes
