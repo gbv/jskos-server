@@ -42,6 +42,32 @@ describe("Express Server", () => {
   before(clearDatabase)
   after(clearDatabase)
 
+  describe("GET /status", () => {
+
+    it("should GET status ok = 1", done => {
+      chai.request(server.app)
+        .get("/status")
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.body.should.be.a("object")
+          _.get(res.body, "ok", 0).should.be.eql(1)
+          done()
+        })
+    })
+
+    it("should GET empty collections", done => {
+      chai.request(server.app)
+        .get("/status")
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.body.should.be.a("object")
+          _.get(res.body, "collections.length", -1).should.be.eql(0)
+          done()
+        })
+    })
+
+  })
+
   describe("GET /voc", () => {
 
     it("should GET an empty array", done => {

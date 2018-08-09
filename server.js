@@ -17,6 +17,7 @@ const app = express()
 const mongo = require("mongodb").MongoClient
 const MappingProvider = require("./lib/mapping-provider")
 const TerminologyProvider = require("./lib/terminology-provider")
+const StatusProvider = require("./lib/status-provider")
 
 // Promise for MongoDB db
 const db = mongo.connect(config.mongoUrl, config.mongoOptions).then(client => {
@@ -29,6 +30,7 @@ db.then(db => {
   config.log(`connected to MongoDB ${config.mongoUrl} (database: ${config.mongoDb})`)
   mappingProvider = new MappingProvider(db.collection("mappings"))
   terminologyProvider = new TerminologyProvider(db.collection("terminologies"), db.collection("concepts"))
+  statusProvider = new StatusProvider(db)
   app.listen(config.port, () => {
     config.log(`listening on port ${config.port}`)
   })
@@ -39,6 +41,13 @@ app.use(function (req, res, next) {
   res.setHeader("Access-Control-Allow-Origin", "*")
   res.setHeader("Content-Type", "application/ld+json")
   next()
+})
+
+app.get("/status", (req, res) => {
+  statusProvider.getStatus()
+    .then(result => {
+      res.json(result)
+    })
 })
 
 app.get("/mappings", (req, res) => {
