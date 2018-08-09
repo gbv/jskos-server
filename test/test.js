@@ -125,11 +125,9 @@ describe("Express Server", () => {
 
   describe("GET /mappings/voc", () => {
 
-    before(clearDatabase)
-
     it("should GET appropriate results", done => {
       // Add mapping to database
-      exec("NODE_ENV=test npm run import -- -m ./test/mappings/ddc-gnd-1.mapping.json", (err) => {
+      exec("NODE_ENV=test npm run import -- -r -m ./test/mappings/mappings-ddc-rvk.json", (err) => {
         if (err) {
           done(err)
           return
@@ -143,6 +141,46 @@ describe("Express Server", () => {
             done()
           })
       })
+    })
+
+    it("should GET appropriate results with mode=and", done => {
+      chai.request(server.app)
+        .get("/mappings/voc")
+        .query({
+          from: "http://dewey.info/class/612.112/e23/",
+          to: "http://rvk.uni-regensburg.de/nt/WW_8840",
+          mode: "and"
+        })
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.body.should.be.a("array")
+          res.body.length.should.be.eql(2)
+          let total = res.body.reduce((total, current) => {
+            return total + (current.fromCount || 0) + (current.toCount || 0)
+          }, 0)
+          total.should.be.eql(2)
+          done()
+        })
+    })
+
+    it("should GET appropriate results with mode=or", done => {
+      chai.request(server.app)
+        .get("/mappings/voc")
+        .query({
+          from: "http://dewey.info/class/612.112/e23/",
+          to: "http://rvk.uni-regensburg.de/nt/WW_8840",
+          mode: "or"
+        })
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.body.should.be.a("array")
+          res.body.length.should.be.eql(2)
+          let total = res.body.reduce((total, current) => {
+            return total + (current.fromCount || 0) + (current.toCount || 0)
+          }, 0)
+          total.should.be.eql(8)
+          done()
+        })
     })
 
   })
