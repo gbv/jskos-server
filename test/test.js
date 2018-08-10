@@ -252,6 +252,23 @@ describe("Express Server", () => {
 
   })
 
+  describe("GET /voc/top", () => {
+
+    it("should GET one top concept", done => {
+      chai.request(server.app)
+        .get("/voc/top")
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.body.should.be.a("array")
+          res.body.length.should.be.eql(1)
+          res.body[0].should.be.a("object")
+          res.body[0].uri.should.be.eql("http://dewey.info/class/6/e23/")
+          done()
+        })
+    })
+
+  })
+
   describe("GET /ancestors", () => {
 
     it("should GET correct results when using properties=narrower", done => {
