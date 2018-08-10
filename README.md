@@ -340,6 +340,8 @@ Lists top concepts for a concept scheme.
 
   `offset=[number]` number of results to be skipped (use in combination with `limit`) (default: 0)
 
+  `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting `ancestors` and `narrower`)
+
 * **Success Response**
 
   JSON array of [JSKOS Concepts]
@@ -360,6 +362,8 @@ Returns detailed data for concepts.
   `limit=[number]` limits the number of results (default: 100)
 
   `offset=[number]` number of results to be skipped (use in combination with `limit`) (default: 0)
+
+  `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting `ancestors` and `narrower`)
 
 * **Success Response**
 
@@ -417,6 +421,8 @@ Returns narrower concepts for a concept.
   `limit=[number]` limits the number of results (default: 100)
 
   `offset=[number]` number of results to be skipped (use in combination with `limit`) (default: 0)
+
+  `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting `ancestors` and `narrower`)
 
 * **Success Response**
 
@@ -531,6 +537,8 @@ Returns ancestor concepts for a concept.
   `limit=[number]` limits the number of results (default: 100)
 
   `offset=[number]` number of results to be skipped (use in combination with `limit`) (default: 0)
+
+  `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting `ancestors` and `narrower`)
 
 * **Success Response**
 
@@ -702,7 +710,7 @@ Returns concept suggestions.
   ```
 
 ### /search
-Currently the same as `/suggest` with parameter `format=jskos`.
+Currently the same as `/suggest` with parameter `format=jskos`. Additionally, search supports the parameter `properties=[list]` as in the other concept methods.
 
 ## Deployment
 The application is currently deployed at http://coli-conc.gbv.de/api/. At the moment, there is no automatic deployment of new versions.
