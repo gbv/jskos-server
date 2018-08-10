@@ -37,6 +37,7 @@
   "dependencies": {
     "dotenv": "^6.0.0",
     "express": "^4.16.3",
+    "express-mung": "^0.5.1",
     "lint-staged": "^7.1.2",
     "lodash": "^4.17.10",
     "meow": "^5.0.0",

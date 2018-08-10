@@ -18,6 +18,7 @@ const mongo = require("mongodb").MongoClient
 const MappingProvider = require("./lib/mapping-provider")
 const TerminologyProvider = require("./lib/terminology-provider")
 const StatusProvider = require("./lib/status-provider")
+const _ = require("lodash")
 
 // Promise for MongoDB db
 const db = mongo.connect(config.mongoUrl, config.mongoOptions).then(client => {
@@ -42,6 +43,24 @@ app.use(function (req, res, next) {
   res.setHeader("Content-Type", "application/ld+json")
   next()
 })
+
+// Recursively remove all fields starting with _ from response
+function cleanJSON(json) {
+  if (_.isArray(json)) {
+    json.forEach(cleanJSON)
+  } else if (_.isObject(json)) {
+    _.forOwn(json, (value, key) => {
+      if (key.startsWith("_")) {
+        // remove from object
+        _.unset(json, key)
+      } else {
+        cleanJSON(value)
+      }
+    })
+  }
+}
+const mung = require("express-mung")
+app.use(mung.json((cleanJSON)))
 
 app.get("/status", (req, res) => {
   statusProvider.getStatus()
