@@ -1,6 +1,8 @@
 # JSKOS Server
 
 [![Build Status](https://travis-ci.com/gbv/jskos-server.svg?branch=master)](https://travis-ci.com/gbv/jskos-server)
+[![Uptime Robot status](https://img.shields.io/uptimerobot/status/m780815088-08758d5c5193e7b25236cfd7.svg?label=%2Fapi%2F)](https://stats.uptimerobot.com/qZQx1iYZY/780815088)
+[![Uptime Robot status](https://img.shields.io/uptimerobot/status/m780815090-86af901a732dc41e3a48cd8c.svg?label=%2Fdev-api%2F)](https://stats.uptimerobot.com/qZQx1iYZY/780815090)
 
 > Web service to access [JSKOS] data
 
