@@ -164,7 +164,7 @@ app.get("/ancestors", (req, res) => {
 })
 
 app.get("/suggest", (req, res) => {
-  terminologyProvider.getSuggestions(req.query)
+  terminologyProvider.getSuggestions(req, res)
     .catch(err => res.send(err))
     .then(results => {
       res.json(results)
@@ -172,7 +172,7 @@ app.get("/suggest", (req, res) => {
 })
 
 app.get("/search", (req, res) => {
-  terminologyProvider.search(req.query)
+  terminologyProvider.search(req, res)
     .catch(err => res.send(err))
     .then(results => {
       res.json(results)
