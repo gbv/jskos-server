@@ -351,11 +351,11 @@ Lists top concepts for a concept scheme.
   ```
 
 ### /data
-Returns detailed data for a concept.
+Returns detailed data for concepts.
 
 * **URL Params**
 
-  `uri=[uri]` URI for a concept
+  `uri=[uri]` URIs for concepts separated by `|`
 
   `limit=[number]` limits the number of results (default: 100)
 
@@ -363,7 +363,7 @@ Returns detailed data for a concept.
 
 * **Success Response**
 
-  JSON array of [JSKOS Concepts] (should be of length 1)
+  JSON array of [JSKOS Concepts]
 
 * **Sample Call**
 
