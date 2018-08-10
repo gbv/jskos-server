@@ -228,6 +228,30 @@ describe("Express Server", () => {
 
   })
 
+  describe("GET /mappings/suggest", () => {
+
+    it("should GET correct suggestions", done => {
+      let search = "6"
+      chai.request(server.app)
+        .get("/mappings/suggest")
+        .query({
+          search
+        })
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.body.should.be.a("array")
+          res.body.length.should.be.eql(4)
+          res.body[0].should.be.eql(search)
+          res.body[1].should.be.a("array")
+          res.body[1].length.should.be.eql(3)
+          res.body[2].length.should.be.eql(3)
+          res.body[3].length.should.be.eql(0)
+          done()
+        })
+    })
+
+  })
+
   describe("GET /ancestors", () => {
 
     it("should GET correct results when using properties=narrower", done => {
