@@ -191,6 +191,8 @@ Suggests notations used in mappings.
 
   `limit=[number]` limits the number of results (default: 100)
 
+  `offset=[number]` number of results to be skipped (use in combination with `limit`) (default: 0)
+
 * **Success Response**
 
   JSON array of suggestions in [OpenSearch Suggest Format](http://www.opensearch.org/Specifications/OpenSearch/Extensions/Suggestions/1.1#Response_format).
@@ -277,6 +279,8 @@ Lists all supported terminologies (concept schemes).
 
   `limit=[number]` limits the number of results (default: 100)
 
+  `offset=[number]` number of results to be skipped (use in combination with `limit`) (default: 0)
+
 * **Success Response**
 
   JSON array of [JSKOS Concept Schemes]
@@ -332,6 +336,10 @@ Lists top concepts for a concept scheme.
 
   `uri=[uri]` URI for a concept scheme
 
+  `limit=[number]` limits the number of results (default: 100)
+
+  `offset=[number]` number of results to be skipped (use in combination with `limit`) (default: 0)
+
 * **Success Response**
 
   JSON array of [JSKOS Concepts]
@@ -348,6 +356,10 @@ Returns detailed data for a concept.
 * **URL Params**
 
   `uri=[uri]` URI for a concept
+
+  `limit=[number]` limits the number of results (default: 100)
+
+  `offset=[number]` number of results to be skipped (use in combination with `limit`) (default: 0)
 
 * **Success Response**
 
@@ -401,6 +413,10 @@ Returns narrower concepts for a concept.
 * **URL Params**
 
   `uri=[uri]` URI for a concept
+
+  `limit=[number]` limits the number of results (default: 100)
+
+  `offset=[number]` number of results to be skipped (use in combination with `limit`) (default: 0)
 
 * **Success Response**
 
@@ -512,6 +528,10 @@ Returns ancestor concepts for a concept.
 
   `uri=[uri]` URI for a concept
 
+  `limit=[number]` limits the number of results (default: 100)
+
+  `offset=[number]` number of results to be skipped (use in combination with `limit`) (default: 0)
+
 * **Success Response**
 
   JSON array of [JSKOS Concepts]
@@ -566,6 +586,8 @@ Returns concept suggestions.
   `search=[notation]` specifies the notation (prefix) to search for
 
   `limit=[number]` limits the number of results (default: 100)
+
+  `offset=[number]` number of results to be skipped (use in combination with `limit`) (default: 0)
 
   `format=[string]` return format for suggestions: `jskos` or [`opensearch`]((http://www.opensearch.org/Specifications/OpenSearch/Extensions/Suggestions/1.1#Response_format)) (default)
 
