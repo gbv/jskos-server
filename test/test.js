@@ -68,39 +68,6 @@ describe("Express Server", () => {
 
   })
 
-  describe("GET /voc", () => {
-
-    it("should GET an empty array", done => {
-      chai.request(server.app)
-        .get("/voc")
-        .end((err, res) => {
-          res.should.have.status(200)
-          res.body.should.be.a("array")
-          res.body.length.should.be.eql(0)
-          done()
-        })
-    })
-
-    it("should GET one vocabulary", done => {
-      // Add one vocabulary to database
-      exec("NODE_ENV=test npm run import -- -t ./test/terminologies/terminologies.json", (err) => {
-        if (err) {
-          done(err)
-          return
-        }
-        chai.request(server.app)
-          .get("/voc")
-          .end((err, res) => {
-            res.should.have.status(200)
-            res.body.should.be.a("array")
-            res.body.length.should.be.eql(1)
-            done()
-          })
-      })
-    })
-
-  })
-
   describe("GET /mappings", () => {
 
     it("should GET an empty array", done => {
@@ -252,30 +219,56 @@ describe("Express Server", () => {
 
   })
 
-  describe("GET /ancestors", () => {
+  describe("GET /voc", () => {
 
-    it("should GET correct results when using properties=narrower", done => {
-      // Add concepts to database
-      exec("NODE_ENV=test npm run import -- -r -c ./test/concepts/concepts-ddc-6-60-61-62.json", (err) => {
+    it("should GET an empty array", done => {
+      chai.request(server.app)
+        .get("/voc")
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.body.should.be.a("array")
+          res.body.length.should.be.eql(0)
+          done()
+        })
+    })
+
+    it("should GET one vocabulary", done => {
+      // Add a vocabulary and concepts to database
+      exec("NODE_ENV=test npm run import -- -t ./test/terminologies/terminologies.json -c ./test/concepts/concepts-ddc-6-60-61-62.json", (err) => {
         if (err) {
           done(err)
           return
         }
         chai.request(server.app)
-          .get("/ancestors")
-          .query({
-            uri: "http://dewey.info/class/60/e23/",
-            properties: "narrower"
-          })
+          .get("/voc")
           .end((err, res) => {
             res.should.have.status(200)
             res.body.should.be.a("array")
             res.body.length.should.be.eql(1)
-            res.body[0].narrower.should.be.a("array")
-            res.body[0].narrower.length.should.be.eql(3)
             done()
           })
       })
+    })
+
+  })
+
+  describe("GET /ancestors", () => {
+
+    it("should GET correct results when using properties=narrower", done => {
+      chai.request(server.app)
+        .get("/ancestors")
+        .query({
+          uri: "http://dewey.info/class/60/e23/",
+          properties: "narrower"
+        })
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.body.should.be.a("array")
+          res.body.length.should.be.eql(1)
+          res.body[0].narrower.should.be.a("array")
+          res.body[0].narrower.length.should.be.eql(3)
+          done()
+        })
     })
 
   })
