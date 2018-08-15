@@ -19,6 +19,7 @@ const MappingProvider = require("./lib/mapping-provider")
 const TerminologyProvider = require("./lib/terminology-provider")
 const StatusProvider = require("./lib/status-provider")
 const _ = require("lodash")
+const portfinder = require("portfinder")
 
 // Promise for MongoDB db
 const db = mongo.connect(config.mongoUrl, config.mongoOptions).then(client => {
@@ -32,9 +33,18 @@ db.then(db => {
   mappingProvider = new MappingProvider(db.collection("mappings"))
   terminologyProvider = new TerminologyProvider(db.collection("terminologies"), db.collection("concepts"))
   statusProvider = new StatusProvider(db)
-  app.listen(config.port, () => {
-    config.log(`listening on port ${config.port}`)
+  if (config.env == "test") {
+    portfinder.basePort = config.port
+    return portfinder.getPortPromise()
+  } else {
+    return Promise.resolve(config.port)
+  }
+}).then(port => {
+  app.listen(port, () => {
+    config.log(`listening on port ${port}`)
   })
+}).catch(error => {
+  console.error("Error with database or express:", error)
 })
 
 // Add default headers
