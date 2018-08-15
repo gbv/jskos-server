@@ -269,6 +269,53 @@ describe("Express Server", () => {
 
   })
 
+  describe("GET /data", () => {
+
+    it("should GET empty list when no URL is provided", done => {
+      chai.request(server.app)
+        .get("/data")
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.body.should.be.a("array")
+          res.body.length.should.be.eql(0)
+          done()
+        })
+    })
+
+    it("should GET one concept", done => {
+      chai.request(server.app)
+        .get("/data")
+        .query({
+          uri: "http://dewey.info/class/61/e23/"
+        })
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.body.should.be.a("array")
+          res.body.length.should.be.eql(1)
+          res.body[0].should.be.a("object")
+          res.body[0].prefLabel.de.should.be.eql("Medizin & Gesundheit")
+          done()
+        })
+    })
+
+    it("should GET multiple concepts", done => {
+      chai.request(server.app)
+        .get("/data")
+        .query({
+          uri: "http://dewey.info/class/60/e23/|http://dewey.info/class/61/e23/"
+        })
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.body.should.be.a("array")
+          res.body.length.should.be.eql(2)
+          res.body[0].should.be.a("object")
+          res.body[1].should.be.a("object")
+          done()
+        })
+    })
+
+  })
+
   describe("GET /ancestors", () => {
 
     it("should GET correct results when using properties=narrower", done => {
