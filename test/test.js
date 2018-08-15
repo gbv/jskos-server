@@ -316,6 +316,24 @@ describe("Express Server", () => {
 
   })
 
+  describe("GET /narrower", () => {
+
+    it("should GET three children", done => {
+      chai.request(server.app)
+        .get("/narrower")
+        .query({
+          uri: "http://dewey.info/class/6/e23/"
+        })
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.body.should.be.a("array")
+          res.body.length.should.be.eql(3)
+          done()
+        })
+    })
+
+  })
+
   describe("GET /ancestors", () => {
 
     it("should GET correct results when using properties=narrower", done => {
