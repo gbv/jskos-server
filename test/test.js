@@ -399,4 +399,38 @@ describe("Express Server", () => {
 
   })
 
+  describe("GET /search", () => {
+
+    it("should GET correct results for notation", done => {
+      chai.request(server.app)
+        .get("/search")
+        .query({
+          search: "60"
+        })
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.body.should.be.a("array")
+          res.body.length.should.be.eql(1)
+          res.body[0].prefLabel.de.should.be.eql("Technik")
+          res.body[0].uri.should.be.eql("http://dewey.info/class/60/e23/")
+          done()
+        })
+    })
+
+    it("should GET correct results for term", done => {
+      chai.request(server.app)
+        .get("/search")
+        .query({
+          search: "techn"
+        })
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.body.should.be.a("array")
+          res.body.length.should.be.eql(2)
+          done()
+        })
+    })
+
+  })
+
 })
