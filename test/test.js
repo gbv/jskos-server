@@ -433,4 +433,117 @@ describe("Express Server", () => {
 
   })
 
+  describe("Import Script", () => {
+
+    it("should clear the database", done => {
+      // Clear database
+      exec("NODE_ENV=test npm run import -- -r -t -c -m", (err) => {
+        if (err) {
+          done(err)
+          return
+        }
+        let db
+        server.db.then(result => {
+          db = result
+          let promises = []
+          let collections = ["concepts", "mappings", "terminologies"]
+          for (let collection of collections) {
+            promises.push(db.collection(collection).find({}).toArray())
+          }
+          return Promise.all(promises)
+        }).then(results => {
+          for (let result of results) {
+            result.length.should.be.eql(0)
+          }
+          done()
+        }).catch(error => {
+          done(error)
+        })
+      })
+    })
+
+    it("should create indexes", done => {
+      // Create indexes
+      exec("NODE_ENV=test npm run import -- -i -t -c -m", (err) => {
+        if (err) {
+          done(err)
+          return
+        }
+        let db
+        server.db.then(result => {
+          db = result
+          let promises = []
+          let collections = ["concepts", "mappings"]
+          for (let collection of collections) {
+            promises.push(db.collection(collection).indexInformation())
+          }
+          return Promise.all(promises)
+        }).then(results => {
+          for (let result of results) {
+            // There should be more than the _id index
+            Object.keys(result).length.should.be.greaterThan(1)
+          }
+          done()
+        }).catch(error => {
+          done(error)
+        })
+      })
+    })
+
+    it("should import concepts", done => {
+      // Add concepts to database
+      exec("NODE_ENV=test npm run import -- -c ./test/concepts/concepts-ddc-6-60-61-62.json", (err) => {
+        if (err) {
+          done(err)
+          return
+        }
+        server.db.then(db => {
+          return db.collection("concepts").find({}).toArray()
+        }).then(results => {
+          results.length.should.be.eql(4)
+          done()
+        }).catch(error => {
+          done(error)
+        })
+      })
+    })
+
+    it("should import terminologies", done => {
+      // Add a vocabulary database
+      exec("NODE_ENV=test npm run import -- -t ./test/terminologies/terminologies.json", (err) => {
+        if (err) {
+          done(err)
+          return
+        }
+        server.db.then(db => {
+          return db.collection("terminologies").find({}).toArray()
+        }).then(results => {
+          results.length.should.be.eql(1)
+          done()
+        }).catch(error => {
+          done(error)
+        })
+      })
+    })
+
+    it("should import mappings", done => {
+      // Add mappings to database
+      exec("NODE_ENV=test npm run import -- -m ./test/mappings/mapping-ddc-gnd.json", (err) => {
+        if (err) {
+          done(err)
+          return
+        }
+        server.db.then(db => {
+          return db.collection("mappings").find({}).toArray()
+        }).then(results => {
+          results.length.should.be.eql(3)
+          done()
+        }).catch(error => {
+          done(error)
+        })
+      })
+    })
+
+  })
+
 })
