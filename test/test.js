@@ -234,7 +234,7 @@ describe("Express Server", () => {
 
     it("should GET one vocabulary", done => {
       // Add a vocabulary and concepts to database
-      exec("NODE_ENV=test npm run import -- -t ./test/terminologies/terminologies.json -c ./test/concepts/concepts-ddc-6-60-61-62.json", (err) => {
+      exec("NODE_ENV=test npm run import -- -i -t ./test/terminologies/terminologies.json -c ./test/concepts/concepts-ddc-6-60-61-62.json", (err) => {
         if (err) {
           done(err)
           return
@@ -349,6 +349,50 @@ describe("Express Server", () => {
           res.body.length.should.be.eql(1)
           res.body[0].narrower.should.be.a("array")
           res.body[0].narrower.length.should.be.eql(3)
+          done()
+        })
+    })
+
+  })
+
+  describe("GET /suggest", () => {
+
+    it("should GET correct results for notation", done => {
+      chai.request(server.app)
+        .get("/suggest")
+        .query({
+          search: "60"
+        })
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.body.should.be.a("array")
+          res.body.length.should.be.eql(4) // OpenSearch Suggest Format
+          res.body[0].should.be.a("string")
+          res.body[1].should.be.a("array")
+          res.body[1].length.should.be.eql(1)
+          res.body[1][0].should.be.eql("60 Technik")
+          res.body[3].should.be.a("array")
+          res.body[3].length.should.be.eql(1)
+          res.body[3][0].should.be.eql("http://dewey.info/class/60/e23/")
+          done()
+        })
+    })
+
+    it("should GET correct results for term", done => {
+      chai.request(server.app)
+        .get("/suggest")
+        .query({
+          search: "techn"
+        })
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.body.should.be.a("array")
+          res.body.length.should.be.eql(4) // OpenSearch Suggest Format
+          res.body[0].should.be.a("string")
+          res.body[1].should.be.a("array")
+          res.body[1].length.should.be.eql(2)
+          res.body[3].should.be.a("array")
+          res.body[3].length.should.be.eql(2)
           done()
         })
     })
