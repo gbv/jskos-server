@@ -247,7 +247,7 @@ mongo.connect(config.mongoUrl, config.mongoOptions, (err, client) => {
                       keywordsAltLabel = keywords.concat((concept.altLabel && concept.altLabel.de) ? (Array.isArray(concept.altLabel.de) ? concept.altLabel.de : [concept.altLabel.de]) : [])
                       return db.collection(type).update({ _id: _id }, { $set: { _keywordsNotation: makePrefixes(keywordsNotation), _keywordsPrefLabel: makeGrams(keywordsPrefLabel), _keywordsAltLabel: makeGrams(keywordsAltLabel),  } })
                     }).then(() => {
-                      return terminologyProvider.getNarrower({ uri: _id })
+                      return terminologyProvider._getNarrower(_id)
                     }).then(result => {
                       // Add narrower field to object, either [] or [null]
                       let narrower = result.length == 0 ? [] : [null]
@@ -260,6 +260,7 @@ mongo.connect(config.mongoUrl, config.mongoOptions, (err, client) => {
                       return dealWithNext(index + 1)
                     }).catch(error => {
                       config.log(error)
+                      return dealWithNext(index + 1)
                     })
                   }
                 }

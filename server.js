@@ -109,7 +109,7 @@ app.get("/mappings/voc", (req, res) => {
 })
 
 app.get("/voc", (req, res) => {
-  terminologyProvider.getVocabularies(req.query)
+  terminologyProvider.getVocabularies(req, res)
     .catch(err => res.send(err))
     .then(results => {
       // Remove MongoDB specific fields, add JSKOS specific fields
@@ -122,7 +122,7 @@ app.get("/voc", (req, res) => {
 })
 
 app.get("/data", (req, res) => {
-  terminologyProvider.getDetails(req.query)
+  terminologyProvider.getDetails(req, res)
     .catch(err => res.send(err))
     .then(results => {
       // Remove MongoDB specific fields, add JSKOS specific fields
@@ -135,7 +135,7 @@ app.get("/data", (req, res) => {
 })
 
 app.get("/voc/top", (req, res) => {
-  terminologyProvider.getTop(req.query)
+  terminologyProvider.getTop(req, res)
     .catch(err => res.send(err))
     .then(results => {
       // Remove MongoDB specific fields, add JSKOS specific fields
@@ -148,7 +148,7 @@ app.get("/voc/top", (req, res) => {
 })
 
 app.get("/narrower", (req, res) => {
-  terminologyProvider.getNarrower(req.query)
+  terminologyProvider.getNarrower(req, res)
     .catch(err => res.send(err))
     .then(results => {
       // Remove MongoDB specific fields, add JSKOS specific fields
@@ -161,7 +161,7 @@ app.get("/narrower", (req, res) => {
 })
 
 app.get("/ancestors", (req, res) => {
-  terminologyProvider.getAncestors(req.query)
+  terminologyProvider.getAncestors(req, res)
     .catch(err => res.send(err))
     .then(results => {
       // Remove MongoDB specific fields, add JSKOS specific fields
