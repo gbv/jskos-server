@@ -80,7 +80,7 @@ app.get("/status", (req, res) => {
 })
 
 app.get("/mappings", (req, res) => {
-  mappingProvider.getMappings(req.query)
+  mappingProvider.getMappings(req, res)
     .catch(err => res.send(err))
     .then(results => {
       // Remove MongoDB specific fields, add JSKOS specific fields
@@ -93,7 +93,7 @@ app.get("/mappings", (req, res) => {
 })
 
 app.get("/mappings/suggest", (req, res) => {
-  mappingProvider.getNotationSuggestions(req.query)
+  mappingProvider.getNotationSuggestions(req, res)
     .catch(err => res.send(err))
     .then(results => {
       res.json(results)
@@ -101,7 +101,7 @@ app.get("/mappings/suggest", (req, res) => {
 })
 
 app.get("/mappings/voc", (req, res) => {
-  mappingProvider.getMappingSchemes(req.query)
+  mappingProvider.getMappingSchemes(req, res)
     .catch(err => res.send(err))
     .then(results => {
       res.json(results)
