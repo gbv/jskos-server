@@ -82,6 +82,7 @@ Unless otherwise specified:
 - All endpoints are `GET` endpoints.
 - All responses return code 200.
 - All URL parameters are optional.
+- All endpoints (except for `/status`) offer pagination via `limit=[number]` (default: 100) and `offset=[number]` (default: 0) parameters. In the response, there will be a `Link` header like described in the [GitHub API documentation](https://developer.github.com/v3/#pagination), as well as a `X-Total-Count` header containing the total number of results.
 
 ### /status
 Returns a status object.
@@ -129,8 +130,6 @@ Returns an array of mappings.
   `fromScheme=[uri|notation]` only show mappings from concept scheme (URI or notation)
 
   `toScheme=[uri|notation]` only show mappings to concept scheme (URI or notation)
-
-  `limit=[number]` limits the number of results (default 100)
 
 * **Success Response**
 
@@ -188,10 +187,6 @@ Suggests notations used in mappings.
 * **URL Params**
 
   `search=[notation]` specifies the notation (prefix) to search for
-
-  `limit=[number]` limits the number of results (default: 100)
-
-  `offset=[number]` number of results to be skipped (use in combination with `limit`) (default: 0)
 
 * **Success Response**
 
@@ -277,9 +272,7 @@ Lists all supported terminologies (concept schemes).
 
 * **URL Params**
 
-  `limit=[number]` limits the number of results (default: 100)
-
-  `offset=[number]` number of results to be skipped (use in combination with `limit`) (default: 0)
+  None.
 
 * **Success Response**
 
@@ -336,10 +329,6 @@ Lists top concepts for a concept scheme.
 
   `uri=[uri]` URI for a concept scheme
 
-  `limit=[number]` limits the number of results (default: 100)
-
-  `offset=[number]` number of results to be skipped (use in combination with `limit`) (default: 0)
-
   `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting `ancestors` and `narrower`)
 
 * **Success Response**
@@ -358,10 +347,6 @@ Returns detailed data for concepts.
 * **URL Params**
 
   `uri=[uri]` URIs for concepts separated by `|`
-
-  `limit=[number]` limits the number of results (default: 100)
-
-  `offset=[number]` number of results to be skipped (use in combination with `limit`) (default: 0)
 
   `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting `ancestors` and `narrower`)
 
@@ -417,10 +402,6 @@ Returns narrower concepts for a concept.
 * **URL Params**
 
   `uri=[uri]` URI for a concept
-
-  `limit=[number]` limits the number of results (default: 100)
-
-  `offset=[number]` number of results to be skipped (use in combination with `limit`) (default: 0)
 
   `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting `ancestors` and `narrower`)
 
@@ -534,10 +515,6 @@ Returns ancestor concepts for a concept.
 
   `uri=[uri]` URI for a concept
 
-  `limit=[number]` limits the number of results (default: 100)
-
-  `offset=[number]` number of results to be skipped (use in combination with `limit`) (default: 0)
-
   `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting `ancestors` and `narrower`)
 
 * **Success Response**
@@ -592,10 +569,6 @@ Returns concept suggestions.
 * **URL Params**
 
   `search=[notation]` specifies the notation (prefix) to search for
-
-  `limit=[number]` limits the number of results (default: 100)
-
-  `offset=[number]` number of results to be skipped (use in combination with `limit`) (default: 0)
 
   `format=[string]` return format for suggestions: `jskos` or [`opensearch`]((http://www.opensearch.org/Specifications/OpenSearch/Extensions/Suggestions/1.1#Response_format)) (default)
 
