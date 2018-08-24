@@ -75,6 +75,8 @@ describe("Express Server", () => {
         .get("/mappings")
         .end((err, res) => {
           res.should.have.status(200)
+          res.should.have.header("Link")
+          res.should.have.header("X-Total-Count")
           res.body.should.be.a("array")
           res.body.length.should.be.eql(0)
           done()
@@ -92,6 +94,8 @@ describe("Express Server", () => {
           .get("/mappings")
           .end((err, res) => {
             res.should.have.status(200)
+            res.should.have.header("Link")
+            res.should.have.header("X-Total-Count")
             res.body.should.be.a("array")
             res.body.length.should.be.eql(3)
             done()
@@ -107,6 +111,8 @@ describe("Express Server", () => {
         })
         .end((err, res) => {
           res.should.have.status(200)
+          res.should.have.header("Link")
+          res.should.have.header("X-Total-Count")
           res.body.should.be.a("array")
           res.body.length.should.be.eql(1)
           _.get(res, "body[0].from.memberChoice[0].uri").should.be.eql("http://dewey.info/class/612.112/e22/")
@@ -131,6 +137,8 @@ describe("Express Server", () => {
           })
           .end((err, res) => {
             res.should.have.status(200)
+            res.should.have.header("Link")
+            res.should.have.header("X-Total-Count")
             res.body.should.be.a("array")
             res.body.length.should.be.eql(2)
             done()
@@ -147,6 +155,8 @@ describe("Express Server", () => {
         .get("/mappings/voc")
         .end((err, res) => {
           res.should.have.status(200)
+          res.should.have.header("Link")
+          res.should.have.header("X-Total-Count")
           res.body.should.be.a("array")
           res.body.length.should.be.eql(3)
           done()
@@ -163,6 +173,8 @@ describe("Express Server", () => {
         })
         .end((err, res) => {
           res.should.have.status(200)
+          res.should.have.header("Link")
+          res.should.have.header("X-Total-Count")
           res.body.should.be.a("array")
           res.body.length.should.be.eql(2)
           let total = res.body.reduce((total, current) => {
@@ -183,6 +195,8 @@ describe("Express Server", () => {
         })
         .end((err, res) => {
           res.should.have.status(200)
+          res.should.have.header("Link")
+          res.should.have.header("X-Total-Count")
           res.body.should.be.a("array")
           res.body.length.should.be.eql(2)
           let total = res.body.reduce((total, current) => {
@@ -206,6 +220,8 @@ describe("Express Server", () => {
         })
         .end((err, res) => {
           res.should.have.status(200)
+          res.should.have.header("Link")
+          res.should.have.header("X-Total-Count")
           res.body.should.be.a("array")
           res.body.length.should.be.eql(4)
           res.body[0].should.be.eql(search)
@@ -226,6 +242,8 @@ describe("Express Server", () => {
         .get("/voc")
         .end((err, res) => {
           res.should.have.status(200)
+          res.should.have.header("Link")
+          res.should.have.header("X-Total-Count")
           res.body.should.be.a("array")
           res.body.length.should.be.eql(0)
           done()
@@ -243,6 +261,8 @@ describe("Express Server", () => {
           .get("/voc")
           .end((err, res) => {
             res.should.have.status(200)
+            res.should.have.header("Link")
+            res.should.have.header("X-Total-Count")
             res.body.should.be.a("array")
             res.body.length.should.be.eql(1)
             done()
@@ -259,6 +279,8 @@ describe("Express Server", () => {
         .get("/voc/top")
         .end((err, res) => {
           res.should.have.status(200)
+          res.should.have.header("Link")
+          res.should.have.header("X-Total-Count")
           res.body.should.be.a("array")
           res.body.length.should.be.eql(1)
           res.body[0].should.be.a("object")
@@ -276,6 +298,8 @@ describe("Express Server", () => {
         .get("/data")
         .end((err, res) => {
           res.should.have.status(200)
+          res.should.have.header("Link")
+          res.should.have.header("X-Total-Count")
           res.body.should.be.a("array")
           res.body.length.should.be.eql(0)
           done()
@@ -290,6 +314,8 @@ describe("Express Server", () => {
         })
         .end((err, res) => {
           res.should.have.status(200)
+          res.should.have.header("Link")
+          res.should.have.header("X-Total-Count")
           res.body.should.be.a("array")
           res.body.length.should.be.eql(1)
           res.body[0].should.be.a("object")
@@ -306,6 +332,8 @@ describe("Express Server", () => {
         })
         .end((err, res) => {
           res.should.have.status(200)
+          res.should.have.header("Link")
+          res.should.have.header("X-Total-Count")
           res.body.should.be.a("array")
           res.body.length.should.be.eql(2)
           res.body[0].should.be.a("object")
@@ -326,6 +354,8 @@ describe("Express Server", () => {
         })
         .end((err, res) => {
           res.should.have.status(200)
+          res.should.have.header("Link")
+          res.should.have.header("X-Total-Count")
           res.body.should.be.a("array")
           res.body.length.should.be.eql(3)
           done()
@@ -345,6 +375,8 @@ describe("Express Server", () => {
         })
         .end((err, res) => {
           res.should.have.status(200)
+          res.should.have.header("Link")
+          res.should.have.header("X-Total-Count")
           res.body.should.be.a("array")
           res.body.length.should.be.eql(1)
           res.body[0].narrower.should.be.a("array")
@@ -365,6 +397,8 @@ describe("Express Server", () => {
         })
         .end((err, res) => {
           res.should.have.status(200)
+          res.should.have.header("Link")
+          res.should.have.header("X-Total-Count")
           res.body.should.be.a("array")
           res.body.length.should.be.eql(4) // OpenSearch Suggest Format
           res.body[0].should.be.a("string")
@@ -386,6 +420,8 @@ describe("Express Server", () => {
         })
         .end((err, res) => {
           res.should.have.status(200)
+          res.should.have.header("Link")
+          res.should.have.header("X-Total-Count")
           res.body.should.be.a("array")
           res.body.length.should.be.eql(4) // OpenSearch Suggest Format
           res.body[0].should.be.a("string")
@@ -409,6 +445,8 @@ describe("Express Server", () => {
         })
         .end((err, res) => {
           res.should.have.status(200)
+          res.should.have.header("Link")
+          res.should.have.header("X-Total-Count")
           res.body.should.be.a("array")
           res.body.length.should.be.eql(1)
           res.body[0].prefLabel.de.should.be.eql("Technik")
@@ -425,6 +463,8 @@ describe("Express Server", () => {
         })
         .end((err, res) => {
           res.should.have.status(200)
+          res.should.have.header("Link")
+          res.should.have.header("X-Total-Count")
           res.body.should.be.a("array")
           res.body.length.should.be.eql(2)
           done()
