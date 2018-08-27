@@ -9,6 +9,7 @@
 const config = require("./config")
 const meow = require("meow")
 var fs = require("fs")
+const jskos = require("jskos-tools")
 
 // Read command line arguments
 const cli = meow(`
@@ -180,6 +181,7 @@ mongo.connect(config.mongoUrl, config.mongoOptions, (err, client) => {
               indexes.push([{ [`${path}.${type}`]: 1 }, {}])
             }
           }
+          indexes.push([{ "identifier": 1 }, {}])
         }
         for(let [index, options] of indexes) {
           promises.push(db.collection(type).createIndex(index, options).then(() => { config.log("Created index on", type) }).catch(error => { config.log(error); process.exit(1) }))
@@ -221,6 +223,16 @@ mongo.connect(config.mongoUrl, config.mongoOptions, (err, client) => {
             for(let object of json) {
               if (!object.inScheme && object.topConceptOf) {
                 object.inScheme = object.topConceptOf
+              }
+            }
+          }
+          // Add identifiers for all mappings
+          if (type == "mappings") {
+            for (let object of json) {
+              try {
+                object.identifier = jskos.addMappingIdentifiers(object).identifier
+              } catch(error) {
+                config.log("Could not add identifier to mapping.", error)
               }
             }
           }

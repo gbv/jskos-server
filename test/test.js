@@ -146,6 +146,20 @@ describe("Express Server", () => {
       })
     })
 
+    it("should have identifiers for all mappings", done => {
+      chai.request(server.app)
+        .get("/mappings")
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.body.should.be.a("array")
+          for (let mapping of res.body) {
+            mapping.identifier.should.be.a("array")
+            mapping.identifier.filter(id => id.startsWith("urn:jskos:mapping:")).length.should.be.eql(2)
+          }
+          done()
+        })
+    })
+
   })
 
   describe("GET /mappings/voc", () => {
