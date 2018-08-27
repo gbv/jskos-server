@@ -121,11 +121,13 @@ Returns an array of mappings.
 
 * **URL Params**
 
+  `identifier=[identifier1|identifier2|...]` specify mapping identifiers separated by `|`
+
   `from=[uri|notation]` specify the source URI or notation
 
   `to=[uri|notation]` specify the target URI or notation
 
-  `mode=[mode]` specify the mode for `from` and `to`, one of `and` (default) and `or`
+  `mode=[mode]` specify the mode for `from`, `to`, and `identifier`, one of `and` (default) and `or`
 
   `fromScheme=[uri|notation]` only show mappings from concept scheme (URI or notation)
 
@@ -176,6 +178,10 @@ Returns an array of mappings.
           "RVK"
         ]
       },
+      "identifier": [
+        "urn:jskos:mapping:content:fb92cbed7466764dd2ca5fdf054bf55e65ec6b87",
+        "urn:jskos:mapping:members:5aa92285bba839954baccdadc7df5ef4558860ed"
+      ],
       "@context": "https://gbv.github.io/jskos/context.json"
     }
   ]

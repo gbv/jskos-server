@@ -160,6 +160,22 @@ describe("Express Server", () => {
         })
     })
 
+    it("should GET mappings by identifier", done => {
+      chai.request(server.app)
+        .get("/mappings")
+        .query({
+          identifier: "urn:jskos:mapping:content:ecfbefed9712bf4b5c90269ddbb6788bff15b7d6|urn:jskos:mapping:content:fa693e08d92696e453208ce478e988434cc73a0e"
+        })
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.should.have.header("Link")
+          res.should.have.header("X-Total-Count")
+          res.body.should.be.a("array")
+          res.body.length.should.be.eql(2)
+          done()
+        })
+    })
+
   })
 
   describe("GET /mappings/voc", () => {
