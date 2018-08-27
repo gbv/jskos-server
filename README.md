@@ -1,10 +1,12 @@
 # JSKOS Server
 
 [![Build Status](https://travis-ci.com/gbv/jskos-server.svg?branch=master)](https://travis-ci.com/gbv/jskos-server)
+[![GitHub package version](https://img.shields.io/github/package-json/v/gbv/jskos-server.svg?label=version)](https://github.com/gbv/jskos-server)
 [![Uptime Robot status](https://img.shields.io/uptimerobot/status/m780815088-08758d5c5193e7b25236cfd7.svg?label=%2Fapi%2F)](https://stats.uptimerobot.com/qZQx1iYZY/780815088)
 [![Uptime Robot status](https://img.shields.io/uptimerobot/status/m780815090-86af901a732dc41e3a48cd8c.svg?label=%2Fdev-api%2F)](https://stats.uptimerobot.com/qZQx1iYZY/780815090)
+[![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg)](https://github.com/RichardLitt/standard-readme)
 
-> Web service to access [JSKOS] data
+> Web service to access [JSKOS] data.
 
 JSKOS Server is a web server for [JSKOS] data. It is currently under development.
 
@@ -32,6 +34,9 @@ JSKOS Server is a web server for [JSKOS] data. It is currently under development
 - [Deployment](#deployment)
   - [Notes about depolyment on Ubuntu](#notes-about-depolyment-on-ubuntu)
   - [Update an instances deployed with PM2](#update-an-instances-deployed-with-pm2)
+- [Maintainers](#maintainers)
+- [Contribute](#contribute)
+- [License](#license)
 
 ## Install
 
@@ -710,3 +715,18 @@ pm2 restart jskos-server
 [JSKOS Concept Mappings]: https://gbv.github.io/jskos/jskos.html#concept-mappings
 [JSKOS Concept Schemes]: https://gbv.github.io/jskos/jskos.html#concept-schemes
 [JSKOS Concepts]: https://gbv.github.io/jskos/jskos.html#concept
+
+## Maintainers
+
+- [@stefandesu](https://github.com/stefandesu)
+- [@nichtich](https://github.com/nichtich)
+
+## Contribute
+
+PRs accepted.
+
+Small note: If editing the README, please conform to the [standard-readme](https://github.com/RichardLitt/standard-readme) specification.
+
+## License
+
+MIT © 2018 Verbundzentrale des GBV (VZG)
