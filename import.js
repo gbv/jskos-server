@@ -182,6 +182,7 @@ mongo.connect(config.mongoUrl, config.mongoOptions, (err, client) => {
             }
           }
           indexes.push([{ "identifier": 1 }, {}])
+          indexes.push([{ "type": 1 }, {}])
         }
         for(let [index, options] of indexes) {
           promises.push(db.collection(type).createIndex(index, options).then(() => { config.log("Created index on", type) }).catch(error => { config.log(error); process.exit(1) }))

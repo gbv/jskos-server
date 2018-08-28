@@ -138,6 +138,8 @@ Returns an array of mappings.
 
   `toScheme=[uri|notation]` only show mappings to concept scheme (URI or notation)
 
+  `type=[uri]` only show mappings that conform to a certain type (see [JSKOS Concept Mappings])
+
 * **Success Response**
 
   JSON array of [JSKOS Concept Mappings]
