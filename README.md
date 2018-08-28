@@ -140,6 +140,8 @@ Returns an array of mappings.
 
   `type=[uri]` only show mappings that conform to a certain type (see [JSKOS Concept Mappings])
 
+  `download=[type]` returns the whole result as a download (available types are `json` and `ndjson`), ignores `limit` and `offset`
+
 * **Success Response**
 
   JSON array of [JSKOS Concept Mappings]
