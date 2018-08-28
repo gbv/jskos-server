@@ -181,6 +181,11 @@ mongo.connect(config.mongoUrl, config.mongoOptions, (err, client) => {
               indexes.push([{ [`${path}.${type}`]: 1 }, {}])
             }
           }
+          // Separately create multi-indexes for fromScheme/toScheme
+          indexes.push([{
+            "fromScheme.uri": 1,
+            "toScheme.uri": 1,
+          }, {}])
           indexes.push([{ "identifier": 1 }, {}])
           indexes.push([{ "type": 1 }, {}])
         }
