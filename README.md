@@ -21,6 +21,7 @@ JSKOS Server is a web server for [JSKOS] data. It is currently under development
   - [Run Tests](#run-tests)
 - [API](#api)
   - [/status](#status)
+  - [/concordances](#concordances)
   - [/mappings](#mappings)
   - [/mappings/suggest](#mappingssuggest)
   - [/mappings/voc](#mappingsvoc)
@@ -119,6 +120,70 @@ Returns a status object.
   {
     "ok": 0
   }
+  ```
+
+### /concordances
+Lists all concordances for mappings.
+
+* **URL Params**
+
+  None.
+
+* **Success Response**
+
+  JSON array of [JSKOS Concordances](https://gbv.github.io/jskos/jskos.html#concordances)
+
+* **Sample Call**
+
+  ```bash
+  curl https://coli-conc.gbv.de/api/concordances?limit=1
+  ```
+
+  ```json
+  [
+    {
+      "@context": "https://gbv.github.io/jskos/context.json",
+      "creator": [
+        {
+          "prefLabel": {
+            "de": "VZG"
+          }
+        }
+      ],
+      "distributions": [
+        {
+          "download": "https://coli-conc.gbv.de/api/mappings?partOf=http://coli-conc.gbv.de/concordances/ddc_rvk_recht&download=ndjson",
+          "format": "http://format.gbv.de/jskos",
+          "mimetype": "application/x-ndjson; charset=utf-8"
+        }
+      ],
+      "extent": "2267",
+      "fromScheme": {
+        "notation": [
+          "DDC"
+        ],
+        "uri": "http://bartoc.org/en/node/241"
+      },
+      "notation": [
+        "ddc_rvk_recht"
+      ],
+      "scopeNote": {
+        "de": [
+          "Recht"
+        ]
+      },
+      "toScheme": {
+        "notation": [
+          "RVK"
+        ],
+        "uri": "http://bartoc.org/en/node/533"
+      },
+      "type": [
+        "http://rdfs.org/ns/void#Linkset"
+      ],
+      "uri": "http://coli-conc.gbv.de/concordances/ddc_rvk_recht"
+    }
+  ]
   ```
 
 ### /mappings
