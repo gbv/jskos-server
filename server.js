@@ -53,7 +53,7 @@ db.then(db => {
 app.use(function (req, res, next) {
   res.setHeader("Access-Control-Allow-Origin", "*")
   res.setHeader("Access-Control-Expose-Headers", "X-Total-Count, Link")
-  res.setHeader("Content-Type", "application/ld+json")
+  res.setHeader("Content-Type", "application/json; charset=utf-8")
   next()
 })
 
@@ -111,6 +111,7 @@ app.get("/mappings", (req, res) => {
         switch (req.query.download) {
         case "ndjson":
           fileEnding = "ndjson"
+          res.set("Content-Type", "application/x-ndjson; charset=utf-8")
           transform = new Transform({
             objectMode: true,
             transform(chunk, encoding, callback) {
@@ -126,7 +127,7 @@ app.get("/mappings", (req, res) => {
         results.stream()
           .pipe(removeIdTransform)
           .pipe(transform)
-          .pipe(res.type("json"))
+          .pipe(res)
       } else {
         // Remove MongoDB specific fields, add JSKOS specific fields
         results.forEach(mapping => {
