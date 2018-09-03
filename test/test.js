@@ -68,6 +68,43 @@ describe("Express Server", () => {
 
   })
 
+  describe("GET /concordances", () => {
+
+    it("should GET an empty array", done => {
+      chai.request(server.app)
+        .get("/concordances")
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.should.have.header("Link")
+          res.should.have.header("X-Total-Count")
+          res.body.should.be.a("array")
+          res.body.length.should.be.eql(0)
+          done()
+        })
+    })
+
+    it("should GET two concordances", done => {
+      // Add concordances to database
+      exec("NODE_ENV=test npm run import -- -k ./test/concordances/concordances.ndjson", (err) => {
+        if (err) {
+          done(err)
+          return
+        }
+        chai.request(server.app)
+          .get("/concordances")
+          .end((err, res) => {
+            res.should.have.status(200)
+            res.should.have.header("Link")
+            res.should.have.header("X-Total-Count")
+            res.body.should.be.a("array")
+            res.body.length.should.be.eql(2)
+            done()
+          })
+      })
+    })
+
+  })
+
   describe("GET /mappings", () => {
 
     it("should GET an empty array", done => {
@@ -507,7 +544,7 @@ describe("Express Server", () => {
 
     it("should clear the database", done => {
       // Clear database
-      exec("NODE_ENV=test npm run import -- -r -t -c -m", (err) => {
+      exec("NODE_ENV=test npm run import -- -r -t -c -k -m", (err) => {
         if (err) {
           done(err)
           return
@@ -534,7 +571,7 @@ describe("Express Server", () => {
 
     it("should create indexes", done => {
       // Create indexes
-      exec("NODE_ENV=test npm run import -- -i -t -c -m", (err) => {
+      exec("NODE_ENV=test npm run import -- -i -t -c -k -m", (err) => {
         if (err) {
           done(err)
           return
@@ -589,6 +626,24 @@ describe("Express Server", () => {
           return db.collection("terminologies").find({}).toArray()
         }).then(results => {
           results.length.should.be.eql(1)
+          done()
+        }).catch(error => {
+          done(error)
+        })
+      })
+    })
+
+    it("should import concordances", done => {
+      // Add concordances to database
+      exec("NODE_ENV=test npm run import -- -k ./test/concordances/concordances.ndjson", (err) => {
+        if (err) {
+          done(err)
+          return
+        }
+        server.db.then(db => {
+          return db.collection("concordances").find({}).toArray()
+        }).then(results => {
+          results.length.should.be.eql(2)
           done()
         }).catch(error => {
           done(error)

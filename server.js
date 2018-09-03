@@ -32,7 +32,7 @@ const db = mongo.connect(config.mongoUrl, config.mongoOptions).then(client => {
 
 db.then(db => {
   config.log(`connected to MongoDB ${config.mongoUrl} (database: ${config.mongoDb})`)
-  mappingProvider = new MappingProvider(db.collection("mappings"))
+  mappingProvider = new MappingProvider(db.collection("mappings"), db.collection("concordances"))
   terminologyProvider = new TerminologyProvider(db.collection("terminologies"), db.collection("concepts"))
   statusProvider = new StatusProvider(db)
   if (config.env == "test") {
@@ -79,6 +79,14 @@ app.get("/status", (req, res) => {
   statusProvider.getStatus()
     .then(result => {
       res.json(result)
+    })
+})
+
+app.get("/concordances", (req, res) => {
+  mappingProvider.getConcordances(req, res)
+    .catch(err => res.send(err))
+    .then(results => {
+      res.json(results)
     })
 })
 

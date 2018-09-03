@@ -79,6 +79,12 @@ download_import() {
 OLD_IFS=$IFS
 IFS=$'\n'
 
+# Import concordances
+FILES=( $(cat $CURRENT_DIR/import_concordances.txt | grep "^[^#;]") )
+if [ -n "$FILES" ]; then
+  download_import -k ${FILES[@]}
+fi
+
 # Import mappings
 FILES=( $(cat $CURRENT_DIR/import_mappings.txt | grep "^[^#;]") )
 if [ -n "$FILES" ]; then
