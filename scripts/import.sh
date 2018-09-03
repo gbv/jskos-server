@@ -54,24 +54,11 @@ download_import() {
     fi
     echo
     echo "##### Importing $FILE #####"
-    if [[ $FILE == http* ]];
-    then
-      ### Download file if it starts with http
-      local EXT="${FILE##*.}"
-      wget -q $FILE -O $IMPORT_DIR"/file."$EXT
-      FILETOIMPORT=$IMPORT_DIR"/file."$EXT
-    else
-      FILETOIMPORT=$FILE
-    fi
     ### Import file
-    npm rum import -- $OPT $FILETOIMPORT
+    npm rum import -- $OPT $FILE
     ### Log on error
     if [ $? -ne 0 ]; then
       log "ERROR: Failed to import $FILE."
-    fi
-    ### Delete downloaded file
-    if [[ $FILE == http* ]]; then
-      rm $FILETOIMPORT
     fi
   done
 }
