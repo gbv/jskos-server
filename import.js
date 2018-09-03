@@ -97,6 +97,10 @@ let promises = []
 if (cli.flags.remove) {
   for(let type of Object.keys(files)) {
     promises.push(clearCollection(type))
+    // Remove mappings if concordances are imported
+    if (type == "concordances" && !Object.keys(files).includes("mappings")) {
+      promises.push(clearCollection("mappings"))
+    }
   }
 }
 
@@ -112,6 +116,10 @@ Promise.all(promises).catch(error => {
   // Create indexes
   for(let type of Object.keys(files)) {
     promises.push(createIndexes(type))
+    // Add indexes for mappings if concordances are imported
+    if (type == "concordances" && !Object.keys(files).includes("mappings")) {
+      promises.push(createIndexes("mappings"))
+    }
   }
   return Promise.all(promises)
 }).then(() => {
