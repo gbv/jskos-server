@@ -140,6 +140,10 @@ Returns an array of mappings.
 
   `type=[uri]` only show mappings that conform to a certain type (see [JSKOS Concept Mappings])
 
+  `partOf=[uri1|uri2|...]` only show mappings that are part of certain concordances (URIs separated by `|`)
+
+  `creator=[string1|string2|...]` only show mappings that have a certain creator (separated by `|`)
+
   `download=[type]` returns the whole result as a download (available types are `json` and `ndjson`), ignores `limit` and `offset`
 
 * **Success Response**
