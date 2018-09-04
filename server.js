@@ -72,6 +72,44 @@ function cleanJSON(json) {
     })
   }
 }
+
+function handleDownload(req, res, results, filename) {
+  /**
+   * Transformation object to remove _id parameter from objects in a stream.
+   */
+  const removeIdTransform = new Transform({
+    objectMode: true,
+    transform(chunk, encoding, callback) {
+      cleanJSON(chunk)
+      this.push(chunk)
+      callback()
+    }
+  })
+  // Default transformation: JSON
+  let transform = JSONStream.stringify("[\n", ",\n", "\n]\n")
+  let fileEnding = "json"
+  switch (req.query.download) {
+  case "ndjson":
+    fileEnding = "ndjson"
+    res.set("Content-Type", "application/x-ndjson; charset=utf-8")
+    transform = new Transform({
+      objectMode: true,
+      transform(chunk, encoding, callback) {
+        this.push(JSON.stringify(chunk) + "\n")
+        callback()
+      }
+    })
+    break
+  }
+  // Add file header
+  res.set("Content-disposition", `attachment; filename=${filename}.${fileEnding}`)
+  // results is a database cursor
+  results.stream()
+    .pipe(removeIdTransform)
+    .pipe(transform)
+    .pipe(res)
+}
+
 const mung = require("express-mung")
 app.use(mung.json((cleanJSON)))
 
@@ -86,7 +124,11 @@ app.get("/concordances", (req, res) => {
   mappingProvider.getConcordances(req, res)
     .catch(err => res.send(err))
     .then(results => {
-      res.json(results)
+      if (req.query.download) {
+        handleDownload(req, res, results, "concordances")
+      } else {
+        res.json(results)
+      }
     })
 })
 
@@ -95,39 +137,7 @@ app.get("/mappings", (req, res) => {
     .catch(err => res.send(err))
     .then(results => {
       if (req.query.download) {
-        /**
-         * Transformation object to remove _id parameter from objects in a stream.
-         */
-        const removeIdTransform = new Transform({
-          objectMode: true,
-          transform(chunk, encoding, callback) {
-            this.push(_.omit(chunk, ["_id"]))
-            callback()
-          }
-        })
-        // Default transformation: JSON
-        let transform = JSONStream.stringify("[\n", ",\n", "\n]\n")
-        let fileEnding = "json"
-        switch (req.query.download) {
-        case "ndjson":
-          fileEnding = "ndjson"
-          res.set("Content-Type", "application/x-ndjson; charset=utf-8")
-          transform = new Transform({
-            objectMode: true,
-            transform(chunk, encoding, callback) {
-              this.push(JSON.stringify(chunk) + "\n")
-              callback()
-            }
-          })
-          break
-        }
-        // Add file header
-        res.set("Content-disposition", "attachment; filename=mappings." + fileEnding)
-        // results is a database cursor
-        results.stream()
-          .pipe(removeIdTransform)
-          .pipe(transform)
-          .pipe(res)
+        handleDownload(req, res, results, "mappings")
       } else {
         // Remove MongoDB specific fields, add JSKOS specific fields
         results.forEach(mapping => {

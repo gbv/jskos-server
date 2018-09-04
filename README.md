@@ -127,7 +127,7 @@ Lists all concordances for mappings.
 
 * **URL Params**
 
-  None.
+  `download=[type]` returns the whole result as a download (available types are `json` and `ndjson`), ignores `limit` and `offset`
 
 * **Success Response**
 
