@@ -209,7 +209,7 @@ Returns an array of mappings.
 
   `creator=[string1|string2|...]` only show mappings that have a certain creator (separated by `|`)
 
-  `download=[type]` returns the whole result as a download (available types are `json` and `ndjson`), ignores `limit` and `offset`
+  `download=[type]` returns the whole result as a download (available types are `json`, `ndjson`, `csv`, and `tsv`), ignores `limit` and `offset`
 
 * **Success Response**
 

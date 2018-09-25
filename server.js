@@ -19,9 +19,11 @@ const MappingProvider = require("./lib/mapping-provider")
 const TerminologyProvider = require("./lib/terminology-provider")
 const StatusProvider = require("./lib/status-provider")
 const _ = require("lodash")
+const jskos = require("jskos-tools")
 const portfinder = require("portfinder")
 const { Transform } = require("stream")
 const JSONStream = require("JSONStream")
+const stringify = require("csv-stringify")
 
 // Promise for MongoDB db
 const db = mongo.connect(config.mongoUrl, config.mongoOptions).then(client => {
@@ -88,6 +90,7 @@ function handleDownload(req, res, results, filename) {
   // Default transformation: JSON
   let transform = JSONStream.stringify("[\n", ",\n", "\n]\n")
   let fileEnding = "json"
+  let first = true, delimiter = ","
   switch (req.query.download) {
   case "ndjson":
     fileEnding = "ndjson"
@@ -97,6 +100,38 @@ function handleDownload(req, res, results, filename) {
       transform(chunk, encoding, callback) {
         this.push(JSON.stringify(chunk) + "\n")
         callback()
+      }
+    })
+    break
+  case "csv":
+  case "tsv":
+    fileEnding = req.query.download
+    if (req.query.download == "csv") {
+      delimiter = ","
+      res.set("Content-Type", "text/csv; charset=utf-8")
+    } else {
+      delimiter = "\t"
+      res.set("Content-Type", "text/tab-separated-values; charset=utf-8")
+    }
+    transform = new Transform({
+      objectMode: true,
+      transform(chunk, encoding, callback) {
+        // Small workaround to prepend a line to CSV
+        if (first) {
+          this.push(`"fromNotation"${delimiter}"toNotation"${delimiter}"type"\n`)
+          first = false
+        }
+        let from = _.get(chunk, "from.memberSet[0].notation[0]")
+        let to = _.get(chunk, "to.memberSet[0].notation[0]")
+        let type = jskos.mappingTypeByType(_.get(chunk, "type"))
+        if (from && to) {
+          stringify([ [ from, to, type.short ]], { quotedString: true, delimiter }, (err, output) => {
+            this.push(output)
+            callback()
+          })
+        } else {
+          callback()
+        }
       }
     })
     break
@@ -124,7 +159,8 @@ app.get("/concordances", (req, res) => {
   mappingProvider.getConcordances(req, res)
     .catch(err => res.send(err))
     .then(results => {
-      if (req.query.download) {
+      let supportedTypes = ["json", "ndjson"]
+      if (req.query.download && supportedTypes.includes(req.query.download)) {
         handleDownload(req, res, results, "concordances")
       } else {
         res.json(results)
@@ -136,7 +172,8 @@ app.get("/mappings", (req, res) => {
   mappingProvider.getMappings(req, res)
     .catch(err => res.send(err))
     .then(results => {
-      if (req.query.download) {
+      let supportedTypes = ["json", "ndjson", "csv", "tsv"]
+      if (req.query.download && supportedTypes.includes(req.query.download)) {
         handleDownload(req, res, results, "mappings")
       } else {
         // Remove MongoDB specific fields, add JSKOS specific fields
