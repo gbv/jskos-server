@@ -157,6 +157,24 @@ describe("Express Server", () => {
         })
     })
 
+    it("should GET one mapping with URL parameter (with direction = backward)", done => {
+      chai.request(server.app)
+        .get("/mappings")
+        .query({
+          from: "http://d-nb.info/gnd/4499720-6",
+          direction: "backward"
+        })
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.should.have.header("Link")
+          res.should.have.header("X-Total-Count")
+          res.body.should.be.a("array")
+          res.body.length.should.be.eql(1)
+          _.get(res, "body[0].from.memberChoice[0].uri").should.be.eql("http://dewey.info/class/612.112/e22/")
+          done()
+        })
+    })
+
     it("should GET only mappings from GND", done => {
       // Add mappings to database
       exec("NODE_ENV=test npm run import -- -r -m ./test/mappings/mappings-ddc.json", (err) => {
