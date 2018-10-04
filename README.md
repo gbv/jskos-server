@@ -200,6 +200,8 @@ Returns an array of mappings.
 
   `mode=[mode]` specify the mode for `from`, `to`, and `identifier`, one of `and` (default) and `or`
 
+  `direction=[direction]` specify the direction of the mapping. Available values are: `forward` (default), `backward` (essentially swaps `from` and `to`), `both` (combines forward and backward). Note that `both` sets the `mode` to `or`.
+
   `fromScheme=[uri|notation]` only show mappings from concept scheme (URI or notation)
 
   `toScheme=[uri|notation]` only show mappings to concept scheme (URI or notation)
