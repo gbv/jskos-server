@@ -150,11 +150,14 @@ app.get("/status", (req, res) => {
 })
 
 app.get("/concordances", (req, res) => {
+  let supportedTypes = ["json", "ndjson"]
+  if (req.query.download && !supportedTypes.includes(req.query.download)) {
+    req.query.download = null
+  }
   mappingProvider.getConcordances(req, res)
     .catch(err => res.send(err))
     .then(results => {
-      let supportedTypes = ["json", "ndjson"]
-      if (req.query.download && supportedTypes.includes(req.query.download)) {
+      if (req.query.download) {
         handleDownload(req, res, results, "concordances")
       } else {
         res.json(results)
@@ -163,11 +166,14 @@ app.get("/concordances", (req, res) => {
 })
 
 app.get("/mappings", (req, res) => {
+  let supportedTypes = ["json", "ndjson", "csv", "tsv"]
+  if (req.query.download && !supportedTypes.includes(req.query.download)) {
+    req.query.download = null
+  }
   mappingProvider.getMappings(req, res)
     .catch(err => res.send(err))
     .then(results => {
-      let supportedTypes = ["json", "ndjson", "csv", "tsv"]
-      if (req.query.download && supportedTypes.includes(req.query.download)) {
+      if (req.query.download) {
         handleDownload(req, res, results, "mappings")
       } else {
         // Remove MongoDB specific fields, add JSKOS specific fields
