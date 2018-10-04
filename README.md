@@ -58,6 +58,8 @@ You can customize the port and the MongoDB connection settings via environment v
 ```bash
 PORT=__EXPRESS_PORT__
 MONGO_HOST=__MONGODB_HOSTNAME__
+MONGO_USER=__MONGODB_USERNAME__
+MONGO_PASS=__MONGODB_PASSWORD__
 MONGO_PORT=__MONGODB_PORT__
 MONGO_DB=__MONGODB_DATABASE__
 ```
