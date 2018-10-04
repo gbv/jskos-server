@@ -35,6 +35,7 @@ JSKOS Server is a web server for [JSKOS] data. It is currently under development
 - [Deployment](#deployment)
   - [Notes about depolyment on Ubuntu](#notes-about-depolyment-on-ubuntu)
   - [Update an instances deployed with PM2](#update-an-instances-deployed-with-pm2)
+  - [Daily Import](#daily-import)
 - [Maintainers](#maintainers)
 - [Contribute](#contribute)
 - [License](#license)
@@ -782,6 +783,14 @@ git pull
 
 # restart the process (adjust process name if needed)
 pm2 restart jskos-server
+```
+
+### Daily Import
+If you'd like to run the import script daily to refresh current mappings, you can for example use a cronjob:
+
+```bash
+# Runs import script for jskos-server in /srv/cocoda/jskos-server at 1 AM each day.
+00 01 * * * cd /srv/cocoda/jskos-server; ./scripts/import.sh
 ```
 
 [JSKOS]: https://gbv.github.io/jskos/jskos.html
