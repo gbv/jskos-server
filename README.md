@@ -130,6 +130,16 @@ Lists all concordances for mappings.
 
 * **URL Params**
 
+  `uri=[uri]` URIs for concordances separated by `|`
+
+  `fromScheme=[uri|notation]` only show concordances from concept scheme (URI or notation), separated by `|`
+
+  `toScheme=[uri|notation]` only show concordances to concept scheme (URI or notation), separated by `|`
+
+  `creator=[creator]` only show concordances from creator, separated by `|`
+
+  `mode=[mode]` specify the mode for the parameters above, one of `and` (default) and `or`
+
   `download=[type]` returns the whole result as a download (available types are `json` and `ndjson`), ignores `limit` and `offset`
 
 * **Success Response**
