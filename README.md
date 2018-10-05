@@ -206,9 +206,9 @@ Returns an array of mappings.
 
   `identifier=[identifier1|identifier2|...]` specify mapping identifiers separated by `|`
 
-  `from=[uri|notation]` specify the source URI or notation
+  `from=[uri|notation]` specify the source URI or notation (truncated search possible by appending a `*`)
 
-  `to=[uri|notation]` specify the target URI or notation
+  `to=[uri|notation]` specify the target URI or notation (truncated search possible by appending a `*`)
 
   `mode=[mode]` specify the mode for `from`, `to`, and `identifier`, one of `and` (default) and `or`
 
