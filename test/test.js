@@ -201,13 +201,14 @@ describe("Express Server", () => {
       })
     })
 
-    it("should have identifiers for all mappings", done => {
+    it("should have url and identifiers for all mappings", done => {
       chai.request(server.app)
         .get("/mappings")
         .end((err, res) => {
           res.should.have.status(200)
           res.body.should.be.a("array")
           for (let mapping of res.body) {
+            mapping.url.should.be.a("string")
             mapping.identifier.should.be.a("array")
             mapping.identifier.filter(id => id.startsWith("urn:jskos:mapping:")).length.should.be.eql(2)
           }
@@ -228,6 +229,39 @@ describe("Express Server", () => {
           res.body.should.be.a("array")
           res.body.length.should.be.eql(2)
           done()
+        })
+    })
+
+  })
+
+  describe("GET /mappings/:_id", () => {
+
+    it("should GET error 404 if ID does not exist", done => {
+      chai.request(server.app)
+        .get("/mappings/5bf3dad9ad10c2917066d8af")
+        .end((err, res) => {
+          res.should.have.status(404)
+          done()
+        })
+    })
+
+    it("should GET all mappings and then GET the first mapping with its url", done => {
+      chai.request(server.app)
+        .get("/mappings")
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.body.should.be.a("array")
+          res.body.length.should.not.be.eql(0)
+          let mapping = res.body[0]
+          mapping.url.should.be.a("string")
+          let _id = mapping.url.substring(mapping.url.lastIndexOf("/") + 1)
+          chai.request(server.app).get(`/mappings/${_id}`).end((err, res) => {
+            res.should.have.status(200)
+            res.body.should.be.a("object")
+            // Due to chai, the URL will be different, so we will remove it from the objects
+            _.isEqual(_.omit(res.body, ["url"]), _.omit(mapping,["url"])).should.be.eql(true)
+            done()
+          })
         })
     })
 

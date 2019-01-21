@@ -200,7 +200,7 @@ Lists all concordances for mappings.
   ```
 
 ### /mappings
-Returns an array of mappings.
+Returns an array of mappings. Each mapping has a property `url` under which the specific mapping can be accessed.
 
 * **URL Params**
 
@@ -278,6 +278,80 @@ Returns an array of mappings.
       "@context": "https://gbv.github.io/jskos/context.json"
     }
   ]
+  ```
+
+### /mappings/:_id
+Returns a specific mapping.
+
+* **Success Response**
+
+  JSKOS object for mapping.
+
+* **Error Response**
+
+  If no mapping with `_id` could be found, it will return a 404 not found error.
+
+* **Sample Call**
+
+  ```bash
+  curl https://coli-conc.gbv.de/api/mappings/5c450ba1a32a4a82d0f3fbf3
+  ```
+
+  ```json
+  {
+    "from": {
+      "memberSet": [
+        {
+          "uri": "http://rvk.uni-regensburg.de/nt/TA-TD",
+          "notation": [
+            "TA - TD"
+          ]
+        }
+      ]
+    },
+    "toScheme": {
+      "template": "http://dewey.info/class/(.+)/e23/",
+      "pattern": "[0-9][0-9]?|[0-9]{3}(-[0-9]{3})?|[0-9]{3}\\.[0-9]+(-[0-9]{3}\\.[0-9]+)?|[1-9][A-Z]?--[0-9]+|[1-9][A-Z]?--[0-9]+(-[1-9][A-Z]?--[0-9]+)?",
+      "uri": "http://bartoc.org/en/node/241",
+      "notation": [
+        "DDC"
+      ]
+    },
+    "fromScheme": {
+      "notation": [
+        "RVK"
+      ],
+      "uri": "http://bartoc.org/en/node/533"
+    },
+    "to": {
+      "memberSet": [
+        {
+          "uri": "http://dewey.info/class/500/e23/",
+          "notation": [
+            "500"
+          ]
+        }
+      ]
+    },
+    "identifier": [
+      "urn:jskos:mapping:content:d37d117b5e3d811447bc332b184ac6e5ac4bde6b",
+      "urn:jskos:mapping:members:4c480744ea32e7e71ba39fae6cc8d8e4e0382912"
+    ],
+    "partOf": [
+      {
+        "uri": "http://coli-conc.gbv.de/concordances/rvk_ddc_ta-td"
+      }
+    ],
+    "creator": [
+      {
+        "prefLabel": {
+          "de": "GESIS"
+        }
+      }
+    ],
+    "@context": "https://gbv.github.io/jskos/context.json",
+    "url": "https://coli-conc.gbv.de/api/mappings/5c450ba1a32a4a82d0f3fbf3"
+  }
   ```
 
 ### /mappings/suggest

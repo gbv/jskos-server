@@ -23,6 +23,7 @@ const jskos = require("jskos-tools")
 const portfinder = require("portfinder")
 const { Transform } = require("stream")
 const JSONStream = require("JSONStream")
+const util = require("./lib/util")
 
 // Pretty-print JSON output
 app.set("json spaces", 2)
@@ -96,6 +97,25 @@ function adjustConcepts(concepts) {
     concept.type = concept.type || ["http://www.w3.org/2004/02/skos/core#Concept"]
   })
   return concepts
+}
+
+function adjustMapping(req) {
+  return mapping => {
+    if (!mapping) {
+      return null
+    }
+    // Remove MongoDB specific fields, add JSKOS specific fields
+    mapping.url = util.getBaseUrl(req) + "mappings/" + mapping._id
+    delete mapping._id
+    mapping["@context"] = "https://gbv.github.io/jskos/context.json"
+    return mapping
+  }
+}
+
+function adjustMappings(req) {
+  return mappings => {
+    return mappings.map(mapping => adjustMapping(req)(mapping))
+  }
 }
 
 function handleDownload(req, res, results, filename) {
@@ -196,15 +216,11 @@ app.get("/mappings", (req, res) => {
   }
   mappingProvider.getMappings(req, res)
     .catch(err => res.send(err))
+    .then(adjustMappings(req))
     .then(results => {
       if (req.query.download) {
         handleDownload(req, res, results, "mappings")
       } else {
-        // Remove MongoDB specific fields, add JSKOS specific fields
-        results.forEach(mapping => {
-          delete mapping._id
-          mapping["@context"] = "https://gbv.github.io/jskos/context.json"
-        })
         res.json(results)
       }
     })
@@ -224,6 +240,19 @@ app.get("/mappings/voc", (req, res) => {
     .then(adjustSchemes)
     .then(results => {
       res.json(results)
+    })
+})
+
+app.get("/mappings/:_id", (req, res) => {
+  mappingProvider.getMapping(req, res)
+    .catch(err => res.send(err))
+    .then(adjustMapping(req))
+    .then(result => {
+      if (result) {
+        res.json(result)
+      } else {
+        res.sendStatus(404)
+      }
     })
 })
 
