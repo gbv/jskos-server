@@ -23,6 +23,7 @@ JSKOS Server is a web server for [JSKOS] data. It is currently under development
   - [/status](#status)
   - [/concordances](#concordances)
   - [/mappings](#mappings)
+  - [/mappings/:_id](#mappings_id)
   - [/mappings/suggest](#mappingssuggest)
   - [/mappings/voc](#mappingsvoc)
   - [/voc](#voc)
@@ -63,6 +64,15 @@ MONGO_PASS=__MONGODB_PASSWORD__
 MONGO_PORT=__MONGODB_PORT__
 MONGO_DB=__MONGODB_DATABASE__
 ```
+
+For authorized endpoints, you need to provide basic auth users and passwords in the `.env` file, like this:
+
+```bash
+USER_ADMIN=hello-world
+USER_TEST=test123
+```
+
+This will create two users, `admin` with password `hello-world`, and `test` with password `test123`. Note that usernames are always lowercased. Also note that this is only temporary until a proper login server is implemented. **It should not be used in production.**
 
 ### Data Import
 JSKOS Server provides a script to import JSKOS data into the database. Right now, mappings, terminologies (concept schemes), and concepts in JSON or [NDJSON](http://ndjson.org) format are supported.
@@ -349,8 +359,8 @@ Returns a specific mapping.
         }
       }
     ],
-    "@context": "https://gbv.github.io/jskos/context.json",
-    "url": "https://coli-conc.gbv.de/api/mappings/5c450ba1a32a4a82d0f3fbf3"
+    "url": "https://coli-conc.gbv.de/api/mappings/5c450ba1a32a4a82d0f3fbf3",
+    "@context": "https://gbv.github.io/jskos/context.json"
   }
   ```
 
