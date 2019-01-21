@@ -1,3 +1,5 @@
+const _ = require("lodash")
+
 require("dotenv").config()
 const
   env = process.env.NODE_ENV || "development",
@@ -24,6 +26,21 @@ const log = (...args) => {
   }
 }
 
+// Assemble users, provided by keys in `env` starting with `USER_`
+let users = {}
+_.forOwn(process.env, (value, key) => {
+  let prep = "USER_"
+  if (key.startsWith(prep) && key.length > prep.length) {
+    let username = key.substring(prep.length).toLowerCase()
+    let password = value
+    if (!users[username]) {
+      users[username] = password
+    } else {
+      log("duplicate user provided in config:", username)
+    }
+  }
+})
+
 module.exports = {
-  env, verbosity, baseUrl, port, mongoHost, mongoPort, mongoDb, mongoUrl, mongoOptions, log
+  env, verbosity, baseUrl, port, mongoHost, mongoPort, mongoDb, mongoUrl, mongoOptions, log, users
 }

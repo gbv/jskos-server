@@ -44,6 +44,7 @@
     "dotenv": "^6.0.0",
     "escape-string-regexp": "^1.0.5",
     "express": "^4.16.3",
+    "express-basic-auth": "^1.1.6",
     "express-mung": "^0.5.1",
     "jskos-tools": "^0.1.9",
     "lint-staged": "^7.1.2",

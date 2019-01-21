@@ -28,6 +28,15 @@ const util = require("./lib/util")
 // Pretty-print JSON output
 app.set("json spaces", 2)
 
+// Prepare basic authorization
+// const basicAuth = require("express-basic-auth")
+// var auth = basicAuth({
+//   users: config.users,
+//   challenge: false
+// })
+// Use like this: app.get("/secureEndpoint", auth, (req, res) => { ... })
+// Note: This will only be used temporarily until a OAuth solution is implemented.
+
 // Promise for MongoDB db
 const db = mongo.connect(config.mongoUrl, config.mongoOptions).then(client => {
   return client.db(config.mongoDb)
