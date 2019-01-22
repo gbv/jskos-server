@@ -277,6 +277,38 @@ describe("Express Server", () => {
         })
     })
 
+    it("should POST a mapping, then GET it using its URI with the identifier parameter, then DELETE it again", done => {
+      let uri, _id
+      chai.request(server.app)
+        .post("/mappings")
+        .auth("test", "test")
+        .send(mapping)
+        .then(res => {
+          res.should.have.status(201)
+          res.body.should.be.a("object")
+          res.body.uri.should.be.a("string")
+          uri = res.body.uri
+          // _id needed for deletion later
+          _id = res.body.uri.substring(res.body.uri.lastIndexOf("/") + 1)
+          chai.request(server.app)
+            .get("/mappings")
+            .query({
+              identifier: uri
+            })
+            .end((err, res) => {
+              res.should.have.status(200)
+              res.body.should.be.a("array")
+              res.body.length.should.be.eql(1)
+              res.body[0].uri.should.be.eql(uri)
+              // DELETE the mapping
+              chai.request(server.app).delete(`/mappings/${_id}`).auth("test", "test").end((err, res) => {
+                res.should.have.status(204)
+                done()
+              })
+            })
+        })
+    })
+
   })
 
   describe("GET /mappings/:_id", () => {
@@ -316,6 +348,17 @@ describe("Express Server", () => {
   })
 
   describe("GET /mappings/voc", () => {
+
+    // Reinsert mappings again
+    before(done => {
+      exec("NODE_ENV=test npm run import -- -r -m ./test/mappings/mappings-ddc.json", (err) => {
+        if (err) {
+          done(err)
+          return
+        }
+        done()
+      })
+    })
 
     it("should GET appropriate results", done => {
       chai.request(server.app)
