@@ -12,6 +12,52 @@ const _ = require("lodash")
 // Hide UnhandledPromiseRejectionWarning on output
 process.on("unhandledRejection", () => {})
 
+// Mapping for POST/PUT/PATCH/DELETE
+let mapping = {
+  "from": {
+    "memberSet": [
+      {
+        "uri": "http://dewey.info/class/612.112/e23/",
+        "notation": [
+          "612.112"
+        ]
+      }
+    ]
+  },
+  "to": {
+    "memberSet": [
+      {
+        "uri": "http://www.wikidata.org/entity/Q42395",
+        "notation": [
+          "Q42395"
+        ]
+      }
+    ]
+  },
+  "fromScheme": {
+    "uri": "http://dewey.info/scheme/edition/e23/",
+    "notation": [
+      "DDC"
+    ]
+  },
+  "toScheme": {
+    "uri": "http://bartoc.org/en/node/1940",
+    "notation": [
+      "WD"
+    ]
+  },
+  "creator": [
+    {
+      "prefLabel": {
+        "de": "Stefan Peters (VZG)"
+      }
+    }
+  ],
+  "type": [
+    "http://www.w3.org/2004/02/skos/core#relatedMatch"
+  ],
+}
+
 describe("MongoDB", () => {
 
   it("should connect to database successfully", () => {
@@ -201,14 +247,13 @@ describe("Express Server", () => {
       })
     })
 
-    it("should have url and identifiers for all mappings", done => {
+    it("should have identifiers for all mappings", done => {
       chai.request(server.app)
         .get("/mappings")
         .end((err, res) => {
           res.should.have.status(200)
           res.body.should.be.a("array")
           for (let mapping of res.body) {
-            mapping.url.should.be.a("string")
             mapping.identifier.should.be.a("array")
             mapping.identifier.filter(id => id.startsWith("urn:jskos:mapping:")).length.should.be.eql(2)
           }
@@ -245,22 +290,25 @@ describe("Express Server", () => {
         })
     })
 
-    it("should GET all mappings and then GET the first mapping with its url", done => {
+    it("should POST a mapping, then GET the mapping with its uri, then DELETE it with its uri", done => {
       chai.request(server.app)
-        .get("/mappings")
+        .post("/mappings")
+        .auth("test", "test")
+        .send(mapping)
         .end((err, res) => {
-          res.should.have.status(200)
-          res.body.should.be.a("array")
-          res.body.length.should.not.be.eql(0)
-          let mapping = res.body[0]
-          mapping.url.should.be.a("string")
-          let _id = mapping.url.substring(mapping.url.lastIndexOf("/") + 1)
+          res.should.have.status(201)
+          res.body.should.be.a("object")
+          res.body.uri.should.be.a("string")
+          let _id = res.body.uri.substring(res.body.uri.lastIndexOf("/") + 1)
           chai.request(server.app).get(`/mappings/${_id}`).end((err, res) => {
             res.should.have.status(200)
             res.body.should.be.a("object")
             // Due to chai, the URL will be different, so we will remove it from the objects
-            _.isEqual(_.omit(res.body, ["url"]), _.omit(mapping,["url"])).should.be.eql(true)
-            done()
+            _.isEqual(_.omit(res.body, ["uri", "identifier", "confirmed", "created", "modified", "@context"]), mapping).should.be.eql(true)
+            chai.request(server.app).delete(`/mappings/${_id}`).auth("test", "test").end((err, res) => {
+              res.should.have.status(204)
+              done()
+            })
           })
         })
     })
@@ -354,52 +402,6 @@ describe("Express Server", () => {
 
   })
 
-  // Mapping for POST/PUT/PATCH/DELETE
-  let mapping = {
-    "from": {
-      "memberSet": [
-        {
-          "uri": "http://dewey.info/class/612.112/e23/",
-          "notation": [
-            "612.112"
-          ]
-        }
-      ]
-    },
-    "to": {
-      "memberSet": [
-        {
-          "uri": "http://www.wikidata.org/entity/Q42395",
-          "notation": [
-            "Q42395"
-          ]
-        }
-      ]
-    },
-    "fromScheme": {
-      "uri": "http://dewey.info/scheme/edition/e23/",
-      "notation": [
-        "DDC"
-      ]
-    },
-    "toScheme": {
-      "uri": "http://bartoc.org/en/node/1940",
-      "notation": [
-        "WD"
-      ]
-    },
-    "creator": [
-      {
-        "prefLabel": {
-          "de": "Stefan Peters (VZG)"
-        }
-      }
-    ],
-    "type": [
-      "http://www.w3.org/2004/02/skos/core#relatedMatch"
-    ],
-  }
-
   describe("POST /mappings", () => {
 
     it("should POST a mapping", done => {
@@ -418,7 +420,7 @@ describe("Express Server", () => {
           // Should add mapping identifiers
           res.body.identifier.should.be.a("array")
           // Should add url
-          res.body.url.should.be.a("string")
+          res.body.uri.should.be.a("string")
           // Should add confirmed property
           res.body.confirmed.should.be.a("boolean")
           done()
@@ -436,8 +438,8 @@ describe("Express Server", () => {
         .send(mapping)
         .end((err, res) => {
           res.should.have.status(201)
-          res.body.url.should.be.a("string")
-          let _id = res.body.url.substring(res.body.url.lastIndexOf("/") + 1)
+          res.body.uri.should.be.a("string")
+          let _id = res.body.uri.substring(res.body.uri.lastIndexOf("/") + 1)
           // Adjust mapping
           let changedMapping = Object.assign({}, mapping, { type: ["http://www.w3.org/2004/02/skos/core#closeMatch"] })
           // PUT that mapping
@@ -466,8 +468,8 @@ describe("Express Server", () => {
         .send(mapping)
         .end((err, res) => {
           res.should.have.status(201)
-          res.body.url.should.be.a("string")
-          let _id = res.body.url.substring(res.body.url.lastIndexOf("/") + 1)
+          res.body.uri.should.be.a("string")
+          let _id = res.body.uri.substring(res.body.uri.lastIndexOf("/") + 1)
           let patch = { type: ["http://www.w3.org/2004/02/skos/core#closeMatch"] }
           // PATCH that change
           chai.request(server.app)
@@ -495,8 +497,8 @@ describe("Express Server", () => {
         .send(mapping)
         .end((err, res) => {
           res.should.have.status(201)
-          res.body.url.should.be.a("string")
-          let _id = res.body.url.substring(res.body.url.lastIndexOf("/") + 1)
+          res.body.uri.should.be.a("string")
+          let _id = res.body.uri.substring(res.body.uri.lastIndexOf("/") + 1)
           // DELETE
           chai.request(server.app)
             .delete(`/mappings/${_id}`)

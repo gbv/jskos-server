@@ -24,7 +24,6 @@ const jskos = require("jskos-tools")
 const portfinder = require("portfinder")
 const { Transform } = require("stream")
 const JSONStream = require("JSONStream")
-const util = require("./lib/util")
 
 // Pretty-print JSON output
 app.set("json spaces", 2)
@@ -113,13 +112,12 @@ function adjustConcepts(concepts) {
   return concepts
 }
 
-function adjustMapping(req) {
+function adjustMapping() {
   return mapping => {
     if (!mapping) {
       return null
     }
     // Remove MongoDB specific fields, add JSKOS specific fields
-    mapping.url = util.getBaseUrl(req) + "mappings/" + mapping._id
     delete mapping._id
     mapping["@context"] = "https://gbv.github.io/jskos/context.json"
     return mapping
