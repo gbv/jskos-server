@@ -470,6 +470,17 @@ describe("Express Server", () => {
         })
     })
 
+    it("should not POST a mapping with `partOf` property", done => {
+      chai.request(server.app)
+        .post("/mappings")
+        .auth("test", "test")
+        .send(Object.assign({}, mapping, { partOf: [ { uri: "..." } ] }))
+        .end((err, res) => {
+          res.should.have.status(400)
+          done()
+        })
+    })
+
   })
 
   describe("POST, then PUT mapping", () => {
