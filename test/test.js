@@ -354,6 +354,169 @@ describe("Express Server", () => {
 
   })
 
+  // Mapping for POST/PUT/PATCH/DELETE
+  let mapping = {
+    "from": {
+      "memberSet": [
+        {
+          "uri": "http://dewey.info/class/612.112/e23/",
+          "notation": [
+            "612.112"
+          ]
+        }
+      ]
+    },
+    "to": {
+      "memberSet": [
+        {
+          "uri": "http://www.wikidata.org/entity/Q42395",
+          "notation": [
+            "Q42395"
+          ]
+        }
+      ]
+    },
+    "fromScheme": {
+      "uri": "http://dewey.info/scheme/edition/e23/",
+      "notation": [
+        "DDC"
+      ]
+    },
+    "toScheme": {
+      "uri": "http://bartoc.org/en/node/1940",
+      "notation": [
+        "WD"
+      ]
+    },
+    "creator": [
+      {
+        "prefLabel": {
+          "de": "Stefan Peters (VZG)"
+        }
+      }
+    ],
+    "type": [
+      "http://www.w3.org/2004/02/skos/core#relatedMatch"
+    ],
+  }
+
+  describe("POST /mappings", () => {
+
+    it("should POST a mapping", done => {
+      chai.request(server.app)
+        .post("/mappings")
+        .auth("test", "test")
+        .send(mapping)
+        .end((err, res) => {
+          res.should.have.status(201)
+          res.body.should.be.a("object")
+          // Test equality with posted mapping
+          _.isEqual(res.body.from, mapping.from).should.be.eql(true)
+          _.isEqual(res.body.to, mapping.to).should.be.eql(true)
+          _.isEqual(res.body.fromScheme, mapping.fromScheme).should.be.eql(true)
+          _.isEqual(res.body.toScheme, mapping.toScheme).should.be.eql(true)
+          // Should add mapping identifiers
+          res.body.identifier.should.be.a("array")
+          // Should add url
+          res.body.url.should.be.a("string")
+          // Should add confirmed property
+          res.body.confirmed.should.be.a("boolean")
+          done()
+        })
+    })
+
+  })
+
+  describe("POST, then PUT mapping", () => {
+
+    it("should POST a mapping, then PUT a changed mapping", done => {
+      chai.request(server.app)
+        .post("/mappings")
+        .auth("test", "test")
+        .send(mapping)
+        .end((err, res) => {
+          res.should.have.status(201)
+          res.body.url.should.be.a("string")
+          let _id = res.body.url.substring(res.body.url.lastIndexOf("/") + 1)
+          // Adjust mapping
+          let changedMapping = Object.assign({}, mapping, { type: ["http://www.w3.org/2004/02/skos/core#closeMatch"] })
+          // PUT that mapping
+          chai.request(server.app)
+            .put(`/mappings/${_id}`)
+            .auth("test", "test")
+            .send(changedMapping)
+            .end((err, res) => {
+              res.should.have.status(200)
+              res.body.should.be.a("object")
+              _.isEqual(res.body.type, mapping.type).should.be.eql(false)
+              _.isEqual(res.body.type, changedMapping.type).should.be.eql(true)
+              done()
+            })
+        })
+    })
+
+  })
+
+  describe("POST, then PATCH mapping", () => {
+
+    it("should POST a mapping, then PATCH the mapping", done => {
+      chai.request(server.app)
+        .post("/mappings")
+        .auth("test", "test")
+        .send(mapping)
+        .end((err, res) => {
+          res.should.have.status(201)
+          res.body.url.should.be.a("string")
+          let _id = res.body.url.substring(res.body.url.lastIndexOf("/") + 1)
+          let patch = { type: ["http://www.w3.org/2004/02/skos/core#closeMatch"] }
+          // PATCH that change
+          chai.request(server.app)
+            .patch(`/mappings/${_id}`)
+            .auth("test", "test")
+            .send(patch)
+            .end((err, res) => {
+              res.should.have.status(200)
+              res.body.should.be.a("object")
+              _.isEqual(res.body.type, mapping.type).should.be.eql(false)
+              _.isEqual(res.body.type, patch.type).should.be.eql(true)
+              done()
+            })
+        })
+    })
+
+  })
+
+  describe("POST, then DELETE mapping", () => {
+
+    it("should POST a mapping, then DELETE the mapping", done => {
+      chai.request(server.app)
+        .post("/mappings")
+        .auth("test", "test")
+        .send(mapping)
+        .end((err, res) => {
+          res.should.have.status(201)
+          res.body.url.should.be.a("string")
+          let _id = res.body.url.substring(res.body.url.lastIndexOf("/") + 1)
+          // DELETE
+          chai.request(server.app)
+            .delete(`/mappings/${_id}`)
+            .auth("test", "test")
+            .end((err, res) => {
+              res.should.have.status(204)
+              // Test if that mapping still exists
+              chai.request(server.app)
+                .get(`/mappings/${_id}`)
+                .auth("test", "test")
+                .end((err, res) => {
+                  res.should.have.status(404)
+                  done()
+                })
+            })
+        })
+    })
+
+  })
+
   describe("GET /voc", () => {
 
     it("should GET an empty array", done => {

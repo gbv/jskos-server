@@ -40,6 +40,10 @@ _.forOwn(process.env, (value, key) => {
     }
   }
 })
+// For tests, add a test user
+if (env == "test") {
+  users.test = "test"
+}
 
 module.exports = {
   env, verbosity, baseUrl, port, mongoHost, mongoPort, mongoDb, mongoUrl, mongoOptions, log, users

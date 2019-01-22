@@ -13,6 +13,7 @@
 
 const config = require("./config")
 const express = require("express")
+const bodyParser = require("body-parser")
 const app = express()
 const mongo = require("mongodb").MongoClient
 const MappingProvider = require("./lib/mapping-provider")
@@ -29,11 +30,11 @@ const util = require("./lib/util")
 app.set("json spaces", 2)
 
 // Prepare basic authorization
-// const basicAuth = require("express-basic-auth")
-// var auth = basicAuth({
-//   users: config.users,
-//   challenge: false
-// })
+const basicAuth = require("express-basic-auth")
+var auth = basicAuth({
+  users: config.users,
+  challenge: false
+})
 // Use like this: app.get("/secureEndpoint", auth, (req, res) => { ... })
 // Note: This will only be used temporarily until a OAuth solution is implemented.
 
@@ -71,6 +72,10 @@ app.use(function (req, res, next) {
   res.setHeader("Content-Type", "application/json; charset=utf-8")
   next()
 })
+
+// Add body-parser middleware
+app.use(bodyParser.urlencoded({ extended: false }))
+app.use(bodyParser.json())
 
 // Recursively remove all fields starting with _ from response
 function cleanJSON(json) {
@@ -235,6 +240,19 @@ app.get("/mappings", (req, res) => {
     })
 })
 
+app.post("/mappings", auth, (req, res) => {
+  mappingProvider.saveMapping(req, res)
+    .catch(err => res.send(err))
+    .then(adjustMapping(req))
+    .then(result => {
+      if (result) {
+        res.status(201).json(result)
+      } else {
+        res.sendStatus(400)
+      }
+    })
+})
+
 app.get("/mappings/suggest", (req, res) => {
   mappingProvider.getNotationSuggestions(req, res)
     .catch(err => res.send(err))
@@ -261,6 +279,45 @@ app.get("/mappings/:_id", (req, res) => {
         res.json(result)
       } else {
         res.sendStatus(404)
+      }
+    })
+})
+
+app.put("/mappings/:_id", auth, (req, res) => {
+  mappingProvider.putMapping(req, res)
+    .catch(err => res.send(err))
+    .then(adjustMapping(req))
+    .then(result => {
+      if (result) {
+        res.json(result)
+      } else {
+        res.sendStatus(400)
+      }
+    })
+})
+
+app.patch("/mappings/:_id", auth, (req, res) => {
+  mappingProvider.patchMapping(req, res)
+    .catch(err => res.send(err))
+    .then(adjustMapping(req))
+    .then(result => {
+      if (result) {
+        res.json(result)
+      } else {
+        res.sendStatus(400)
+      }
+    })
+})
+
+app.delete("/mappings/:_id", auth, (req, res) => {
+  mappingProvider.deleteMapping(req, res)
+    .catch(err => res.send(err))
+    .then(result => {
+      // `result` will be either true or false
+      if (result) {
+        res.sendStatus(204)
+      } else {
+        res.sendStatus(400)
       }
     })
 })
