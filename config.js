@@ -27,16 +27,23 @@ const log = (...args) => {
 }
 
 // Assemble users, provided by keys in `env` starting with `USER_`
+// Username and password are separated by a `|`.
+// They will be base64 encoded, so all authenticated requests need to base64 encode username and password as well.
 let users = {}
 _.forOwn(process.env, (value, key) => {
   let prep = "USER_"
-  if (key.startsWith(prep) && key.length > prep.length) {
-    let username = key.substring(prep.length).toLowerCase()
-    let password = value
-    if (!users[username]) {
-      users[username] = password
+  if (key.startsWith(prep)) {
+    let [username, password] = value.split("|")
+    if (!username || !password) {
+      log("missing username or password:", username, key)
     } else {
-      log("duplicate user provided in config:", username)
+      username64 = Buffer.from(username).toString("base64")
+      password64 = Buffer.from(password).toString("base64")
+      if (!users[username64]) {
+        users[username64] = password64
+      } else {
+        log("duplicate user provided in config:", username)
+      }
     }
   }
 })
@@ -44,6 +51,7 @@ _.forOwn(process.env, (value, key) => {
 if (env == "test") {
   users.test = "test"
 }
+log("Users:", Object.keys(users).map(user => Buffer.from(user, "base64").toString("ascii")).join(", "))
 
 module.exports = {
   env, verbosity, baseUrl, port, mongoHost, mongoPort, mongoDb, mongoUrl, mongoOptions, log, users

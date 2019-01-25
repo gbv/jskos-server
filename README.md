@@ -68,11 +68,11 @@ MONGO_DB=__MONGODB_DATABASE__
 For authorized endpoints, you need to provide basic auth users and passwords in the `.env` file, like this:
 
 ```bash
-USER_ADMIN=hello-world
-USER_TEST=test123
+USER_ADMIN=admin|hello-world
+USER_TEST=test|test123
 ```
 
-This will create two users, `admin` with password `hello-world`, and `test` with password `test123`. Note that usernames are always lowercased. Also note that this is only temporary until a proper login server is implemented. **It should not be used in production.**
+This will create two users, `admin` with password `hello-world`, and `test` with password `test123`. The second part of the key is not taken into account. The username and password will be base64 encoded, so authenticated requests need to use base64 encoded values as well. Note that this is only temporary until a proper login server is implemented. **It should not be used in production.**
 
 ### Data Import
 JSKOS Server provides a script to import JSKOS data into the database. Right now, mappings, terminologies (concept schemes), and concepts in JSON or [NDJSON](http://ndjson.org) format are supported.
