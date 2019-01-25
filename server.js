@@ -198,6 +198,10 @@ function handleDownload(req, res, results, filename) {
 const mung = require("express-mung")
 app.use(mung.json((cleanJSON)))
 
+app.get("/checkAuth", auth, (req, res) => {
+  res.sendStatus(204)
+})
+
 app.get("/status", (req, res) => {
   statusProvider.getStatus()
     .then(result => {
