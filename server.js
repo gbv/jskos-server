@@ -242,7 +242,7 @@ app.get("/mappings", (req, res) => {
     })
 })
 
-app.post("/mappings", auth, (req, res) => {
+app.post("/mappings", config.postAuthRequired ? auth : (req, res, next) => { next() }, (req, res) => {
   mappingProvider.saveMapping(req, res)
     .catch(err => res.send(err))
     .then(adjustMapping(req))

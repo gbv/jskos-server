@@ -4,6 +4,7 @@ require("dotenv").config()
 const
   env = process.env.NODE_ENV || "development",
   verbosity = process.env.VERBOSITY,
+  postAuthRequired = _.get(process.env, "POST_AUTH_REQUIRED", 1) != 0,
   baseUrl = "https://coli-conc.gbv.de/api",
   port = process.env.PORT || 3000,
   mongoUser = process.env.MONGO_USER || "",
@@ -52,7 +53,10 @@ if (env == "test") {
   users.test = "test"
 }
 log("Users:", Object.keys(users).map(user => Buffer.from(user, "base64").toString("ascii")).join(", "))
+if (!postAuthRequired) {
+  log("Note: POST /mappings does not require authentication. To change this, remove POST_AUTH_REQUIRED from .env file.")
+}
 
 module.exports = {
-  env, verbosity, baseUrl, port, mongoHost, mongoPort, mongoDb, mongoUrl, mongoOptions, log, users
+  env, verbosity, postAuthRequired, baseUrl, port, mongoHost, mongoPort, mongoDb, mongoUrl, mongoOptions, log, users
 }
