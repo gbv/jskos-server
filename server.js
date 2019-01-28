@@ -19,6 +19,7 @@ const mongo = require("mongodb").MongoClient
 const MappingProvider = require("./lib/mapping-provider")
 const TerminologyProvider = require("./lib/terminology-provider")
 const StatusProvider = require("./lib/status-provider")
+const AnnotationProvider = require("./lib/annotation-provider")
 const _ = require("lodash")
 const jskos = require("jskos-tools")
 const portfinder = require("portfinder")
@@ -49,6 +50,7 @@ db.then(db => {
   mappingProvider = new MappingProvider(db.collection("mappings"), db.collection("concordances"))
   terminologyProvider = new TerminologyProvider(db.collection("terminologies"), db.collection("concepts"))
   statusProvider = new StatusProvider(db)
+  annotationProvider = new AnnotationProvider(db.collection("annotations"))
   if (config.env == "test") {
     portfinder.basePort = config.port
     return portfinder.getPortPromise()
@@ -127,6 +129,24 @@ function adjustMapping() {
 function adjustMappings(req) {
   return mappings => {
     return mappings.map(mapping => adjustMapping(req)(mapping))
+  }
+}
+
+function adjustAnnotation() {
+  return annotation => {
+    if (!annotation) {
+      return null
+    }
+    // Remove MongoDB specific fields, add JSKOS specific fields
+    delete annotation._id
+    annotation["@context"] = "http://www.w3.org/ns/anno.jsonld"
+    return annotation
+  }
+}
+
+function adjustAnnotations(req) {
+  return annotations => {
+    return annotations.map(annotation => adjustAnnotation(req)(annotation))
   }
 }
 
@@ -313,6 +333,80 @@ app.patch("/mappings/:_id", auth, (req, res) => {
 
 app.delete("/mappings/:_id", auth, (req, res) => {
   mappingProvider.deleteMapping(req, res)
+    .catch(err => res.send(err))
+    .then(result => {
+      // `result` will be either true or false
+      if (result) {
+        res.sendStatus(204)
+      } else {
+        res.sendStatus(400)
+      }
+    })
+})
+
+app.get("/annotations", (req, res) => {
+  annotationProvider.getAnnotations(req, res)
+    .catch(err => res.send(err))
+    .then(adjustAnnotations(req))
+    .then(results => {
+      res.json(results)
+    })
+})
+
+app.post("/annotations", auth, (req, res) => {
+  annotationProvider.postAnnotation(req, res)
+    .catch(err => res.send(err))
+    .then(adjustAnnotation(req))
+    .then(result => {
+      if (result) {
+        res.status(201).json(result)
+      } else {
+        res.sendStatus(400)
+      }
+    })
+})
+
+app.get("/annotations/:_id", (req, res) => {
+  annotationProvider.getAnnotation(req, res)
+    .catch(err => res.send(err))
+    .then(adjustAnnotation(req))
+    .then(result => {
+      if (result) {
+        res.json(result)
+      } else {
+        res.sendStatus(404)
+      }
+    })
+})
+
+app.put("/annotations/:_id", auth, (req, res) => {
+  annotationProvider.putAnnotation(req, res)
+    .catch(err => res.send(err))
+    .then(adjustAnnotation(req))
+    .then(result => {
+      if (result) {
+        res.json(result)
+      } else {
+        res.sendStatus(400)
+      }
+    })
+})
+
+app.patch("/annotations/:_id", auth, (req, res) => {
+  annotationProvider.patchAnnotation(req, res)
+    .catch(err => res.send(err))
+    .then(adjustAnnotation(req))
+    .then(result => {
+      if (result) {
+        res.json(result)
+      } else {
+        res.sendStatus(400)
+      }
+    })
+})
+
+app.delete("/annotations/:_id", auth, (req, res) => {
+  annotationProvider.deleteAnnotation(req, res)
     .catch(err => res.send(err))
     .then(result => {
       // `result` will be either true or false
