@@ -114,7 +114,7 @@ function adjustConcept(req) {
     delete concept._id
     concept["@context"] = "https://gbv.github.io/jskos/context.json"
     concept.type = concept.type || ["http://www.w3.org/2004/02/skos/core#Concept"]
-    return util.handleProperties({ terminologyProvider }, concept, _.get(req, "query.properties"))
+    return util.handleProperties({ terminologyProvider, annotationProvider }, concept, _.get(req, "query.properties"))
   }
 }
 
@@ -124,7 +124,7 @@ function adjustConcepts(req) {
   }
 }
 
-function adjustMapping() {
+function adjustMapping(req) {
   return mapping => {
     if (!mapping) {
       return null
@@ -132,13 +132,13 @@ function adjustMapping() {
     // Remove MongoDB specific fields, add JSKOS specific fields
     delete mapping._id
     mapping["@context"] = "https://gbv.github.io/jskos/context.json"
-    return mapping
+    return util.handleProperties({ annotationProvider }, mapping, _.get(req, "query.properties"))
   }
 }
 
 function adjustMappings(req) {
   return mappings => {
-    return mappings.map(mapping => adjustMapping(req)(mapping))
+    return Promise.all(mappings.map(mapping => adjustMapping(req)(mapping)))
   }
 }
 
