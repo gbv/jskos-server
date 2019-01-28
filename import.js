@@ -21,6 +21,7 @@ Options
   --terminologies <file>  -t <file>   Import file as terminologies
   --concordances  <file>  -k <file>   Import file as concordances
   --mappings      <file>  -m <file>   Import file as mappings
+  --annotations   <file>  -a <file>   Import file as annotations
   --remove                -r          Remove all records before importing
   --indexes               -i          Create indexes (for all object types that are being imported)
 
@@ -44,6 +45,10 @@ Examples
       type: "string",
       alias: "m"
     },
+    annotations: {
+      type: "string",
+      alias: "a"
+    },
     remove: {
       type: "boolean",
       alias: "r",
@@ -66,12 +71,12 @@ if (cli.flags.help) {
   process.exit(0)
 }
 // Check if at least one of the arguments are given
-if (!cli.flags.concepts && !cli.flags.terminologies && !cli.flags.concordances && !cli.flags.mappings && !cli.flags.indexes && !cli.flags.remove) {
+if (!cli.flags.concepts && !cli.flags.terminologies && !cli.flags.concordances && !cli.flags.mappings && !cli.flags.annotations && !cli.flags.indexes && !cli.flags.remove) {
   cli.showHelp()
   process.exit(1)
 }
 // Check if all given arguments are actual files
-let files = { concepts: [], terminologies: [], concordances: [], mappings: [] }
+let files = { concepts: [], terminologies: [], concordances: [], mappings: [], annotations: [] }
 let typesToDelete = []
 for (let type of Object.keys(files)) {
   if (cli.flags[type]) {
