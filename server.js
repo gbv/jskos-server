@@ -25,6 +25,7 @@ const jskos = require("jskos-tools")
 const portfinder = require("portfinder")
 const { Transform } = require("stream")
 const JSONStream = require("JSONStream")
+const util = require("./lib/util")
 
 // Pretty-print JSON output
 app.set("json spaces", 2)
@@ -104,14 +105,23 @@ function adjustSchemes(schemes) {
   return schemes
 }
 
-function adjustConcepts(concepts) {
-  // Remove MongoDB specific fields, add JSKOS specific fields
-  concepts.forEach(concept => {
+function adjustConcept(req) {
+  return concept => {
+    if (!concept) {
+      return null
+    }
+    // Remove MongoDB specific fields, add JSKOS specific fields
     delete concept._id
     concept["@context"] = "https://gbv.github.io/jskos/context.json"
     concept.type = concept.type || ["http://www.w3.org/2004/02/skos/core#Concept"]
-  })
-  return concepts
+    return util.handleProperties({ terminologyProvider }, concept, _.get(req, "query.properties"))
+  }
+}
+
+function adjustConcepts(req) {
+  return concepts => {
+    return Promise.all(concepts.map(concept => adjustConcept(req)(concept)))
+  }
 }
 
 function adjustMapping() {
@@ -430,7 +440,7 @@ app.get("/voc", (req, res) => {
 app.get("/data", (req, res) => {
   terminologyProvider.getDetails(req, res)
     .catch(err => res.send(err))
-    .then(adjustConcepts)
+    .then(adjustConcepts(req))
     .then(results => {
       res.json(results)
     })
@@ -439,7 +449,7 @@ app.get("/data", (req, res) => {
 app.get("/voc/top", (req, res) => {
   terminologyProvider.getTop(req, res)
     .catch(err => res.send(err))
-    .then(adjustConcepts)
+    .then(adjustConcepts(req))
     .then(results => {
       res.json(results)
     })
@@ -448,7 +458,7 @@ app.get("/voc/top", (req, res) => {
 app.get("/narrower", (req, res) => {
   terminologyProvider.getNarrower(req, res)
     .catch(err => res.send(err))
-    .then(adjustConcepts)
+    .then(adjustConcepts(req))
     .then(results => {
       res.json(results)
     })
@@ -457,7 +467,7 @@ app.get("/narrower", (req, res) => {
 app.get("/ancestors", (req, res) => {
   terminologyProvider.getAncestors(req, res)
     .catch(err => res.send(err))
-    .then(adjustConcepts)
+    .then(adjustConcepts(req))
     .then(results => {
       res.json(results)
     })
@@ -474,7 +484,7 @@ app.get("/suggest", (req, res) => {
 app.get("/search", (req, res) => {
   terminologyProvider.search(req, res)
     .catch(err => res.send(err))
-    .then(adjustConcepts)
+    .then(adjustConcepts(req))
     .then(results => {
       res.json(results)
     })
