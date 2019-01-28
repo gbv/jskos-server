@@ -811,6 +811,142 @@ describe("Express Server", () => {
 
   })
 
+  describe("/annotations", () => {
+
+    it("should GET zero annotations", done => {
+      chai.request(server.app)
+        .get("/annotations")
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.should.have.header("Link")
+          res.should.have.header("X-Total-Count")
+          res.body.should.be.a("array")
+          res.body.length.should.be.eql(0)
+          done()
+        })
+    })
+
+    let annotation = {
+      target: "http://dewey.info/class/60/e23/",
+      motivation: "assessing",
+      bodyValue: "+1"
+    }
+
+    it("should POST a annotation", done => {
+      chai.request(server.app)
+        .post("/annotations")
+        .auth("test", "test")
+        .send(annotation)
+        .end((err, res) => {
+          res.should.have.status(201)
+          res.body.should.be.a("object")
+          res.body.id.should.be.a("string")
+          // Save id for later use
+          annotation.id = res.body.id
+          res.body.creator.should.be.eql(Buffer.from("test", "base64").toString("ascii")) // Creator gets decoded from base64
+          res.body.target.should.be.eql(annotation.target)
+          res.body.motivation.should.be.eql(annotation.motivation)
+          res.body.bodyValue.should.be.eql(annotation.bodyValue)
+          done()
+        })
+    })
+
+    it("should GET one annotations", done => {
+      chai.request(server.app)
+        .get("/annotations")
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.should.have.header("Link")
+          res.should.have.header("X-Total-Count")
+          res.body.should.be.a("array")
+          res.body.length.should.be.eql(1)
+          res.body[0].id.should.be.eql(annotation.id)
+          done()
+        })
+    })
+
+    it("should GET an annotation by id", done => {
+      let _id = annotation.id.substring(annotation.id.lastIndexOf("/") + 1)
+      chai.request(server.app)
+        .get("/annotations/" + _id)
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.body.should.be.a("object")
+          res.body.id.should.be.eql(annotation.id)
+          done()
+        })
+    })
+
+    it("should PATCH an annoation", done => {
+      let _id = annotation.id.substring(annotation.id.lastIndexOf("/") + 1)
+      let patch = {
+        bodyValue: "-1"
+      }
+      chai.request(server.app)
+        .patch("/annotations/" + _id)
+        .auth("test", "test")
+        .send(patch)
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.body.should.be.a("object")
+          res.body.id.should.be.eql(annotation.id)
+          res.body.bodyValue.should.not.be.eql(annotation.bodyValue)
+          res.body.bodyValue.should.be.eql(patch.bodyValue)
+          done()
+        })
+    })
+
+    it("should PUT an annotation", done => {
+      let _id = annotation.id.substring(annotation.id.lastIndexOf("/") + 1)
+      let annotation2 = _.clone(annotation)
+      annotation2.motivation = "commenting"
+      annotation2.bodyValue = "hello"
+      chai.request(server.app)
+        .put("/annotations/" + _id)
+        .auth("test", "test")
+        .send(annotation2)
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.body.should.be.a("object")
+          res.body.id.should.be.eql(annotation.id)
+          res.body.motivation.should.not.be.eql(annotation.motivation)
+          res.body.motivation.should.be.eql(annotation2.motivation)
+          res.body.bodyValue.should.not.be.eql(annotation.bodyValue)
+          res.body.bodyValue.should.be.eql(annotation2.bodyValue)
+          done()
+        })
+    })
+
+    it("should GET the annotated concept including annotations", done => {
+      chai.request(server.app)
+        .get("/data")
+        .query({
+          uri: annotation.target,
+          properties: "annotations"
+        })
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.body.should.be.a("array")
+          res.body.length.should.be.eql(1)
+          res.body[0].annotations.should.be.a("array")
+          res.body[0].annotations[0].id.should.be.eql(annotation.id)
+          done()
+        })
+    })
+
+    it("should DELETE an annotation", done => {
+      let _id = annotation.id.substring(annotation.id.lastIndexOf("/") + 1)
+      chai.request(server.app)
+        .delete("/annotations/" + _id)
+        .auth("test", "test")
+        .end((err, res) => {
+          res.should.have.status(204)
+          done()
+        })
+    })
+
+  })
+
   describe("Import Script", () => {
 
     it("should clear the database", done => {
@@ -842,7 +978,7 @@ describe("Express Server", () => {
 
     it("should create indexes", done => {
       // Create indexes
-      exec("NODE_ENV=test npm run import -- -i -t -c -k -m", (err) => {
+      exec("NODE_ENV=test npm run import -- -i -t -c -k -m -a", (err) => {
         if (err) {
           done(err)
           return
@@ -851,7 +987,7 @@ describe("Express Server", () => {
         server.db.then(result => {
           db = result
           let promises = []
-          let collections = ["concepts", "mappings"]
+          let collections = ["concepts", "mappings", "annotations"]
           for (let collection of collections) {
             promises.push(db.collection(collection).indexInformation())
           }
