@@ -142,21 +142,9 @@ function adjustMappings(req) {
   }
 }
 
-function adjustAnnotation() {
-  return annotation => {
-    if (!annotation) {
-      return null
-    }
-    // Remove MongoDB specific fields, add JSKOS specific fields
-    delete annotation._id
-    annotation["@context"] = "http://www.w3.org/ns/anno.jsonld"
-    return annotation
-  }
-}
-
 function adjustAnnotations(req) {
   return annotations => {
-    return annotations.map(annotation => adjustAnnotation(req)(annotation))
+    return annotations.map(annotation => util.adjustAnnotation(req)(annotation))
   }
 }
 
@@ -366,7 +354,7 @@ app.get("/annotations", (req, res) => {
 app.post("/annotations", auth, (req, res) => {
   annotationProvider.postAnnotation(req, res)
     .catch(err => res.send(err))
-    .then(adjustAnnotation(req))
+    .then(util.adjustAnnotation(req))
     .then(result => {
       if (result) {
         res.status(201).json(result)
@@ -379,7 +367,7 @@ app.post("/annotations", auth, (req, res) => {
 app.get("/annotations/:_id", (req, res) => {
   annotationProvider.getAnnotation(req, res)
     .catch(err => res.send(err))
-    .then(adjustAnnotation(req))
+    .then(util.adjustAnnotation(req))
     .then(result => {
       if (result) {
         res.json(result)
@@ -392,7 +380,7 @@ app.get("/annotations/:_id", (req, res) => {
 app.put("/annotations/:_id", auth, (req, res) => {
   annotationProvider.putAnnotation(req, res)
     .catch(err => res.send(err))
-    .then(adjustAnnotation(req))
+    .then(util.adjustAnnotation(req))
     .then(result => {
       if (result) {
         res.json(result)
@@ -405,7 +393,7 @@ app.put("/annotations/:_id", auth, (req, res) => {
 app.patch("/annotations/:_id", auth, (req, res) => {
   annotationProvider.patchAnnotation(req, res)
     .catch(err => res.send(err))
-    .then(adjustAnnotation(req))
+    .then(util.adjustAnnotation(req))
     .then(result => {
       if (result) {
         res.json(result)
