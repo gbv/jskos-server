@@ -5,7 +5,7 @@ const
   env = process.env.NODE_ENV || "development",
   verbosity = process.env.VERBOSITY,
   postAuthRequired = _.get(process.env, "POST_AUTH_REQUIRED", 1) != 0,
-  baseUrl = "https://coli-conc.gbv.de/api",
+  baseUrl = process.env.BASE_URL,
   port = process.env.PORT || 3000,
   mongoUser = process.env.MONGO_USER || "",
   mongoPass = process.env.MONGO_PASS || "",
@@ -55,6 +55,9 @@ if (env == "test") {
 log("Users:", Object.keys(users).map(user => Buffer.from(user, "base64").toString("ascii")).join(", "))
 if (!postAuthRequired) {
   log("Note: POST /mappings does not require authentication. To change this, remove POST_AUTH_REQUIRED from .env file.")
+}
+if (!baseUrl) {
+  log("Warning: If you're using jskos-server behind a reverse proxy, it is necessary to add BASE_URL to .env!")
 }
 
 module.exports = {
