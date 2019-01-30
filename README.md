@@ -65,6 +65,12 @@ MONGO_PORT=__MONGODB_PORT__
 MONGO_DB=__MONGODB_DATABASE__
 ```
 
+**If you are using jskos-server behind a proxy, it is necessary to provide the `BASE_URL` key in `.env`:**
+```bash
+# Example for our production API
+BASE_URL=https://coli-conc.gbv.de/api/
+```
+
 For authorized endpoints, you need to provide basic auth users and passwords in the `.env` file, like this:
 
 ```bash
