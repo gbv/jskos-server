@@ -336,7 +336,7 @@ describe("Express Server", () => {
             res.should.have.status(200)
             res.body.should.be.a("object")
             // Due to chai, the URL will be different, so we will remove it from the objects
-            _.isEqual(_.omit(res.body, ["uri", "identifier", "confirmed", "created", "modified", "@context"]), mapping).should.be.eql(true)
+            _.isEqual(_.omit(res.body, ["uri", "identifier", "created", "modified", "@context"]), mapping).should.be.eql(true)
             chai.request(server.app).delete(`/mappings/${_id}`).auth("test", "test").end((err, res) => {
               res.should.have.status(204)
               done()
@@ -464,8 +464,6 @@ describe("Express Server", () => {
           res.body.identifier.should.be.a("array")
           // Should add url
           res.body.uri.should.be.a("string")
-          // Should add confirmed property
-          res.body.confirmed.should.be.a("boolean")
           done()
         })
     })
