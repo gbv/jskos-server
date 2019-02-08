@@ -49,7 +49,7 @@
     "express-mung": "^0.5.1",
     "jskos-tools": "^0.1.9",
     "lint-staged": "^7.1.2",
-    "lodash": "^4.17.10",
+    "lodash": "^4.17.11",
     "meow": "^5.0.0",
     "mongodb": "~3.1.1",
     "portfinder": "^1.0.16"
