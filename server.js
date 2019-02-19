@@ -251,7 +251,8 @@ app.get("/mappings", (req, res) => {
   }
   mappingProvider.getMappings(req, res)
     .catch(err => res.send(err))
-    .then(adjustMappings(req))
+    // Only adjust if it's not a download (-> stream)
+    .then(req.query.download ? (result => result) : adjustMappings(req))
     .then(results => {
       if (req.query.download) {
         handleDownload(req, res, results, "mappings")
