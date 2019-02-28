@@ -627,6 +627,24 @@ describe("Express Server", () => {
 
   })
 
+  describe("GET /voc/concepts", () => {
+
+    it("should GET all four concepts", done => {
+      chai.request(server.app)
+        .get("/voc/concepts")
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.should.have.header("Link")
+          res.should.have.header("X-Total-Count")
+          res.body.should.be.a("array")
+          res.body.length.should.be.eql(4)
+          res.body[0].should.be.a("object")
+          done()
+        })
+    })
+
+  })
+
   describe("GET /data", () => {
 
     it("should GET empty list when no URL is provided", done => {

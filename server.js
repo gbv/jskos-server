@@ -445,6 +445,15 @@ app.get("/voc/top", (req, res) => {
     })
 })
 
+app.get("/voc/concepts", (req, res) => {
+  terminologyProvider.getConcepts(req, res)
+    .catch(err => res.send(err))
+    .then(adjustConcepts(req))
+    .then(results => {
+      res.json(results)
+    })
+})
+
 app.get("/narrower", (req, res) => {
   terminologyProvider.getNarrower(req, res)
     .catch(err => res.send(err))

@@ -28,6 +28,7 @@ JSKOS Server is a web server for [JSKOS] data. It is currently under development
   - [/mappings/voc](#mappingsvoc)
   - [/voc](#voc)
   - [/voc/top](#voctop)
+  - [/voc/concepts](#vocconcepts)
   - [/data](#data)
   - [/narrower](#narrower)
   - [/ancestors](#ancestors)
@@ -528,6 +529,25 @@ Lists top concepts for a concept scheme.
 
   ```bash
   curl https://coli-conc.gbv.de/api/voc/top?uri=http://dewey.info/scheme/edition/e23/
+  ```
+
+### /voc/concepts
+Lists concepts for a concept scheme.
+
+* **URL Params**
+
+  `uri=[uri]` URI for a concept scheme
+
+  `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting `ancestors` and `narrower`)
+
+* **Success Response**
+
+  JSON array of [JSKOS Concepts]
+
+* **Sample Call**
+
+  ```bash
+  curl https://coli-conc.gbv.de/api/voc/concepts?uri=http://dewey.info/scheme/edition/e23/
   ```
 
 ### /data
