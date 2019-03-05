@@ -19,9 +19,9 @@ const
     reconnectInterval: 1000,
     useNewUrlParser: true
   },
-  auth = {
-    algorithm: process.env.AUTH_ALGORITHM,
-    key: process.env.AUTH_KEY.split("\\n").join("\n")
+  auth = { // use specific values for test
+    algorithm: env == "test" ? "HS256" : process.env.AUTH_ALGORITHM,
+    key: env == "test" ? "test" : process.env.AUTH_KEY.split("\\n").join("\n")
   }
 console.log(`running in ${env} mode`)
 

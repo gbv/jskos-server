@@ -9,6 +9,14 @@ const server = require("../server")
 const exec = require("child_process").exec
 const _ = require("lodash")
 
+// Prepare jwt
+const jwt = require("jsonwebtoken")
+const user = {
+  uri: "http://test.user",
+  name: "Test User"
+}
+const token = jwt.sign({ user }, "test")
+
 // Hide UnhandledPromiseRejectionWarning on output
 process.on("unhandledRejection", () => {})
 
@@ -50,7 +58,8 @@ let mapping = {
     {
       "prefLabel": {
         "de": "Stefan Peters (VZG)"
-      }
+      },
+      "uri": user.uri
     }
   ],
   "type": [
@@ -281,13 +290,14 @@ describe("Express Server", () => {
       let uri, _id
       chai.request(server.app)
         .post("/mappings")
-        .auth("test", "test")
+        .set("Authorization", `Bearer ${token}`)
         .send(mapping)
         .then(res => {
           res.should.have.status(201)
           res.body.should.be.a("object")
           res.body.uri.should.be.a("string")
           uri = res.body.uri
+          console.log(uri)
           // _id needed for deletion later
           _id = res.body.uri.substring(res.body.uri.lastIndexOf("/") + 1)
           chai.request(server.app)
@@ -296,12 +306,16 @@ describe("Express Server", () => {
               identifier: uri
             })
             .end((err, res) => {
+              console.log(res.status)
+              console.log(res.body)
               res.should.have.status(200)
               res.body.should.be.a("array")
               res.body.length.should.be.eql(1)
               res.body[0].uri.should.be.eql(uri)
               // DELETE the mapping
-              chai.request(server.app).delete(`/mappings/${_id}`).auth("test", "test").end((err, res) => {
+              chai.request(server.app).delete(`/mappings/${_id}`).set("Authorization", `Bearer ${token}`).end((err, res) => {
+                console.log(res.status)
+                console.log(res.body)
                 res.should.have.status(204)
                 done()
               })
@@ -325,7 +339,7 @@ describe("Express Server", () => {
     it("should POST a mapping, then GET the mapping with its uri, then DELETE it with its uri", done => {
       chai.request(server.app)
         .post("/mappings")
-        .auth("test", "test")
+        .set("Authorization", `Bearer ${token}`)
         .send(mapping)
         .end((err, res) => {
           res.should.have.status(201)
@@ -337,7 +351,7 @@ describe("Express Server", () => {
             res.body.should.be.a("object")
             // Due to chai, the URL will be different, so we will remove it from the objects
             _.isEqual(_.omit(res.body, ["uri", "identifier", "created", "modified", "@context"]), mapping).should.be.eql(true)
-            chai.request(server.app).delete(`/mappings/${_id}`).auth("test", "test").end((err, res) => {
+            chai.request(server.app).delete(`/mappings/${_id}`).set("Authorization", `Bearer ${token}`).end((err, res) => {
               res.should.have.status(204)
               done()
             })
@@ -450,7 +464,7 @@ describe("Express Server", () => {
     it("should POST a mapping", done => {
       chai.request(server.app)
         .post("/mappings")
-        .auth("test", "test")
+        .set("Authorization", `Bearer ${token}`)
         .send(mapping)
         .end((err, res) => {
           res.should.have.status(201)
@@ -471,7 +485,7 @@ describe("Express Server", () => {
     it("should not POST a mapping with `partOf` property", done => {
       chai.request(server.app)
         .post("/mappings")
-        .auth("test", "test")
+        .set("Authorization", `Bearer ${token}`)
         .send(Object.assign({}, mapping, { partOf: [ { uri: "..." } ] }))
         .end((err, res) => {
           res.should.have.status(400)
@@ -486,7 +500,7 @@ describe("Express Server", () => {
     it("should POST a mapping, then PUT a changed mapping", done => {
       chai.request(server.app)
         .post("/mappings")
-        .auth("test", "test")
+        .set("Authorization", `Bearer ${token}`)
         .send(mapping)
         .end((err, res) => {
           res.should.have.status(201)
@@ -497,7 +511,7 @@ describe("Express Server", () => {
           // PUT that mapping
           chai.request(server.app)
             .put(`/mappings/${_id}`)
-            .auth("test", "test")
+            .set("Authorization", `Bearer ${token}`)
             .send(changedMapping)
             .end((err, res) => {
               res.should.have.status(200)
@@ -516,7 +530,7 @@ describe("Express Server", () => {
     it("should POST a mapping, then PATCH the mapping", done => {
       chai.request(server.app)
         .post("/mappings")
-        .auth("test", "test")
+        .set("Authorization", `Bearer ${token}`)
         .send(mapping)
         .end((err, res) => {
           res.should.have.status(201)
@@ -526,7 +540,7 @@ describe("Express Server", () => {
           // PATCH that change
           chai.request(server.app)
             .patch(`/mappings/${_id}`)
-            .auth("test", "test")
+            .set("Authorization", `Bearer ${token}`)
             .send(patch)
             .end((err, res) => {
               res.should.have.status(200)
@@ -545,7 +559,7 @@ describe("Express Server", () => {
     it("should POST a mapping, then DELETE the mapping", done => {
       chai.request(server.app)
         .post("/mappings")
-        .auth("test", "test")
+        .set("Authorization", `Bearer ${token}`)
         .send(mapping)
         .end((err, res) => {
           res.should.have.status(201)
@@ -554,13 +568,13 @@ describe("Express Server", () => {
           // DELETE
           chai.request(server.app)
             .delete(`/mappings/${_id}`)
-            .auth("test", "test")
+            .set("Authorization", `Bearer ${token}`)
             .end((err, res) => {
               res.should.have.status(204)
               // Test if that mapping still exists
               chai.request(server.app)
                 .get(`/mappings/${_id}`)
-                .auth("test", "test")
+                .set("Authorization", `Bearer ${token}`)
                 .end((err, res) => {
                   res.should.have.status(404)
                   done()
@@ -851,7 +865,7 @@ describe("Express Server", () => {
     it("should POST a annotation", done => {
       chai.request(server.app)
         .post("/annotations")
-        .auth("test", "test")
+        .set("Authorization", `Bearer ${token}`)
         .send(annotation)
         .end((err, res) => {
           res.should.have.status(201)
@@ -859,7 +873,7 @@ describe("Express Server", () => {
           res.body.id.should.be.a("string")
           // Save id for later use
           annotation.id = res.body.id
-          res.body.creator.should.be.eql(Buffer.from("test", "base64").toString("ascii")) // Creator gets decoded from base64
+          res.body.creator.should.be.eql({ id: user.uri, name: user.name }) // Creator gets decoded from base64
           res.body.target.should.be.eql(annotation.target)
           res.body.motivation.should.be.eql(annotation.motivation)
           res.body.bodyValue.should.be.eql(annotation.bodyValue)
@@ -904,7 +918,7 @@ describe("Express Server", () => {
       }
       chai.request(server.app)
         .patch("/annotations/" + _id)
-        .auth("test", "test")
+        .set("Authorization", `Bearer ${token}`)
         .send(patch)
         .end((err, res) => {
           res.should.have.status(200)
@@ -925,7 +939,7 @@ describe("Express Server", () => {
       annotation2.bodyValue = "hello"
       chai.request(server.app)
         .put("/annotations/" + _id)
-        .auth("test", "test")
+        .set("Authorization", `Bearer ${token}`)
         .send(annotation2)
         .end((err, res) => {
           res.should.have.status(200)
@@ -964,7 +978,7 @@ describe("Express Server", () => {
       let _id = annotation.id.substring(annotation.id.lastIndexOf("/") + 1)
       chai.request(server.app)
         .delete("/annotations/" + _id)
-        .auth("test", "test")
+        .set("Authorization", `Bearer ${token}`)
         .end((err, res) => {
           res.should.have.status(204)
           done()
