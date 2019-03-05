@@ -72,14 +72,14 @@ MONGO_DB=__MONGODB_DATABASE__
 BASE_URL=https://coli-conc.gbv.de/api/
 ```
 
-For authorized endpoints, you need to provide basic auth users and passwords in the `.env` file, like this:
+For authorized endpoints via JWT, you need to provide the JWT algorithm and key/secret used at the authentication server in the `.env` file, like this:
 
 ```bash
-USER_ADMIN=admin|hello-world
-USER_TEST=test|test123
+AUTH_ALGORITHM=RS256
+AUTH_KEY=-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA57ZWRoOjXYTQ9yujxAu7\ne3k4+JRBAqGdDVIRRq5vXB2D5nJBIhQjVjylumn+QnTX/MdZx8qn7X96npUwHwIh\nylCgUmsYXcjP08X/AXEcP5bPOkgBBCKjWmcm+p01RQSOM0nSptyxpyXzr2ppWe1b\nuYdRYDWj+JV7vm+jJA4NiFv4UnAhoG5lRATADzu0/6wpMK3dVMBL7L0jQoV5xBAb\nLADOy5hD9XEII3VPkUqDGIKM+Z24flkCIf0lQ7FjsoZ2mmM1SZJ5vPDcjMKreFkX\ncWlcwGHN0PUWZWLhb7c8yYa1rauMcwFwv0d2XyOEfgkqEJdCh8mVT/5jR48D2PNG\ncwIDAQAB\n-----END PUBLIC KEY-----\n
 ```
 
-This will create two users, `admin` with password `hello-world`, and `test` with password `test123`. The second part of the key is not taken into account. The username and password will be base64 encoded, so authenticated requests need to use base64 encoded values as well. Note that this is only temporary until a proper login server is implemented. **It should not be used in production.**
+The JWT has to be provided as a Bearer token in the authentication header, e.g. `Authentication: Bearer <token>`. Currently, all authorized endpoints will be accessible (although `PUT`/`PATCH`/`DELETE` are limited to the user who created the object), but later it will be possible to set scopes for certain users (see [#47](https://github.com/gbv/jskos-server/issues/47)).
 
 ### Data Import
 JSKOS Server provides a script to import JSKOS data into the database. Right now, mappings, terminologies (concept schemes), and concepts in JSON or [NDJSON](http://ndjson.org) format are supported.

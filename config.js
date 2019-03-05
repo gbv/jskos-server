@@ -18,6 +18,10 @@ const
     reconnectTries: 60,
     reconnectInterval: 1000,
     useNewUrlParser: true
+  },
+  auth = {
+    algorithm: process.env.AUTH_ALGORITHM,
+    key: process.env.AUTH_KEY.split("\\n").join("\n")
   }
 console.log(`running in ${env} mode`)
 
@@ -27,32 +31,6 @@ const log = (...args) => {
   }
 }
 
-// Assemble users, provided by keys in `env` starting with `USER_`
-// Username and password are separated by a `|`.
-// They will be base64 encoded, so all authenticated requests need to base64 encode username and password as well.
-let users = {}
-_.forOwn(process.env, (value, key) => {
-  let prep = "USER_"
-  if (key.startsWith(prep)) {
-    let [username, password] = value.split("|")
-    if (!username || !password) {
-      log("missing username or password:", username, key)
-    } else {
-      username64 = Buffer.from(username).toString("base64")
-      password64 = Buffer.from(password).toString("base64")
-      if (!users[username64]) {
-        users[username64] = password64
-      } else {
-        log("duplicate user provided in config:", username)
-      }
-    }
-  }
-})
-// For tests, add a test user
-if (env == "test") {
-  users.test = "test"
-}
-log("Users:", Object.keys(users).map(user => Buffer.from(user, "base64").toString("ascii")).join(", "))
 if (!postAuthRequired) {
   log("Note: POST /mappings does not require authentication. To change this, remove POST_AUTH_REQUIRED from .env file.")
 }
@@ -61,5 +39,5 @@ if (!baseUrl) {
 }
 
 module.exports = {
-  env, verbosity, postAuthRequired, baseUrl, port, mongoHost, mongoPort, mongoDb, mongoUrl, mongoOptions, log, users
+  env, verbosity, postAuthRequired, baseUrl, port, mongoHost, mongoPort, mongoDb, mongoUrl, mongoOptions, log, auth
 }

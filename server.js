@@ -30,14 +30,28 @@ const util = require("./lib/util")
 // Pretty-print JSON output
 app.set("json spaces", 2)
 
-// Prepare basic authorization
-const basicAuth = require("express-basic-auth")
-var auth = basicAuth({
-  users: config.users,
-  challenge: false
-})
+// Prepare authorization via JWT
+const passport = require("passport")
+const JwtStrategy = require("passport-jwt").Strategy,
+  ExtractJwt = require("passport-jwt").ExtractJwt
+var opts = {
+  jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+  secretOrKey: config.auth.key,
+  algorithms: [config.auth.algorithm]
+}
+passport.use(new JwtStrategy(opts, (jwt_payload, done) => {
+  done(null, jwt_payload.user)
+}))
+// Also use anonymous strategy for endpoints that can be used authenticated or not authenticated
+const AnonymousStrategy = require("passport-anonymous").Strategy
+passport.use(new AnonymousStrategy())
 // Use like this: app.get("/secureEndpoint", auth, (req, res) => { ... })
-// Note: This will only be used temporarily until a OAuth solution is implemented.
+// res.user will contain the current authorized user.
+const auth = passport.authenticate("jwt", { session: false })
+// For endpoints with optional authentication
+// For example: app.get("/optionallySecureEndpoint", config.requireAuth ? auth : authOptional, (req, res) => { ... })
+// req.user will cointain the user if authorized, otherwise stays undefined.
+const authOptional = passport.authenticate(["jwt", "anonymous"], { session: false })
 
 // Promise for MongoDB db
 const db = mongo.connect(config.mongoUrl, config.mongoOptions).then(client => {
@@ -262,7 +276,7 @@ app.get("/mappings", (req, res) => {
     })
 })
 
-app.post("/mappings", config.postAuthRequired ? auth : (req, res, next) => { next() }, (req, res) => {
+app.post("/mappings", config.postAuthRequired ? auth : authOptional, (req, res) => {
   mappingProvider.saveMapping(req, res)
     .catch(err => res.send(err))
     .then(adjustMapping(req))
@@ -270,7 +284,9 @@ app.post("/mappings", config.postAuthRequired ? auth : (req, res, next) => { nex
       if (result) {
         res.status(201).json(result)
       } else {
-        res.sendStatus(400)
+        if (!res.headersSent) {
+          res.sendStatus(400)
+        }
       }
     })
 })
@@ -313,7 +329,9 @@ app.put("/mappings/:_id", auth, (req, res) => {
       if (result) {
         res.json(result)
       } else {
-        res.sendStatus(400)
+        if (!res.headersSent) {
+          res.sendStatus(400)
+        }
       }
     })
 })
@@ -326,7 +344,9 @@ app.patch("/mappings/:_id", auth, (req, res) => {
       if (result) {
         res.json(result)
       } else {
-        res.sendStatus(400)
+        if (!res.headersSent) {
+          res.sendStatus(400)
+        }
       }
     })
 })
@@ -339,7 +359,9 @@ app.delete("/mappings/:_id", auth, (req, res) => {
       if (result) {
         res.sendStatus(204)
       } else {
-        res.sendStatus(400)
+        if (!res.headersSent) {
+          res.sendStatus(400)
+        }
       }
     })
 })
@@ -387,7 +409,9 @@ app.put("/annotations/:_id", auth, (req, res) => {
       if (result) {
         res.json(result)
       } else {
-        res.sendStatus(400)
+        if (!res.headersSent) {
+          res.sendStatus(400)
+        }
       }
     })
 })
@@ -400,7 +424,9 @@ app.patch("/annotations/:_id", auth, (req, res) => {
       if (result) {
         res.json(result)
       } else {
-        res.sendStatus(400)
+        if (!res.headersSent) {
+          res.sendStatus(400)
+        }
       }
     })
 })
@@ -413,7 +439,9 @@ app.delete("/annotations/:_id", auth, (req, res) => {
       if (result) {
         res.sendStatus(204)
       } else {
-        res.sendStatus(400)
+        if (!res.headersSent) {
+          res.sendStatus(400)
+        }
       }
     })
 })
