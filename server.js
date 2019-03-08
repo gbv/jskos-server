@@ -30,28 +30,47 @@ const util = require("./lib/util")
 // Pretty-print JSON output
 app.set("json spaces", 2)
 
+let optionalStrategies = [], auth = null
+
 // Prepare authorization via JWT
 const passport = require("passport")
-const JwtStrategy = require("passport-jwt").Strategy,
-  ExtractJwt = require("passport-jwt").ExtractJwt
-var opts = {
-  jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-  secretOrKey: config.auth.key,
-  algorithms: [config.auth.algorithm]
+
+if (config.auth.algorithm && config.auth.key) {
+  const JwtStrategy = require("passport-jwt").Strategy,
+    ExtractJwt = require("passport-jwt").ExtractJwt
+  var opts = {
+    jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+    secretOrKey: config.auth.key,
+    algorithms: [config.auth.algorithm]
+  }
+  try {
+    passport.use(new JwtStrategy(opts, (jwt_payload, done) => {
+      done(null, jwt_payload.user)
+    }))
+    // Use like this: app.get("/secureEndpoint", auth, (req, res) => { ... })
+    // res.user will contain the current authorized user.
+    auth = passport.authenticate("jwt", { session: false })
+    optionalStrategies.push("jwt")
+  } catch(error) {
+    console.error("Error setting up JWT authentication")
+  }
+} else {
+  console.warn("Note: To provide authentication via JWT, please add AUTH_ALGORITHM and AUTH_KEY to .env!")
+  // Deny all requests
+  auth = (req, res) => {
+    res.sendStatus(403)
+  }
 }
-passport.use(new JwtStrategy(opts, (jwt_payload, done) => {
-  done(null, jwt_payload.user)
-}))
+
 // Also use anonymous strategy for endpoints that can be used authenticated or not authenticated
 const AnonymousStrategy = require("passport-anonymous").Strategy
 passport.use(new AnonymousStrategy())
-// Use like this: app.get("/secureEndpoint", auth, (req, res) => { ... })
-// res.user will contain the current authorized user.
-const auth = passport.authenticate("jwt", { session: false })
+optionalStrategies.push("anonymous")
+
 // For endpoints with optional authentication
 // For example: app.get("/optionallySecureEndpoint", config.requireAuth ? auth : authOptional, (req, res) => { ... })
 // req.user will cointain the user if authorized, otherwise stays undefined.
-const authOptional = passport.authenticate(["jwt", "anonymous"], { session: false })
+const authOptional = passport.authenticate(optionalStrategies, { session: false })
 
 // Promise for MongoDB db
 const db = mongo.connect(config.mongoUrl, config.mongoOptions).then(client => {

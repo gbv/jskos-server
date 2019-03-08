@@ -21,7 +21,7 @@ const
   },
   auth = { // use specific values for test
     algorithm: env == "test" ? "HS256" : process.env.AUTH_ALGORITHM,
-    key: env == "test" ? "test" : process.env.AUTH_KEY.split("\\n").join("\n")
+    key: env == "test" ? "test" : process.env.AUTH_KEY && process.env.AUTH_KEY.split("\\n").join("\n")
   }
 console.log(`running in ${env} mode`)
 
