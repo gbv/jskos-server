@@ -250,6 +250,12 @@ function handleDownload(req, res, results, filename) {
 const mung = require("express-mung")
 app.use(mung.json((cleanJSON)))
 
+const path = require("path")
+app.get("/", function(req, res) {
+  res.setHeader("Content-Type", "text/html")
+  res.sendFile(path.join(__dirname + "/index.html"))
+})
+
 app.get("/checkAuth", auth, (req, res) => {
   res.sendStatus(204)
 })
