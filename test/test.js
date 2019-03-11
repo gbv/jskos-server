@@ -297,7 +297,6 @@ describe("Express Server", () => {
           res.body.should.be.a("object")
           res.body.uri.should.be.a("string")
           uri = res.body.uri
-          console.log(uri)
           // _id needed for deletion later
           _id = res.body.uri.substring(res.body.uri.lastIndexOf("/") + 1)
           chai.request(server.app)
@@ -306,16 +305,12 @@ describe("Express Server", () => {
               identifier: uri
             })
             .end((err, res) => {
-              console.log(res.status)
-              console.log(res.body)
               res.should.have.status(200)
               res.body.should.be.a("array")
               res.body.length.should.be.eql(1)
               res.body[0].uri.should.be.eql(uri)
               // DELETE the mapping
               chai.request(server.app).delete(`/mappings/${_id}`).set("Authorization", `Bearer ${token}`).end((err, res) => {
-                console.log(res.status)
-                console.log(res.body)
                 res.should.have.status(204)
                 done()
               })
