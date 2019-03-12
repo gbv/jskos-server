@@ -106,6 +106,7 @@ describe("Express Server", () => {
           res.should.have.status(200)
           res.body.should.be.a("object")
           _.get(res.body, "ok", 0).should.be.eql(1)
+          res.body.config.should.be.a("object")
           done()
         })
     })

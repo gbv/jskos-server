@@ -261,7 +261,7 @@ app.get("/checkAuth", auth, (req, res) => {
 })
 
 app.get("/status", (req, res) => {
-  statusProvider.getStatus()
+  statusProvider.getStatus(req)
     .then(result => {
       res.json(result)
     })
