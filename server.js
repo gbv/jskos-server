@@ -267,280 +267,308 @@ app.get("/status", (req, res) => {
     })
 })
 
-app.get("/concordances", (req, res) => {
-  let supportedTypes = ["json", "ndjson"]
-  if (req.query.download && !supportedTypes.includes(req.query.download)) {
-    req.query.download = null
-  }
-  mappingProvider.getConcordances(req, res)
-    .catch(err => res.send(err))
-    .then(results => {
-      if (req.query.download) {
-        handleDownload(req, res, results, "concordances")
-      } else {
+/**
+ * ########## Mapping related endpoints ##########
+ */
+if (config.mappings) {
+
+  app.get("/concordances", (req, res) => {
+    let supportedTypes = ["json", "ndjson"]
+    if (req.query.download && !supportedTypes.includes(req.query.download)) {
+      req.query.download = null
+    }
+    mappingProvider.getConcordances(req, res)
+      .catch(err => res.send(err))
+      .then(results => {
+        if (req.query.download) {
+          handleDownload(req, res, results, "concordances")
+        } else {
+          res.json(results)
+        }
+      })
+  })
+
+  app.get("/mappings", (req, res) => {
+    let supportedTypes = ["json", "ndjson", "csv", "tsv"]
+    if (req.query.download && !supportedTypes.includes(req.query.download)) {
+      req.query.download = null
+    }
+    mappingProvider.getMappings(req, res)
+      .catch(err => res.send(err))
+      // Only adjust if it's not a download (-> stream)
+      .then(req.query.download ? (result => result) : adjustMappings(req))
+      .then(results => {
+        if (req.query.download) {
+          handleDownload(req, res, results, "mappings")
+        } else {
+          res.json(results)
+        }
+      })
+  })
+
+  app.post("/mappings", config.auth.postAuthRequired ? auth : authOptional, (req, res) => {
+    mappingProvider.saveMapping(req, res)
+      .catch(err => res.send(err))
+      .then(adjustMapping(req))
+      .then(result => {
+        if (result) {
+          res.status(201).json(result)
+        } else {
+          if (!res.headersSent) {
+            res.sendStatus(400)
+          }
+        }
+      })
+  })
+
+  app.get("/mappings/suggest", (req, res) => {
+    mappingProvider.getNotationSuggestions(req, res)
+      .catch(err => res.send(err))
+      .then(results => {
         res.json(results)
-      }
-    })
-})
+      })
+  })
 
-app.get("/mappings", (req, res) => {
-  let supportedTypes = ["json", "ndjson", "csv", "tsv"]
-  if (req.query.download && !supportedTypes.includes(req.query.download)) {
-    req.query.download = null
-  }
-  mappingProvider.getMappings(req, res)
-    .catch(err => res.send(err))
-    // Only adjust if it's not a download (-> stream)
-    .then(req.query.download ? (result => result) : adjustMappings(req))
-    .then(results => {
-      if (req.query.download) {
-        handleDownload(req, res, results, "mappings")
-      } else {
+  app.get("/mappings/voc", (req, res) => {
+    mappingProvider.getMappingSchemes(req, res)
+      .catch(err => res.send(err))
+      .then(adjustSchemes)
+      .then(results => {
         res.json(results)
-      }
-    })
-})
+      })
+  })
 
-app.post("/mappings", config.auth.postAuthRequired ? auth : authOptional, (req, res) => {
-  mappingProvider.saveMapping(req, res)
-    .catch(err => res.send(err))
-    .then(adjustMapping(req))
-    .then(result => {
-      if (result) {
-        res.status(201).json(result)
-      } else {
-        if (!res.headersSent) {
+  app.get("/mappings/:_id", (req, res) => {
+    mappingProvider.getMapping(req, res)
+      .catch(err => res.send(err))
+      .then(adjustMapping(req))
+      .then(result => {
+        if (result) {
+          res.json(result)
+        } else {
+          res.sendStatus(404)
+        }
+      })
+  })
+
+  app.put("/mappings/:_id", auth, (req, res) => {
+    mappingProvider.putMapping(req, res)
+      .catch(err => res.send(err))
+      .then(adjustMapping(req))
+      .then(result => {
+        if (result) {
+          res.json(result)
+        } else {
+          if (!res.headersSent) {
+            res.sendStatus(400)
+          }
+        }
+      })
+  })
+
+  app.patch("/mappings/:_id", auth, (req, res) => {
+    mappingProvider.patchMapping(req, res)
+      .catch(err => res.send(err))
+      .then(adjustMapping(req))
+      .then(result => {
+        if (result) {
+          res.json(result)
+        } else {
+          if (!res.headersSent) {
+            res.sendStatus(400)
+          }
+        }
+      })
+  })
+
+  app.delete("/mappings/:_id", auth, (req, res) => {
+    mappingProvider.deleteMapping(req, res)
+      .catch(err => res.send(err))
+      .then(result => {
+        // `result` will be either true or false
+        if (result) {
+          res.sendStatus(204)
+        } else {
+          if (!res.headersSent) {
+            res.sendStatus(400)
+          }
+        }
+      })
+  })
+
+}
+
+/**
+ * ########## Annotation related endpoints ##########
+ */
+if (config.annotations) {
+
+  app.get("/annotations", (req, res) => {
+    annotationProvider.getAnnotations(req, res)
+      .catch(err => res.send(err))
+      .then(adjustAnnotations(req))
+      .then(results => {
+        res.json(results)
+      })
+  })
+
+  app.post("/annotations", auth, (req, res) => {
+    annotationProvider.postAnnotation(req, res)
+      .catch(err => res.send(err))
+      .then(util.adjustAnnotation(req))
+      .then(result => {
+        if (result) {
+          res.status(201).json(result)
+        } else {
           res.sendStatus(400)
         }
-      }
-    })
-})
+      })
+  })
 
-app.get("/mappings/suggest", (req, res) => {
-  mappingProvider.getNotationSuggestions(req, res)
-    .catch(err => res.send(err))
-    .then(results => {
-      res.json(results)
-    })
-})
-
-app.get("/mappings/voc", (req, res) => {
-  mappingProvider.getMappingSchemes(req, res)
-    .catch(err => res.send(err))
-    .then(adjustSchemes)
-    .then(results => {
-      res.json(results)
-    })
-})
-
-app.get("/mappings/:_id", (req, res) => {
-  mappingProvider.getMapping(req, res)
-    .catch(err => res.send(err))
-    .then(adjustMapping(req))
-    .then(result => {
-      if (result) {
-        res.json(result)
-      } else {
-        res.sendStatus(404)
-      }
-    })
-})
-
-app.put("/mappings/:_id", auth, (req, res) => {
-  mappingProvider.putMapping(req, res)
-    .catch(err => res.send(err))
-    .then(adjustMapping(req))
-    .then(result => {
-      if (result) {
-        res.json(result)
-      } else {
-        if (!res.headersSent) {
-          res.sendStatus(400)
+  app.get("/annotations/:_id", (req, res) => {
+    annotationProvider.getAnnotation(req, res)
+      .catch(err => res.send(err))
+      .then(util.adjustAnnotation(req))
+      .then(result => {
+        if (result) {
+          res.json(result)
+        } else {
+          res.sendStatus(404)
         }
-      }
-    })
-})
+      })
+  })
 
-app.patch("/mappings/:_id", auth, (req, res) => {
-  mappingProvider.patchMapping(req, res)
-    .catch(err => res.send(err))
-    .then(adjustMapping(req))
-    .then(result => {
-      if (result) {
-        res.json(result)
-      } else {
-        if (!res.headersSent) {
-          res.sendStatus(400)
+  app.put("/annotations/:_id", auth, (req, res) => {
+    annotationProvider.putAnnotation(req, res)
+      .catch(err => res.send(err))
+      .then(util.adjustAnnotation(req))
+      .then(result => {
+        if (result) {
+          res.json(result)
+        } else {
+          if (!res.headersSent) {
+            res.sendStatus(400)
+          }
         }
-      }
-    })
-})
+      })
+  })
 
-app.delete("/mappings/:_id", auth, (req, res) => {
-  mappingProvider.deleteMapping(req, res)
-    .catch(err => res.send(err))
-    .then(result => {
-      // `result` will be either true or false
-      if (result) {
-        res.sendStatus(204)
-      } else {
-        if (!res.headersSent) {
-          res.sendStatus(400)
+  app.patch("/annotations/:_id", auth, (req, res) => {
+    annotationProvider.patchAnnotation(req, res)
+      .catch(err => res.send(err))
+      .then(util.adjustAnnotation(req))
+      .then(result => {
+        if (result) {
+          res.json(result)
+        } else {
+          if (!res.headersSent) {
+            res.sendStatus(400)
+          }
         }
-      }
-    })
-})
+      })
+  })
 
-app.get("/annotations", (req, res) => {
-  annotationProvider.getAnnotations(req, res)
-    .catch(err => res.send(err))
-    .then(adjustAnnotations(req))
-    .then(results => {
-      res.json(results)
-    })
-})
-
-app.post("/annotations", auth, (req, res) => {
-  annotationProvider.postAnnotation(req, res)
-    .catch(err => res.send(err))
-    .then(util.adjustAnnotation(req))
-    .then(result => {
-      if (result) {
-        res.status(201).json(result)
-      } else {
-        res.sendStatus(400)
-      }
-    })
-})
-
-app.get("/annotations/:_id", (req, res) => {
-  annotationProvider.getAnnotation(req, res)
-    .catch(err => res.send(err))
-    .then(util.adjustAnnotation(req))
-    .then(result => {
-      if (result) {
-        res.json(result)
-      } else {
-        res.sendStatus(404)
-      }
-    })
-})
-
-app.put("/annotations/:_id", auth, (req, res) => {
-  annotationProvider.putAnnotation(req, res)
-    .catch(err => res.send(err))
-    .then(util.adjustAnnotation(req))
-    .then(result => {
-      if (result) {
-        res.json(result)
-      } else {
-        if (!res.headersSent) {
-          res.sendStatus(400)
+  app.delete("/annotations/:_id", auth, (req, res) => {
+    annotationProvider.deleteAnnotation(req, res)
+      .catch(err => res.send(err))
+      .then(result => {
+        // `result` will be either true or false
+        if (result) {
+          res.sendStatus(204)
+        } else {
+          if (!res.headersSent) {
+            res.sendStatus(400)
+          }
         }
-      }
-    })
-})
+      })
+  })
 
-app.patch("/annotations/:_id", auth, (req, res) => {
-  annotationProvider.patchAnnotation(req, res)
-    .catch(err => res.send(err))
-    .then(util.adjustAnnotation(req))
-    .then(result => {
-      if (result) {
-        res.json(result)
-      } else {
-        if (!res.headersSent) {
-          res.sendStatus(400)
-        }
-      }
-    })
-})
+}
 
-app.delete("/annotations/:_id", auth, (req, res) => {
-  annotationProvider.deleteAnnotation(req, res)
-    .catch(err => res.send(err))
-    .then(result => {
-      // `result` will be either true or false
-      if (result) {
-        res.sendStatus(204)
-      } else {
-        if (!res.headersSent) {
-          res.sendStatus(400)
-        }
-      }
-    })
-})
+/**
+ * ########## Scheme related endpoints ##########
+ */
+if (config.schemes) {
 
-app.get("/voc", (req, res) => {
-  terminologyProvider.getVocabularies(req, res)
-    .catch(err => res.send(err))
-    .then(adjustSchemes)
-    .then(results => {
-      res.json(results)
-    })
-})
+  app.get("/voc", (req, res) => {
+    terminologyProvider.getVocabularies(req, res)
+      .catch(err => res.send(err))
+      .then(adjustSchemes)
+      .then(results => {
+        res.json(results)
+      })
+  })
 
-app.get("/data", (req, res) => {
-  terminologyProvider.getDetails(req, res)
-    .catch(err => res.send(err))
-    .then(adjustConcepts(req))
-    .then(results => {
-      res.json(results)
-    })
-})
+  app.get("/voc/top", (req, res) => {
+    terminologyProvider.getTop(req, res)
+      .catch(err => res.send(err))
+      .then(adjustConcepts(req))
+      .then(results => {
+        res.json(results)
+      })
+  })
 
-app.get("/voc/top", (req, res) => {
-  terminologyProvider.getTop(req, res)
-    .catch(err => res.send(err))
-    .then(adjustConcepts(req))
-    .then(results => {
-      res.json(results)
-    })
-})
+  app.get("/voc/concepts", (req, res) => {
+    terminologyProvider.getConcepts(req, res)
+      .catch(err => res.send(err))
+      .then(adjustConcepts(req))
+      .then(results => {
+        res.json(results)
+      })
+  })
 
-app.get("/voc/concepts", (req, res) => {
-  terminologyProvider.getConcepts(req, res)
-    .catch(err => res.send(err))
-    .then(adjustConcepts(req))
-    .then(results => {
-      res.json(results)
-    })
-})
+}
 
-app.get("/narrower", (req, res) => {
-  terminologyProvider.getNarrower(req, res)
-    .catch(err => res.send(err))
-    .then(adjustConcepts(req))
-    .then(results => {
-      res.json(results)
-    })
-})
+/**
+ * ########## Concept related endpoints ##########
+ */
+if (config.concepts) {
 
-app.get("/ancestors", (req, res) => {
-  terminologyProvider.getAncestors(req, res)
-    .catch(err => res.send(err))
-    .then(adjustConcepts(req))
-    .then(results => {
-      res.json(results)
-    })
-})
+  app.get("/data", (req, res) => {
+    terminologyProvider.getDetails(req, res)
+      .catch(err => res.send(err))
+      .then(adjustConcepts(req))
+      .then(results => {
+        res.json(results)
+      })
+  })
 
-app.get("/suggest", (req, res) => {
-  terminologyProvider.getSuggestions(req, res)
-    .catch(err => res.send(err))
-    .then(results => {
-      res.json(results)
-    })
-})
+  app.get("/narrower", (req, res) => {
+    terminologyProvider.getNarrower(req, res)
+      .catch(err => res.send(err))
+      .then(adjustConcepts(req))
+      .then(results => {
+        res.json(results)
+      })
+  })
 
-app.get("/search", (req, res) => {
-  terminologyProvider.search(req, res)
-    .catch(err => res.send(err))
-    .then(adjustConcepts(req))
-    .then(results => {
-      res.json(results)
-    })
-})
+  app.get("/ancestors", (req, res) => {
+    terminologyProvider.getAncestors(req, res)
+      .catch(err => res.send(err))
+      .then(adjustConcepts(req))
+      .then(results => {
+        res.json(results)
+      })
+  })
+
+  app.get("/suggest", (req, res) => {
+    terminologyProvider.getSuggestions(req, res)
+      .catch(err => res.send(err))
+      .then(results => {
+        res.json(results)
+      })
+  })
+
+  app.get("/search", (req, res) => {
+    terminologyProvider.search(req, res)
+      .catch(err => res.send(err))
+      .then(adjustConcepts(req))
+      .then(results => {
+        res.json(results)
+      })
+  })
+
+}
 
 module.exports = {
   db, app

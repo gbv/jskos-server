@@ -78,9 +78,15 @@ You can customize the application settings via a configuration file, e.g. by pro
     "algorithm": "HS256",
     "key": null,
     "postAuthRequired": true
-  }
+  },
+  "schemes": true,
+  "concepts": true,
+  "mappings": true,
+  "annotations": true
 }
 ```
+
+With the keys `schemes`, `concepts`, `mappings`, and `annotations`, you can configure whether endpoints relating to the specific functionality should be available. By default, everything is available.
 
 **If you are using jskos-server behind a proxy, it is necessary to provide the `baseUrl` key in your configuration (example for our production API):**
 ```json

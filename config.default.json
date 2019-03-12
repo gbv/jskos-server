@@ -18,5 +18,9 @@
     "algorithm": "HS256",
     "key": null,
     "postAuthRequired": true
-  }
+  },
+  "schemes": true,
+  "concepts": true,
+  "mappings": true,
+  "annotations": true
 }
