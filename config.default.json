@@ -1,0 +1,22 @@
+{
+  "verbosity": false,
+  "baseUrl": null,
+  "port": 3000,
+  "mongo": {
+    "user": "",
+    "pass": "",
+    "host": "localhost",
+    "port": 27017,
+    "db": "jskos-server",
+    "options": {
+      "reconnectTries": 60,
+      "reconnectInterval": 1000,
+      "useNewUrlParser": true
+    }
+  },
+  "auth": {
+    "algorithm": "HS256",
+    "key": null,
+    "postAuthRequired": true
+  }
+}

@@ -21,8 +21,8 @@ if (!file || !fs.existsSync(file)) {
 const config = require("../config")
 const mongo = require("mongodb").MongoClient
 function connect() {
-  return mongo.connect(config.mongoUrl, config.mongoOptions).then(client => {
-    return { client, db: client.db(config.mongoDb) }
+  return mongo.connect(config.mongo.url, config.mongo.options).then(client => {
+    return { client, db: client.db(config.mongo.db) }
   }).catch(error => {
     config.log(error)
     return { client: null, db: null }

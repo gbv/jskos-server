@@ -55,7 +55,7 @@ if (config.auth.algorithm && config.auth.key) {
     console.error("Error setting up JWT authentication")
   }
 } else {
-  console.warn("Note: To provide authentication via JWT, please add AUTH_ALGORITHM and AUTH_KEY to .env!")
+  console.warn("Note: To provide authentication via JWT, please add `auth.algorithm` and `auth.key` to the configuration file!")
   // Deny all requests
   auth = (req, res) => {
     res.sendStatus(403)
@@ -68,19 +68,19 @@ passport.use(new AnonymousStrategy())
 optionalStrategies.push("anonymous")
 
 // For endpoints with optional authentication
-// For example: app.get("/optionallySecureEndpoint", config.requireAuth ? auth : authOptional, (req, res) => { ... })
+// For example: app.get("/optionallySecureEndpoint", config.auth.postAuthRequired ? auth : authOptional, (req, res) => { ... })
 // req.user will cointain the user if authorized, otherwise stays undefined.
 const authOptional = passport.authenticate(optionalStrategies, { session: false })
 
 // Promise for MongoDB db
-const db = mongo.connect(config.mongoUrl, config.mongoOptions).then(client => {
-  return client.db(config.mongoDb)
+const db = mongo.connect(config.mongo.url, config.mongo.options).then(client => {
+  return client.db(config.mongo.db)
 }).catch(error => {
   throw error
 })
 
 db.then(db => {
-  config.log(`connected to MongoDB ${config.mongoUrl} (database: ${config.mongoDb})`)
+  config.log(`connected to MongoDB ${config.mongo.url} (database: ${config.mongo.db})`)
   mappingProvider = new MappingProvider(db.collection("mappings"), db.collection("concordances"))
   terminologyProvider = new TerminologyProvider(db.collection("terminologies"), db.collection("concepts"))
   statusProvider = new StatusProvider(db)
@@ -301,7 +301,7 @@ app.get("/mappings", (req, res) => {
     })
 })
 
-app.post("/mappings", config.postAuthRequired ? auth : authOptional, (req, res) => {
+app.post("/mappings", config.auth.postAuthRequired ? auth : authOptional, (req, res) => {
   mappingProvider.saveMapping(req, res)
     .catch(err => res.send(err))
     .then(adjustMapping(req))

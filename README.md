@@ -55,28 +55,47 @@ npm install
 ```
 
 ### Configuration
-You can customize the port and the MongoDB connection settings via environment variables, for example through a `.env` file:
+You can customize the application settings via a configuration file, e.g. by providing a generic `config.json` file and/or a more specific `config.{env}.json` file (where `{env}` is the environment like `development` or `production`). The latter will have precendent over the former, and all missing keys will be defaulted with values from `config.default.json`.
 
-```bash
-PORT=__EXPRESS_PORT__
-MONGO_HOST=__MONGODB_HOSTNAME__
-MONGO_USER=__MONGODB_USERNAME__
-MONGO_PASS=__MONGODB_PASSWORD__
-MONGO_PORT=__MONGODB_PORT__
-MONGO_DB=__MONGODB_DATABASE__
+```json
+{
+  "verbosity": false,
+  "baseUrl": null,
+  "port": 3000,
+  "mongo": {
+    "user": "",
+    "pass": "",
+    "host": "localhost",
+    "port": 27017,
+    "db": "jskos-server",
+    "options": {
+      "reconnectTries": 60,
+      "reconnectInterval": 1000,
+      "useNewUrlParser": true
+    }
+  },
+  "auth": {
+    "algorithm": "HS256",
+    "key": null,
+    "postAuthRequired": true
+  }
+}
 ```
 
-**If you are using jskos-server behind a proxy, it is necessary to provide the `BASE_URL` key in `.env`:**
-```bash
-# Example for our production API
-BASE_URL=https://coli-conc.gbv.de/api/
+**If you are using jskos-server behind a proxy, it is necessary to provide the `baseUrl` key in your configuration (example for our production API):**
+```json
+{
+  "baseUrl": "https://coli-conc.gbv.de/api/"
+}
 ```
 
-For authorized endpoints via JWT, you need to provide the JWT algorithm and key/secret used at the authentication server in the `.env` file, like this:
+For authorized endpoints via JWT, you need to provide the JWT algorithm and key/secret used at the authentication server in the configuration file, like this:
 
-```bash
-AUTH_ALGORITHM=RS256
-AUTH_KEY=-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA57ZWRoOjXYTQ9yujxAu7\ne3k4+JRBAqGdDVIRRq5vXB2D5nJBIhQjVjylumn+QnTX/MdZx8qn7X96npUwHwIh\nylCgUmsYXcjP08X/AXEcP5bPOkgBBCKjWmcm+p01RQSOM0nSptyxpyXzr2ppWe1b\nuYdRYDWj+JV7vm+jJA4NiFv4UnAhoG5lRATADzu0/6wpMK3dVMBL7L0jQoV5xBAb\nLADOy5hD9XEII3VPkUqDGIKM+Z24flkCIf0lQ7FjsoZ2mmM1SZJ5vPDcjMKreFkX\ncWlcwGHN0PUWZWLhb7c8yYa1rauMcwFwv0d2XyOEfgkqEJdCh8mVT/5jR48D2PNG\ncwIDAQAB\n-----END PUBLIC KEY-----\n
+```json
+"auth": {
+  "algorithm": "RS256",
+  "key": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA57ZWRoOjXYTQ9yujxAu7\ne3k4+JRBAqGdDVIRRq5vXB2D5nJBIhQjVjylumn+QnTX/MdZx8qn7X96npUwHwIh\nylCgUmsYXcjP08X/AXEcP5bPOkgBBCKjWmcm+p01RQSOM0nSptyxpyXzr2ppWe1b\nuYdRYDWj+JV7vm+jJA4NiFv4UnAhoG5lRATADzu0/6wpMK3dVMBL7L0jQoV5xBAb\nLADOy5hD9XEII3VPkUqDGIKM+Z24flkCIf0lQ7FjsoZ2mmM1SZJ5vPDcjMKreFkX\ncWlcwGHN0PUWZWLhb7c8yYa1rauMcwFwv0d2XyOEfgkqEJdCh8mVT/5jR48D2PNG\ncwIDAQAB\n-----END PUBLIC KEY-----\n"
+}
 ```
 
 The JWT has to be provided as a Bearer token in the authentication header, e.g. `Authentication: Bearer <token>`. Currently, all authorized endpoints will be accessible (although `PUT`/`PATCH`/`DELETE` are limited to the user who created the object), but later it will be possible to set scopes for certain users (see [#47](https://github.com/gbv/jskos-server/issues/47)).
@@ -92,8 +111,11 @@ For a regular import, you can use `./scripts/import.sh`. See the top of the file
 
 ### Run Server
 ```bash
-# serve with hot reload and auto reconnect at localhost:3000 (default)
+# Development server with hot reload and auto reconnect at localhost:3000 (default)
 npm run start
+
+# To run the server in production, run this:
+NODE_ENV=production node ./server.js
 ```
 
 ### Run Tests
