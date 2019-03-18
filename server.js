@@ -81,7 +81,7 @@ const db = mongo.connect(config.mongo.url, config.mongo.options).then(client => 
 
 db.then(db => {
   config.log(`connected to MongoDB ${config.mongo.url} (database: ${config.mongo.db})`)
-  mappingProvider = new MappingProvider(db.collection("mappings"), db.collection("concordances"))
+  mappingProvider = new MappingProvider(db.collection("mappings"), db.collection("concordances"), db.collection("terminologies"))
   terminologyProvider = new TerminologyProvider(db.collection("terminologies"), db.collection("concepts"))
   statusProvider = new StatusProvider(db)
   annotationProvider = new AnnotationProvider(db.collection("annotations"))
