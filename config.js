@@ -29,20 +29,11 @@ if (env === "test") {
   config.mongo.db += "-test"
 }
 
-console.log(`running in ${env} mode`)
-
 const log = (...args) => {
   if (env != "test" || config.verbosity) {
     console.log(...args)
   }
 }
 config.log = log
-
-if (!config.auth.postAuthRequired) {
-  log("Note: POST /mappings does not require authentication. To change this, remove `auth.postAuthRequired` from the configuration file.")
-}
-if (!config.baseUrl) {
-  log("Warning: If you're using jskos-server behind a reverse proxy, it is necessary to add `baseUrl` to the configuration file!")
-}
 
 module.exports = config

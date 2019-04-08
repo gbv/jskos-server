@@ -12,6 +12,16 @@
  */
 
 const config = require("./config")
+
+config.log(`running in ${config.env} mode`)
+
+if (!config.auth.postAuthRequired) {
+  config.log("Note: POST /mappings does not require authentication. To change this, remove `auth.postAuthRequired` from the configuration file.")
+}
+if (!config.baseUrl) {
+  config.log("Warning: If you're using jskos-server behind a reverse proxy, it is necessary to add `baseUrl` to the configuration file!")
+}
+
 const express = require("express")
 const bodyParser = require("body-parser")
 const app = express()
