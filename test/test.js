@@ -84,7 +84,7 @@ describe("Express Server", () => {
 
   let clearDatabase = done => {
     // Empty database before testing
-    exec("NODE_ENV=test npm run import -- -r", (err) => {
+    exec("NODE_ENV=test ./bin/import.js --reset", (err) => {
       if (err) {
         console.error("    x Error: Clearing database failed.")
       } else {
@@ -141,7 +141,7 @@ describe("Express Server", () => {
 
     it("should GET two concordances", done => {
       // Add concordances to database
-      exec("NODE_ENV=test npm run import -- -k ./test/concordances/concordances.ndjson", (err) => {
+      exec("NODE_ENV=test ./bin/import.js concordances ./test/concordances/concordances.ndjson", (err) => {
         if (err) {
           done(err)
           return
@@ -178,7 +178,7 @@ describe("Express Server", () => {
 
     it("should GET three mappings", done => {
       // Add mappings to database
-      exec("NODE_ENV=test npm run import -- -m ./test/mappings/mapping-ddc-gnd.json", (err) => {
+      exec("NODE_ENV=test ./bin/import.js mappings ./test/mappings/mapping-ddc-gnd.json", (err) => {
         if (err) {
           done(err)
           return
@@ -233,7 +233,7 @@ describe("Express Server", () => {
 
     it("should GET only mappings from GND", done => {
       // Add mappings to database
-      exec("NODE_ENV=test npm run import -- -r -m ./test/mappings/mappings-ddc.json", (err) => {
+      exec("NODE_ENV=test ./bin/import.js --reset mappings ./test/mappings/mappings-ddc.json", (err) => {
         if (err) {
           done(err)
           return
@@ -361,7 +361,7 @@ describe("Express Server", () => {
 
     // Reinsert mappings again
     before(done => {
-      exec("NODE_ENV=test npm run import -- -r -m ./test/mappings/mappings-ddc.json", (err) => {
+      exec("NODE_ENV=test ./bin/import.js --reset mappings ./test/mappings/mappings-ddc.json", (err) => {
         if (err) {
           done(err)
           return
@@ -598,7 +598,7 @@ describe("Express Server", () => {
 
     it("should GET one vocabulary", done => {
       // Add a vocabulary and concepts to database
-      exec("NODE_ENV=test npm run import -- -i -t ./test/terminologies/terminologies.json -c ./test/concepts/concepts-ddc-6-60-61-62.json", (err) => {
+      exec("NODE_ENV=test ./bin/import.js --indexes && NODE_ENV=test ./bin/import.js schemes ./test/terminologies/terminologies.json && NODE_ENV=test ./bin/import.js concepts ./test/concepts/concepts-ddc-6-60-61-62.json", (err) => {
         if (err) {
           done(err)
           return
@@ -987,7 +987,7 @@ describe("Express Server", () => {
 
     it("should clear the database", done => {
       // Clear database
-      exec("NODE_ENV=test npm run import -- -r -t -c -k -m", (err) => {
+      exec("NODE_ENV=test ./bin/import.js --reset", (err) => {
         if (err) {
           done(err)
           return
@@ -1014,7 +1014,7 @@ describe("Express Server", () => {
 
     it("should create indexes", done => {
       // Create indexes
-      exec("NODE_ENV=test npm run import -- -i -t -c -k -m -a", (err) => {
+      exec("NODE_ENV=test ./bin/import.js --indexes", (err) => {
         if (err) {
           done(err)
           return
@@ -1042,7 +1042,7 @@ describe("Express Server", () => {
 
     it("should import concepts", done => {
       // Add concepts to database
-      exec("NODE_ENV=test npm run import -- -c ./test/concepts/concepts-ddc-6-60-61-62.json", (err) => {
+      exec("NODE_ENV=test ./bin/import.js concepts ./test/concepts/concepts-ddc-6-60-61-62.json", (err) => {
         if (err) {
           done(err)
           return
@@ -1060,7 +1060,7 @@ describe("Express Server", () => {
 
     it("should import terminologies", done => {
       // Add a vocabulary database
-      exec("NODE_ENV=test npm run import -- -t ./test/terminologies/terminologies.json", (err) => {
+      exec("NODE_ENV=test ./bin/import.js schemes ./test/terminologies/terminologies.json", (err) => {
         if (err) {
           done(err)
           return
@@ -1078,7 +1078,7 @@ describe("Express Server", () => {
 
     it("should import concordances", done => {
       // Add concordances to database
-      exec("NODE_ENV=test npm run import -- -k ./test/concordances/concordances.ndjson", (err) => {
+      exec("NODE_ENV=test ./bin/import.js concordances ./test/concordances/concordances.ndjson", (err) => {
         if (err) {
           done(err)
           return
@@ -1096,7 +1096,7 @@ describe("Express Server", () => {
 
     it("should import mappings", done => {
       // Add mappings to database
-      exec("NODE_ENV=test npm run import -- -m ./test/mappings/mapping-ddc-gnd.json", (err) => {
+      exec("NODE_ENV=test ./bin/import.js mappings ./test/mappings/mapping-ddc-gnd.json", (err) => {
         if (err) {
           done(err)
           return

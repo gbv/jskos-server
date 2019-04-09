@@ -106,11 +106,22 @@ For authorized endpoints via JWT, you need to provide the JWT algorithm and key/
 The JWT has to be provided as a Bearer token in the authentication header, e.g. `Authentication: Bearer <token>`. Currently, all authorized endpoints will be accessible (although `PUT`/`PATCH`/`DELETE` are limited to the user who created the object), but later it will be possible to set scopes for certain users (see [#47](https://github.com/gbv/jskos-server/issues/47)).
 
 ### Data Import
-JSKOS Server provides a script to import JSKOS data into the database. Right now, mappings, terminologies (concept schemes), and concepts in JSON or [NDJSON](http://ndjson.org) format are supported.
+JSKOS Server provides a script to import JSKOS data into the database. Right now, mappings, terminologies (concept schemes), concepts, concordances, and annotations, in JSON (array only) or [NDJSON](http://ndjson.org) format are supported.
 
-For a one-time import, you can use `npm run import`. For usage, see `npm run import -- -h`.
+Before you can use the script, you need to link it: `npm link`. This makes the command `jskos-import` available in your path. To see how to use the script, run `jskos-import --help`.
 
-For a regular import, you can use `./scripts/import.sh`. See the top of the file for instructions.
+Examples:
+```bash
+# Linking is necessary to be able to use jskos-import
+# (if you want to avoid this, use ./bin/import.js instead of jskos-import)
+npm link
+# Create indexes for all types
+jskos-import --indexes
+# Import RVK concepts (this might take a while)
+jskos-import concepts https://coli-conc.gbv.de/rvk/data/2019_1/rvko_2019_1.ndjson
+# Import coli-conc concordances
+jskos-import concordances https://coli-conc.gbv.de/concordances/csv/concordances.ndjson
+```
 
 ## Usage
 
