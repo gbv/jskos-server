@@ -29,6 +29,11 @@ if (env === "test") {
   config.mongo.db += "-test"
 }
 
+// Set baseUrl to localhost if not set
+if (!config.baseUrl) {
+  config.baseUrl = `http://localhost:${config.port}`
+}
+
 const log = (...args) => {
   if (env != "test" || config.verbosity) {
     console.log(...args)
