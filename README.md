@@ -117,6 +117,8 @@ Examples:
 npm link
 # Create indexes for all types
 jskos-import --indexes
+# Import RVK scheme (from coli-conc API)
+jskos-import schemes https://coli-conc.gbv.de/rvk/api/voc
 # Import RVK concepts (this might take a while)
 jskos-import concepts https://coli-conc.gbv.de/rvk/data/2019_1/rvko_2019_1.ndjson
 # Import coli-conc concordances

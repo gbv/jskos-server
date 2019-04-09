@@ -14,6 +14,7 @@ Options
                                         before import (use with care!)
   --indexes               -i          Create indexes without import
   --quiet                 -q          Only output warnings and errors
+  --format                -f          Either json or ndjson. Defaults to json or file ending if available.
 
 Examples
   $ jskos-import --indexes
@@ -35,6 +36,11 @@ Examples
       type: "boolean",
       alias: "q",
       default: false
+    },
+    format: {
+      type: "string",
+      alias: "f",
+      default: null
     },
     help: {
       type: "boolean",
@@ -93,9 +99,18 @@ if (!cli.flags.indexes && !cli.flags.reset) {
   }
 }
 
-if (file && !file.endsWith(".json") && !file.endsWith(".ndjson")) {
-  console.error("Required format for <file>: .ndjson or .json")
-  process.exit(1)
+let format
+if (["json", "ndjson"].includes(cli.flags.format)) {
+  format = cli.flags.format
+} else {
+  if (file && file.endsWith(".ndjson")) {
+    format = "ndjson"
+  } else {
+    format = "json"
+  }
+  if (cli.flags.format) {
+    console.warning(`Unknown format ${cli.flags.format}, using ${format} instead.`)
+  }
 }
 
 log(`Start of import script: ${new Date()}`)
@@ -122,7 +137,7 @@ mongo.connect(config.mongo.url, config.mongo.options).then(client => {
   if (cli.flags.indexes) {
     return createIndexes(type)
   } else if (file && type) {
-    return importFile(file, type)
+    return importFile(file, type, { format })
   } else {
     return null
   }
@@ -219,7 +234,7 @@ function createIndexes(type) {
  *
  * @returns Promise that fulfils if import succeeded.
  */
-function importFile(file, type, { concordance, quiet = false } = {}) {
+function importFile(file, type, { concordance, quiet = false, format } = {}) {
   log(`Importing ${file} as type ${type}.`)
   // Local function for logging that takes "quiet" into account
   let _log = (...params) => {
@@ -236,7 +251,7 @@ function importFile(file, type, { concordance, quiet = false } = {}) {
       file.startsWith("http") ?
         request(file) :
         fs.createReadStream(file, { encoding: "utf8" })
-    ).pipe(file.endsWith("ndjson") ? ndjson.parse() : JSONStream.parse("*"))
+    ).pipe((format == "ndjson" || file.endsWith("ndjson")) ? ndjson.parse() : JSONStream.parse("*"))
     let count = 0
     let loaded = 0
     let imported = 0
