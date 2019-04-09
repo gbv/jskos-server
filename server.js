@@ -209,44 +209,44 @@ function handleDownload(req, res, results, filename) {
   let fileEnding = "json"
   let first = true, delimiter = ","
   switch (req.query.download) {
-  case "ndjson":
-    fileEnding = "ndjson"
-    res.set("Content-Type", "application/x-ndjson; charset=utf-8")
-    transform = new Transform({
-      objectMode: true,
-      transform(chunk, encoding, callback) {
-        this.push(JSON.stringify(chunk) + "\n")
-        callback()
-      }
-    })
-    break
-  case "csv":
-  case "tsv":
-    fileEnding = req.query.download
-    if (req.query.download == "csv") {
-      delimiter = ","
-      res.set("Content-Type", "text/csv; charset=utf-8")
-    } else {
-      delimiter = "\t"
-      res.set("Content-Type", "text/tab-separated-values; charset=utf-8")
-    }
-    transform = new Transform({
-      objectMode: true,
-      transform(chunk, encoding, callback) {
-        // Small workaround to prepend a line to CSV
-        if (first) {
-          this.push(`"fromNotation"${delimiter}"toNotation"${delimiter}"type"\n`)
-          first = false
+    case "ndjson":
+      fileEnding = "ndjson"
+      res.set("Content-Type", "application/x-ndjson; charset=utf-8")
+      transform = new Transform({
+        objectMode: true,
+        transform(chunk, encoding, callback) {
+          this.push(JSON.stringify(chunk) + "\n")
+          callback()
         }
-        let mappingToCSV = jskos.mappingToCSV({
-          lineTerminator: "\r\n",
-          delimiter,
-        })
-        this.push(mappingToCSV(chunk))
-        callback()
+      })
+      break
+    case "csv":
+    case "tsv":
+      fileEnding = req.query.download
+      if (req.query.download == "csv") {
+        delimiter = ","
+        res.set("Content-Type", "text/csv; charset=utf-8")
+      } else {
+        delimiter = "\t"
+        res.set("Content-Type", "text/tab-separated-values; charset=utf-8")
       }
-    })
-    break
+      transform = new Transform({
+        objectMode: true,
+        transform(chunk, encoding, callback) {
+        // Small workaround to prepend a line to CSV
+          if (first) {
+            this.push(`"fromNotation"${delimiter}"toNotation"${delimiter}"type"\n`)
+            first = false
+          }
+          let mappingToCSV = jskos.mappingToCSV({
+            lineTerminator: "\r\n",
+            delimiter,
+          })
+          this.push(mappingToCSV(chunk))
+          callback()
+        }
+      })
+      break
   }
   // Add file header
   res.set("Content-disposition", `attachment; filename=${filename}.${fileEnding}`)
