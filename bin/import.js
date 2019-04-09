@@ -5,11 +5,13 @@ const cli = meow(`
 Usage
   $ jskos-import [options] [type] [file]
 
-  type is only optional if option --indexes is set, otherwise required.
-  file is unused if option --indexes is set, otherwise required.
+  type is only optional if option --indexes is set, or if --reset is set and no file is given, otherwise required.
+  file is unused if option --indexes is set, optional if --reset is set, otherwise required.
 
 Options
   GNU long option         Option      Meaning
+  --reset                 -r          Resets the associated collection (or all collections)
+                                        before import (use with care!)
   --indexes               -i          Create indexes without import
   --quiet                 -q          Only output warnings and errors
 
@@ -19,6 +21,11 @@ Examples
   $ jskos-import concepts concepts.ndjson
 `, {
   flags: {
+    reset: {
+      type: "boolean",
+      alias: "r",
+      default: false
+    },
     indexes: {
       type: "boolean",
       alias: "i",
@@ -56,6 +63,8 @@ const log = (...args) => {
     console.log(...args)
   }
 }
+const allTypes = ["concept", "scheme", "mapping", "concordance", "annotation"]
+const file = cli.input[1]
 
 // Parse type
 // The result is the type that is used in jskos-validate.
@@ -71,14 +80,13 @@ if (cli.input[0] && !type) {
   process.exit(1)
 }
 
-if (!cli.flags.indexes && !type) {
+if (!cli.flags.indexes && !cli.flags.reset && !type) {
   console.error("The <type> argument is necessary to import a file.")
   process.exit(1)
 }
 
-// Parse filename if necessary
-const file = cli.input[1]
-if (!cli.flags.indexes) {
+// Check filename if necessary
+if (!cli.flags.indexes && !cli.flags.reset) {
   if (!file || (!file.startsWith("http") && !fs.existsSync(file))) {
     console.error(`Invalid or missing <file>: ${file || ""}`)
     process.exit(1)
@@ -96,11 +104,27 @@ log(`Start of import script: ${new Date()}`)
 let connection
 mongo.connect(config.mongo.url, config.mongo.options).then(client => {
   connection = { client, db: client.db(config.mongo.db) }
+  log("Connected to database", config.mongo.db)
+
+  if (cli.flags.reset) {
+    let promises = []
+    let types = type ? [type] : allTypes
+    for (let type of types) {
+      promises.push(collectionForType(type).drop().then(() => log(`Collection for ${type}s was dropped.`)).catch(() => log(`Collection for ${type}s could not be dropped (maybe it didn't exist yet.)`)))
+    }
+    return Promise.all(promises)
+  } else {
+    return Promise.resolve()
+  }
+
+}).then(() => {
 
   if (cli.flags.indexes) {
     return createIndexes(type)
-  } else {
+  } else if (file && type) {
     return importFile(file, type)
+  } else {
+    return null
   }
 
 }).catch(error => {
@@ -114,19 +138,12 @@ mongo.connect(config.mongo.url, config.mongo.options).then(client => {
 function createIndexes(type) {
   log(`Creating indexes for ${type ? type : "all types"}.`)
   let promises = []
-  let types = type ? [type] : ["concept", "scheme", "mapping", "concordance", "annotation"]
+  let types = type ? [type] : allTypes
   for (let type of types) {
     // Map type to name of collection
-    let collectionName = {
-      "scheme": "terminologies",
-      "concept": "concepts",
-      "concordance": "concordances",
-      "mapping": "mappings",
-      "annotation": "annotations"
-    }[type]
-    let collection = connection.db.collection(collectionName)
+    let collection = collectionForType(type)
     // Create collection if necessary and drop existing indexes
-    let preparePromise = connection.db.createCollection(collectionName).then(() => collection.dropIndexes()).then(() => {
+    let preparePromise = connection.db.createCollection(collectionNameForType(type)).then(() => collection.dropIndexes()).then(() => {
       console.log(`Created collection and dropped indexes for ${type}.`)
     })
     // Create new indexes
@@ -213,13 +230,7 @@ function importFile(file, type, { concordance, quiet = false } = {}) {
   // Only for concepts, needed for post-import adjustments
   let hasChildren = {}
   // Database collection depending on type
-  let collection = connection.db.collection({
-    "scheme": "terminologies",
-    "concept": "concepts",
-    "concordance": "concordances",
-    "mapping": "mappings",
-    "annotation": "annotations"
-  }[type])
+  let collection = collectionForType(type)
   return new Promise(resolve => {
     let rs = (
       file.startsWith("http") ?
@@ -542,6 +553,19 @@ function adjustSchemes() {
 }
 
 // Helper functions
+
+function collectionNameForType(type) {
+  return {
+    "scheme": "terminologies",
+    "concept": "concepts",
+    "concordance": "concordances",
+    "mapping": "mappings",
+    "annotation": "annotations"
+  }[type]
+}
+function collectionForType(type) {
+  return connection.db.collection(collectionNameForType(type))
+}
 
 // from https://web.archive.org/web/20170609122132/http://jam.sg/blog/efficient-partial-keyword-searches/
 function makeSuffixes(values) {
