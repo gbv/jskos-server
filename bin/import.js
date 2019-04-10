@@ -120,7 +120,7 @@ mongo.connect(config.mongo.url, config.mongo.options).then(client => {
     for (let type of types) {
       promises.push(collectionForType(type).drop().then(() => log(`Collection for ${type}s was dropped.`)).catch(() => log(`Collection for ${type}s could not be dropped (maybe it didn't exist yet.)`)))
     }
-    return Promise.all(promises)
+    return Promise.all(promises).then(() => adjustSchemes())
   } else {
     return Promise.resolve()
   }
