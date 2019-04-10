@@ -108,13 +108,14 @@ The JWT has to be provided as a Bearer token in the authentication header, e.g. 
 ### Data Import
 JSKOS Server provides a script to import JSKOS data into the database. Right now, mappings, terminologies (concept schemes), concepts, concordances, and annotations, in JSON (array only) or [NDJSON](http://ndjson.org) format are supported.
 
-Before you can use the script, you need to link it: `npm link`. This makes the command `jskos-import` available in your path. To see how to use the script, run `jskos-import --help`.
+Before you can use the script, you need to link it: `npm link`. This makes the command `jskos-import` available in your path. To see how to use the script, run `jskos-import --help`. **Note:** If you have multiple jskos-server instances running on the same machine, this command will make the import for the **current** instance available in the path. Alternatively, you can use `./bin/import.js` or `npm run import --`.
 
 Examples:
 ```bash
-# Linking is necessary to be able to use jskos-import
-# (if you want to avoid this, use ./bin/import.js instead of jskos-import)
+# Linking is necessary to be able to use the `jskos-import` command.
 npm link
+# Alternatively, replace `jskos-import` with `./bin/import.js` or `npm run import --`. This is recommended for cronjobs etc.
+
 # Create indexes for all types
 jskos-import --indexes
 # Import RVK scheme (from coli-conc API)
@@ -123,6 +124,10 @@ jskos-import schemes https://coli-conc.gbv.de/rvk/api/voc
 jskos-import concepts https://coli-conc.gbv.de/rvk/data/2019_1/rvko_2019_1.ndjson
 # Import coli-conc concordances
 jskos-import concordances https://coli-conc.gbv.de/concordances/csv/concordances.ndjson
+
+# Batch import multiple files or URLs
+npm run import-batch -- mappings files.txt
+# files.txt should contain one file or URL per line with the full path and no escaping.
 ```
 
 ## Usage

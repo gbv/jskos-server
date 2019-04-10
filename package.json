@@ -13,7 +13,8 @@
     "lint": "./node_modules/.bin/eslint ./*.js ./**/*.js",
     "fix": "./node_modules/.bin/eslint --fix ./*.js ./**/*.js",
     "lint-staged": "lint-staged",
-    "import": "node --max-old-space-size=8192 import.js"
+    "import": "./bin/import.js",
+    "import-batch": "func() { tr '\\n' '\\0' < \"$2\"  | xargs -0 -n1 ./bin/import.js $1; }; func"
   },
   "lint-staged": {
     "**/*.js": [
@@ -27,7 +28,7 @@
   },
   "pre-commit": "lint-staged",
   "bin": {
-    "jskos-import": "bin/import.js"
+    "jskos-import": "./bin/import.js"
   },
   "author": "",
   "license": "MIT",
