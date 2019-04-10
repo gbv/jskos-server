@@ -73,14 +73,7 @@ const allTypes = ["concept", "scheme", "mapping", "concordance", "annotation"]
 const file = cli.input[1]
 
 // Parse type
-// The result is the type that is used in jskos-validate.
-const type = {
-  Concept: "concept",
-  ConceptScheme: "scheme",
-  ConceptMapping: "mapping",
-  Concordance: "concordance",
-  Annotation: "annotation",
-}[jskos.guessObjectType(cli.input[0])]
+const type = jskos.guessObjectType(cli.input[0], true)
 if (cli.input[0] && !type) {
   console.error(`Invalid <type> argument: ${cli.input[0] || ""}`)
   process.exit(1)
