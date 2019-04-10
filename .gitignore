@@ -18,5 +18,4 @@ yarn-error.log*
 *.sln
 
 # Lists for import script
-scripts/*.txt
-scripts/*.log
+imports/

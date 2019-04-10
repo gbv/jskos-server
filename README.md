@@ -128,6 +128,7 @@ jskos-import concordances https://coli-conc.gbv.de/concordances/csv/concordances
 # Batch import multiple files or URLs
 npm run import-batch -- mappings files.txt
 # files.txt should contain one file or URL per line with the full path and no escaping.
+# You can, for example, store these batch import files in folder `imports` which is ignored in git.
 ```
 
 ## Usage

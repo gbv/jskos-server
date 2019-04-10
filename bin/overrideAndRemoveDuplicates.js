@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 /**
  * This is a temporary script to be integrated into the import scripts later.
  *
