@@ -3,7 +3,6 @@
 [![Build Status](https://travis-ci.com/gbv/jskos-server.svg?branch=master)](https://travis-ci.com/gbv/jskos-server)
 [![GitHub package version](https://img.shields.io/github/package-json/v/gbv/jskos-server.svg?label=version)](https://github.com/gbv/jskos-server)
 [![Uptime Robot status](https://img.shields.io/uptimerobot/status/m780815088-08758d5c5193e7b25236cfd7.svg?label=%2Fapi%2F)](https://stats.uptimerobot.com/qZQx1iYZY/780815088)
-[![Uptime Robot status](https://img.shields.io/uptimerobot/status/m780815090-86af901a732dc41e3a48cd8c.svg?label=%2Fdev-api%2F)](https://stats.uptimerobot.com/qZQx1iYZY/780815090)
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg)](https://github.com/RichardLitt/standard-readme)
 
 > Web service to access [JSKOS] data.
@@ -107,13 +106,30 @@ For authorized endpoints via JWT, you need to provide the JWT algorithm and key/
 The JWT has to be provided as a Bearer token in the authentication header, e.g. `Authentication: Bearer <token>`. Currently, all authorized endpoints will be accessible (although `PUT`/`PATCH`/`DELETE` are limited to the user who created the object), but later it will be possible to set scopes for certain users (see [#47](https://github.com/gbv/jskos-server/issues/47)).
 
 ### Data Import
-JSKOS Server provides a script to import JSKOS data into the database. Right now, mappings, terminologies (concept schemes), and concepts in JSON or [NDJSON](http://ndjson.org) format are supported.
+JSKOS Server provides a script to import JSKOS data into the database. Right now, mappings, terminologies (concept schemes), concepts, concordances, and annotations, in JSON (array only) or [NDJSON](http://ndjson.org) format are supported.
 
-For a one-time import, you can use `npm run import`. For usage, see `npm run import -- -h`. If you install jskos-server with `npm install -g`, the import script is available as command `jskos-import`.
+Before you can use the script, you need to link it: `npm link`. This makes the command `jskos-import` available in your path. To see how to use the script, run `jskos-import --help`. **Note:** If you have multiple jskos-server instances running on the same machine, this command will make the import for the **current** instance available in the path. Alternatively, you can use `./bin/import.js` or `npm run import --`.
 
-For instance to import all concepts listed in file `concepts.ndjson`:
+Examples:
+```bash
+# Linking is necessary to be able to use the `jskos-import` command.
+npm link
+# Alternatively, replace `jskos-import` with `./bin/import.js` or `npm run import --`. This is recommended for cronjobs etc.
 
-    jskos-import concepts concepts.ndjson
+# Create indexes for all types
+jskos-import --indexes
+# Import RVK scheme (from coli-conc API)
+jskos-import schemes https://coli-conc.gbv.de/rvk/api/voc
+# Import RVK concepts (this might take a while)
+jskos-import concepts https://coli-conc.gbv.de/rvk/data/2019_1/rvko_2019_1.ndjson
+# Import coli-conc concordances
+jskos-import concordances https://coli-conc.gbv.de/concordances/csv/concordances.ndjson
+
+# Batch import multiple files or URLs
+npm run import-batch -- mappings files.txt
+# files.txt should contain one file or URL per line with the full path and no escaping.
+# You can, for example, store these batch import files in folder `imports` which is ignored in git.
+```
 
 ## Usage
 
