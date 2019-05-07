@@ -2,5 +2,9 @@
   "auth": {
     "algorithm": "HS256",
     "key": "test"
-  }
+  },
+  "schemes": true,
+  "concepts": true,
+  "mappings": true,
+  "annotations": true
 }
