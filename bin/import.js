@@ -544,14 +544,14 @@ function adjustSchemes() {
   return terminologyCollection.find({}).toArray().then(schemes => {
     let promises = []
     for (let scheme of schemes) {
-      promises.push(conceptCollection.findOne({ "inScheme.uri": scheme.uri }).then(result => {
+      promises.push(conceptCollection.findOne({ $or: [scheme.uri].concat(scheme.identifier || []).map(uri => ({ "inScheme.uri": uri })) }).then(result => {
         return terminologyCollection.update({ _id: scheme.uri }, {
           [result ? "$set" : "$unset"]: {
             concepts: [null]
           }
         })
       }))
-      promises.push(conceptCollection.findOne({ "topConceptOf.uri": scheme.uri }).then(result => {
+      promises.push(conceptCollection.findOne({ $or: [scheme.uri].concat(scheme.identifier || []).map(uri => ({ "topConceptOf.uri": uri })) }).then(result => {
         return terminologyCollection.update({ _id: scheme.uri }, {
           [result ? "$set" : "$unset"]: {
             topConcepts: [null]
