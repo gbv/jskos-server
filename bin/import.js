@@ -205,6 +205,9 @@ function createIndexes(type) {
         [{ "target": 1 }, {}],
         [{ "creator": 1 }, {}],
       ]
+    } else if (type == "scheme") {
+      indexes.push([{ "uri": 1 }, {}])
+      indexes.push([{ "identifier": 1 }, {}])
     }
     // Create all indexes
     for(let [index, options] of indexes) {
