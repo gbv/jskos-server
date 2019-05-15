@@ -76,7 +76,9 @@ You can customize the application settings via a configuration file, e.g. by pro
   "auth": {
     "algorithm": "HS256",
     "key": null,
-    "postAuthRequired": true
+    "postAuthRequired": true,
+    "whitelist": null,
+    "allowCrossUserEditing": false
   },
   "schemes": true,
   "concepts": true,
@@ -104,6 +106,11 @@ For authorized endpoints via JWT, you need to provide the JWT algorithm and key/
 ```
 
 The JWT has to be provided as a Bearer token in the authentication header, e.g. `Authentication: Bearer <token>`. Currently, all authorized endpoints will be accessible (although `PUT`/`PATCH`/`DELETE` are limited to the user who created the object), but later it will be possible to set scopes for certain users (see [#47](https://github.com/gbv/jskos-server/issues/47)).
+
+Additional options for `auth`:
+- `postAuthRequired`: boolean (default `true`) - whether authentication is required to POST a mapping
+- `whitelist`: array (default `null`) - a list of allowed user URIs (if given, all other users will be denied access)
+- `allowCrossUserEditing`: boolean (default `false`) - whether to allow users to edit or delete another user's data
 
 ### Data Import
 JSKOS Server provides a script to import JSKOS data into the database. Right now, mappings, terminologies (concept schemes), concepts, concordances, and annotations, in JSON (array only) or [NDJSON](http://ndjson.org) format are supported.

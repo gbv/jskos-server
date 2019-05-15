@@ -17,7 +17,9 @@
   "auth": {
     "algorithm": "HS256",
     "key": null,
-    "postAuthRequired": true
+    "postAuthRequired": true,
+    "whitelist": null,
+    "allowCrossUserEditing": false
   },
   "schemes": true,
   "concepts": true,
