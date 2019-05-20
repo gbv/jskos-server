@@ -303,6 +303,10 @@ function importFile(file, type, { concordance, quiet = false, format } = {}) {
         console.warn(`Warning: Could not validate ${type} number ${count}.` + (object.uri ? ` (${object.uri})` : ""))
         return
       }
+      if (type == "concept" && !object.inScheme) {
+        console.warn(`Warning: Missing inScheme property for ${type} number ${count}.` + (object.uri ? ` (${object.uri})` : ""))
+        return
+      }
       // 2. Pre-import adjustments depending on type.
       switch (type) {
         case "scheme":
