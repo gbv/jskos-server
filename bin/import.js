@@ -3,10 +3,10 @@
 const meow = require("meow")
 const cli = meow(`
 Usage
-  $ jskos-import [options] [type file]
+  $ jskos-import [options] [type] [file]
 
-  type and file are required unless with options --indexes or --reset.
-  file is expected to be newline delimited JSON (ndjson). It can also be an URL.
+  type is only optional if option --indexes is set, or if --reset is set and no file is given, otherwise required.
+  file is unused if option --indexes is set, optional if --reset is set, otherwise required.
 
 Options
   GNU long option         Option      Meaning
@@ -49,7 +49,7 @@ Examples
     }
   }
 })
-if (cli.flags.help || !cli.input.length) {
+if (cli.flags.help) {
   cli.showHelp()
   process.exit(0)
 }
