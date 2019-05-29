@@ -195,6 +195,8 @@ function createIndexes(type) {
       indexes.push([{ "uri": 1 }, {}])
       indexes.push([{ "identifier": 1 }, {}])
       indexes.push([{ "type": 1 }, {}])
+      indexes.push([{ "created": 1 }, {}])
+      indexes.push([{ "modified": 1 }, {}])
       indexes.push([{ "partOf.uri": 1 }, {}])
       indexes.push([{ "creator.prefLabel.de": 1 }, {}])
       indexes.push([{ "creator.prefLabel.en": 1 }, {}])
@@ -349,6 +351,17 @@ function importFile(file, type, { concordance, quiet = false, format } = {}) {
           // Copy creator from concordance if it doesn't exist.
           if (!object.creator && concordance && concordance.creator) {
             object.creator = concordance.creator
+          }
+          // Set created of concordance if created is not set
+          if (!object.created && concordance && concordance.created) {
+            object.created = concordance.created
+          }
+          // Set modified if necessary
+          if (!object.modified && concordance && concordance.modified) {
+            object.modified = concordance.modified
+          }
+          if (!object.modified && object.created) {
+            object.modified = object.created
           }
           break
         case "concordance":
