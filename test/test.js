@@ -489,6 +489,88 @@ describe("Express Server", () => {
         })
     })
 
+    it("should POST a mapping with valid URI", done => {
+      let uri, _id
+      // 1. POST a new mapping
+      chai.request(server.app)
+        .post("/mappings")
+        .set("Authorization", `Bearer ${token}`)
+        .send(mapping)
+        .end((err, res) => {
+          res.should.have.status(201)
+          uri = res.body.uri
+          _id = uri.substring(uri.lastIndexOf("/") + 1)
+          // 2. DELETE that mapping
+          chai.request(server.app).delete(`/mappings/${_id}`).set("Authorization", `Bearer ${token}`).end((err, res) => {
+            res.should.have.status(204)
+            // 3. POST new mapping with same valid URI as previous POSTED mapping
+            chai.request(server.app)
+              .post("/mappings")
+              .set("Authorization", `Bearer ${token}`)
+              .send(Object.assign({ uri }, mapping))
+              .end((err, res) => {
+                res.should.have.status(201)
+                res.body.should.be.a("object")
+                res.body.uri.should.be.eql(uri)
+                done()
+              })
+          })
+        })
+    })
+
+    it("should not POST a mapping with already existing URI", done => {
+      let uri
+      // 1. POST a new mapping
+      chai.request(server.app)
+        .post("/mappings")
+        .set("Authorization", `Bearer ${token}`)
+        .send(mapping)
+        .end((err, res) => {
+          res.should.have.status(201)
+          uri = res.body.uri
+          // 2. POST new mapping with same URI as previous POSTED mapping
+          chai.request(server.app)
+            .post("/mappings")
+            .set("Authorization", `Bearer ${token}`)
+            .send(Object.assign({ uri }, mapping))
+            .end((err, res) => {
+              res.should.have.status(400)
+              done()
+            })
+        })
+    })
+
+    it("should keep URI in identifier when POSTing a mapping with invalid URI", done => {
+      let uri, _id
+      // 1. POST a new mapping
+      chai.request(server.app)
+        .post("/mappings")
+        .set("Authorization", `Bearer ${token}`)
+        .send(mapping)
+        .end((err, res) => {
+          res.should.have.status(201)
+          uri = res.body.uri
+          _id = uri.substring(uri.lastIndexOf("/") + 1)
+          // 2. DELETE that mapping
+          chai.request(server.app).delete(`/mappings/${_id}`).set("Authorization", `Bearer ${token}`).end((err, res) => {
+            res.should.have.status(204)
+            // 3. POST new mapping with slightly modified URI as previous POSTED mapping
+            chai.request(server.app)
+              .post("/mappings")
+              .set("Authorization", `Bearer ${token}`)
+              .send(Object.assign({ uri: uri.substring(0, uri.length - 1) }, mapping))
+              .end((err, res) => {
+                res.should.have.status(201)
+                res.body.should.be.a("object")
+                res.body.uri.should.not.be.eql(uri)
+                res.body.identifier.should.be.an("array")
+                res.body.identifier.includes(uri.substring(0, uri.length - 1)).should.be.eql(true)
+                done()
+              })
+          })
+        })
+    })
+
   })
 
   describe("POST, then PUT mapping", () => {
