@@ -1,7 +1,8 @@
 {
   "auth": {
     "algorithm": "HS256",
-    "key": "test"
+    "key": "test",
+    "whitelist": ["http://test.user"]
   },
   "schemes": true,
   "concepts": true,

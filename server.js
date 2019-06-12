@@ -76,7 +76,7 @@ if (config.auth.whitelist) {
   console.log("Auth whitelist configured:", config.auth.whitelist)
   auth = [auth, (req, res, next) => {
     // Check if any of user's URIs is on the whitelist
-    let uris = [req.user.uri].concat(Object.values(req.user.identities).map(id => id.uri)).filter(uri => uri != null)
+    let uris = [req.user.uri].concat(Object.values(req.user.identities || {}).map(id => id.uri)).filter(uri => uri != null)
     if (_.intersection(config.auth.whitelist, uris).length == 0) {
       // Deny request
       res.sendStatus(403)
