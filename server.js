@@ -302,7 +302,6 @@ if (config.mappings) {
       req.query.download = null
     }
     mappingProvider.getConcordances(req, res)
-      .catch(err => res.send(err))
       .then(results => {
         if (req.query.download) {
           handleDownload(req, res, results, "concordances")
@@ -310,6 +309,7 @@ if (config.mappings) {
           res.json(results)
         }
       })
+      .catch(err => res.send(err))
   })
 
   app.get("/mappings", (req, res) => {
@@ -318,7 +318,6 @@ if (config.mappings) {
       req.query.download = null
     }
     mappingProvider.getMappings(req, res)
-      .catch(err => res.send(err))
       // Only adjust if it's not a download (-> stream)
       .then(req.query.download ? (result => result) : adjustMappings(req))
       .then(results => {
@@ -328,11 +327,11 @@ if (config.mappings) {
           res.json(results)
         }
       })
+      .catch(err => res.send(err))
   })
 
   app.post("/mappings", config.auth.postAuthRequired ? auth : authOptional, (req, res) => {
     mappingProvider.saveMapping(req, res)
-      .catch(err => res.send(err))
       .then(adjustMapping(req))
       .then(result => {
         if (result) {
@@ -343,28 +342,28 @@ if (config.mappings) {
           }
         }
       })
+      .catch(err => res.send(err))
   })
 
   app.get("/mappings/suggest", (req, res) => {
     mappingProvider.getNotationSuggestions(req, res)
-      .catch(err => res.send(err))
       .then(results => {
         res.json(results)
       })
+      .catch(err => res.send(err))
   })
 
   app.get("/mappings/voc", (req, res) => {
     mappingProvider.getMappingSchemes(req, res)
-      .catch(err => res.send(err))
       .then(adjustSchemes)
       .then(results => {
         res.json(results)
       })
+      .catch(err => res.send(err))
   })
 
   app.get("/mappings/:_id", (req, res) => {
     mappingProvider.getMapping(req, res)
-      .catch(err => res.send(err))
       .then(adjustMapping(req))
       .then(result => {
         if (result) {
@@ -373,11 +372,11 @@ if (config.mappings) {
           res.sendStatus(404)
         }
       })
+      .catch(err => res.send(err))
   })
 
   app.put("/mappings/:_id", auth, (req, res) => {
     mappingProvider.putMapping(req, res)
-      .catch(err => res.send(err))
       .then(adjustMapping(req))
       .then(result => {
         if (result) {
@@ -388,11 +387,11 @@ if (config.mappings) {
           }
         }
       })
+      .catch(err => res.send(err))
   })
 
   app.patch("/mappings/:_id", auth, (req, res) => {
     mappingProvider.patchMapping(req, res)
-      .catch(err => res.send(err))
       .then(adjustMapping(req))
       .then(result => {
         if (result) {
@@ -403,11 +402,11 @@ if (config.mappings) {
           }
         }
       })
+      .catch(err => res.send(err))
   })
 
   app.delete("/mappings/:_id", auth, (req, res) => {
     mappingProvider.deleteMapping(req, res)
-      .catch(err => res.send(err))
       .then(result => {
         // `result` will be either true or false
         if (result) {
@@ -418,6 +417,7 @@ if (config.mappings) {
           }
         }
       })
+      .catch(err => res.send(err))
   })
 
 }
@@ -429,16 +429,15 @@ if (config.annotations) {
 
   app.get("/annotations", (req, res) => {
     annotationProvider.getAnnotations(req, res)
-      .catch(err => res.send(err))
       .then(adjustAnnotations(req))
       .then(results => {
         res.json(results)
       })
+      .catch(err => res.send(err))
   })
 
   app.post("/annotations", auth, (req, res) => {
     annotationProvider.postAnnotation(req, res)
-      .catch(err => res.send(err))
       .then(util.adjustAnnotation(req))
       .then(result => {
         if (result) {
@@ -447,11 +446,11 @@ if (config.annotations) {
           res.sendStatus(400)
         }
       })
+      .catch(err => res.send(err))
   })
 
   app.get("/annotations/:_id", (req, res) => {
     annotationProvider.getAnnotation(req, res)
-      .catch(err => res.send(err))
       .then(util.adjustAnnotation(req))
       .then(result => {
         if (result) {
@@ -460,11 +459,11 @@ if (config.annotations) {
           res.sendStatus(404)
         }
       })
+      .catch(err => res.send(err))
   })
 
   app.put("/annotations/:_id", auth, (req, res) => {
     annotationProvider.putAnnotation(req, res)
-      .catch(err => res.send(err))
       .then(util.adjustAnnotation(req))
       .then(result => {
         if (result) {
@@ -475,11 +474,11 @@ if (config.annotations) {
           }
         }
       })
+      .catch(err => res.send(err))
   })
 
   app.patch("/annotations/:_id", auth, (req, res) => {
     annotationProvider.patchAnnotation(req, res)
-      .catch(err => res.send(err))
       .then(util.adjustAnnotation(req))
       .then(result => {
         if (result) {
@@ -490,11 +489,11 @@ if (config.annotations) {
           }
         }
       })
+      .catch(err => res.send(err))
   })
 
   app.delete("/annotations/:_id", auth, (req, res) => {
     annotationProvider.deleteAnnotation(req, res)
-      .catch(err => res.send(err))
       .then(result => {
         // `result` will be either true or false
         if (result) {
@@ -505,6 +504,7 @@ if (config.annotations) {
           }
         }
       })
+      .catch(err => res.send(err))
   })
 
 }
@@ -516,29 +516,29 @@ if (config.schemes) {
 
   app.get("/voc", (req, res) => {
     terminologyProvider.getVocabularies(req, res)
-      .catch(err => res.send(err))
       .then(adjustSchemes)
       .then(results => {
         res.json(results)
       })
+      .catch(err => res.send(err))
   })
 
   app.get("/voc/top", (req, res) => {
     terminologyProvider.getTop(req, res)
-      .catch(err => res.send(err))
       .then(adjustConcepts(req))
       .then(results => {
         res.json(results)
       })
+      .catch(err => res.send(err))
   })
 
   app.get("/voc/concepts", (req, res) => {
     terminologyProvider.getConcepts(req, res)
-      .catch(err => res.send(err))
       .then(adjustConcepts(req))
       .then(results => {
         res.json(results)
       })
+      .catch(err => res.send(err))
   })
 
 }
@@ -550,46 +550,46 @@ if (config.concepts) {
 
   app.get("/data", (req, res) => {
     terminologyProvider.getDetails(req, res)
-      .catch(err => res.send(err))
       .then(adjustConcepts(req))
       .then(results => {
         res.json(results)
       })
+      .catch(err => res.send(err))
   })
 
   app.get("/narrower", (req, res) => {
     terminologyProvider.getNarrower(req, res)
-      .catch(err => res.send(err))
       .then(adjustConcepts(req))
       .then(results => {
         res.json(results)
       })
+      .catch(err => res.send(err))
   })
 
   app.get("/ancestors", (req, res) => {
     terminologyProvider.getAncestors(req, res)
-      .catch(err => res.send(err))
       .then(adjustConcepts(req))
       .then(results => {
         res.json(results)
       })
+      .catch(err => res.send(err))
   })
 
   app.get("/suggest", (req, res) => {
     terminologyProvider.getSuggestions(req, res)
-      .catch(err => res.send(err))
       .then(results => {
         res.json(results)
       })
+      .catch(err => res.send(err))
   })
 
   app.get("/search", (req, res) => {
     terminologyProvider.search(req, res)
-      .catch(err => res.send(err))
       .then(adjustConcepts(req))
       .then(results => {
         res.json(results)
       })
+      .catch(err => res.send(err))
   })
 
 }
