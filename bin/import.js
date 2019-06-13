@@ -207,6 +207,8 @@ function createIndexes(type) {
         [{ "id": 1 }, {}],
         [{ "target": 1 }, {}],
         [{ "creator": 1 }, {}],
+        [{ "creator.id": 1 }, {}],
+        [{ "creator.name": 1 }, {}],
       ]
     } else if (type == "scheme") {
       indexes.push([{ "uri": 1 }, {}])
