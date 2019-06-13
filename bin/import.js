@@ -198,6 +198,7 @@ function createIndexes(type) {
       indexes.push([{ "created": 1 }, {}])
       indexes.push([{ "modified": 1 }, {}])
       indexes.push([{ "partOf.uri": 1 }, {}])
+      indexes.push([{ "creator.uri": 1 }, {}])
       indexes.push([{ "creator.prefLabel.de": 1 }, {}])
       indexes.push([{ "creator.prefLabel.en": 1 }, {}])
     } else if (type == "annotation") {
