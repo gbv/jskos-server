@@ -111,13 +111,19 @@ describe("Express Server", () => {
         })
     })
 
-    it("should GET empty collections", done => {
+    it("should GET several additional properties", done => {
       chai.request(server.app)
         .get("/status")
         .end((err, res) => {
           res.should.have.status(200)
           res.body.should.be.a("object")
-          _.get(res.body, "collections.length", -1).should.be.eql(0)
+          res.body.config.should.be.a("object")
+          res.body.config.auth.should.be.a("object")
+          res.body.config.baseUrl.should.be.a("string")
+          res.body.config.schemes.should.be.a("boolean")
+          res.body.config.concepts.should.be.a("boolean")
+          res.body.config.mappings.should.be.a("boolean")
+          res.body.config.annotations.should.be.a("boolean")
           done()
         })
     })
