@@ -302,19 +302,19 @@ Returns an array of mappings. Each mapping has a property `url` under which the 
 
   `identifier=[identifier1|identifier2|...]` specify mapping identifiers separated by `|`
 
-  `from=[uri|notation]` specify the source URI or notation (truncated search possible by appending a `*`)
+  `from=[uriOrNotation1|uriOrNotation2|...]` specify the source URI or notation (truncated search possible by appending a `*`, multiple URIs/notations separated by `|`)
 
-  `to=[uri|notation]` specify the target URI or notation (truncated search possible by appending a `*`)
+  `to=[uriOrNotation1|uriOrNotation2|...]` specify the target URI or notation (truncated search possible by appending a `*`, multiple URIs/notations separated by `|`)
 
   `mode=[mode]` specify the mode for `from`, `to`, and `identifier`, one of `and` (default) and `or`
 
   `direction=[direction]` specify the direction of the mapping. Available values are: `forward` (default), `backward` (essentially swaps `from` and `to`), `both` (combines forward and backward).
 
-  `fromScheme=[uri|notation]` only show mappings from concept scheme (URI or notation)
+  `fromScheme=[uriOrNotation1|uriOrNotation2|...]` only show mappings from concept scheme (URI or notation, multiple URIs/notations separated by `|`)
 
-  `toScheme=[uri|notation]` only show mappings to concept scheme (URI or notation)
+  `toScheme=[uriOrNotation1|uriOrNotation2|...]` only show mappings to concept scheme (URI or notation, multiple URIs/notations separated by `|`)
 
-  `type=[uri]` only show mappings that conform to a certain type (see [JSKOS Concept Mappings])
+  `type=[uri1|uri2|...]` only show mappings that conform to a certain type or types (see [JSKOS Concept Mappings]) (URIs separated by `|`)
 
   `partOf=[uri1|uri2|...]` only show mappings that are part of certain concordances (URIs separated by `|`)
 
