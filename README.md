@@ -322,6 +322,10 @@ Returns an array of mappings. Each mapping has a property `url` under which the 
 
   `download=[type]` returns the whole result as a download (available types are `json`, `ndjson`, `csv`, and `tsv`), ignores `limit` and `offset`
 
+  `sort=[sort]` sorts by a specific field. Available are `created` and `modified` (default).
+
+  `sortDirection=[sortDirection]` direction to use for sorting. Available are `asc` and `desc` (default).
+
 * **Success Response**
 
   JSON array of [JSKOS Concept Mappings]
