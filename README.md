@@ -324,7 +324,7 @@ Returns an array of mappings. Each mapping has a property `url` under which the 
 
   `sort=[sort]` sorts by a specific field. Available are `created` and `modified` (default).
 
-  `sortDirection=[sortDirection]` direction to use for sorting. Available are `asc` and `desc` (default).
+  `order=[order]` order to use for sorting. Available are `asc` and `desc` (default).
 
 * **Success Response**
 
