@@ -25,7 +25,6 @@ router.get(
   utils.returnJSON,
 )
 
-// TODO: Add authentication
 router.post(
   "/",
   auth.default,
@@ -40,7 +39,6 @@ router.post(
   utils.returnJSON,
 )
 
-// TODO: Add authentication
 router.put(
   "/:_id",
   auth.default,
@@ -55,7 +53,6 @@ router.put(
   utils.returnJSON,
 )
 
-// TODO: Add authentication
 router.patch(
   "/:_id",
   auth.default,
@@ -70,7 +67,6 @@ router.patch(
   utils.returnJSON,
 )
 
-// TODO: Add authentication
 router.delete(
   "/:_id",
   auth.default,
