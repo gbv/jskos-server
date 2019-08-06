@@ -9,9 +9,9 @@ const { MalformedBodyError, MalformedRequestError, EntityNotFoundError, InvalidB
 
 module.exports = class MappingService {
 
-  // constructor(container) {
-  //   this.mappingModel = container.get(require("../models/mappings"))
-  // }
+  constructor(container) {
+    this.schemeService = container.get(require("../services/schemes"))
+  }
 
   async getMappings({ uri, identifier, from, to, fromScheme, toScheme, mode, direction, type, partOf, creator, sort, order, limit, offset, download }) {
     direction = direction || "forward"
@@ -86,9 +86,7 @@ module.exports = class MappingService {
         let searchStrings = fromToScheme[part].split("|")
         let allUris = []
         for (let search of searchStrings) {
-          // TODO!!!
-          // let scheme = await this.terminologyCollection.findOne({ $or: [{ uri: search }, { identifier: search }, { notation: new RegExp(`^${search}$`, "i") }]})
-          let scheme = null
+          let scheme = await this.schemeService.getScheme(search)
           let uris
           if (!scheme) {
             uris = [search]

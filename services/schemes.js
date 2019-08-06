@@ -18,4 +18,8 @@ module.exports = class SchemeService {
     return schemes
   }
 
+  async getScheme(identifierOrNotation) {
+    return await Scheme.findOne({ $or: [{ uri: identifierOrNotation }, { identifier: identifierOrNotation }, { notation: new RegExp(`^${identifierOrNotation}$`, "i") }]}).lean().exec()
+  }
+
 }
