@@ -69,15 +69,15 @@ let mapping = {
 
 describe("MongoDB", () => {
 
-  it("should connect to database successfully", () => {
-    return server.db.should.be.fulfilled
+  it("should connect to database successfully", (done) => {
+    if (server.db.readyState === 1) {
+      done()
+    } else {
+      server.db.on("connected", () => done())
+      server.db.on("error", (error) => done(error))
+    }
   })
 
-  after(() => {
-    server.db.then(db => {
-      db.close()
-    }).catch(() => {})
-  })
 })
 
 describe("Express Server", () => {
@@ -490,7 +490,7 @@ describe("Express Server", () => {
         .set("Authorization", `Bearer ${token}`)
         .send(Object.assign({}, mapping, { partOf: [ { uri: "..." } ] }))
         .end((err, res) => {
-          res.should.have.status(400)
+          res.should.have.status(422)
           done()
         })
     })
@@ -540,7 +540,7 @@ describe("Express Server", () => {
             .set("Authorization", `Bearer ${token}`)
             .send(Object.assign({ uri }, mapping))
             .end((err, res) => {
-              res.should.have.status(400)
+              res.should.have.status(500)
               done()
             })
         })
@@ -1080,16 +1080,13 @@ describe("Express Server", () => {
           done(err)
           return
         }
-        let db
-        server.db.then(result => {
-          db = result
-          let promises = []
-          let collections = ["concepts", "mappings", "terminologies"]
-          for (let collection of collections) {
-            promises.push(db.collection(collection).find({}).toArray())
-          }
-          return Promise.all(promises)
-        }).then(results => {
+        let db = server.db
+        let promises = []
+        let collections = ["concepts", "mappings", "terminologies"]
+        for (let collection of collections) {
+          promises.push(db.collection(collection).find({}).toArray())
+        }
+        Promise.all(promises).then(results => {
           for (let result of results) {
             result.length.should.be.eql(0)
           }
@@ -1107,16 +1104,13 @@ describe("Express Server", () => {
           done(err)
           return
         }
-        let db
-        server.db.then(result => {
-          db = result
-          let promises = []
-          let collections = ["concepts", "mappings", "annotations"]
-          for (let collection of collections) {
-            promises.push(db.collection(collection).indexInformation())
-          }
-          return Promise.all(promises)
-        }).then(results => {
+        let db = server.db
+        let promises = []
+        let collections = ["concepts", "mappings", "annotations"]
+        for (let collection of collections) {
+          promises.push(db.collection(collection).indexInformation())
+        }
+        Promise.all(promises).then(results => {
           for (let result of results) {
             // There should be more than the _id index
             Object.keys(result).length.should.be.greaterThan(1)
@@ -1135,9 +1129,8 @@ describe("Express Server", () => {
           done(err)
           return
         }
-        server.db.then(db => {
-          return db.collection("concepts").find({}).toArray()
-        }).then(results => {
+        let db = server.db
+        db.collection("concepts").find({}).toArray().then(results => {
           results.length.should.be.eql(4)
           done()
         }).catch(error => {
@@ -1153,9 +1146,8 @@ describe("Express Server", () => {
           done(err)
           return
         }
-        server.db.then(db => {
-          return db.collection("terminologies").find({}).toArray()
-        }).then(results => {
+        let db = server.db
+        db.collection("terminologies").find({}).toArray().then(results => {
           results.length.should.be.eql(1)
           done()
         }).catch(error => {
@@ -1171,9 +1163,8 @@ describe("Express Server", () => {
           done(err)
           return
         }
-        server.db.then(db => {
-          return db.collection("concordances").find({}).toArray()
-        }).then(results => {
+        let db = server.db
+        db.collection("concordances").find({}).toArray().then(results => {
           results.length.should.be.eql(2)
           done()
         }).catch(error => {
@@ -1189,9 +1180,8 @@ describe("Express Server", () => {
           done(err)
           return
         }
-        server.db.then(db => {
-          return db.collection("mappings").find({}).toArray()
-        }).then(results => {
+        let db = server.db
+        db.collection("mappings").find({}).toArray().then(results => {
           results.length.should.be.eql(3)
           done()
         }).catch(error => {
