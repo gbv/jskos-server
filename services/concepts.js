@@ -17,7 +17,7 @@ module.exports = class ConceptService {
       return []
     }
     let mongoQuery = {
-      $or: query.uri.split("|").map(uri => ({ uri }))
+      $or: query.uri.split("|").map(uri => ({ uri })),
     }
 
     const concepts = await Concept.find(mongoQuery).lean().skip(query.offset).limit(query.limit).exec()
@@ -151,7 +151,7 @@ module.exports = class ConceptService {
       uris.push(result.uri)
     }
     const searchResults = [
-      search, labels, descriptions, uris
+      search, labels, descriptions, uris,
     ]
     searchResults.totalCount = results.length
     return searchResults
@@ -179,8 +179,8 @@ module.exports = class ConceptService {
       // Use text search for queries longer than two characters
       queryOr.push({
         $text: {
-          $search: "\"" + search + "\""
-        }
+          $search: "\"" + search + "\"",
+        },
       })
       // Projekt and sort on text score
       // projectAndSort = { score: { $meta: "textScore" } }
@@ -189,8 +189,8 @@ module.exports = class ConceptService {
       // Search for notations specifically for one or two characters
       queryOr.push({
         _keywordsNotation: {
-          $regex: "^" + search.toUpperCase()
-        }
+          $regex: "^" + search.toUpperCase(),
+        },
       })
     }
     if (search.length > 1) {

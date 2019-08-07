@@ -14,7 +14,7 @@ const concordanceSchema = new Schema({
   created: String,
   type: {
     type: [String],
-    default: ["http://rdfs.org/ns/void#Linkset"]
+    default: ["http://rdfs.org/ns/void#Linkset"],
   },
 },
 {

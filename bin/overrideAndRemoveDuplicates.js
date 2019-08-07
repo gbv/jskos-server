@@ -37,7 +37,7 @@ const idFromUri = uri => {
 }
 
 var lineReader = readline.createInterface({
-  input: fs.createReadStream(file)
+  input: fs.createReadStream(file),
 })
 
 let mappingsToOverride = []

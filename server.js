@@ -69,6 +69,7 @@ app.use((error, req, res, next) => {
 })
 
 db.once("open", async () => {
+  const portfinder = require("portfinder")
   config.log("Connected to database")
   let port = config.port
   if (config.env == "test") {

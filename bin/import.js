@@ -25,29 +25,29 @@ Examples
     reset: {
       type: "boolean",
       alias: "r",
-      default: false
+      default: false,
     },
     indexes: {
       type: "boolean",
       alias: "i",
-      default: false
+      default: false,
     },
     quiet: {
       type: "boolean",
       alias: "q",
-      default: false
+      default: false,
     },
     format: {
       type: "string",
       alias: "f",
-      default: null
+      default: null,
     },
     help: {
       type: "boolean",
       alias: "h",
-      default: false
-    }
-  }
+      default: false,
+    },
+  },
 })
 if (cli.flags.help || (!cli.input.length && !cli.flags.reset && !cli.flags.indexes)) {
   cli.showHelp()
@@ -177,8 +177,8 @@ function createIndexes(type) {
             "_keywordsNotation": 10,
             "_keywordsLabels": 6,
             "_keywordsOther": 3,
-          }
-        }
+          },
+        },
       ])
     } else if (type == "mapping") {
       // Indexes for mappings
@@ -283,12 +283,12 @@ function importFile(file, type, { concordance, quiet = false, format } = {}) {
           replaceOne: {
             filter: { _id: object._id },
             replacement: object,
-            upsert: true
-          }
+            upsert: true,
+          },
         }) : {
           insertOne: {
-            document: object
-          }
+            document: object,
+          },
         })).then(result => {
           let newIds = Object.values(result.insertedIds).concat(Object.values(result.upsertedIds))
           newIds = _.union(newIds, ids)
@@ -348,7 +348,7 @@ function importFile(file, type, { concordance, quiet = false, format } = {}) {
           // Add reference to concordance.
           if (concordance && concordance.uri) {
             object.partOf = [{
-              uri: concordance.uri
+              uri: concordance.uri,
             }]
           }
           // Copy creator from concordance if it doesn't exist.
@@ -455,7 +455,7 @@ function importFile(file, type, { concordance, quiet = false, format } = {}) {
           lastPromise = lastPromise.then(() => collection.find({ $or: idChunk.map(_id => ({ _id })) }).toArray().then(results => {
             for (let concept of results) {
               let update = {
-                narrower: hasChildren[concept._id] ? [null] : []
+                narrower: hasChildren[concept._id] ? [null] : [],
               }
               update._keywordsNotation = makePrefixes(concept.notation || [])
               // Do not write text index keywords for synthetic concepts
@@ -480,9 +480,9 @@ function importFile(file, type, { concordance, quiet = false, format } = {}) {
                 updateOne: {
                   filter: { _id: concept._id },
                   update: {
-                    $set: update
-                  }
-                }
+                    $set: update,
+                  },
+                },
               })
             }
             if (writes.length >= 1000) {
@@ -532,14 +532,14 @@ function importFile(file, type, { concordance, quiet = false, format } = {}) {
                   {
                     "download": `${config.baseUrl}/mappings?partOf=${uri}&download=ndjson`,
                     "format": "http://format.gbv.de/jskos",
-                    "mimetype": "application/x-ndjson; charset=utf-8"
+                    "mimetype": "application/x-ndjson; charset=utf-8",
                   },
                   {
                     "download": `${config.baseUrl}/mappings?partOf=${uri}&download=csv`,
-                    "mimetype": "text/csv; charset=utf-8"
-                  }
-                ]
-              }
+                    "mimetype": "text/csv; charset=utf-8",
+                  },
+                ],
+              },
             })
           }).catch(error => {
             console.error("Error in post-import adjustments for concordance with URI", uri, error)
@@ -567,15 +567,15 @@ function adjustSchemes() {
       promises.push(conceptCollection.findOne({ $or: [scheme.uri].concat(scheme.identifier || []).map(uri => ({ "inScheme.uri": uri })) }).then(result => {
         return terminologyCollection.update({ _id: scheme.uri }, {
           "$set": {
-            concepts: result ? [null] : []
-          }
+            concepts: result ? [null] : [],
+          },
         })
       }))
       promises.push(conceptCollection.findOne({ $or: [scheme.uri].concat(scheme.identifier || []).map(uri => ({ "topConceptOf.uri": uri })) }).then(result => {
         return terminologyCollection.update({ _id: scheme.uri }, {
           "$set": {
-            topConcepts: result ? [null] : []
-          }
+            topConcepts: result ? [null] : [],
+          },
         })
       }))
     }
@@ -591,7 +591,7 @@ function collectionNameForType(type) {
     "concept": "concepts",
     "concordance": "concordances",
     "mapping": "mappings",
-    "annotation": "annotations"
+    "annotation": "annotations",
   }[type]
 }
 function collectionForType(type) {
@@ -605,7 +605,7 @@ function makeSuffixes(values) {
     var tmp, hasSuffix
     for (var i=0; i<val.length-1; i++) {
       tmp = val.substr(i).toUpperCase()
-      hasPrefix = results.includes(tmp)
+      hasSuffix = results.includes(tmp)
       if (!hasSuffix) results.push(tmp)
     }
   })

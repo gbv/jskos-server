@@ -16,7 +16,7 @@ const conceptSchema = new Schema({
   creator: [Schema.Types.Mixed],
   type: {
     type: [String],
-    default: ["http://www.w3.org/2004/02/skos/core#Concept"]
+    default: ["http://www.w3.org/2004/02/skos/core#Concept"],
   },
   created: String,
   modified: String,

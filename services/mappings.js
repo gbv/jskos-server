@@ -5,7 +5,7 @@ const validate = require("jskos-validate")
 const escapeStringRegexp = require("escape-string-regexp")
 
 const Mapping = require("../models/mappings")
-const { MalformedBodyError, MalformedRequestError, EntityNotFoundError, InvalidBodyError } = require("../errors")
+const { MalformedBodyError, MalformedRequestError, EntityNotFoundError, InvalidBodyError, DatabaseAccessError, CreatorDoesNotMatchError } = require("../errors")
 
 module.exports = class MappingService {
 
@@ -46,17 +46,17 @@ module.exports = class MappingService {
         for (let searchString of { from, to }[part].split("|")) {
           if (searchString.startsWith("http")) {
             or.push({
-              [`${side}.memberSet.uri`]: regex(searchString)
+              [`${side}.memberSet.uri`]: regex(searchString),
             })
             or.push({
-              [`${side}.memberChoice.uri`]: regex(searchString)
+              [`${side}.memberChoice.uri`]: regex(searchString),
             })
           } else {
             or.push({
-              [`${side}.memberSet.notation`]: regex(searchString)
+              [`${side}.memberSet.notation`]: regex(searchString),
             })
             or.push({
-              [`${side}.memberChoice.notation`]: regex(searchString)
+              [`${side}.memberChoice.notation`]: regex(searchString),
             })
           }
         }
@@ -124,12 +124,12 @@ module.exports = class MappingService {
     if (type) {
       for (let t of type.split("|")) {
         criteria.push({
-          type: t
+          type: t,
         })
         // FIXME: Replace with default type from jskos-tools (does not exist yet).
         if (t == "http://www.w3.org/2004/02/skos/core#mappingRelation") {
           criteria.push({
-            type: { $exists: false }
+            type: { $exists: false },
           })
         }
       }
@@ -141,7 +141,7 @@ module.exports = class MappingService {
     if (partOf) {
       let uris = partOf.split("|")
       mongoQuery4 = {
-        $or: uris.map(uri => ({ "partOf.uri": uri }))
+        $or: uris.map(uri => ({ "partOf.uri": uri })),
       }
     }
 
@@ -150,7 +150,7 @@ module.exports = class MappingService {
     if (creator) {
       let creators = creator.split("|")
       mongoQuery4 = {
-        $or: _.flatten(creators.map(creator => [{ "creator.prefLabel.de": creator }, { "creator.prefLabel.en": creator }, { "creator.uri": creator }]))
+        $or: _.flatten(creators.map(creator => [{ "creator.prefLabel.de": creator }, { "creator.prefLabel.en": creator }, { "creator.uri": creator }])),
       }
     }
 
@@ -335,23 +335,23 @@ module.exports = class MappingService {
     if (query.from) {
       match.push({
         $or: [{
-          "from.memberSet.uri": query.from
+          "from.memberSet.uri": query.from,
         }, {
-          "from.memberSet.notation": query.from
-        }]
+          "from.memberSet.notation": query.from,
+        }],
       })
     }
     if (query.to) {
       match.push({
         $or: [{
-          "to.memberSet.uri": query.to
+          "to.memberSet.uri": query.to,
         }, {
-          "to.memberSet.notation": query.to
+          "to.memberSet.notation": query.to,
         },{
-          "to.memberChoice.uri": query.to
+          "to.memberChoice.uri": query.to,
         }, {
-          "to.memberChoice.notation": query.to
-        }]
+          "to.memberChoice.notation": query.to,
+        }],
       })
     }
     if (!match.length) {
@@ -369,19 +369,19 @@ module.exports = class MappingService {
         {
           $group: {
             _id: "$fromScheme",
-            "count": { "$sum": 1 }
-          }
-        }
+            "count": { "$sum": 1 },
+          },
+        },
       ]).exec(),
       Mapping.aggregate([
         match,
         {
           $group: {
             _id: "$toScheme",
-            "count": { "$sum": 1 }
-          }
-        }
-      ]).exec()
+            "count": { "$sum": 1 },
+          },
+        },
+      ]).exec(),
     ]
     let schemes = {}
     let results = await Promise.all(promises)
@@ -467,7 +467,7 @@ module.exports = class MappingService {
       search,
       unzippedResults[0] || [],
       unzippedResults[1] || [],
-      []
+      [],
     ]
     toBeReturned.totalCount = zippedResults.length
     return toBeReturned

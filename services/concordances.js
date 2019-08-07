@@ -28,7 +28,7 @@ module.exports = class ConcordanceService {
       // TODO: Use schemeService to get all URIs for scheme.
       conditions.push({ $or: [
         { $or: query.toScheme.split("|").map(toScheme => ({ "toScheme.uri": toScheme })) },
-        { $or: query.toScheme.split("|").map(toScheme => ({ "toScheme.notation": toScheme })) }
+        { $or: query.toScheme.split("|").map(toScheme => ({ "toScheme.notation": toScheme })) },
       ] })
     }
     // Search by creator

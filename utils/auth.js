@@ -12,7 +12,7 @@ if (config.auth.algorithm && config.auth.key) {
   var opts = {
     jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
     secretOrKey: config.auth.key,
-    algorithms: [config.auth.algorithm]
+    algorithms: [config.auth.algorithm],
   }
   try {
     passport.use(new JwtStrategy(opts, (jwt_payload, done) => {

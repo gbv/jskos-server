@@ -327,7 +327,7 @@ const handleDownload = (filename) => (req, res) => {
       cleanJSON(chunk)
       this.push(chunk)
       callback()
-    }
+    },
   })
   // Default transformation: JSON
   let transform = JSONStream.stringify("[\n", ",\n", "\n]\n")
@@ -342,7 +342,7 @@ const handleDownload = (filename) => (req, res) => {
         transform(chunk, encoding, callback) {
           this.push(JSON.stringify(chunk) + "\n")
           callback()
-        }
+        },
       })
       break
     case "csv":
@@ -369,7 +369,7 @@ const handleDownload = (filename) => (req, res) => {
           })
           this.push(mappingToCSV(chunk))
           callback()
-        }
+        },
       })
       break
   }

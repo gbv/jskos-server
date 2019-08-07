@@ -10,8 +10,8 @@
   "scripts": {
     "test": "NODE_ENV=test mocha --exit --timeout 10000 --slow 2000",
     "start": "nodemon server.js",
-    "lint": "./node_modules/.bin/eslint ./*.js ./**/*.js",
-    "fix": "./node_modules/.bin/eslint --fix ./*.js ./**/*.js",
+    "lint": "./node_modules/.bin/eslint './**/*.js'",
+    "fix": "./node_modules/.bin/eslint --fix './**/*.js'",
     "lint-staged": "lint-staged",
     "import": "./bin/import.js",
     "import-batch": "func() { tr '\\n' '\\0' < \"$2\"  | xargs -0 -n1 ./bin/import.js $1; }; func"
@@ -37,6 +37,7 @@
     "chai-as-promised": "^7.1.1",
     "chai-http": "^4.0.0",
     "eslint": "^5.3.0",
+    "eslint-config-gbv": "git+https://github.com/gbv/eslint-config-gbv.git",
     "jsonwebtoken": "^8.5.0",
     "lint-staged": "^7.3.0",
     "mocha": "^5.2.0",

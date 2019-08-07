@@ -18,42 +18,42 @@ module.exports = class MappingService {
       criteria.push({
         $or: [
           {
-            "_id": query.id
+            "_id": query.id,
           },
           {
-            "id": query.id
-          }
-        ]
+            "id": query.id,
+          },
+        ],
       })
     }
     if (query.creator) {
       criteria.push({
         $or: [
           {
-            creator: query.creator
+            creator: query.creator,
           },
           {
-            "creator.id": query.creator
+            "creator.id": query.creator,
           },
           {
-            "creator.name": query.creator
+            "creator.name": query.creator,
           },
-        ]
+        ],
       })
     }
     if (query.target) {
       criteria.push({
-        target: query.target
+        target: query.target,
       })
     }
     if (query.bodyValue) {
       criteria.push({
-        bodyValue: query.bodyValue
+        bodyValue: query.bodyValue,
       })
     }
     if (query.motivation) {
       criteria.push({
-        motivation: query.motivation
+        motivation: query.motivation,
       })
     }
 
@@ -89,7 +89,7 @@ module.exports = class MappingService {
     // Set creator
     annotation.creator = {
       id: user.uri,
-      name: user.name
+      name: user.name,
     }
     // Add created and modified dates.
     let date = (new Date()).toISOString()

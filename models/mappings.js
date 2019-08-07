@@ -6,13 +6,13 @@ const mappingSchema = new Schema({
   _id: String,
   from: {
     memberSet: [
-      Schema.Types.Mixed
-    ]
+      Schema.Types.Mixed,
+    ],
   },
   to: {
     memberSet: [
-      Schema.Types.Mixed
-    ]
+      Schema.Types.Mixed,
+    ],
   },
   fromScheme: Schema.Types.Mixed,
   toScheme: Schema.Types.Mixed,
@@ -21,15 +21,15 @@ const mappingSchema = new Schema({
   partOf: Schema.Types.Mixed,
   type: {
     type: [String],
-    default: ["http://www.w3.org/2004/02/skos/core#mappingRelation"]
+    default: ["http://www.w3.org/2004/02/skos/core#mappingRelation"],
   },
   created: {
     type: String,
-    default: (new Date()).toISOString()
+    default: (new Date()).toISOString(),
   },
   modified: {
     type: String,
-    default: (new Date()).toISOString()
+    default: (new Date()).toISOString(),
   },
   identifier: [String],
   uri: String,

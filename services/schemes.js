@@ -9,7 +9,7 @@ module.exports = class SchemeService {
     let mongoQuery = {}
     if (query.uri) {
       mongoQuery = {
-        $or: query.uri.split("|").map(uri => ({ uri })).concat(query.uri.split("|").map(uri => ({ identifier: uri })))
+        $or: query.uri.split("|").map(uri => ({ uri })).concat(query.uri.split("|").map(uri => ({ identifier: uri }))),
       }
     }
     const schemes = await Scheme.find(mongoQuery).lean().skip(query.offset).limit(query.limit).exec()

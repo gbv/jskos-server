@@ -1,3 +1,5 @@
+/* eslint-env node, mocha */
+
 const chai = require("chai")
 const chaiAsPromised = require("chai-as-promised")
 chai.use(chaiAsPromised)
@@ -13,7 +15,7 @@ const _ = require("lodash")
 const jwt = require("jsonwebtoken")
 const user = {
   uri: "http://test.user",
-  name: "Test User"
+  name: "Test User",
 }
 const token = jwt.sign({ user }, "test")
 
@@ -27,43 +29,43 @@ let mapping = {
       {
         "uri": "http://dewey.info/class/612.112/e23/",
         "notation": [
-          "612.112"
-        ]
-      }
-    ]
+          "612.112",
+        ],
+      },
+    ],
   },
   "to": {
     "memberSet": [
       {
         "uri": "http://www.wikidata.org/entity/Q42395",
         "notation": [
-          "Q42395"
-        ]
-      }
-    ]
+          "Q42395",
+        ],
+      },
+    ],
   },
   "fromScheme": {
     "uri": "http://dewey.info/scheme/edition/e23/",
     "notation": [
-      "DDC"
-    ]
+      "DDC",
+    ],
   },
   "toScheme": {
     "uri": "http://bartoc.org/en/node/1940",
     "notation": [
-      "WD"
-    ]
+      "WD",
+    ],
   },
   "creator": [
     {
       "prefLabel": {
-        "de": "Stefan Peters (VZG)"
+        "de": "Stefan Peters (VZG)",
       },
-      "uri": user.uri
-    }
+      "uri": user.uri,
+    },
   ],
   "type": [
-    "http://www.w3.org/2004/02/skos/core#relatedMatch"
+    "http://www.w3.org/2004/02/skos/core#relatedMatch",
   ],
 }
 
@@ -206,7 +208,7 @@ describe("Express Server", () => {
       chai.request(server.app)
         .get("/mappings")
         .query({
-          to: "http://d-nb.info/gnd/4499720-6"
+          to: "http://d-nb.info/gnd/4499720-6",
         })
         .end((err, res) => {
           res.should.have.status(200)
@@ -224,7 +226,7 @@ describe("Express Server", () => {
         .get("/mappings")
         .query({
           from: "http://d-nb.info/gnd/4499720-6",
-          direction: "backward"
+          direction: "backward",
         })
         .end((err, res) => {
           res.should.have.status(200)
@@ -250,7 +252,7 @@ describe("Express Server", () => {
             from: "612.112",
             to: "612.112",
             mode: "or",
-            fromScheme: "GND"
+            fromScheme: "GND",
           })
           .end((err, res) => {
             res.should.have.status(200)
@@ -281,7 +283,7 @@ describe("Express Server", () => {
       chai.request(server.app)
         .get("/mappings")
         .query({
-          identifier: "urn:jskos:mapping:content:ecfbefed9712bf4b5c90269ddbb6788bff15b7d6|urn:jskos:mapping:content:fa693e08d92696e453208ce478e988434cc73a0e"
+          identifier: "urn:jskos:mapping:content:ecfbefed9712bf4b5c90269ddbb6788bff15b7d6|urn:jskos:mapping:content:fa693e08d92696e453208ce478e988434cc73a0e",
         })
         .end((err, res) => {
           res.should.have.status(200)
@@ -309,7 +311,7 @@ describe("Express Server", () => {
           chai.request(server.app)
             .get("/mappings")
             .query({
-              identifier: uri
+              identifier: uri,
             })
             .end((err, res) => {
               res.should.have.status(200)
@@ -395,7 +397,7 @@ describe("Express Server", () => {
         .query({
           from: "http://dewey.info/class/612.112/e23/",
           to: "http://rvk.uni-regensburg.de/nt/WW_8840",
-          mode: "and"
+          mode: "and",
         })
         .end((err, res) => {
           res.should.have.status(200)
@@ -417,7 +419,7 @@ describe("Express Server", () => {
         .query({
           from: "http://dewey.info/class/612.112/e23/",
           to: "http://rvk.uni-regensburg.de/nt/WW_8840",
-          mode: "or"
+          mode: "or",
         })
         .end((err, res) => {
           res.should.have.status(200)
@@ -442,7 +444,7 @@ describe("Express Server", () => {
       chai.request(server.app)
         .get("/mappings/suggest")
         .query({
-          search
+          search,
         })
         .end((err, res) => {
           res.should.have.status(200)
@@ -762,7 +764,7 @@ describe("Express Server", () => {
       chai.request(server.app)
         .get("/data")
         .query({
-          uri: "http://dewey.info/class/61/e23/"
+          uri: "http://dewey.info/class/61/e23/",
         })
         .end((err, res) => {
           res.should.have.status(200)
@@ -780,7 +782,7 @@ describe("Express Server", () => {
       chai.request(server.app)
         .get("/data")
         .query({
-          uri: "http://dewey.info/class/60/e23/|http://dewey.info/class/61/e23/"
+          uri: "http://dewey.info/class/60/e23/|http://dewey.info/class/61/e23/",
         })
         .end((err, res) => {
           res.should.have.status(200)
@@ -802,7 +804,7 @@ describe("Express Server", () => {
       chai.request(server.app)
         .get("/narrower")
         .query({
-          uri: "http://dewey.info/class/6/e23/"
+          uri: "http://dewey.info/class/6/e23/",
         })
         .end((err, res) => {
           res.should.have.status(200)
@@ -823,7 +825,7 @@ describe("Express Server", () => {
         .get("/ancestors")
         .query({
           uri: "http://dewey.info/class/60/e23/",
-          properties: "narrower"
+          properties: "narrower",
         })
         .end((err, res) => {
           res.should.have.status(200)
@@ -845,7 +847,7 @@ describe("Express Server", () => {
       chai.request(server.app)
         .get("/suggest")
         .query({
-          search: "60"
+          search: "60",
         })
         .end((err, res) => {
           res.should.have.status(200)
@@ -868,7 +870,7 @@ describe("Express Server", () => {
       chai.request(server.app)
         .get("/suggest")
         .query({
-          search: "techn"
+          search: "techn",
         })
         .end((err, res) => {
           res.should.have.status(200)
@@ -893,7 +895,7 @@ describe("Express Server", () => {
       chai.request(server.app)
         .get("/search")
         .query({
-          search: "60"
+          search: "60",
         })
         .end((err, res) => {
           res.should.have.status(200)
@@ -911,7 +913,7 @@ describe("Express Server", () => {
       chai.request(server.app)
         .get("/search")
         .query({
-          search: "techn"
+          search: "techn",
         })
         .end((err, res) => {
           res.should.have.status(200)
@@ -943,7 +945,7 @@ describe("Express Server", () => {
     let annotation = {
       target: "http://dewey.info/class/60/e23/",
       motivation: "assessing",
-      bodyValue: "+1"
+      bodyValue: "+1",
     }
 
     it("should POST a annotation", done => {
@@ -998,7 +1000,7 @@ describe("Express Server", () => {
     it("should PATCH an annoation", done => {
       let _id = annotation.id.substring(annotation.id.lastIndexOf("/") + 1)
       let patch = {
-        bodyValue: "-1"
+        bodyValue: "-1",
       }
       chai.request(server.app)
         .patch("/annotations/" + _id)
@@ -1044,7 +1046,7 @@ describe("Express Server", () => {
         .get("/data")
         .query({
           uri: annotation.target,
-          properties: "annotations"
+          properties: "annotations",
         })
         .end((err, res) => {
           res.should.have.status(200)

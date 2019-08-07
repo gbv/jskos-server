@@ -14,7 +14,7 @@ const terminologySchema = new Schema({
   notationPattern: String,
   type: {
     type: [String],
-    default: ["http://www.w3.org/2004/02/skos/core#ConceptScheme"]
+    default: ["http://www.w3.org/2004/02/skos/core#ConceptScheme"],
   },
   concepts: [Schema.Types.Mixed],
   topConcepts: [Schema.Types.Mixed],

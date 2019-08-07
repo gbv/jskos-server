@@ -13,11 +13,11 @@ const annotationSchema = new Schema({
   },
   created: {
     type: String,
-    default: (new Date()).toISOString()
+    default: (new Date()).toISOString(),
   },
   modified: {
     type: String,
-    default: (new Date()).toISOString()
+    default: (new Date()).toISOString(),
   },
 },
 {

@@ -9,7 +9,7 @@ module.exports = class StatusService {
   async getStatus({ baseUrl }) {
     const { db } = require("../server")
     let status = {
-      config: _.omit(config, ["verbosity", "port", "mongo"])
+      config: _.omit(config, ["verbosity", "port", "mongo"]),
     }
     status.config.baseUrl = baseUrl
     if (status.config.schemes) {
