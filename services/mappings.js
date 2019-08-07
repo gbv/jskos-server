@@ -162,14 +162,13 @@ module.exports = class MappingService {
     // Currently default sort by modified descending
     const sorting = { [sort]: order }
 
-    const cursor = Mapping.find(query).sort(sorting).lean()
     if (download) {
       // For a download, return a stream
-      return cursor.stream()
+      return Mapping.find(query).sort(sorting).lean().stream()
     } else {
       // Otherwise, return results
-      const mappings = await cursor.skip(offset).limit(limit).exec()
-      mappings.totalCount = await cursor.countDocuments()
+      const mappings = await Mapping.find(query).sort(sorting).lean().skip(offset).limit(limit).exec()
+      mappings.totalCount = await Mapping.find(query).countDocuments()
       return mappings
     }
   }

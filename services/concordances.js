@@ -47,15 +47,16 @@ module.exports = class ConcordanceService {
     if (!["and", "or"].includes(mode)) {
       mode = "and"
     }
-    const cursor =  Concordance.find(conditions.length ? { [`$${mode}`]: conditions } : {}).lean()
+
+    const mongoQuery = conditions.length ? { [`$${mode}`]: conditions } : {}
 
     if (query.download) {
       // For a download, return a stream
-      return cursor.stream()
+      return Concordance.find(mongoQuery).lean().stream()
     } else {
       // Otherwise, return results
-      const concordances = await cursor.skip(query.offset).limit(query.limit).exec()
-      concordances.totalCount = await cursor.countDocuments()
+      const concordances = await Concordance.find(mongoQuery).lean().skip(query.offset).limit(query.limit).exec()
+      concordances.totalCount = await Concordance.find(mongoQuery).countDocuments()
       return concordances
     }
   }

@@ -57,9 +57,9 @@ module.exports = class MappingService {
       })
     }
 
-    const cursor = Annotation.find(criteria.length ? { $and: criteria } : {}).lean()
-    const annotations = await cursor.skip(query.offset).limit(query.limit).exec()
-    annotations.totalCount = await cursor.countDocuments()
+    const mongoQuery = criteria.length ? { $and: criteria } : {}
+    const annotations = await Annotation.find(mongoQuery).lean().skip(query.offset).limit(query.limit).exec()
+    annotations.totalCount = await Annotation.find(mongoQuery).countDocuments()
     return annotations
 
   }

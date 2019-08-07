@@ -12,9 +12,8 @@ module.exports = class SchemeService {
         $or: query.uri.split("|").map(uri => ({ uri })).concat(query.uri.split("|").map(uri => ({ identifier: uri })))
       }
     }
-    const cursor = Scheme.find(mongoQuery).lean()
-    const schemes = await cursor.skip(query.offset).limit(query.limit).exec()
-    schemes.totalCount = await cursor.countDocuments()
+    const schemes = await Scheme.find(mongoQuery).lean().skip(query.offset).limit(query.limit).exec()
+    schemes.totalCount = await Scheme.find(mongoQuery).countDocuments()
     return schemes
   }
 

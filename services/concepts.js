@@ -20,9 +20,8 @@ module.exports = class ConceptService {
       $or: query.uri.split("|").map(uri => ({ uri }))
     }
 
-    const cursor = Concept.find(mongoQuery).lean()
-    const concepts = await cursor.skip(query.offset).limit(query.limit).exec()
-    concepts.totalCount = await cursor.countDocuments()
+    const concepts = await Concept.find(mongoQuery).lean().skip(query.offset).limit(query.limit).exec()
+    concepts.totalCount = await Concept.find(mongoQuery).countDocuments()
     return concepts
   }
 
@@ -45,9 +44,8 @@ module.exports = class ConceptService {
       // Search for all top concepts in all vocabularies
       criteria = { topConceptOf: { $exists: true } }
     }
-    const cursor = Concept.find(criteria).lean()
-    const concepts = await cursor.skip(query.offset).limit(query.limit).exec()
-    concepts.totalCount = await cursor.countDocuments()
+    const concepts = await Concept.find(criteria).lean().skip(query.offset).limit(query.limit).exec()
+    concepts.totalCount = await Concept.find(criteria).countDocuments()
     return concepts
   }
 
@@ -68,9 +66,8 @@ module.exports = class ConceptService {
       }
       criteria = { $or: uris.map(uri => ({ "inScheme.uri": uri })) }
     }
-    const cursor = Concept.find(criteria).lean()
-    const concepts = await cursor.skip(query.offset).limit(query.limit).exec()
-    concepts.totalCount = await cursor.countDocuments()
+    const concepts = await Concept.find(criteria).lean().skip(query.offset).limit(query.limit).exec()
+    concepts.totalCount = await Concept.find(criteria).countDocuments()
     return concepts
   }
 
