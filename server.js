@@ -17,9 +17,26 @@ app.set("json spaces", 2)
 
 // Database connection
 const mongoose = require("mongoose")
-// TODO
-mongoose.connect(`${config.mongo.url}/${config.mongo.db}`, config.mongo.options)
+const connect = async () => {
+  try {
+    await mongoose.connect(`${config.mongo.url}/${config.mongo.db}`, config.mongo.options)
+  } catch(error) {
+    config.log("Error connecting to database, reconnect in a few seconds...")
+  }
+}
+// Connect immediately on startup
+connect()
 const db = mongoose.connection
+
+db.on("error", () => {
+  mongoose.disconnect()
+})
+db.on("connected", () => {
+  config.log("Connected to database")
+})
+db.on("disconnected", () => {
+  setTimeout(connect, 5000)
+})
 
 // Add default headers
 app.use(utils.addDefaultHeaders)
@@ -32,26 +49,44 @@ app.use(express.json())
 app.use(utils.addMiddlewareProperties)
 
 // Add routes
+
+// Root path for static page
 const path = require("path")
 app.get("/", (req, res) => {
   res.setHeader("Content-Type", "text/html")
   res.sendFile(path.join(__dirname + "/index.html"))
 })
+// Status page /status
+app.use("/status", require("./routes/status"))
+// Database check middleware
+const { DatabaseAccessError } = require("./errors")
+app.use((req, res, next) => {
+  if (db.readyState === 1) {
+    next()
+  } else {
+    // No connection to database, return error
+    next(new DatabaseAccessError())
+  }
+})
+// /checkAuth
 const auth = require("./utils/auth")
 app.get("/checkAuth", auth.default, (req, res) => {
   res.sendStatus(204)
 })
-app.use("/status", require("./routes/status"))
+// Scheme related endpoints
 if (config.schemes) {
   app.use("/voc", require("./routes/schemes"))
 }
+// Mapping related endpoints
 if (config.mappings) {
   app.use("/concordances", require("./routes/concordances"))
   app.use("/mappings", require("./routes/mappings"))
 }
+// Annotation related endpoints
 if (config.annotations) {
   app.use("/annotations", require("./routes/annotations"))
 }
+// Concept related endpoints
 if (config.concepts) {
   app.use(require("./routes/concepts"))
 }
@@ -59,18 +94,20 @@ if (config.concepts) {
 // Error handling
 const errors = require("./errors")
 app.use((error, req, res, next) => {
-  config.error(error)
   // Check if error is defined in errors
   if (Object.values(errors).includes(error.constructor)) {
-    res.status(error.statusCode).send({ status: error.statusCode, message: error.message })
+    res.status(error.statusCode).send({
+      error: error.constructor.name,
+      status: error.statusCode,
+      message: error.message,
+    })
   } else {
     next(error)
   }
 })
 
-db.once("open", async () => {
+const start = async () => {
   const portfinder = require("portfinder")
-  config.log("Connected to database")
   let port = config.port
   if (config.env == "test") {
     portfinder.basePort = config.port
@@ -79,6 +116,8 @@ db.once("open", async () => {
   app.listen(port, () => {
     config.log(`Now listening on port ${port}`)
   })
-})
+}
+// Start express server immediately even if database is not yet connected
+start()
 
 module.exports = { db, app }
