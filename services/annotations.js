@@ -73,7 +73,7 @@ module.exports = class MappingService {
     }
     const result = await Annotation.findById(_id).lean()
     if (!result) {
-      throw new EntityNotFoundError()
+      throw new EntityNotFoundError(null, _id)
     }
     return result
   }

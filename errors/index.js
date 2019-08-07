@@ -5,49 +5,49 @@
  */
 
 class EntityNotFoundError extends Error {
-  constructor(...args) {
-    args[0] = args[0] || "The requested entity could not be found."
-    super(...args)
+  constructor(message, id) {
+    message = message || `The requested entity ${id} could not be found.`
+    super(message)
     this.statusCode = 404
   }
 }
 
 class MalformedBodyError extends Error {
-  constructor(...args) {
-    args[0] = args[0] || "The body of the request is malformed."
-    super(...args)
+  constructor(message) {
+    message = message || "The body of the request is malformed."
+    super(message)
     this.statusCode = 400
   }
 }
 
 class MalformedRequestError extends Error {
-  constructor(...args) {
-    args[0] = args[0] || "The request is malformed (missing parameter etc.)."
-    super(...args)
+  constructor(message) {
+    message = message || "The request is malformed (missing parameter etc.)."
+    super(message)
     this.statusCode = 400
   }
 }
 
 class InvalidBodyError extends Error {
-  constructor(...args) {
-    args[0] = args[0] || "The body of the request is well formed, but could not be validated."
-    super(...args)
+  constructor(message) {
+    message = message || "The body of the request is well formed, but could not be validated."
+    super(message)
     this.statusCode = 422
   }
 }
 
 class CreatorDoesNotMatchError extends Error {
-  constructor(...args) {
-    args[0] = args[0] || "Access to this ressource is not allow for you (but might for others)."
-    super(...args)
+  constructor(message) {
+    message = message || "Access to this ressource is not allowed for you (but might be for other users)."
+    super(message)
     this.statusCode = 403
   }
 }
 
 class DatabaseAccessError extends Error {
-  constructor(...args) {
-    args[0] = args[0] || "There was an error accessing the database."
-    super(...args)
+  constructor(message) {
+    message = message || "There was an error accessing the database. Please try again later."
+    super(message)
     this.statusCode = 500
   }
 }

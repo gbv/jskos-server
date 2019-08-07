@@ -182,7 +182,7 @@ module.exports = class MappingService {
     }
     const result = await Mapping.findById(_id).lean()
     if (!result) {
-      throw new EntityNotFoundError()
+      throw new EntityNotFoundError(null, _id)
     }
     return result
   }
