@@ -103,8 +103,8 @@ module.exports = class MappingService {
     // Add _id and URI
     annotation._id = utils.uuid()
     annotation.id = baseUrl + "annotations/" + annotation._id
-    // Make sure URI is a https URI (except in tests)
-    if (config.env !== "test") {
+    // Make sure URI is a https URI when in production
+    if (config.env === "production") {
       annotation.id = annotation.id.replace("http:", "https:")
     }
 

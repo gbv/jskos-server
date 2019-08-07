@@ -228,8 +228,8 @@ module.exports = class MappingService {
       mapping._id = utils.uuid()
       mapping.uri = uriBase + mapping._id
     }
-    // Make sure URI is a https URI (except in tests)
-    if (config.env !== "test") {
+    // Make sure URI is a https URI when in production
+    if (config.env === "production") {
       mapping.uri.replace("http:", "https:")
     }
     // Save mapping
