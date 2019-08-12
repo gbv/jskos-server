@@ -134,15 +134,11 @@ adjust.schemes = (schemes) => {
 
 /**
  * Returns a random v4 UUID.
- *
- * TODO: Replace with uuid module.
- *
- * from: https://gist.github.com/jed/982883
  */
-function uuid(a){return a?(a^Math.random()*16>>a/4).toString(16):([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,uuid)}
+const uuid = require("uuid/v4")
 
 const uuidRegex = new RegExp(/^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i)
-function isValidUuid(uuid) {
+const isValidUuid = (uuid) => {
   return uuid.match(uuidRegex) != null
 }
 
