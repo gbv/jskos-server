@@ -15,21 +15,21 @@ module.exports = class ConcordanceService {
     if (query.uri) {
       conditions.push({ $or: query.uri.split("|").map(uri => ({ "uri": uri })) })
     }
-    // Search by fromScheme (URI or notation)
-    if (query.fromScheme) {
-      // TODO: Use schemeService to get all URIs for scheme.
-      conditions.push({ $or: [
-        { $or: query.fromScheme.split("|").map(fromScheme => ({ "fromScheme.uri": fromScheme })) },
-        { $or: query.fromScheme.split("|").map(fromScheme => ({ "fromScheme.notation": fromScheme })) },
-      ] })
-    }
-    // Search by toScheme (URI or notation)
-    if (query.toScheme) {
-      // TODO: Use schemeService to get all URIs for scheme.
-      conditions.push({ $or: [
-        { $or: query.toScheme.split("|").map(toScheme => ({ "toScheme.uri": toScheme })) },
-        { $or: query.toScheme.split("|").map(toScheme => ({ "toScheme.notation": toScheme })) },
-      ] })
+    // Search by fromScheme/toScheme (URI or notation)
+    for (let part of ["fromScheme", "toScheme"]) {
+      if (query[part]) {
+        // TODO: Use schemeService to get all URIs for scheme.
+        let uris = []
+        for (let uriOrNotation of query[part].split("|")) {
+          let scheme = await this.schemeService.getScheme(uriOrNotation)
+          if (scheme) {
+            uris = uris.concat(scheme.uri, scheme.identifier || [])
+          } else {
+            uris = uris.concat(query[part])
+          }
+        }
+        conditions.push({ $or: uris.map(uri => ({ [`${part}.uri`]: uri })) })
+      }
     }
     // Search by creator
     if (query.creator) {
