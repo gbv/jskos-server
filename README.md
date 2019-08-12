@@ -336,6 +336,8 @@ Returns an array of mappings. Each mapping has a property `uri` under which the 
 
   `creator=[string1|string2|...]` only show mappings that have a certain creator (separated by `|`)
 
+  `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting only `annotations` for mappings)
+
   `download=[type]` returns the whole result as a download (available types are `json`, `ndjson`, `csv`, and `tsv`), ignores `limit` and `offset`
 
   `sort=[sort]` sorts by a specific field. Available are `created` and `modified` (default).
@@ -484,6 +486,10 @@ Lists all concept schemes used in mappings.
 
 ### GET /mappings/:_id
 Returns a specific mapping.
+
+* **URL Params**
+
+  `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting only `annotations` for mappings)
 
 * **Success Response**
 
@@ -684,7 +690,7 @@ Returns detailed data for concepts (or concept schemes).
 
   `uri=[uri]` URIs for concepts (or concept schemes) separated by `|`
 
-  `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting `ancestors` and `narrower`)
+  `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting `ancestors`, `narrower`, and `annotations`)
 
 * **Success Response**
 
