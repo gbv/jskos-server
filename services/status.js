@@ -1,22 +1,17 @@
 const _ = require("lodash")
 const config = require("../config")
-const util = require("../lib/util")
 
-/**
- * Provide statistics and connection status.
- */
-class StatusProvider {
+module.exports = class StatusService {
 
-  constructor(db) {
-    this.db = db
-  }
-
-  getStatus(req) {
+  /**
+   * Return a Promise with a status object.
+   */
+  async getStatus({ baseUrl }) {
+    const { db } = require("../server")
     let status = {
-      config: _.omit(config, ["verbosity", "port", "mongo"])
+      config: _.omit(config, ["verbosity", "port", "mongo"]),
     }
-    status.config.baseUrl = util.getBaseUrl(req)
-    let baseUrl = status.config.baseUrl
+    status.config.baseUrl = baseUrl
     if (status.config.schemes) {
       // Add endpoints related to schemes
       status.schemes = `${baseUrl}voc`
@@ -45,14 +40,8 @@ class StatusProvider {
       // Add endpoints related to annotations
       status.annotations = `${baseUrl}annotations`
     }
-    return this.db.stats().then(result => {
-      status.ok = result.ok
-    }).catch(error => {
-      console.log("Error on /status:", error)
-      status.ok = 0
-    }).then(() => status)
+    status.ok = db.readyState === 1 ? 1 : 0
+    return status
   }
 
 }
-
-module.exports = StatusProvider

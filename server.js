@@ -1,599 +1,123 @@
-/**
- * Simple JSON API to retrieve JSKOS Concept Mappings for mappings between RVK and GND.
- *
- * If the database doesn't exist yet, import the mappings like this:
- * mongoimport --db cocoda_api --collection mappings --file mappings.ndjson
- *
- * Import vocabularies into collection "terminologies" and their concepts into collection "concepts":
- * mongoimport --db cocoda_api --collection terminologies --file terminologies.ndjson
- * mongoimport --db cocoda_api --collection concepts --file concepts.ndjson
- *
- * Download the file from here: http://coli-conc.gbv.de/concordances/
- */
-
 const config = require("./config")
+const utils = require("./utils")
 
-config.log(`running in ${config.env} mode`)
+config.log(`Running in ${config.env} mode.`)
 
 if (!config.auth.postAuthRequired) {
   config.log("Note: POST /mappings does not require authentication. To change this, remove `auth.postAuthRequired` from the configuration file.")
 }
 if (!config.baseUrl) {
-  config.log("Warning: If you're using jskos-server behind a reverse proxy, it is necessary to add `baseUrl` to the configuration file!")
+  config.warn("Warning: If you're using jskos-server behind a reverse proxy, it is necessary to add `baseUrl` to the configuration file!")
 }
 
+// Initialize express with settings
 const express = require("express")
-const bodyParser = require("body-parser")
 const app = express()
-const mongo = require("mongodb").MongoClient
-const MappingProvider = require("./lib/mapping-provider")
-const TerminologyProvider = require("./lib/terminology-provider")
-const StatusProvider = require("./lib/status-provider")
-const AnnotationProvider = require("./lib/annotation-provider")
-const _ = require("lodash")
-const jskos = require("jskos-tools")
-const portfinder = require("portfinder")
-const { Transform } = require("stream")
-const JSONStream = require("JSONStream")
-const util = require("./lib/util")
-
-// Pretty-print JSON output
 app.set("json spaces", 2)
 
-let optionalStrategies = [], auth = null
-
-// Prepare authorization via JWT
-const passport = require("passport")
-
-if (config.auth.algorithm && config.auth.key) {
-  const JwtStrategy = require("passport-jwt").Strategy,
-    ExtractJwt = require("passport-jwt").ExtractJwt
-  var opts = {
-    jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-    secretOrKey: config.auth.key,
-    algorithms: [config.auth.algorithm]
-  }
+// Database connection
+const mongoose = require("mongoose")
+const connect = async () => {
   try {
-    passport.use(new JwtStrategy(opts, (jwt_payload, done) => {
-      done(null, jwt_payload.user)
-    }))
-    // Use like this: app.get("/secureEndpoint", auth, (req, res) => { ... })
-    // res.user will contain the current authorized user.
-    auth = passport.authenticate("jwt", { session: false })
-    optionalStrategies.push("jwt")
+    await mongoose.connect(`${config.mongo.url}/${config.mongo.db}`, config.mongo.options)
   } catch(error) {
-    console.error("Error setting up JWT authentication")
-  }
-} else {
-  console.warn("Note: To provide authentication via JWT, please add `auth.algorithm` and `auth.key` to the configuration file!")
-  // Deny all requests
-  auth = (req, res) => {
-    res.sendStatus(403)
+    config.log("Error connecting to database, reconnect in a few seconds...")
   }
 }
+// Connect immediately on startup
+connect()
+const db = mongoose.connection
 
-if (config.auth.whitelist) {
-  console.log("Auth whitelist configured:", config.auth.whitelist)
-  auth = [auth, (req, res, next) => {
-    // Check if any of user's URIs is on the whitelist
-    let uris = [req.user.uri].concat(Object.values(req.user.identities || {}).map(id => id.uri)).filter(uri => uri != null)
-    if (_.intersection(config.auth.whitelist, uris).length == 0) {
-      // Deny request
-      res.sendStatus(403)
-    } else {
-      next()
-    }
-  }]
-}
-
-// Also use anonymous strategy for endpoints that can be used authenticated or not authenticated
-const AnonymousStrategy = require("passport-anonymous").Strategy
-passport.use(new AnonymousStrategy())
-optionalStrategies.push("anonymous")
-
-// For endpoints with optional authentication
-// For example: app.get("/optionallySecureEndpoint", config.auth.postAuthRequired ? auth : authOptional, (req, res) => { ... })
-// req.user will cointain the user if authorized, otherwise stays undefined.
-const authOptional = passport.authenticate(optionalStrategies, { session: false })
-
-// Promise for MongoDB db
-const db = mongo.connect(config.mongo.url, config.mongo.options).then(client => {
-  return client.db(config.mongo.db)
-}).catch(error => {
-  throw error
+db.on("error", () => {
+  mongoose.disconnect()
 })
-
-db.then(db => {
-  config.log(`connected to MongoDB ${config.mongo.url} (database: ${config.mongo.db})`)
-  mappingProvider = new MappingProvider(db.collection("mappings"), db.collection("concordances"), db.collection("terminologies"))
-  terminologyProvider = new TerminologyProvider(db.collection("terminologies"), db.collection("concepts"))
-  statusProvider = new StatusProvider(db)
-  annotationProvider = new AnnotationProvider(db.collection("annotations"))
-  if (config.env == "test") {
-    portfinder.basePort = config.port
-    return portfinder.getPortPromise()
-  } else {
-    return Promise.resolve(config.port)
-  }
-}).then(port => {
-  app.listen(port, () => {
-    config.log(`listening on port ${port}`)
-  })
-}).catch(error => {
-  console.error("Error with database or express:", error)
+db.on("connected", () => {
+  config.log("Connected to database")
+})
+db.on("disconnected", () => {
+  setTimeout(connect, 2500)
 })
 
 // Add default headers
-app.use(function (req, res, next) {
-  res.setHeader("Access-Control-Allow-Origin", "*")
-  res.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization")
-  res.setHeader("Access-Control-Allow-Methods", "GET,PUT,POST,PATCH,DELETE")
-  res.setHeader("Access-Control-Expose-Headers", "X-Total-Count, Link")
-  res.setHeader("Content-Type", "application/json; charset=utf-8")
-  next()
-})
+app.use(utils.addDefaultHeaders)
 
 // Add body-parser middleware
-app.use(bodyParser.urlencoded({ extended: false }))
-app.use(bodyParser.json())
+app.use(express.urlencoded({ extended: false }))
+app.use(express.json())
 
-// Recursively remove all fields starting with _ from response
-function cleanJSON(json) {
-  if (_.isArray(json)) {
-    json.forEach(cleanJSON)
-  } else if (_.isObject(json)) {
-    _.forOwn(json, (value, key) => {
-      if (key.startsWith("_")) {
-        // remove from object
-        _.unset(json, key)
-      } else {
-        cleanJSON(value)
-      }
-    })
-  }
-}
+// Set some properties on req that will be used by other middleware
+app.use(utils.addMiddlewareProperties)
 
-function adjustSchemes(schemes) {
-  // Remove MongoDB specific fields, add JSKOS specific fields
-  schemes.forEach(scheme => {
-    delete scheme._id
-    scheme["@context"] = "https://gbv.github.io/jskos/context.json"
-    scheme.type = scheme.type || ["http://www.w3.org/2004/02/skos/core#ConceptScheme"]
-  })
-  return schemes
-}
+// Add routes
 
-function adjustConcept(req) {
-  return concept => {
-    if (!concept) {
-      return null
-    }
-    // Remove MongoDB specific fields, add JSKOS specific fields
-    delete concept._id
-    concept["@context"] = "https://gbv.github.io/jskos/context.json"
-    concept.type = concept.type || ["http://www.w3.org/2004/02/skos/core#Concept"]
-    return util.handleProperties({ terminologyProvider, annotationProvider }, concept, _.get(req, "query.properties"))
-  }
-}
-
-function adjustConcepts(req) {
-  return concepts => {
-    return Promise.all(concepts.map(concept => adjustConcept(req)(concept)))
-  }
-}
-
-function adjustMapping(req) {
-  return mapping => {
-    if (!mapping) {
-      return null
-    }
-    // Remove MongoDB specific fields, add JSKOS specific fields
-    delete mapping._id
-    mapping["@context"] = "https://gbv.github.io/jskos/context.json"
-    return util.handleProperties({ annotationProvider }, mapping, _.get(req, "query.properties"))
-  }
-}
-
-function adjustMappings(req) {
-  return mappings => {
-    return Promise.all(mappings.map(mapping => adjustMapping(req)(mapping)))
-  }
-}
-
-function adjustAnnotations(req) {
-  return annotations => {
-    return annotations.map(annotation => util.adjustAnnotation(req)(annotation))
-  }
-}
-
-function handleDownload(req, res, results, filename) {
-  /**
-   * Transformation object to remove _id parameter from objects in a stream.
-   */
-  const removeIdTransform = new Transform({
-    objectMode: true,
-    transform(chunk, encoding, callback) {
-      cleanJSON(chunk)
-      this.push(chunk)
-      callback()
-    }
-  })
-  // Default transformation: JSON
-  let transform = JSONStream.stringify("[\n", ",\n", "\n]\n")
-  let fileEnding = "json"
-  let first = true, delimiter = ","
-  switch (req.query.download) {
-    case "ndjson":
-      fileEnding = "ndjson"
-      res.set("Content-Type", "application/x-ndjson; charset=utf-8")
-      transform = new Transform({
-        objectMode: true,
-        transform(chunk, encoding, callback) {
-          this.push(JSON.stringify(chunk) + "\n")
-          callback()
-        }
-      })
-      break
-    case "csv":
-    case "tsv":
-      fileEnding = req.query.download
-      if (req.query.download == "csv") {
-        delimiter = ","
-        res.set("Content-Type", "text/csv; charset=utf-8")
-      } else {
-        delimiter = "\t"
-        res.set("Content-Type", "text/tab-separated-values; charset=utf-8")
-      }
-      transform = new Transform({
-        objectMode: true,
-        transform(chunk, encoding, callback) {
-        // Small workaround to prepend a line to CSV
-          if (first) {
-            this.push(`"fromNotation"${delimiter}"toNotation"${delimiter}"type"\n`)
-            first = false
-          }
-          let mappingToCSV = jskos.mappingToCSV({
-            lineTerminator: "\r\n",
-            delimiter,
-          })
-          this.push(mappingToCSV(chunk))
-          callback()
-        }
-      })
-      break
-  }
-  // Add file header
-  res.set("Content-disposition", `attachment; filename=${filename}.${fileEnding}`)
-  // results is a database cursor
-  results.stream()
-    .pipe(removeIdTransform)
-    .pipe(transform)
-    .pipe(res)
-}
-
-const mung = require("express-mung")
-app.use(mung.json((cleanJSON)))
-
+// Root path for static page
 const path = require("path")
-app.get("/", function(req, res) {
+app.get("/", (req, res) => {
   res.setHeader("Content-Type", "text/html")
   res.sendFile(path.join(__dirname + "/index.html"))
 })
-
-app.get("/checkAuth", auth, (req, res) => {
+// Status page /status
+app.use("/status", require("./routes/status"))
+// Database check middleware
+const { DatabaseAccessError } = require("./errors")
+app.use((req, res, next) => {
+  if (db.readyState === 1) {
+    next()
+  } else {
+    // No connection to database, return error
+    next(new DatabaseAccessError())
+  }
+})
+// /checkAuth
+const auth = require("./utils/auth")
+app.get("/checkAuth", auth.default, (req, res) => {
   res.sendStatus(204)
 })
+// Scheme related endpoints
+if (config.schemes) {
+  app.use("/voc", require("./routes/schemes"))
+}
+// Mapping related endpoints
+if (config.mappings) {
+  app.use("/concordances", require("./routes/concordances"))
+  app.use("/mappings", require("./routes/mappings"))
+}
+// Annotation related endpoints
+if (config.annotations) {
+  app.use("/annotations", require("./routes/annotations"))
+}
+// Concept related endpoints
+if (config.concepts) {
+  app.use(require("./routes/concepts"))
+}
 
-app.get("/status", (req, res) => {
-  statusProvider.getStatus(req)
-    .then(result => {
-      res.json(result)
+// Error handling
+const errors = require("./errors")
+app.use((error, req, res, next) => {
+  // Check if error is defined in errors
+  if (Object.values(errors).includes(error.constructor)) {
+    res.status(error.statusCode).send({
+      error: error.constructor.name,
+      status: error.statusCode,
+      message: error.message,
     })
+  } else {
+    next(error)
+  }
 })
 
-/**
- * ########## Mapping related endpoints ##########
- */
-if (config.mappings) {
-
-  app.get("/concordances", (req, res) => {
-    let supportedTypes = ["json", "ndjson"]
-    if (req.query.download && !supportedTypes.includes(req.query.download)) {
-      req.query.download = null
-    }
-    mappingProvider.getConcordances(req, res)
-      .then(results => {
-        if (req.query.download) {
-          handleDownload(req, res, results, "concordances")
-        } else {
-          res.json(results)
-        }
-      })
-      .catch(err => res.send(err))
+const start = async () => {
+  const portfinder = require("portfinder")
+  let port = config.port
+  if (config.env == "test") {
+    portfinder.basePort = config.port
+    port = await portfinder.getPortPromise()
+  }
+  app.listen(port, () => {
+    config.log(`Now listening on port ${port}`)
   })
-
-  app.get("/mappings", (req, res) => {
-    let supportedTypes = ["json", "ndjson", "csv", "tsv"]
-    if (req.query.download && !supportedTypes.includes(req.query.download)) {
-      req.query.download = null
-    }
-    mappingProvider.getMappings(req, res)
-      // Only adjust if it's not a download (-> stream)
-      .then(req.query.download ? (result => result) : adjustMappings(req))
-      .then(results => {
-        if (req.query.download) {
-          handleDownload(req, res, results, "mappings")
-        } else {
-          res.json(results)
-        }
-      })
-      .catch(err => res.send(err))
-  })
-
-  app.post("/mappings", config.auth.postAuthRequired ? auth : authOptional, (req, res) => {
-    mappingProvider.saveMapping(req, res)
-      .then(adjustMapping(req))
-      .then(result => {
-        if (result) {
-          res.status(201).json(result)
-        } else {
-          if (!res.headersSent) {
-            res.sendStatus(400)
-          }
-        }
-      })
-      .catch(err => res.send(err))
-  })
-
-  app.get("/mappings/suggest", (req, res) => {
-    mappingProvider.getNotationSuggestions(req, res)
-      .then(results => {
-        res.json(results)
-      })
-      .catch(err => res.send(err))
-  })
-
-  app.get("/mappings/voc", (req, res) => {
-    mappingProvider.getMappingSchemes(req, res)
-      .then(adjustSchemes)
-      .then(results => {
-        res.json(results)
-      })
-      .catch(err => res.send(err))
-  })
-
-  app.get("/mappings/:_id", (req, res) => {
-    mappingProvider.getMapping(req, res)
-      .then(adjustMapping(req))
-      .then(result => {
-        if (result) {
-          res.json(result)
-        } else {
-          res.sendStatus(404)
-        }
-      })
-      .catch(err => res.send(err))
-  })
-
-  app.put("/mappings/:_id", auth, (req, res) => {
-    mappingProvider.putMapping(req, res)
-      .then(adjustMapping(req))
-      .then(result => {
-        if (result) {
-          res.json(result)
-        } else {
-          if (!res.headersSent) {
-            res.sendStatus(400)
-          }
-        }
-      })
-      .catch(err => res.send(err))
-  })
-
-  app.patch("/mappings/:_id", auth, (req, res) => {
-    mappingProvider.patchMapping(req, res)
-      .then(adjustMapping(req))
-      .then(result => {
-        if (result) {
-          res.json(result)
-        } else {
-          if (!res.headersSent) {
-            res.sendStatus(400)
-          }
-        }
-      })
-      .catch(err => res.send(err))
-  })
-
-  app.delete("/mappings/:_id", auth, (req, res) => {
-    mappingProvider.deleteMapping(req, res)
-      .then(result => {
-        // `result` will be either true or false
-        if (result) {
-          res.sendStatus(204)
-        } else {
-          if (!res.headersSent) {
-            res.sendStatus(400)
-          }
-        }
-      })
-      .catch(err => res.send(err))
-  })
-
 }
+// Start express server immediately even if database is not yet connected
+start()
 
-/**
- * ########## Annotation related endpoints ##########
- */
-if (config.annotations) {
-
-  app.get("/annotations", (req, res) => {
-    annotationProvider.getAnnotations(req, res)
-      .then(adjustAnnotations(req))
-      .then(results => {
-        res.json(results)
-      })
-      .catch(err => res.send(err))
-  })
-
-  app.post("/annotations", auth, (req, res) => {
-    annotationProvider.postAnnotation(req, res)
-      .then(util.adjustAnnotation(req))
-      .then(result => {
-        if (result) {
-          res.status(201).json(result)
-        } else {
-          res.sendStatus(400)
-        }
-      })
-      .catch(err => res.send(err))
-  })
-
-  app.get("/annotations/:_id", (req, res) => {
-    annotationProvider.getAnnotation(req, res)
-      .then(util.adjustAnnotation(req))
-      .then(result => {
-        if (result) {
-          res.json(result)
-        } else {
-          res.sendStatus(404)
-        }
-      })
-      .catch(err => res.send(err))
-  })
-
-  app.put("/annotations/:_id", auth, (req, res) => {
-    annotationProvider.putAnnotation(req, res)
-      .then(util.adjustAnnotation(req))
-      .then(result => {
-        if (result) {
-          res.json(result)
-        } else {
-          if (!res.headersSent) {
-            res.sendStatus(400)
-          }
-        }
-      })
-      .catch(err => res.send(err))
-  })
-
-  app.patch("/annotations/:_id", auth, (req, res) => {
-    annotationProvider.patchAnnotation(req, res)
-      .then(util.adjustAnnotation(req))
-      .then(result => {
-        if (result) {
-          res.json(result)
-        } else {
-          if (!res.headersSent) {
-            res.sendStatus(400)
-          }
-        }
-      })
-      .catch(err => res.send(err))
-  })
-
-  app.delete("/annotations/:_id", auth, (req, res) => {
-    annotationProvider.deleteAnnotation(req, res)
-      .then(result => {
-        // `result` will be either true or false
-        if (result) {
-          res.sendStatus(204)
-        } else {
-          if (!res.headersSent) {
-            res.sendStatus(400)
-          }
-        }
-      })
-      .catch(err => res.send(err))
-  })
-
-}
-
-/**
- * ########## Scheme related endpoints ##########
- */
-if (config.schemes) {
-
-  app.get("/voc", (req, res) => {
-    terminologyProvider.getVocabularies(req, res)
-      .then(adjustSchemes)
-      .then(results => {
-        res.json(results)
-      })
-      .catch(err => res.send(err))
-  })
-
-  app.get("/voc/top", (req, res) => {
-    terminologyProvider.getTop(req, res)
-      .then(adjustConcepts(req))
-      .then(results => {
-        res.json(results)
-      })
-      .catch(err => res.send(err))
-  })
-
-  app.get("/voc/concepts", (req, res) => {
-    terminologyProvider.getConcepts(req, res)
-      .then(adjustConcepts(req))
-      .then(results => {
-        res.json(results)
-      })
-      .catch(err => res.send(err))
-  })
-
-}
-
-/**
- * ########## Concept related endpoints ##########
- */
-if (config.concepts) {
-
-  app.get("/data", (req, res) => {
-    terminologyProvider.getDetails(req, res)
-      .then(adjustConcepts(req))
-      .then(results => {
-        res.json(results)
-      })
-      .catch(err => res.send(err))
-  })
-
-  app.get("/narrower", (req, res) => {
-    terminologyProvider.getNarrower(req, res)
-      .then(adjustConcepts(req))
-      .then(results => {
-        res.json(results)
-      })
-      .catch(err => res.send(err))
-  })
-
-  app.get("/ancestors", (req, res) => {
-    terminologyProvider.getAncestors(req, res)
-      .then(adjustConcepts(req))
-      .then(results => {
-        res.json(results)
-      })
-      .catch(err => res.send(err))
-  })
-
-  app.get("/suggest", (req, res) => {
-    terminologyProvider.getSuggestions(req, res)
-      .then(results => {
-        res.json(results)
-      })
-      .catch(err => res.send(err))
-  })
-
-  app.get("/search", (req, res) => {
-    terminologyProvider.search(req, res)
-      .then(adjustConcepts(req))
-      .then(results => {
-        res.json(results)
-      })
-      .catch(err => res.send(err))
-  })
-
-}
-
-module.exports = {
-  db, app
-}
+module.exports = { db, app }

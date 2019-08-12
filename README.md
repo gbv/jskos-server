@@ -19,21 +19,32 @@ JSKOS Server is a web server for [JSKOS] data. It is currently under development
   - [Run Server](#run-server)
   - [Run Tests](#run-tests)
 - [API](#api)
-  - [/status](#status)
-  - [/concordances](#concordances)
-  - [/mappings](#mappings)
-  - [/mappings/:_id](#mappings_id)
-  - [/mappings/suggest](#mappingssuggest)
-  - [/mappings/voc](#mappingsvoc)
-  - [/voc](#voc)
-  - [/voc/top](#voctop)
-  - [/voc/concepts](#vocconcepts)
-  - [/data](#data)
-  - [/narrower](#narrower)
-  - [/ancestors](#ancestors)
-  - [/suggest](#suggest)
-  - [/search](#search)
-- [Deployment](#deployment)
+  - [GET /status](#get-status)
+  - [GET /concordances](#get-concordances)
+  - [GET /mappings](#get-mappings)
+  - [GET /mappings/suggest](#get-mappingssuggest)
+  - [GET /mappings/voc](#get-mappingsvoc)
+  - [GET /mappings/:_id](#get-mappings_id)
+  - [POST /mappings](#post-mappings)
+  - [PUT /mappings/:_id](#put-mappings_id)
+  - [PATCH /mappings/:_id](#patch-mappings_id)
+  - [DELETE /mappings/:_id](#delete-mappings_id)
+  - [GET /voc](#get-voc)
+  - [GET /voc/top](#get-voctop)
+  - [GET /voc/concepts](#get-vocconcepts)
+  - [GET /data](#get-data)
+  - [GET /narrower](#get-narrower)
+  - [GET /ancestors](#get-ancestors)
+  - [GET /suggest](#get-suggest)
+  - [GET /search](#get-search)
+  - [GET /annotations](#get-annotations)
+  - [GET /annotations/:_id](#get-annotations_id)
+  - [POST /annotations](#post-annotations)
+  - [PUT /annotations/:_id](#put-annotations_id)
+  - [PATCH /annotations/:_id](#patch-annotations_id)
+  - [DELETE /annotations/:_id](#delete-annotations_id)
+  - [Errors](#errors)
+- [Deployment](#get-deployment)
   - [Notes about depolyment on Ubuntu](#notes-about-depolyment-on-ubuntu)
   - [Update an instances deployed with PM2](#update-an-instances-deployed-with-pm2)
   - [Daily Import](#daily-import)
@@ -158,12 +169,17 @@ npm test
 
 ## API
 Unless otherwise specified:
-- All endpoints are `GET` endpoints.
-- All responses return code 200.
+- `GET` requests will return code 200 on success.
+- `POST` requests will return code 201 on success.
+- `DELETE` requests will return code 204 on success.
+- `POST`/`PUT`/`PATCH` requests require a JSON body.
+- `POST`/`PUT`/`PATCH`/`DELETE` requests require authentication via a JWT from [login-server](https://github.com/gbv/login-server) in the header. Exception: If the auth option `postAuthRequired` is set to `false`, authentication is not necessary for `POST /mappings`.
+- `PUT`/`PATCH`/`DELETE` requests are required to come from the owner of the entity that is being modified.
 - All URL parameters are optional.
-- All endpoints (except for `/status`) offer pagination via `limit=[number]` (default: 100) and `offset=[number]` (default: 0) parameters. In the response, there will be a `Link` header like described in the [GitHub API documentation](https://developer.github.com/v3/#pagination), as well as a `X-Total-Count` header containing the total number of results.
+- All `GET` endpoints (except for `/status` and those with `:_id`) offer pagination via `limit=[number]` (default: 100) and `offset=[number]` (default: 0) parameters. In the response, there will be a `Link` header like described in the [GitHub API documentation](https://developer.github.com/v3/#pagination), as well as a `X-Total-Count` header containing the total number of results.
+- For possible errors, see [Errors](#errors).
 
-### /status
+### GET /status
 Returns a status object.
 
 * **Success Response**
@@ -221,7 +237,7 @@ Returns a status object.
   }
   ```
 
-### /concordances
+### GET /concordances
 Lists all concordances for mappings.
 
 * **URL Params**
@@ -295,8 +311,8 @@ Lists all concordances for mappings.
   ]
   ```
 
-### /mappings
-Returns an array of mappings. Each mapping has a property `url` under which the specific mapping can be accessed.
+### GET /mappings
+Returns an array of mappings. Each mapping has a property `uri` under which the specific mapping can be accessed.
 
 * **URL Params**
 
@@ -319,6 +335,8 @@ Returns an array of mappings. Each mapping has a property `url` under which the 
   `partOf=[uri1|uri2|...]` only show mappings that are part of certain concordances (URIs separated by `|`)
 
   `creator=[string1|string2|...]` only show mappings that have a certain creator (separated by `|`)
+
+  `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting only `annotations` for mappings)
 
   `download=[type]` returns the whole result as a download (available types are `json`, `ndjson`, `csv`, and `tsv`), ignores `limit` and `offset`
 
@@ -380,8 +398,98 @@ Returns an array of mappings. Each mapping has a property `url` under which the 
   ]
   ```
 
-### /mappings/:_id
+### GET /mappings/suggest
+Suggests notations used in mappings.
+
+* **URL Params**
+
+  `search=[notation]` specifies the notation (prefix) to search for
+
+* **Success Response**
+
+  JSON array of suggestions in [OpenSearch Suggest Format](http://www.opensearch.org/Specifications/OpenSearch/Extensions/Suggestions/1.1#Response_format).
+
+* **Sample Call**
+
+  ```bash
+  curl https://coli-conc.gbv.de/api/mappings/suggest?search=A&limit=5
+  ```
+
+  ```json
+  [
+    "A",
+    [
+      "AN 74800",
+      "AN 78950",
+      "AN 70000",
+      "AN 71000",
+      "AN 96900"
+    ],
+    [
+      42,
+      25,
+      19,
+      18,
+      17
+    ],
+    []
+  ]
+  ```
+
+### GET /mappings/voc
+Lists all concept schemes used in mappings.
+
+* **URL Params**
+
+  `from=[uri|notation]` restrict mappings to those from a concept
+
+  `to=[uri|notation]` restrict mappings to those to a concept
+
+  `mode=[mode]` specify the mode for `from` and `to`, one of `and` and `or` (default)
+
+* **Success Response**
+
+  JSON array of [JSKOS Concept Schemes]
+
+* **Sample Call**
+
+  ```bash
+  curl https://coli-conc.gbv.de/api/mappings/voc?from=612.112&to=612.112
+  ```
+
+  ```json
+  [
+    {
+      "uri": "http://bartoc.org/en/node/430",
+      "notation": [
+        "GND"
+      ],
+      "fromCount": 2
+    },
+    {
+      "uri": "http://bartoc.org/en/node/241",
+      "notation": [
+        "DDC"
+      ],
+      "fromCount": 2,
+      "toCount": 2
+    },
+    {
+      "uri": "http://bartoc.org/en/node/533",
+      "notation": [
+        "RVK"
+      ],
+      "toCount": 2
+    }
+  ]
+  ```
+
+### GET /mappings/:_id
 Returns a specific mapping.
+
+* **URL Params**
+
+  `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting only `annotations` for mappings)
 
 * **Success Response**
 
@@ -454,93 +562,35 @@ Returns a specific mapping.
   }
   ```
 
-### /mappings/suggest
-Suggests notations used in mappings.
+### POST /mappings
+Saves a mapping in the database.
 
-* **URL Params**
+* **Success Reponse**
 
-  `search=[notation]` specifies the notation (prefix) to search for
+  JSKOS Mapping object as it was saved in the database.
 
-* **Success Response**
+### PUT /mappings/:_id
+Overwrites a mapping in the database.
 
-  JSON array of suggestions in [OpenSearch Suggest Format](http://www.opensearch.org/Specifications/OpenSearch/Extensions/Suggestions/1.1#Response_format).
+* **Success Reponse**
 
-* **Sample Call**
+  JSKOS Mapping object as it was saved in the database.
 
-  ```bash
-  curl https://coli-conc.gbv.de/api/mappings/suggest?search=A&limit=5
-  ```
+### PATCH /mappings/:_id
+Adjusts a mapping in the database.
 
-  ```json
-  [
-    "A",
-    [
-      "AN 74800",
-      "AN 78950",
-      "AN 70000",
-      "AN 71000",
-      "AN 96900"
-    ],
-    [
-      42,
-      25,
-      19,
-      18,
-      17
-    ],
-    []
-  ]
-  ```
+* **Success Reponse**
 
-### /mappings/voc
-Lists all concept schemes used in mappings.
+  JSKOS Mapping object as it was saved in the database.
 
-* **URL Params**
+### DELETE /mappings/:_id
+Deletes a mapping from the database.
 
-  `from=[uri|notation]` restrict mappings to those from a concept
+* **Success Reponse**
 
-  `to=[uri|notation]` restrict mappings to those to a concept
+  Status 204, no content.
 
-  `mode=[mode]` specify the mode for `from` and `to`, one of `and` and `or` (default)
-
-* **Success Response**
-
-  JSON array of [JSKOS Concept Schemes]
-
-* **Sample Call**
-
-  ```bash
-  curl https://coli-conc.gbv.de/api/mappings/voc?from=612.112&to=612.112
-  ```
-
-  ```json
-  [
-    {
-      "uri": "http://bartoc.org/en/node/430",
-      "notation": [
-        "GND"
-      ],
-      "fromCount": 2
-    },
-    {
-      "uri": "http://bartoc.org/en/node/241",
-      "notation": [
-        "DDC"
-      ],
-      "fromCount": 2,
-      "toCount": 2
-    },
-    {
-      "uri": "http://bartoc.org/en/node/533",
-      "notation": [
-        "RVK"
-      ],
-      "toCount": 2
-    }
-  ]
-  ```
-
-### /voc
+### GET /voc
 Lists supported terminologies (concept schemes).
 
 * **URL Params**
@@ -595,7 +645,7 @@ Lists supported terminologies (concept schemes).
   ]
   ```
 
-### /voc/top
+### GET /voc/top
 Lists top concepts for a concept scheme.
 
 * **URL Params**
@@ -614,7 +664,7 @@ Lists top concepts for a concept scheme.
   curl https://coli-conc.gbv.de/api/voc/top?uri=http://dewey.info/scheme/edition/e23/
   ```
 
-### /voc/concepts
+### GET /voc/concepts
 Lists concepts for a concept scheme.
 
 * **URL Params**
@@ -633,14 +683,14 @@ Lists concepts for a concept scheme.
   curl https://coli-conc.gbv.de/api/voc/concepts?uri=http://dewey.info/scheme/edition/e23/
   ```
 
-### /data
+### GET /data
 Returns detailed data for concepts (or concept schemes).
 
 * **URL Params**
 
   `uri=[uri]` URIs for concepts (or concept schemes) separated by `|`
 
-  `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting `ancestors` and `narrower`)
+  `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting `ancestors`, `narrower`, and `annotations`)
 
 * **Success Response**
 
@@ -688,7 +738,7 @@ Returns detailed data for concepts (or concept schemes).
   ]
   ```
 
-### /narrower
+### GET /narrower
 Returns narrower concepts for a concept.
 
 * **URL Params**
@@ -800,7 +850,7 @@ Returns narrower concepts for a concept.
   ]
   ```
 
-### /ancestors
+### GET /ancestors
 Returns ancestor concepts for a concept.
 
 * **URL Params**
@@ -855,7 +905,7 @@ Returns ancestor concepts for a concept.
   ]
   ```
 
-### /suggest
+### GET /suggest
 Returns concept suggestions.
 
 * **URL Params**
@@ -974,8 +1024,140 @@ Returns concept suggestions.
   ]
   ```
 
-### /search
+### GET /search
 Currently the same as `/suggest` with parameter `format=jskos`. Additionally, search supports the parameter `properties=[list]` as in the other concept methods.
+
+### GET /annotations
+Returns an array of annotations. Each annotation has a property `id` under which the specific annotation can be accessed.
+
+* **URL Params**
+
+  `id=[id]` specify an annotation ID
+
+  `creator=[uriOrName]` only return annotations that have a certain creator (name or URI)
+
+  `target=[target]` only return annotations with a specific target URI (e.g. a mapping URI)
+
+  `bodyValue=[bodyValue]` only return annotations with a specific bodyValue (e.g. `+1`, `-1`)
+
+  `motation=[motivation]` only return annotations with a specific motivation (e.g. `assessing`, `moderating`, `tagging`)
+
+* **Success Response**
+
+  Array of annotations in [Web Annotation Data Model] format
+
+* **Sample Call**
+
+  ```bash
+  curl https://coli-conc.gbv.de/api/annotations?bodyValue=+1&limit=1
+  ```
+
+  ```json
+  [
+    {
+      "target": "https://coli-conc.gbv.de/api/mappings/f8eff4e2-a6df-4d2c-8382-523072c59af7",
+      "motivation": "assessing",
+      "bodyValue": "+1",
+      "creator": "https://orcid.org/0000-0002-4087-8227",
+      "created": "2019-01-31T09:44:12.699Z",
+      "id": "https://coli-conc.gbv.de/api/annotations/2575e276-29c6-4d36-8477-b21be1790e64",
+      "@context": "http://www.w3.org/ns/anno.jsonld",
+      "type": "Annotation"
+    }
+  ]
+  ```
+
+### GET /annotations/:_id
+Returns a specific annotation.
+
+* **Success Response**
+
+  Object for annotation in [Web Annotation Data Model] format.
+
+* **Error Response**
+
+  If no annotation with `_id` could be found, it will return a 404 not found error.
+
+* **Sample Call**
+
+  ```bash
+  curl https://coli-conc.gbv.de/api/annotations/5f23368f-a63b-4b69-acd6-b403110df97c
+  ```
+
+  ```json
+  {
+    "target": "https://coli-conc.gbv.de/api/mappings/f0cc5f65-5712-4820-9638-e662c0c4314e",
+    "motivation": "assessing",
+    "bodyValue": "+1",
+    "creator": {
+      "id": "https://coli-conc.gbv.de/login/users/722cc9c5-2ce3-4ca0-b4fb-fef1f62236af",
+      "name": "Jakob Voß"
+    },
+    "created": "2019-03-11T09:11:10.665Z",
+    "id": "https://coli-conc.gbv.de/api/annotations/5f23368f-a63b-4b69-acd6-b403110df97c",
+    "@context": "http://www.w3.org/ns/anno.jsonld",
+    "type": "Annotation"
+  }
+  ```
+
+### POST /annotations
+Saves an annotation in the database.
+
+* **Success Reponse**
+
+  Annotation object as it was saved in the database in [Web Annotation Data Model] format.
+
+### PUT /annotations/:_id
+Overwrites an annotation in the database.
+
+* **Success Reponse**
+
+  Annotation object as it was saved in the database in [Web Annotation Data Model] format.
+
+### PATCH /annotations/:_id
+Adjusts an annotation in the database.
+
+* **Success Reponse**
+
+  Annotation object as it was saved in the database in [Web Annotation Data Model] format.
+
+### DELETE /annotations/:_id
+Deletes an annotation from the database.
+
+* **Success Reponse**
+
+  Status 204, no content.
+
+### Errors
+If possible, errors will be returned as a JSON object in the following format (example):
+
+```json
+{
+  error: "EntityNotFoundError",
+  status: 404,
+  message: "The requested entity ABC could not be found.",
+}
+```
+
+The following errors are currently caught and returned as JSON:
+
+#### EntityNotFoundError
+Status code 404. Will be returned if `GET /mappings/:_id` or `GET /annotations/:_id` are requested with an unknown ID.
+
+#### MalformedBodyError
+Status code 400. Will be returned for `POST`/`PUT`/`PATCH` if the body was not JSON or missing.
+
+#### MalformedRequestError
+Status code 400. Will be returned if a required parameter is missing (currently implemented in `GET /.../:_id` endpoints, but should not be possible to reach).
+
+#### InvalidBodyError
+Status code 422. Will be returned for `POST`/`PUT`/`PATCH` if the body was valid JSON, but could not be validated (e.g. does not pass the JSKOS Schema).
+
+#### CreatorDoesNotMatchError
+Status code 403. Will be returned by `PUT`/`PATCH`/`DELETE` endpoints if the authenticated creator does not match the creator of the entity that is being edited.
+
+#### DatabaseAccessError
+Status code 500. Will be returned if the database is not available or if the current database request failed with an unknown error.
 
 ## Deployment
 The application is currently deployed at http://coli-conc.gbv.de/api/. At the moment, there is no automatic deployment of new versions.
@@ -1004,6 +1186,7 @@ If you'd like to run the import script daily to refresh current mappings, you ca
 [JSKOS Concept Mappings]: https://gbv.github.io/jskos/jskos.html#concept-mappings
 [JSKOS Concept Schemes]: https://gbv.github.io/jskos/jskos.html#concept-schemes
 [JSKOS Concepts]: https://gbv.github.io/jskos/jskos.html#concept
+[Web Annotation Data Model]: https://www.w3.org/TR/annotation-model/
 
 ## Maintainers
 

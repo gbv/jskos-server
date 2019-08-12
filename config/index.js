@@ -34,11 +34,20 @@ if (!config.baseUrl) {
   config.baseUrl = `http://localhost:${config.port}`
 }
 
-const log = (...args) => {
-  if (env != "test" || config.verbosity) {
+config.log = (...args) => {
+  if (env != "test" && config.verbosity) {
     console.log(...args)
   }
 }
-config.log = log
+config.warn = (...args) => {
+  if (env != "test" && config.verbosity) {
+    console.warn(...args)
+  }
+}
+config.error = (...args) => {
+  if (env != "test" && config.verbosity) {
+    console.error(...args)
+  }
+}
 
 module.exports = config

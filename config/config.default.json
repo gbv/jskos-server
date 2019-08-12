@@ -9,7 +9,7 @@
     "port": 27017,
     "db": "jskos-server",
     "options": {
-      "reconnectTries": 60,
+      "reconnectTries": 5,
       "reconnectInterval": 1000,
       "useNewUrlParser": true
     }
