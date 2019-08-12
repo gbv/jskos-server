@@ -1,6 +1,7 @@
 const config = require("../config")
 const utils = require("../utils")
 const _ = require("lodash")
+const validate = require("jskos-validate")
 
 const Annotation = require("../models/annotations")
 const { EntityNotFoundError, CreatorDoesNotMatchError, DatabaseAccessError, InvalidBodyError, MalformedBodyError, MalformedRequestError } = require("../errors")
@@ -98,8 +99,10 @@ module.exports = class MappingService {
     }
     // Remove type property
     _.unset(annotation, "type")
-    // TODO: Validate annotation
-
+    // Validate mapping
+    if (!validate.annotation(annotation)) {
+      throw new InvalidBodyError()
+    }
     // Add _id and URI
     annotation._id = utils.uuid()
     annotation.id = baseUrl + "annotations/" + annotation._id
@@ -127,7 +130,10 @@ module.exports = class MappingService {
     annotation.modified = (new Date()).toISOString()
     // Remove type property
     _.unset(annotation, "type")
-    // TODO: Validate annotation
+    // Validate mapping
+    if (!validate.annotation(annotation)) {
+      throw new InvalidBodyError()
+    }
 
     const existingAnnotation = await this.getAnnotation(_id)
 
@@ -173,7 +179,10 @@ module.exports = class MappingService {
     _.unset(annotation, "id")
     // Use lodash merge to merge annotations
     _.merge(existingAnnotation, annotation)
-    // TODO: Validate annotation after merge
+    // Validate mapping
+    if (!validate.annotation(annotation)) {
+      throw new InvalidBodyError()
+    }
 
     const result = await Annotation.replaceOne({ _id: existingAnnotation._id }, existingAnnotation)
     if (result.ok) {

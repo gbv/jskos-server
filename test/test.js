@@ -990,6 +990,17 @@ describe("Express Server", () => {
         })
     })
 
+    it("should not POST an invalid annotation", done => {
+      chai.request(server.app)
+        .post("/annotations")
+        .set("Authorization", `Bearer ${token}`)
+        .send(Object.assign({}, annotation, { target: 0 }))
+        .end((err, res) => {
+          res.should.have.status(422)
+          done()
+        })
+    })
+
     it("should GET one annotations", done => {
       chai.request(server.app)
         .get("/annotations")
