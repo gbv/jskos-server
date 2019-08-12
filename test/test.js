@@ -887,6 +887,29 @@ describe("Express Server", () => {
         })
     })
 
+
+    it("should GET correct results for term with voc parameter", done => {
+      chai.request(server.app)
+        .get("/suggest")
+        .query({
+          search: "techn",
+          voc: "http://dewey.info/scheme/edition/e23/",
+        })
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.should.have.header("Link")
+          res.should.have.header("X-Total-Count")
+          res.body.should.be.a("array")
+          res.body.length.should.be.eql(4) // OpenSearch Suggest Format
+          res.body[0].should.be.a("string")
+          res.body[1].should.be.a("array")
+          res.body[1].length.should.be.eql(2)
+          res.body[3].should.be.a("array")
+          res.body[3].length.should.be.eql(2)
+          done()
+        })
+    })
+
   })
 
   describe("GET /search", () => {
