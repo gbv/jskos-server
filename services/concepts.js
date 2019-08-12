@@ -169,6 +169,7 @@ module.exports = class ConceptService {
   }
 
   async searchConcept(search, voc) {
+    console.log(search, voc)
     // Don't try to search for an empty query
     if (!search.length) {
       return []
@@ -204,7 +205,7 @@ module.exports = class ConceptService {
     if (voc) {
       let uris
       // Get scheme from database
-      let scheme = await this.schemeService.getSchemes({ uri: voc })[0]
+      let scheme = await this.schemeService.getScheme(voc)
       if (scheme) {
         uris = [scheme.uri].concat(scheme.identifier || [])
       } else {
