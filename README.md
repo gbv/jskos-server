@@ -177,6 +177,7 @@ Unless otherwise specified:
 - `PUT`/`PATCH`/`DELETE` requests are required to come from the owner of the entity that is being modified.
 - All URL parameters are optional.
 - All `GET` endpoints (except for `/status` and those with `:_id`) offer pagination via `limit=[number]` (default: 100) and `offset=[number]` (default: 0) parameters. In the response, there will be a `Link` header like described in the [GitHub API documentation](https://developer.github.com/v3/#pagination), as well as a `X-Total-Count` header containing the total number of results.
+- For possible errors, see [Errors](#errors).
 
 ### GET /status
 Returns a status object.
