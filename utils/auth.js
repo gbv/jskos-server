@@ -1,3 +1,12 @@
+/**
+ * Module that prepares authentication middleware via Passport.
+ *
+ * Exports an object { default, optional } with default and optional authentication.
+ * Optional authentication can be used for POST /mappings if `config.auth.postAuthRequired` is set.
+ * For example: app.get("/optionallySecureEndpoint", config.auth.postAuthRequired ? auth.default : auth.optional, (req, res) => { ... })
+ * req.user will cointain the user if authorized, otherwise stays undefined.
+ */
+
 const config = require("../config")
 const _ = require("lodash")
 
@@ -51,10 +60,6 @@ if (config.auth.whitelist) {
 const AnonymousStrategy = require("passport-anonymous").Strategy
 passport.use(new AnonymousStrategy())
 optional.push("anonymous")
-
-// For endpoints with optional authentication
-// For example: app.get("/optionallySecureEndpoint", config.auth.postAuthRequired ? auth.default : auth.optional, (req, res) => { ... })
-// req.user will cointain the user if authorized, otherwise stays undefined.
 const authOptional = passport.authenticate(optional, { session: false })
 
 module.exports = {

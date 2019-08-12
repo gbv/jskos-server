@@ -2,9 +2,19 @@ const config = require("../config")
 const _ = require("lodash")
 const jskos = require("jskos-tools")
 
+/**
+ * These are wrappers for Express middleware which receive a middleware function as a first parameter,
+ * but wrap the call to the function with other functionality.
+ */
 const wrappers = {
 
-  // adjusted from: https://thecodebarbarian.com/80-20-guide-to-express-error-handling
+  /**
+   * Wraps an async middleware function that returns data in the Promise.
+   * The result of the Promise will be written into req.data for access by following middlewaren.
+   * A rejected Promise will be caught and relayed to the Express error handling.
+   *
+   * adjusted from: https://thecodebarbarian.com/80-20-guide-to-express-error-handling
+   */
   async(fn) {
     return (req, res, next) => {
       fn(req, res, next).then(data => {
@@ -32,6 +42,7 @@ const wrappers = {
 }
 
 // Recursively remove all fields starting with _ from response
+// Gets called in `returnJSON` and `handleDownload`. Shouldn't be used anywhere else.
 const cleanJSON = (json) => {
   if (_.isArray(json)) {
     json.forEach(cleanJSON)
@@ -47,10 +58,10 @@ const cleanJSON = (json) => {
   }
 }
 
-// Services needed to load properties
+// Container needed to load services that load properties
 const Container = require("typedi").Container
 
-// Adjust data in req.data based on req.type
+// Adjust data in req.data based on req.type (which is set by `addMiddlewareProperties`)
 const adjust = async (req, res, next) => {
   if (!req.data || !req.type) {
     next()
@@ -66,6 +77,7 @@ const adjust = async (req, res, next) => {
   next()
 }
 
+// Add @context and type to annotations.
 adjust.annotation = (annotation) => {
   if (annotation) {
     annotation["@context"] = "http://www.w3.org/ns/anno.jsonld"
@@ -77,6 +89,7 @@ adjust.annotations = annotations => {
   return annotations.map(annotation => adjust.annotation(annotation))
 }
 
+// Add @context and type to concepts. Also load properties narrower, ancestors, and annotations if necessary.
 adjust.concept = async (concept, properties = []) => {
   if (concept) {
     concept["@context"] = "https://gbv.github.io/jskos/context.json"
@@ -98,6 +111,7 @@ adjust.concepts = async (concepts, properties) => {
   return await Promise.all(concepts.map(concept => adjust.concept(concept, properties)))
 }
 
+// Add @context to concordances.
 adjust.concordance = (concordance) => {
   if (concordance) {
     concordance["@context"] = "https://gbv.github.io/jskos/context.json"
@@ -108,6 +122,7 @@ adjust.concordances = (concordances) => {
   return concordances.map(concordance => adjust.concordance(concordance))
 }
 
+// Add @context to mappings. Also load annotations if necessary.
 adjust.mapping = async (mapping, properties = []) => {
   if (mapping) {
     mapping["@context"] = "https://gbv.github.io/jskos/context.json"
@@ -123,6 +138,7 @@ adjust.mappings = async (mappings, properties) => {
   return await Promise.all(mappings.map(mapping => adjust.mapping(mapping, properties)))
 }
 
+// Add @context and type to schemes.
 adjust.scheme = (scheme) => {
   scheme["@context"] = "https://gbv.github.io/jskos/context.json"
   scheme.type = scheme.type || ["http://www.w3.org/2004/02/skos/core#ConceptScheme"]
@@ -138,6 +154,11 @@ adjust.schemes = (schemes) => {
 const uuid = require("uuid/v4")
 
 const uuidRegex = new RegExp(/^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i)
+/**
+ * Checks a v4 UUID for validity.
+ *
+ * @param {*} uuid
+ */
 const isValidUuid = (uuid) => {
   return uuid.match(uuidRegex) != null
 }
@@ -155,7 +176,7 @@ const isValidUuid = (uuid) => {
  * @param {object} user the user object (e.g. req.user)
  * @param {object} object any object that has the property `creator`
  */
-function matchesCreator(user, object) {
+const matchesCreator = (user, object) => {
   if (!object || !user) {
     return false
   }
@@ -175,6 +196,9 @@ function matchesCreator(user, object) {
   return false
 }
 
+/**
+ * Middleware that adds default headers.
+ */
 const addDefaultHeaders = (req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*")
   res.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization")
@@ -184,6 +208,13 @@ const addDefaultHeaders = (req, res, next) => {
   next()
 }
 
+/**
+ * Middleware that adds default properties:
+ *
+ * - If req.query exists, make sure req.query.limit and req.query.offset are set as numbers.
+ * - Set req.myBaseUrl to the applications baseUrl (with trailing slash).
+ * - If possible, set req.type depending on the endpoint (one of concepts, schemes, mappings, annotations, suggest).
+ */
 const addMiddlewareProperties = (req, res, next) => {
   if (req.query) {
     // Limit for pagination
@@ -230,6 +261,11 @@ const addMiddlewareProperties = (req, res, next) => {
   next()
 }
 
+/**
+ * Middleware that receives a list of supported download formats and overrides req.query.download if the requested format is not supported.
+ *
+ * @param {Array} formats
+ */
 const supportDownloadFormats = (formats) => (req, res, next) => {
   if (req.query.download && !formats.includes(req.query.download)) {
     req.query.download = null
@@ -244,6 +280,8 @@ const supportDownloadFormats = (formats) => (req, res, next) => {
  * - first and last are always set
  * - prev will be set if previous page exists (i.e. if offset > 0)
  * - next will be set if next page exists (i.e. if offset + limit < total)
+ *
+ * Requires req.data to be set.
  */
 const addPaginationHeaders = (req, res, next) => {
   const limit = req.query.limit
@@ -292,6 +330,9 @@ const addPaginationHeaders = (req, res, next) => {
   next()
 }
 
+/**
+ * Middleware that returns JSON given in req.data.
+ */
 const returnJSON = (req, res) => {
   // Convert Mongoose documents into plain objects
   let data
@@ -312,6 +353,12 @@ const returnJSON = (req, res) => {
 
 const { Transform } = require("stream")
 const JSONStream = require("JSONStream")
+/**
+ * Middleware that handles download streaming.
+ * Requires a database cursor in req.data.
+ *
+ * @param {String} filename - resulting filename without extension
+ */
 const handleDownload = (filename) => (req, res) => {
   const results = req.data
   /**
