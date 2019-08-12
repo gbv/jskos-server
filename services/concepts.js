@@ -169,7 +169,6 @@ module.exports = class ConceptService {
   }
 
   async searchConcept(search, voc) {
-    console.log(search, voc)
     // Don't try to search for an empty query
     if (!search.length) {
       return []
