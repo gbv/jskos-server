@@ -35,7 +35,7 @@ db.on("connected", () => {
   config.log("Connected to database")
 })
 db.on("disconnected", () => {
-  setTimeout(connect, 5000)
+  setTimeout(connect, 2500)
 })
 
 // Add default headers
