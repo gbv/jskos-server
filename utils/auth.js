@@ -2,13 +2,14 @@
  * Module that prepares authentication middleware via Passport.
  *
  * Exports an object { default, optional } with default and optional authentication.
- * Optional authentication can be used for POST /mappings if `config.auth.postAuthRequired` is set.
- * For example: app.get("/optionallySecureEndpoint", config.auth.postAuthRequired ? auth.default : auth.optional, (req, res) => { ... })
+ * Optional authentication should be used if `auth` is set to `false` for a particular endpoint.
+ * For example: app.get("/mappings", config.mappings.read.auth ? auth.default : auth.optional, (req, res) => { ... })
  * req.user will cointain the user if authorized, otherwise stays undefined.
  */
 
 const config = require("../config")
 const _ = require("lodash")
+const { ForbiddenAccessError } = require("../errors")
 
 const passport = require("passport")
 
@@ -42,19 +43,48 @@ if (config.auth.algorithm && config.auth.key) {
   }
 }
 
-if (config.auth.whitelist) {
-  config.log("Auth whitelist configured:", config.auth.whitelist)
-  auth = [auth, (req, res, next) => {
-    // Check if any of user's URIs is on the whitelist
-    let uris = [req.user.uri].concat(Object.values(req.user.identities || {}).map(id => id.uri)).filter(uri => uri != null)
-    if (_.intersection(config.auth.whitelist, uris).length == 0) {
-      // Deny request
-      res.sendStatus(403)
-    } else {
-      next()
-    }
-  }]
-}
+// Configure identities whitelists and identity providers
+auth = [auth, (req, res, next) => {
+
+  // Assemble user URIs
+  let uris = [req.user.uri].concat(Object.values(req.user.identities || {}).map(id => id.uri)).filter(uri => uri != null)
+  // User providers
+  let userProviders = Object.keys((req.user && req.user.identities) || {})
+
+  // Find whitelist to use depending on method (req.method) and endpoint (req.type)
+  let whitelist, providers, action
+  if (req.method == "GET") {
+    action = "read"
+  }
+  if (req.method == "POST") {
+    action = "create"
+  }
+  if (req.method == "PUT" || req.method == "PATCH") {
+    action = "update"
+  }
+  if (req.method == "DELETE") {
+    action = "delete"
+  }
+  if (action && config[req.type] && config[req.type][action]) {
+    whitelist = config[req.type][action].identities
+    providers = config[req.type][action].identityProviders
+  }
+  if (req.type == "checkAuth") {
+    whitelist = config.identities
+    providers = config.identityProviders
+  }
+
+  if (whitelist && _.intersection(whitelist, uris).length == 0) {
+    // Deny request
+    next(new ForbiddenAccessError("Access forbidden. A whitelist is in place, but authenticated user is not on the whitelist."))
+  } else if (providers && _.intersection(providers, userProviders).length == 0) {
+    // Deny request
+    next(new ForbiddenAccessError("Access forbidden, missing identity provider. One of the following providers is necessary: " + providers.join(", ")))
+  } else {
+    next()
+  }
+
+}]
 
 // Also use anonymous strategy for endpoints that can be used authenticated or not authenticated
 const AnonymousStrategy = require("passport-anonymous").Strategy

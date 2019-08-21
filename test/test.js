@@ -13,11 +13,30 @@ const _ = require("lodash")
 
 // Prepare jwt
 const jwt = require("jsonwebtoken")
+
 const user = {
   uri: "http://test.user",
   name: "Test User",
+  identities: {
+    test: {},
+  },
 }
 const token = jwt.sign({ user }, "test")
+
+const userNotOnWhitelist = {
+  uri: "http://test2.user",
+  name: "Test User",
+  identities: {
+    test: {},
+  },
+}
+const tokenNotOnWhitelist = jwt.sign({ user: userNotOnWhitelist }, "test")
+
+const userMissingIdentity = {
+  uri: "http://test.user",
+  name: "Test User",
+}
+const tokenMissingIdentity = jwt.sign({ user: userMissingIdentity }, "test")
 
 // Hide UnhandledPromiseRejectionWarning on output
 process.on("unhandledRejection", () => {})
@@ -122,10 +141,48 @@ describe("Express Server", () => {
           res.body.config.should.be.a("object")
           res.body.config.auth.should.be.a("object")
           res.body.config.baseUrl.should.be.a("string")
-          res.body.config.schemes.should.be.a("boolean")
-          res.body.config.concepts.should.be.a("boolean")
-          res.body.config.mappings.should.be.a("boolean")
-          res.body.config.annotations.should.be.a("boolean")
+          res.body.config.schemes.should.be.a("object")
+          res.body.config.concepts.should.be.a("object")
+          res.body.config.mappings.should.be.a("object")
+          res.body.config.annotations.should.be.a("object")
+          done()
+        })
+    })
+
+  })
+
+  describe("GET /checkAuth", () => {
+
+    it("should be authorized for user", done => {
+      chai.request(server.app)
+        .get("/checkAuth")
+        .set("Authorization", `Bearer ${token}`)
+        .then(res => {
+          res.should.have.status(204)
+          done()
+        })
+    })
+
+    it("should not be authorized for userNotOnWhitelist", done => {
+      chai.request(server.app)
+        .get("/checkAuth")
+        .set("Authorization", `Bearer ${tokenNotOnWhitelist}`)
+        .then(res => {
+          res.should.have.status(403)
+          res.body.should.be.an("object")
+          res.body.error.should.be.eql("ForbiddenAccessError")
+          done()
+        })
+    })
+
+    it("should be not be authorized for userMissingIdentity", done => {
+      chai.request(server.app)
+        .get("/checkAuth")
+        .set("Authorization", `Bearer ${tokenMissingIdentity}`)
+        .then(res => {
+          res.should.have.status(403)
+          res.body.should.be.an("object")
+          res.body.error.should.be.eql("ForbiddenAccessError")
           done()
         })
     })

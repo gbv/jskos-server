@@ -137,7 +137,7 @@ module.exports = class MappingService {
 
     const existingAnnotation = await this.getAnnotation(_id)
 
-    if (!utils.matchesCreator(user, existingAnnotation)) {
+    if (!utils.matchesCreator(user, existingAnnotation, "annotations", "update")) {
       throw new CreatorDoesNotMatchError()
     }
     // Always preserve certain existing properties
@@ -172,7 +172,7 @@ module.exports = class MappingService {
     // Adjust current annotation in database
     const existingAnnotation = await this.getAnnotation(_id)
 
-    if (!utils.matchesCreator(user, existingAnnotation)) {
+    if (!utils.matchesCreator(user, existingAnnotation, "annotations", "update")) {
       throw new CreatorDoesNotMatchError()
     }
     _.unset(annotation, "_id")
@@ -195,7 +195,7 @@ module.exports = class MappingService {
   async deleteAnnotation({ _id, user }) {
     const existingAnnotation = await this.getAnnotation(_id)
 
-    if (!utils.matchesCreator(user, existingAnnotation)) {
+    if (!utils.matchesCreator(user, existingAnnotation, "annotations", "delete")) {
       throw new CreatorDoesNotMatchError()
     }
 

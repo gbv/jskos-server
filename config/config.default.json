@@ -1,6 +1,7 @@
 {
   "verbosity": false,
   "baseUrl": null,
+  "version": null,
   "port": 3000,
   "mongo": {
     "user": "",
@@ -16,13 +17,45 @@
   },
   "auth": {
     "algorithm": "HS256",
-    "key": null,
-    "postAuthRequired": true,
-    "whitelist": null,
-    "allowCrossUserEditing": false
+    "key": null
   },
   "schemes": true,
   "concepts": true,
-  "mappings": true,
-  "annotations": true
+  "mappings": {
+    "read": {
+      "auth": false
+    },
+    "create": {
+      "auth": true
+    },
+    "update": {
+      "auth": true,
+      "crossUser": false
+    },
+    "delete": {
+      "auth": true,
+      "crossUser": false
+    },
+    "fromSchemeWhitelist": null,
+    "toSchemeWhitelist": null,
+    "anonymous": false
+  },
+  "annotations": {
+    "read": {
+      "auth": false
+    },
+    "create": {
+      "auth": true
+    },
+    "update": {
+      "auth": true,
+      "crossUser": false
+    },
+    "delete": {
+      "auth": true,
+      "crossUser": false
+    }
+  },
+  "identityProviders": null,
+  "identities": null
 }

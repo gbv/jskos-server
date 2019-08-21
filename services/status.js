@@ -30,11 +30,6 @@ module.exports = class StatusService {
       // Add endpoints related to mappings
       status.concordances = `${baseUrl}concordances`
       status.mappings = `${baseUrl}mappings`
-      status.config.auth.canSaveMappings = status.config.auth.key != null || !status.config.auth.postAuthRequired
-      status.config.auth.canRemoveMappings = status.config.auth.key != null
-    } else {
-      status.config.auth.canSaveMappings = false
-      status.config.auth.canRemoveMappings = false
     }
     if (status.config.annotations) {
       // Add endpoints related to annotations

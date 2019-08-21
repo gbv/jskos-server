@@ -259,7 +259,7 @@ module.exports = class MappingService {
     const existingMapping = await this.getMapping(_id)
 
     // Check if authorized user matches creator
-    if (!utils.matchesCreator(user, existingMapping)) {
+    if (!utils.matchesCreator(user, existingMapping, "mappings", "update")) {
       throw new CreatorDoesNotMatchError()
     }
     // Override _id and uri properties
@@ -286,7 +286,7 @@ module.exports = class MappingService {
     const existingMapping = await this.getMapping(_id)
 
     // Check if authorized user matches creator
-    if (!utils.matchesCreator(user, existingMapping)) {
+    if (!utils.matchesCreator(user, existingMapping, "mappings", "update")) {
       throw new CreatorDoesNotMatchError()
     }
 
@@ -314,7 +314,7 @@ module.exports = class MappingService {
   async deleteMapping({ _id, user }) {
     const existingMapping = await this.getMapping(_id)
 
-    if (!utils.matchesCreator(user, existingMapping)) {
+    if (!utils.matchesCreator(user, existingMapping, "mappings", "delete")) {
       throw new CreatorDoesNotMatchError()
     }
 

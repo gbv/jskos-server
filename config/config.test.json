@@ -1,11 +1,45 @@
 {
   "auth": {
     "algorithm": "HS256",
-    "key": "test",
-    "whitelist": ["http://test.user"]
+    "key": "test"
   },
   "schemes": true,
   "concepts": true,
-  "mappings": true,
-  "annotations": true
+  "mappings": {
+    "read": {
+      "auth": false
+    },
+    "create": {
+      "auth": true
+    },
+    "update": {
+      "auth": true,
+      "crossUser": false
+    },
+    "delete": {
+      "auth": true,
+      "crossUser": false
+    },
+    "fromSchemeWhitelist": null,
+    "toSchemeWhitelist": null,
+    "anonymous": false
+  },
+  "annotations": {
+    "read": {
+      "auth": false
+    },
+    "create": {
+      "auth": true
+    },
+    "update": {
+      "auth": true,
+      "crossUser": false
+    },
+    "delete": {
+      "auth": true,
+      "crossUser": false
+    }
+  },
+  "identities": ["http://test.user"],
+  "identityProviders": ["test"]
 }

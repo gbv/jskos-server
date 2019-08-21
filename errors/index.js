@@ -52,6 +52,14 @@ class DatabaseAccessError extends Error {
   }
 }
 
+class ForbiddenAccessError extends Error {
+  constructor(message) {
+    message = message || "Access is forbidden."
+    super(message)
+    this.statusCode = 403
+  }
+}
+
 module.exports = {
   EntityNotFoundError,
   MalformedBodyError,
@@ -59,4 +67,5 @@ module.exports = {
   InvalidBodyError,
   CreatorDoesNotMatchError,
   DatabaseAccessError,
+  ForbiddenAccessError,
 }

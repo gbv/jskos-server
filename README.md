@@ -71,6 +71,7 @@ You can customize the application settings via a configuration file, e.g. by pro
 {
   "verbosity": false,
   "baseUrl": null,
+  "version": null,
   "port": 3000,
   "mongo": {
     "user": "",
@@ -79,26 +80,70 @@ You can customize the application settings via a configuration file, e.g. by pro
     "port": 27017,
     "db": "jskos-server",
     "options": {
-      "reconnectTries": 60,
+      "reconnectTries": 5,
       "reconnectInterval": 1000,
       "useNewUrlParser": true
     }
   },
   "auth": {
     "algorithm": "HS256",
-    "key": null,
-    "postAuthRequired": true,
-    "whitelist": null,
-    "allowCrossUserEditing": false
+    "key": null
   },
   "schemes": true,
   "concepts": true,
-  "mappings": true,
-  "annotations": true
+  "mappings": {
+    "read": {
+      "auth": false
+    },
+    "create": {
+      "auth": true
+    },
+    "update": {
+      "auth": true,
+      "crossUser": false
+    },
+    "delete": {
+      "auth": true,
+      "crossUser": false
+    },
+    "fromSchemeWhitelist": null,
+    "toSchemeWhitelist": null,
+    "anonymous": false
+  },
+  "annotations": {
+    "read": {
+      "auth": false
+    },
+    "create": {
+      "auth": true
+    },
+    "update": {
+      "auth": true,
+      "crossUser": false
+    },
+    "delete": {
+      "auth": true,
+      "crossUser": false
+    }
+  },
+  "identityProviders": null,
+  "identities": null
 }
 ```
 
-With the keys `schemes`, `concepts`, `mappings`, and `annotations`, you can configure whether endpoints relating to the specific functionality should be available. By default, everything is available.
+With the keys `schemes`, `concepts`, `mappings`, and `annotations`, you can configure whether endpoints related to the specific functionality should be available. Available actions for `mappings` and `annotations` are `read`, `create`, `update`, and `delete`. By default, all types can be read, while `mappings` and `annotations` can be created, updated, and deleted with authentication. Explanantions for additional options:
+
+- **`auth`**: Boolean. Can be defined only on actions. Defines whether access will require authentication. By default `false` for `read`, and `true` for all other actions.
+
+- **`crossUser`**: Boolean. Can be defined only on `update` and `delete` actions. Defines whether it is possible to edit an entity from a different user than the authenticated one. `false` by default.
+
+- **`anonymous`**: Boolean. Can be defined only on type `mappings`. If `true`, the creator for mappings will not be saved. Also, `crossUser` will be implied to `true` as well. `false` by default.
+
+- **`identities`**: List of URI strings. Can be defined on any level (deeper levels will take the values from higher levels if necessary\*). If set, an action can only be used by users with an URI given in the list. `null` by default (no restrictions).
+
+- **`identityProviders`**: List of strings. Can be defined on any level (deeper levels will take the values from higher levels if necessary\*). If set, an action can only be used by users who have that identity associated with them. `null` by default (no restrictions).
+
+\* Only applies to actions `create`, `update`, and `delete`.
 
 **If you are using jskos-server behind a proxy, it is necessary to provide the `baseUrl` key in your configuration (example for our production API):**
 ```json
@@ -116,12 +161,12 @@ For authorized endpoints via JWT, you need to provide the JWT algorithm and key/
 }
 ```
 
-The JWT has to be provided as a Bearer token in the authentication header, e.g. `Authentication: Bearer <token>`. Currently, all authorized endpoints will be accessible (although `PUT`/`PATCH`/`DELETE` are limited to the user who created the object), but later it will be possible to set scopes for certain users (see [#47](https://github.com/gbv/jskos-server/issues/47)).
+The JWT has to be provided as a Bearer token in the authentication header, e.g. `Authentication: Bearer <token>`. Currently, all authorized endpoints will be accessible (although `PUT`/`PATCH`/`DELETE` are limited to the user who created the object by default), but later it will be possible to set scopes for certain users (see [#47](https://github.com/gbv/jskos-server/issues/47)).
 
-Additional options for `auth`:
-- `postAuthRequired`: boolean (default `true`) - whether authentication is required to POST a mapping
-- `whitelist`: array (default `null`) - a list of allowed user URIs (if given, all other users will be denied access)
-- `allowCrossUserEditing`: boolean (default `false`) - whether to allow users to edit or delete another user's data
+Note about previous additional options for `auth`:
+- `postAuthRequired`: now covered by `mappings.create.auth`
+- `whitelist`: now covered by `identities`
+- `allowCrossUserEditing`: now covered by `mappings.update.crossUser` and `mappings.delete.crossUser`
 
 ### Data Import
 JSKOS Server provides a script to import JSKOS data into the database. Right now, mappings, terminologies (concept schemes), concepts, concordances, and annotations, in JSON (array only) or [NDJSON](http://ndjson.org) format are supported.
@@ -173,7 +218,7 @@ Unless otherwise specified:
 - `POST` requests will return code 201 on success.
 - `DELETE` requests will return code 204 on success.
 - `POST`/`PUT`/`PATCH` requests require a JSON body.
-- `POST`/`PUT`/`PATCH`/`DELETE` requests require authentication via a JWT from [login-server](https://github.com/gbv/login-server) in the header. Exception: If the auth option `postAuthRequired` is set to `false`, authentication is not necessary for `POST /mappings`.
+- `POST`/`PUT`/`PATCH`/`DELETE` requests require authentication via a JWT from [login-server](https://github.com/gbv/login-server) in the header. Exception: Authentication for certain actions on certain endpoints can be disabled (see [configuration](#configuration)).
 - `PUT`/`PATCH`/`DELETE` requests are required to come from the owner of the entity that is being modified.
 - All URL parameters are optional.
 - All `GET` endpoints (except for `/status` and those with `:_id`) offer pagination via `limit=[number]` (default: 100) and `offset=[number]` (default: 0) parameters. In the response, there will be a `Link` header like described in the [GitHub API documentation](https://developer.github.com/v3/#pagination), as well as a `X-Total-Count` header containing the total number of results.
@@ -191,51 +236,99 @@ Returns a status object.
       "auth": {
         "algorithm": "RS256",
         "key": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA57ZWRoOjXYTQ9yujxAu7\ne3k4+JRBAqGdDVIRRq5vXB2D5nJBIhQjVjylumn+QnTX/MdZx8qn7X96npUwHwIh\nylCgUmsYXcjP08X/AXEcP5bPOkgBBCKjWmcm+p01RQSOM0nSptyxpyXzr2ppWe1b\nuYdRYDWj+JV7vm+jJA4NiFv4UnAhoG5lRATADzu0/6wpMK3dVMBL7L0jQoV5xBAb\nLADOy5hD9XEII3VPkUqDGIKM+Z24flkCIf0lQ7FjsoZ2mmM1SZJ5vPDcjMKreFkX\ncWlcwGHN0PUWZWLhb7c8yYa1rauMcwFwv0d2XyOEfgkqEJdCh8mVT/5jR48D2PNG\ncwIDAQAB\n-----END PUBLIC KEY-----\n",
-        "postAuthRequired": false
+        "canSaveMappings": true,
+        "canRemoveMappings": true,
+        "postAuthRequired": true,
+        "allowCrossUserEditing": true,
+        "whitelist": [
+          "urn:uri:test2"
+        ]
+      },
+      "mappings": {
+        "read": {
+          "auth": false
+        },
+        "create": {
+          "auth": true,
+          "identities": [
+            "urn:uri:test2"
+          ]
+        },
+        "update": {
+          "crossUser": true,
+          "auth": true,
+          "identities": [
+            "urn:uri:test2"
+          ]
+        },
+        "delete": {
+          "crossUser": true,
+          "auth": true,
+          "identities": [
+            "urn:uri:test2"
+          ]
+        },
+        "identities": [
+          "urn:uri:test2"
+        ],
+        "fromSchemeWhitelist": null,
+        "toSchemeWhitelist": null,
+        "anonymous": false
       },
       "baseUrl": "http://localhost:3000/",
-      "schemes": true,
-      "concepts": true,
-      "mappings": true,
-      "annotations": true
-    },
-    "db": "example_db",
-    "collections": [
-      {
-        "name": "example_collection1",
-        "count": 50
+      "version": "0.3.0",
+      "schemes": {
+        "read": {
+          "auth": false
+        }
       },
-      {
-        "name": "example_collection2",
-        "count": 100
-      }
-    ],
-    "objects": 150,
+      "concepts": {
+        "read": {
+          "auth": false
+        }
+      },
+      "annotations": {
+        "read": {
+          "auth": false
+        },
+        "create": {
+          "auth": true
+        },
+        "update": {
+          "auth": true,
+          "crossUser": false
+        },
+        "delete": {
+          "auth": true,
+          "crossUser": false
+        }
+      },
+      "identityProviders": null,
+      "identities": null
+    },
+    "schemes": "http://localhost:3000/voc",
+    "top": "http://localhost:3000/voc/top",
+    "concepts": "http://localhost:3000/voc/concepts",
+    "data": "http://localhost:3000/data",
+    "narrower": "http://localhost:3000/narrower",
+    "ancestors": "http://localhost:3000/ancestors",
+    "suggest": "http://localhost:3000/suggest",
+    "search": "http://localhost:3000/search",
+    "concordances": "http://localhost:3000/concordances",
+    "mappings": "http://localhost:3000/mappings",
+    "annotations": "http://localhost:3000/annotations",
     "ok": 1
   }
   ```
-  (other properties omitted)
 
 * **Error Response**
 
   ```json
   {
-    "config": {
-      "env": "development",
-      "auth": {
-        "algorithm": "RS256",
-        "key": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA57ZWRoOjXYTQ9yujxAu7\ne3k4+JRBAqGdDVIRRq5vXB2D5nJBIhQjVjylumn+QnTX/MdZx8qn7X96npUwHwIh\nylCgUmsYXcjP08X/AXEcP5bPOkgBBCKjWmcm+p01RQSOM0nSptyxpyXzr2ppWe1b\nuYdRYDWj+JV7vm+jJA4NiFv4UnAhoG5lRATADzu0/6wpMK3dVMBL7L0jQoV5xBAb\nLADOy5hD9XEII3VPkUqDGIKM+Z24flkCIf0lQ7FjsoZ2mmM1SZJ5vPDcjMKreFkX\ncWlcwGHN0PUWZWLhb7c8yYa1rauMcwFwv0d2XyOEfgkqEJdCh8mVT/5jR48D2PNG\ncwIDAQAB\n-----END PUBLIC KEY-----\n",
-        "postAuthRequired": false
-      },
-      "baseUrl": "http://localhost:3000/",
-      "schemes": true,
-      "concepts": true,
-      "mappings": true,
-      "annotations": true
-    },
     "ok": 0
   }
   ```
+  (other properties omitted)
 
 ### GET /concordances
 Lists all concordances for mappings.
@@ -1158,6 +1251,9 @@ Status code 403. Will be returned by `PUT`/`PATCH`/`DELETE` endpoints if the aut
 
 #### DatabaseAccessError
 Status code 500. Will be returned if the database is not available or if the current database request failed with an unknown error.
+
+#### ForbiddenAccessError
+Status code 403. Will be returned if the user is not allow access (i.e. when not on the whitelist or when an identity provider is missing).
 
 ## Deployment
 The application is currently deployed at http://coli-conc.gbv.de/api/. At the moment, there is no automatic deployment of new versions.

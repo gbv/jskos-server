@@ -175,13 +175,19 @@ const isValidUuid = (uuid) => {
  *
  * @param {object} user the user object (e.g. req.user)
  * @param {object} object any object that has the property `creator`
+ * @param {string} type type of entity (e.g. `mappings`, `annotations`)
+ * @param {string} action one of `read`/`create`/`update`/`delete`
  */
-const matchesCreator = (user, object) => {
+const matchesCreator = (user, object, type, action) => {
   if (!object || !user) {
     return false
   }
+  let crossUser = false
+  if (config[type] && config[type][action]) {
+    crossUser = config[type][action].crossUser
+  }
   // If config.auth.allowCrossUserEditing is enabled, return true
-  if (config.auth.allowCrossUserEditing) {
+  if (crossUser) {
     return true
   }
   // If not, check URIs
