@@ -237,6 +237,9 @@ function createIndexes(type) {
  */
 function importFile(file, type, { concordance, quiet = false, format } = {}) {
   log(`Importing ${file} as type ${type}.`)
+  if (config.mappings.fromSchemeWhitelist || config.mappings.toSchemeWhitelist) {
+    log("Warning: A scheme whitelist is set, but currently not taken into account on import.")
+  }
   // Local function for logging that takes "quiet" into account
   let _log = (...params) => {
     if (!quiet) {
