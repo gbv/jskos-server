@@ -233,12 +233,7 @@ const addMiddlewareProperties = (req, res, next) => {
     req.query.offset = req.query.offset || defaultOffset
   }
   // baseUrl
-  let baseUrl = config.baseUrl || (req.protocol + "://" + req.get("host"))
-  if (!baseUrl.endsWith("/")) {
-    // Add trailing slash
-    baseUrl += "/"
-  }
-  req.myBaseUrl = baseUrl
+  req.myBaseUrl = config.baseUrl
   // req.path -> req.type
   let type = req.path.substring(1)
   type = type.substring(0, type.indexOf("/") == -1 ? type.length : type.indexOf("/") )

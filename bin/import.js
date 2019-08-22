@@ -57,6 +57,7 @@ if (cli.flags.help || (!cli.input.length && !cli.flags.reset && !cli.flags.index
 const jskos = require("jskos-tools")
 const validate = require("jskos-validate")
 const config = require("../config")
+const uuidv5 = require("uuid/v5")
 const fs = require("fs")
 const path = require("path")
 const request = require("request")
@@ -339,14 +340,13 @@ function importFile(file, type, { concordance, quiet = false, format } = {}) {
         case "mapping":
           // Adjustments for mappings
           if (object.uri) {
-            // TODO: Extract ID from URI
-            object._id = object.uri
-          }
-          // Add mapping identifier
-          try {
-            object.identifier = jskos.addMappingIdentifiers(object).identifier
-          } catch(error) {
-            _log("Could not add identifier to mapping.", error)
+            if (object.uri.startsWith(config.baseUrl)) {
+              object._id = object.uri.slice(object.uri.lastIndexOf("/") + 1)
+            } else {
+              // Put URI into identifier because it's not valid for this server
+              object.identifier = [].concat(object.identifier || [], object.uri)
+              delete object.uri
+            }
           }
           // Add reference to concordance.
           if (concordance && concordance.uri) {
@@ -368,6 +368,21 @@ function importFile(file, type, { concordance, quiet = false, format } = {}) {
           }
           if (!object.modified && object.created) {
             object.modified = object.created
+          }
+          // Add mapping identifier
+          try {
+            object.identifier = jskos.addMappingIdentifiers(object).identifier
+          } catch(error) {
+            _log("Could not add identifier to mapping.", error)
+          }
+          // Generate an identifier and a URI if necessary
+          if (!object.uri) {
+            const contentIdentifier = object.identifier.find(id => id.startsWith("urn:jskos:mapping:content:"))
+            const concordance = _.get(object, "partOf[0].uri") || ""
+            if (contentIdentifier) {
+              object._id = uuidv5(contentIdentifier + concordance, config.namespace)
+              object.uri = config.baseUrl + "mappings/" + object._id
+            }
           }
           break
         case "concordance":
@@ -533,12 +548,12 @@ function importFile(file, type, { concordance, quiet = false, format } = {}) {
                 extent: `${total}`,
                 distributions: [
                   {
-                    "download": `${config.baseUrl}/mappings?partOf=${uri}&download=ndjson`,
+                    "download": `${config.baseUrl}mappings?partOf=${uri}&download=ndjson`,
                     "format": "http://format.gbv.de/jskos",
                     "mimetype": "application/x-ndjson; charset=utf-8",
                   },
                   {
-                    "download": `${config.baseUrl}/mappings?partOf=${uri}&download=csv`,
+                    "download": `${config.baseUrl}mappings?partOf=${uri}&download=csv`,
                     "mimetype": "text/csv; charset=utf-8",
                   },
                 ],

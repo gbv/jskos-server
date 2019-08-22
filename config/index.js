@@ -23,6 +23,16 @@ try {
   configUser = {}
 }
 
+// Before merging, check whether `namespace` exists in the user config and if not, generate a namespace and save it to user config
+if (!configUser.namespace && env != "test") {
+  const fs = require("fs")
+  const path = require("path")
+  const uuid = require("uuid/v4")()
+  configUser.namespace = uuid
+  fs.writeFileSync(path.resolve(__dirname, "config.json"), JSON.stringify(configUser, null, 2))
+  console.log("Config: Created a namespace and wrote it to config/config.json.")
+}
+
 let config = _.defaultsDeep({ env }, configEnv, configUser, configDefault)
 
 // Logging functions
@@ -52,7 +62,10 @@ if (env === "test") {
 
 // Set baseUrl to localhost if not set
 if (!config.baseUrl) {
-  config.baseUrl = `http://localhost:${config.port}`
+  config.baseUrl = `http://localhost:${config.port}/`
+}
+if (!config.baseUrl.endsWith("/")) {
+  config.baseUrl += "/"
 }
 
 // Set version if not set
