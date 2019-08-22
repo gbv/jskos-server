@@ -1,6 +1,7 @@
 const _ = require("lodash")
-const config = require("../config")
 const utils = require("../utils")
+const config = require("../config")
+const jskos = require("jskos-tools")
 const validate = require("jskos-validate")
 const escapeStringRegexp = require("escape-string-regexp")
 
@@ -11,6 +12,42 @@ module.exports = class MappingService {
 
   constructor(container) {
     this.schemeService = container.get(require("../services/schemes"))
+
+    this.loadWhitelists()
+  }
+
+  /**
+   * Loads all schemes from whitelists (if they exists) from the database.
+   */
+  async loadWhitelists() {
+    // Load schemes from fromSchemeWhitelist and toSchemeWhitelist
+    for (let type of ["fromSchemeWhitelist", "toSchemeWhitelist"]) {
+      let whitelist = []
+      for (let scheme of config.mappings[type] || []) {
+        scheme = (await this.schemeService.getScheme(scheme.uri)) || scheme
+        whitelist.push(scheme)
+      }
+      if (whitelist.length) {
+        this[type] = whitelist
+      }
+    }
+  }
+
+  /**
+   * Checks a mapping againgst scheme whitelists and throws an error if it doesn't match.
+   *
+   * @param {*} mapping
+   */
+  checkWhitelists(mapping) {
+    for (let type of ["fromScheme", "toScheme"]) {
+      const whitelist = this[`${type}Whitelist`]
+      const scheme = mapping[type]
+      if (whitelist && scheme) {
+        if (!whitelist.find(s => jskos.compare(s, scheme))) {
+          throw new InvalidBodyError(`Value in ${type} is not allowed.`)
+        }
+      }
+    }
   }
 
   async getMappings({ uri, identifier, from, to, fromScheme, toScheme, mode, direction, type, partOf, creator, sort, order, limit, offset, download }) {
@@ -211,6 +248,7 @@ module.exports = class MappingService {
     if (mapping.partOf) {
       throw new InvalidBodyError("Property `partOf` is currently not allow.")
     }
+    this.checkWhitelists(mapping)
     // _id and URI
     delete mapping._id
     let uriBase = baseUrl + "mappings/"
@@ -255,6 +293,8 @@ module.exports = class MappingService {
     if (mapping.partOf) {
       throw new InvalidBodyError("Property `partOf` is currently not allow.")
     }
+    this.checkWhitelists(mapping)
+
     // Replace current mapping in database
     const existingMapping = await this.getMapping(_id)
 
@@ -302,6 +342,7 @@ module.exports = class MappingService {
     if (mapping.partOf) {
       throw new InvalidBodyError("Property `partOf` is currently not allow.")
     }
+    this.checkWhitelists(mapping)
 
     const result = await Mapping.replaceOne({ _id: existingMapping._id }, existingMapping)
     if (result.ok) {
