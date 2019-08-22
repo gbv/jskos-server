@@ -143,6 +143,8 @@ With the keys `schemes`, `concepts`, `mappings`, and `annotations`, you can conf
 
 - **`identityProviders`**: List of strings. Can be defined on any level (deeper levels will take the values from higher levels if necessary\*). If set, an action can only be used by users who have that identity associated with them. `null` by default (no restrictions).
 
+- **`fromSchemeWhitelist`/`toSchemeWhitelist`**: Can be defined only on type `mappings`. List of scheme objects that are allowed for `fromScheme`/`toScheme` respectively. `null` allows all schemes.
+
 \* Only applies to actions `create`, `update`, and `delete`.
 
 **If you are using jskos-server behind a proxy, it is necessary to provide the `baseUrl` key in your configuration (example for our production API):**
