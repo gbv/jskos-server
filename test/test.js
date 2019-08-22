@@ -187,6 +187,37 @@ describe("Express Server", () => {
         })
     })
 
+    it("should not be authorized for userMissingIdentity for create annotations", done => {
+      chai.request(server.app)
+        .get("/checkAuth")
+        .query({
+          type: "annotations",
+          action: "create",
+        })
+        .set("Authorization", `Bearer ${tokenMissingIdentity}`)
+        .then(res => {
+          res.should.have.status(403)
+          res.body.should.be.an("object")
+          res.body.error.should.be.eql("ForbiddenAccessError")
+          done()
+        })
+    })
+
+    // identityProviders is set to null for annotations.delete
+    it("should be authorized for userMissingIdentity for delete annotations", done => {
+      chai.request(server.app)
+        .get("/checkAuth")
+        .query({
+          type: "annotations",
+          action: "delete",
+        })
+        .set("Authorization", `Bearer ${tokenMissingIdentity}`)
+        .then(res => {
+          res.should.have.status(204)
+          done()
+        })
+    })
+
   })
 
   describe("GET /concordances", () => {

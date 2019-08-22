@@ -37,7 +37,8 @@
     },
     "delete": {
       "auth": true,
-      "crossUser": false
+      "crossUser": false,
+      "identityProviders": null
     }
   },
   "identities": ["http://test.user"],

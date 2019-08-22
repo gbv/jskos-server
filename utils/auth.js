@@ -70,8 +70,14 @@ auth = [auth, (req, res, next) => {
     providers = config[req.type][action].identityProviders
   }
   if (req.type == "checkAuth") {
-    whitelist = config.identities
-    providers = config.identityProviders
+    const { type, action } = req.query || {}
+    if (type && action) {
+      whitelist = config[type][action].identities
+      providers = config[type][action].identityProviders
+    } else {
+      whitelist = config.identities
+      providers = config.identityProviders
+    }
   }
 
   if (whitelist && _.intersection(whitelist, uris).length == 0) {

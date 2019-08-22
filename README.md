@@ -20,6 +20,7 @@ JSKOS Server is a web server for [JSKOS] data. It is currently under development
   - [Run Tests](#run-tests)
 - [API](#api)
   - [GET /status](#get-status)
+  - [GET /checkAuth](#get-checkauth)
   - [GET /concordances](#get-concordances)
   - [GET /mappings](#get-mappings)
   - [GET /mappings/suggest](#get-mappingssuggest)
@@ -331,6 +332,15 @@ Returns a status object.
   }
   ```
   (other properties omitted)
+
+### GET /checkAuth
+Endpoint to check whether a user is authorized. If `type` or `action` or not set, it will use `identities`/`identityProviders` that are defined directly under config.
+
+* **URL Params**
+
+  `type=[type]` one of "schemes", "concepts", "mappings", "annotations" (optional)
+
+  `action=[action]` one of "read", "create", "update", "delete" (optional)
 
 ### GET /concordances
 Lists all concordances for mappings.
