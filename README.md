@@ -334,7 +334,7 @@ Returns a status object.
   (other properties omitted)
 
 ### GET /checkAuth
-Endpoint to check whether a user is authorized. If `type` or `action` or not set, it will use `identities`/`identityProviders` that are defined directly under config.
+Endpoint to check whether a user is authorized. If `type` or `action` are not set, it will use `identities`/`identityProviders` that are defined directly under config.
 
 * **URL Params**
 
