@@ -109,7 +109,8 @@ You can customize the application settings via a configuration file, e.g. by pro
     },
     "fromSchemeWhitelist": null,
     "toSchemeWhitelist": null,
-    "anonymous": false
+    "anonymous": false,
+    "cardinality": "1-to-n"
   },
   "annotations": {
     "read": {
@@ -139,6 +140,8 @@ With the keys `schemes`, `concepts`, `mappings`, and `annotations`, you can conf
 - **`crossUser`**: Boolean. Can be defined only on `update` and `delete` actions. Defines whether it is possible to edit an entity from a different user than the authenticated one. `false` by default.
 
 - **`anonymous`**: Boolean. Can be defined only on type `mappings`. If `true`, the creator for mappings will not be saved. Also, `crossUser` will be implied to `true` as well. `false` by default.
+
+- **`cardinality`**: String. Can be defined only on type `mappings`. Currently possible values: `1-to-n` (default), `1-to-1`. If `1-to-1` is configured, mappings with multiple concepts in `to` will be rejected.
 
 - **`identities`**: List of URI strings. Can be defined on any level (deeper levels will take the values from higher levels if necessary\*). If set, an action can only be used by users with an URI given in the list. `null` by default (no restrictions).
 
@@ -276,7 +279,8 @@ Returns a status object.
         ],
         "fromSchemeWhitelist": null,
         "toSchemeWhitelist": null,
-        "anonymous": false
+        "anonymous": false,
+        "cardinality": "1-to-n"
       },
       "baseUrl": "http://localhost:3000/",
       "version": "0.3.0",

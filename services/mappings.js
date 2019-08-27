@@ -247,6 +247,10 @@ module.exports = class MappingService {
     if (mapping.partOf) {
       throw new InvalidBodyError("Property `partOf` is currently not allow.")
     }
+    // Check cardinality for 1-to-1
+    if (config.mappings.cardinality == "1-to-1" && jskos.conceptsOfMapping(mapping, "to").length > 1) {
+      throw new InvalidBodyError("Only 1-to-1 mappings are supported.")
+    }
     this.checkWhitelists(mapping)
     // _id and URI
     delete mapping._id
@@ -291,6 +295,9 @@ module.exports = class MappingService {
     }
     if (mapping.partOf) {
       throw new InvalidBodyError("Property `partOf` is currently not allow.")
+    }
+    if (config.mappings.cardinality == "1-to-1" && jskos.conceptsOfMapping(mapping, "to").length > 1) {
+      throw new InvalidBodyError("Only 1-to-1 mappings are supported.")
     }
     this.checkWhitelists(mapping)
 
@@ -340,6 +347,9 @@ module.exports = class MappingService {
     }
     if (mapping.partOf) {
       throw new InvalidBodyError("Property `partOf` is currently not allow.")
+    }
+    if (config.mappings.cardinality == "1-to-1" && jskos.conceptsOfMapping(mapping, "to").length > 1) {
+      throw new InvalidBodyError("Only 1-to-1 mappings are supported.")
     }
     this.checkWhitelists(mapping)
 

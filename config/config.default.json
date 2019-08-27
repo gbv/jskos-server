@@ -38,7 +38,8 @@
     },
     "fromSchemeWhitelist": null,
     "toSchemeWhitelist": null,
-    "anonymous": false
+    "anonymous": false,
+    "cardinality": "1-to-n"
   },
   "annotations": {
     "read": {
