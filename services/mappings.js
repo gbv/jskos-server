@@ -235,12 +235,11 @@ module.exports = class MappingService {
       throw new MalformedBodyError()
     }
     // Add created and modified dates.
+    const now = (new Date()).toISOString()
     if (!mapping.created) {
-      mapping.created = (new Date()).toISOString()
+      mapping.created = now
     }
-    if (!mapping.modified) {
-      mapping.modified = mapping.created
-    }
+    mapping.modified = now
     // Validate mapping
     if (!validate.mapping(mapping)) {
       throw new InvalidBodyError()
