@@ -97,7 +97,7 @@ const defaultActions = {
     crossUser: false,
   },
 }
-for (let type of ["schemes", "concepts", "mappings", "annotations"]) {
+for (let type of ["schemes", "concepts", "mappings", "concordances", "annotations"]) {
   if (config[type] === true) {
     // Default is read-only without authentication
     config[type] = {

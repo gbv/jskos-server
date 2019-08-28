@@ -112,6 +112,7 @@ You can customize the application settings via a configuration file, e.g. by pro
     "anonymous": false,
     "cardinality": "1-to-n"
   },
+  "concordances": true,
   "annotations": {
     "read": {
       "auth": false
@@ -290,6 +291,11 @@ Returns a status object.
         }
       },
       "concepts": {
+        "read": {
+          "auth": false
+        }
+      },
+      "concordances": {
         "read": {
           "auth": false
         }

@@ -41,6 +41,7 @@
     "anonymous": false,
     "cardinality": "1-to-n"
   },
+  "concordances": true,
   "annotations": {
     "read": {
       "auth": false

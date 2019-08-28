@@ -28,7 +28,9 @@ module.exports = class StatusService {
     }
     if (status.config.mappings) {
       // Add endpoints related to mappings
-      status.concordances = `${baseUrl}concordances`
+      if (status.config.concordances !== false) {
+        status.concordances = `${baseUrl}concordances`
+      }
       status.mappings = `${baseUrl}mappings`
     }
     if (status.config.annotations) {
