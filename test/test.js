@@ -145,7 +145,14 @@ describe("Express Server", () => {
           let notValidMessage = ""
           if (!valid) {
             for (let error of ajv.errors || []) {
-              notValidMessage += `${error.schemaPath} ${error.message}\n      `
+              switch (error.keyword) {
+                case "additionalProperties":
+                  notValidMessage += `${error.dataPath} ${error.message} (${error.params.additionalProperty})`
+                  break
+                default:
+                  notValidMessage += `${error.schemaPath} ${error.message}`
+              }
+              notValidMessage += "\n      "
             }
           }
           valid.should.be.eql(true, notValidMessage)

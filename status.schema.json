@@ -9,6 +9,7 @@
     "config": {
       "type": "object",
       "required": ["baseUrl", "version", "env"],
+      "additionalProperties": false,
       "properties": {
         "baseUrl": {
           "description": "The baseUrl of the API",
@@ -28,6 +29,7 @@
         "auth": {
           "description": "Describes authentication capabilities",
           "type": "object",
+          "additionalProperties": false,
           "properties": {
             "algorithm": {
               "description": "The encryption algorithm used by the login-server that provides the JWTs that are used for authenticaton",
@@ -46,91 +48,53 @@
           "$ref": "#/definitions/identities"
         },
         "schemes": {
-          "$ref": "#/definitions/capability"
-        },
-        "concepts": {
-          "$ref": "#/definitions/capability"
-        },
-        "concordances": {
-          "$ref": "#/definitions/capability"
-        },
-        "mappings": {
           "allOf": [
             {
               "$ref": "#/definitions/capability"
             },
             {
-              "properties": {
-                "anonymous": {
-                  "type": "boolean"
-                },
-                "cardinality": {
-                  "type": "string",
-                  "enum": ["1-to-1", "1-to-n"]
-                },
-                "fromSchemeWhitelist": {
-                  "anyOf": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "array",
-                      "items": {
-                        "required": ["uri"],
-                        "properties": {
-                          "uri": {
-                            "type": "string",
-                            "format": "uri"
-                          },
-                          "identifier": {
-                            "type": "array",
-                            "items": {
-                              "type": "string",
-                              "format": "uri"
-                            }
-                          }
-                        }
-                      }
-                    }
-                  ]
-                },
-                "toSchemeWhitelist": {
-                  "anyOf": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "array",
-                      "items": {
-                        "required": ["uri"],
-                        "properties": {
-                          "uri": {
-                            "type": "string",
-                            "format": "uri"
-                          },
-                          "identifier": {
-                            "type": "array",
-                            "items": {
-                              "type": "string",
-                              "format": "uri"
-                            }
-                          }
-                        }
-                      }
-                    }
-                  ]
-                }
-              }
+              "$ref": "#/definitions/forbidMappingOnlyProperties"
             }
           ]
         },
-        "annotations": {
+        "concepts": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/capability"
+            },
+            {
+              "$ref": "#/definitions/forbidMappingOnlyProperties"
+            }
+          ]
+        },
+        "concordances": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/capability"
+            },
+            {
+              "$ref": "#/definitions/forbidMappingOnlyProperties"
+            }
+          ]
+        },
+        "mappings": {
           "$ref": "#/definitions/capability"
+        },
+        "annotations": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/capability"
+            },
+            {
+              "$ref": "#/definitions/forbidMappingOnlyProperties"
+            }
+          ]
         }
       }
     },
     "capability": {
       "description": "Describes capabilities for a certain item type.",
+      "additionalProperties": false,
       "type": "object",
       "definitions": {
         "auth": {
@@ -202,6 +166,65 @@
         },
         "identities": {
           "$ref": "#/definitions/identities"
+        },
+        "anonymous": {
+          "type": "boolean"
+        },
+        "cardinality": {
+          "type": "string",
+          "enum": ["1-to-1", "1-to-n"]
+        },
+        "fromSchemeWhitelist": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "array",
+              "items": {
+                "required": ["uri"],
+                "properties": {
+                  "uri": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "identifier": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "toSchemeWhitelist": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "array",
+              "items": {
+                "required": ["uri"],
+                "properties": {
+                  "uri": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "identifier": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    }
+                  }
+                }
+              }
+            }
+          ]
         }
       }
     },
@@ -233,6 +256,25 @@
           }
         }
       ]
+    },
+    "forbidMappingOnlyProperties": {
+      "$comment": "Use in non-mapping definitions. Needed to ensure that no additional properties are allowed.",
+      "not": {
+        "anyOf": [
+          {
+            "required": ["anonymous"]
+          },
+          {
+            "required": ["cardinality"]
+          },
+          {
+            "required": ["fromSchemeWhitelist"]
+          },
+          {
+            "required": ["toSchemeWhitelist"]
+          }
+        ]
+      }
     }
   },
   "properties": {
@@ -301,5 +343,6 @@
       "type": "string",
       "format": "uri"
     }
-  }
+  },
+  "additionalProperties": false
 }
