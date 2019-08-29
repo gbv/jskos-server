@@ -152,6 +152,8 @@ With the keys `schemes`, `concepts`, `mappings`, and `annotations`, you can conf
 
 \* Only applies to actions `create`, `update`, and `delete`.
 
+Note that any properties not mentioned here are not allowed!
+
 **If you are using jskos-server behind a proxy, it is necessary to provide the `baseUrl` key in your configuration (example for our production API):**
 ```json
 {
@@ -244,14 +246,7 @@ There is a [JSON Schema](https://json-schema.org) for the format of this endpoin
       "env": "development",
       "auth": {
         "algorithm": "RS256",
-        "key": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA57ZWRoOjXYTQ9yujxAu7\ne3k4+JRBAqGdDVIRRq5vXB2D5nJBIhQjVjylumn+QnTX/MdZx8qn7X96npUwHwIh\nylCgUmsYXcjP08X/AXEcP5bPOkgBBCKjWmcm+p01RQSOM0nSptyxpyXzr2ppWe1b\nuYdRYDWj+JV7vm+jJA4NiFv4UnAhoG5lRATADzu0/6wpMK3dVMBL7L0jQoV5xBAb\nLADOy5hD9XEII3VPkUqDGIKM+Z24flkCIf0lQ7FjsoZ2mmM1SZJ5vPDcjMKreFkX\ncWlcwGHN0PUWZWLhb7c8yYa1rauMcwFwv0d2XyOEfgkqEJdCh8mVT/5jR48D2PNG\ncwIDAQAB\n-----END PUBLIC KEY-----\n",
-        "canSaveMappings": true,
-        "canRemoveMappings": true,
-        "postAuthRequired": true,
-        "allowCrossUserEditing": true,
-        "whitelist": [
-          "urn:uri:test2"
-        ]
+        "key": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA57ZWRoOjXYTQ9yujxAu7\ne3k4+JRBAqGdDVIRRq5vXB2D5nJBIhQjVjylumn+QnTX/MdZx8qn7X96npUwHwIh\nylCgUmsYXcjP08X/AXEcP5bPOkgBBCKjWmcm+p01RQSOM0nSptyxpyXzr2ppWe1b\nuYdRYDWj+JV7vm+jJA4NiFv4UnAhoG5lRATADzu0/6wpMK3dVMBL7L0jQoV5xBAb\nLADOy5hD9XEII3VPkUqDGIKM+Z24flkCIf0lQ7FjsoZ2mmM1SZJ5vPDcjMKreFkX\ncWlcwGHN0PUWZWLhb7c8yYa1rauMcwFwv0d2XyOEfgkqEJdCh8mVT/5jR48D2PNG\ncwIDAQAB\n-----END PUBLIC KEY-----\n"
       },
       "mappings": {
         "read": {
@@ -286,7 +281,7 @@ There is a [JSON Schema](https://json-schema.org) for the format of this endpoin
         "cardinality": "1-to-n"
       },
       "baseUrl": "http://localhost:3000/",
-      "version": "0.3.0",
+      "version": "1.0.0",
       "schemes": {
         "read": {
           "auth": false
