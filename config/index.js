@@ -135,20 +135,4 @@ for (let type of ["schemes", "concepts", "mappings", "concordances", "annotation
   }
 }
 
-// Compatibility with older config (will be removed after clients have been updated!)
-// canSaveMappings
-config.auth.canSaveMappings = !!(config.mappings && config.mappings.create)
-// canRemoveMappings
-config.auth.canRemoveMappings = !!(config.mappings && config.mappings.delete)
-if (config.auth.canSaveMappings) {
-  // postAuthRequired
-  config.auth.postAuthRequired = config.mappings.create.auth
-  // allowCrossUserEditing
-  config.auth.allowCrossUserEditing = !!(config.mappings.update && config.mappings.update.crossUser)
-}
-// whitelist
-if (config.mappings && config.mappings.create && config.mappings.create.identities) {
-  config.auth.whitelist = config.mappings.create.identities
-}
-
 module.exports = config
