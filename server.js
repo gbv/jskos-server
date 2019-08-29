@@ -53,6 +53,8 @@ app.get("/", (req, res) => {
   res.setHeader("Content-Type", "text/html")
   res.sendFile(path.join(__dirname + "/index.html"))
 })
+// JSON Schema for /status
+app.use("/status.schema.json", express.static(__dirname + "/status.schema.json"))
 // Status page /status
 app.use("/status", require("./routes/status"))
 // Database check middleware

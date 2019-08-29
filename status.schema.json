@@ -1,0 +1,305 @@
+{
+  "$id": "https://gbv.github.io/jskos-server/status.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Status",
+  "description": "Status endpoint for JSKOS API",
+  "required": ["ok", "config"],
+  "type": "object",
+  "definitions": {
+    "config": {
+      "type": "object",
+      "required": ["baseUrl", "version", "env"],
+      "properties": {
+        "baseUrl": {
+          "description": "The baseUrl of the API",
+          "type": "string",
+          "format": "uri"
+        },
+        "version": {
+          "description": "The version of the JSKOS API specification that is used",
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "env": {
+          "description": "The environment the server is run in",
+          "type": "string",
+          "enum": ["production", "development", "test"]
+        },
+        "auth": {
+          "description": "Describes authentication capabilities",
+          "type": "object",
+          "properties": {
+            "algorithm": {
+              "description": "The encryption algorithm used by the login-server that provides the JWTs that are used for authenticaton",
+              "type": "string"
+            },
+            "key": {
+              "description": "The public key of the login-server that is used for authentication",
+              "type": "string"
+            }
+          }
+        },
+        "identityProviders": {
+          "$ref": "#/definitions/identityProviders"
+        },
+        "identities": {
+          "$ref": "#/definitions/identities"
+        },
+        "schemes": {
+          "$ref": "#/definitions/capability"
+        },
+        "concepts": {
+          "$ref": "#/definitions/capability"
+        },
+        "concordances": {
+          "$ref": "#/definitions/capability"
+        },
+        "mappings": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/capability"
+            },
+            {
+              "properties": {
+                "anonymous": {
+                  "type": "boolean"
+                },
+                "cardinality": {
+                  "type": "string",
+                  "enum": ["1-to-1", "1-to-n"]
+                },
+                "fromSchemeWhitelist": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "required": ["uri"],
+                        "properties": {
+                          "uri": {
+                            "type": "string",
+                            "format": "uri"
+                          },
+                          "identifier": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "format": "uri"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                },
+                "toSchemeWhitelist": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "required": ["uri"],
+                        "properties": {
+                          "uri": {
+                            "type": "string",
+                            "format": "uri"
+                          },
+                          "identifier": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "format": "uri"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "annotations": {
+          "$ref": "#/definitions/capability"
+        }
+      }
+    },
+    "capability": {
+      "description": "Describes capabilities for a certain item type.",
+      "type": "object",
+      "definitions": {
+        "auth": {
+          "description": "Indicates whether a certain action requires authentication.",
+          "type": "boolean"
+        },
+        "crossUser": {
+          "description": "Indicates whether a certain action can be performed on items that were created by a different user.",
+          "type": "boolean"
+        }
+      },
+      "properties": {
+        "read": {
+          "type": "object",
+          "auth": {
+            "$ref": "$/definitions/capability/definitions/auth"
+          },
+          "identityProviders": {
+            "$ref": "#/definitions/identityProviders"
+          },
+          "identities": {
+            "$ref": "#/definitions/identities"
+          }
+        },
+        "create": {
+          "type": "object",
+          "auth": {
+            "$ref": "$/definitions/capability/definitions/auth"
+          },
+          "identityProviders": {
+            "$ref": "#/definitions/identityProviders"
+          },
+          "identities": {
+            "$ref": "#/definitions/identities"
+          }
+        },
+        "update": {
+          "type": "object",
+          "auth": {
+            "$ref": "$/definitions/capability/definitions/auth"
+          },
+          "crossUser": {
+            "$ref": "$/definitions/capability/definitions/crossUser"
+          },
+          "identityProviders": {
+            "$ref": "#/definitions/identityProviders"
+          },
+          "identities": {
+            "$ref": "#/definitions/identities"
+          }
+        },
+        "delete": {
+          "type": "object",
+          "auth": {
+            "$ref": "$/definitions/capability/definitions/auth"
+          },
+          "crossUser": {
+            "$ref": "$/definitions/capability/definitions/crossUser"
+          },
+          "identityProviders": {
+            "$ref": "#/definitions/identityProviders"
+          },
+          "identities": {
+            "$ref": "#/definitions/identities"
+          }
+        },
+        "identityProviders": {
+          "$ref": "#/definitions/identityProviders"
+        },
+        "identities": {
+          "$ref": "#/definitions/identities"
+        }
+      }
+    },
+    "identityProviders": {
+      "description": "A list of identity providers, one of which is required to perform a certain action. `null` if not applicable.",
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "identities": {
+      "description": "A list of identity URIs that are allowed to perform a certain action. `null` if not applicable.",
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      ]
+    }
+  },
+  "properties": {
+    "ok": {
+      "description": "Indicates that everything is working correctly, especially the database connection.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "config": {
+      "description": "Server configuration object",
+      "$ref": "#/definitions/config"
+    },
+    "schemes": {
+      "description": "API URL for concept schemes",
+      "type": "string",
+      "format": "uri"
+    },
+    "top": {
+      "description": "API URL for top concepts",
+      "type": "string",
+      "format": "uri"
+    },
+    "concepts": {
+      "description": "API URL for concepts",
+      "type": "string",
+      "format": "uri"
+    },
+    "data": {
+      "description": "API URL for data",
+      "type": "string",
+      "format": "uri"
+    },
+    "narrower": {
+      "description": "API URL for narrower concepts",
+      "type": "string",
+      "format": "uri"
+    },
+    "ancestors": {
+      "description": "API URL for concept ancestors",
+      "type": "string",
+      "format": "uri"
+    },
+    "suggest": {
+      "description": "API URL for suggest",
+      "$comment": "format: uri is not used here because something like ?search={searchTerms} will not pass validation.",
+      "type": "string"
+    },
+    "search": {
+      "description": "API URL for search",
+      "$comment": "format: uri is not used here because something like ?search={searchTerms} will not pass validation.",
+      "type": "string"
+    },
+    "concordances": {
+      "description": "API URL for concordances",
+      "type": "string",
+      "format": "uri"
+    },
+    "mappings": {
+      "description": "API URL for mappings",
+      "type": "string",
+      "format": "uri"
+    },
+    "annotations": {
+      "description": "API URL for annotations",
+      "type": "string",
+      "format": "uri"
+    }
+  }
+}

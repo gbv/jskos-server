@@ -234,6 +234,8 @@ Unless otherwise specified:
 ### GET /status
 Returns a status object.
 
+The is a [JSON Schema](https://json-schema.org) for the format of this endpoint. It is available under `/status.schema.json` for every jskos-server installation (starting from version 1.0.0).
+
 * **Success Response**
 
   ```json

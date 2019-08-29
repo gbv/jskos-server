@@ -132,20 +132,32 @@ describe("Express Server", () => {
         })
     })
 
-    it("should GET several additional properties", done => {
+    it("should pass JSON schema", done => {
       chai.request(server.app)
         .get("/status")
         .end((err, res) => {
           res.should.have.status(200)
           res.body.should.be.a("object")
-          res.body.config.should.be.a("object")
-          res.body.config.auth.should.be.a("object")
-          res.body.config.baseUrl.should.be.a("string")
-          res.body.config.baseUrl.endsWith("/").should.be.eql(true)
-          res.body.config.schemes.should.be.a("object")
-          res.body.config.concepts.should.be.a("object")
-          res.body.config.mappings.should.be.a("object")
-          res.body.config.annotations.should.be.a("object")
+          const ajv = new require("ajv")({ allErrors: true })
+          const schema = JSON.parse(require("fs").readFileSync(__dirname + "/../status.schema.json"))
+          ajv.addSchema(schema)
+          const valid = ajv.validate(schema, res.body)
+          let notValidMessage = ""
+          if (!valid) {
+            for (let error of ajv.errors || []) {
+              notValidMessage += `${error.schemaPath} ${error.message}\n      `
+            }
+          }
+          valid.should.be.eql(true, notValidMessage)
+          done()
+        })
+    })
+
+    it("should GET status.schema.json", done => {
+      chai.request(server.app)
+        .get("/status.schema.json")
+        .end((err, res) => {
+          res.should.have.status(200)
           done()
         })
     })
