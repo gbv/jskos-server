@@ -5,3 +5,16 @@ services:
   - mongodb
 before_script:
   - sleep 1
+script:
+  - npm test
+  - mkdir gh-pages
+  - cp status.schema.json gh-pages/status.schema.json
+  - cp README.md gh-pages/index.md
+deploy:
+  provider: pages
+  local_dir: gh-pages
+  skip_cleanup: true
+  github_token: $GITHUB_TOKEN
+  keep_history: true
+  on:
+    branch: master
