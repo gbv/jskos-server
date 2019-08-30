@@ -19,7 +19,7 @@
         "version": {
           "description": "The version of the JSKOS API specification that is used",
           "type": "string",
-          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+          "pattern": "^\\d+\\.\\d+(\\.\\d+)?$"
         },
         "env": {
           "description": "The environment the server is run in",
