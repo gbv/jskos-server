@@ -281,7 +281,7 @@ There is a [JSON Schema](https://json-schema.org) for the format of this endpoin
         "cardinality": "1-to-n"
       },
       "baseUrl": "http://localhost:3000/",
-      "version": "1.0.0",
+      "version": "1.0",
       "schemes": {
         "read": {
           "auth": false

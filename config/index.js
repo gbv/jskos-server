@@ -68,9 +68,10 @@ if (!config.baseUrl.endsWith("/")) {
   config.baseUrl += "/"
 }
 
-// Set version if not set
+// Set JSKOS API version if not set
 if (!config.version) {
-  config.version = require("../package.json").version
+  const { version } = require("../package.json")
+  config.version = version.split(".").slice(0,2).join(".")
 }
 
 // Check for configuration that is not yet supported or implemented
