@@ -20,9 +20,11 @@ module.exports = class ConceptService {
       $or: query.uri.split("|").map(uri => ({ uri })),
     }
 
-    const concepts = await Concept.find(mongoQuery).lean().skip(query.offset).limit(query.limit).exec()
-    concepts.totalCount = await Concept.find(mongoQuery).countDocuments()
-    return concepts
+    const schemes = (await Promise.all(query.uri.split("|").map(uri => this.schemeService.getScheme(uri)))).filter(scheme => scheme != null)
+    const concepts = await Concept.find(mongoQuery).lean().exec()
+    const results = [].concat(schemes, concepts).slice(query.offset, query.offset + query.limit)
+    results.totalCount = schemes.length + concepts.length
+    return results
   }
 
   /**
