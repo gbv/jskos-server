@@ -22,7 +22,19 @@ module.exports = class ConceptService {
       $or: [].concat(uris.map(uri => ({ uri })), notations.map(notation => ({ notation }))),
     }
 
-    const schemes = (await Promise.all([].concat(uris, notations).map(uri => this.schemeService.getScheme(uri)))).filter(scheme => scheme != null)
+    if (query.voc) {
+      let uris
+      const scheme = await this.schemeService.getScheme(query.voc)
+      if (scheme) {
+        uris = [scheme.uri].concat(scheme.identifier || [])
+      } else {
+        uris = [query.uri]
+      }
+      mongoQuery["inScheme.uri"] = { $in: uris }
+    }
+
+    // Note: If query.voc is given, no schemes are returned
+    const schemes = query.voc ? [] : (await Promise.all([].concat(uris, notations).map(uri => this.schemeService.getScheme(uri)))).filter(scheme => scheme != null)
     const concepts = await Concept.find(mongoQuery).lean().exec()
     const results = [].concat(schemes, concepts).slice(query.offset, query.offset + query.limit)
     results.totalCount = schemes.length + concepts.length

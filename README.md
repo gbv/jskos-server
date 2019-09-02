@@ -804,6 +804,8 @@ Returns detailed data for concepts or concept schemes. Note that there is no cer
 
   `notation=[notation]` notations for concepts or concept schemes separated by `|`
 
+  `voc=[uri]` filter by concept scheme URI (note that if `voc` is given, no concept schemes will be returned)
+
   `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting `ancestors`, `narrower`, and `annotations`)
 
 * **Success Response**
