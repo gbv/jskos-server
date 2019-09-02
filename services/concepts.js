@@ -13,16 +13,32 @@ module.exports = class ConceptService {
    * Return a Promise with an array of concept data.
    */
   async getDetails(query) {
-    if (!query.uri) {
+    if (!query.uri && !query.notation) {
       return []
     }
+    const uris = query.uri ? query.uri.split("|") : []
+    const notations = query.notation ? query.notation.split("|") : []
     let mongoQuery = {
-      $or: query.uri.split("|").map(uri => ({ uri })),
+      $or: [].concat(uris.map(uri => ({ uri })), notations.map(notation => ({ notation }))),
     }
 
-    const concepts = await Concept.find(mongoQuery).lean().skip(query.offset).limit(query.limit).exec()
-    concepts.totalCount = await Concept.find(mongoQuery).countDocuments()
-    return concepts
+    if (query.voc) {
+      let uris
+      const scheme = await this.schemeService.getScheme(query.voc)
+      if (scheme) {
+        uris = [scheme.uri].concat(scheme.identifier || [])
+      } else {
+        uris = [query.uri]
+      }
+      mongoQuery["inScheme.uri"] = { $in: uris }
+    }
+
+    // Note: If query.voc is given, no schemes are returned
+    const schemes = query.voc ? [] : (await Promise.all([].concat(uris, notations).map(uri => this.schemeService.getScheme(uri)))).filter(scheme => scheme != null)
+    const concepts = await Concept.find(mongoQuery).lean().exec()
+    const results = [].concat(schemes, concepts).slice(query.offset, query.offset + query.limit)
+    results.totalCount = schemes.length + concepts.length
+    return results
   }
 
   /**
