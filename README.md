@@ -796,11 +796,13 @@ Lists concepts for a concept scheme.
   ```
 
 ### GET /data
-Returns detailed data for concepts (or concept schemes).
+Returns detailed data for concepts or concept schemes. Note that there is no certain order to the result set (but it should be consistent across requests).
 
 * **URL Params**
 
-  `uri=[uri]` URIs for concepts (or concept schemes) separated by `|`
+  `uri=[uri]` URIs for concepts or concept schemes separated by `|`
+
+  `notation=[notation]` notations for concepts or concept schemes separated by `|`
 
   `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting `ancestors`, `narrower`, and `annotations`)
 

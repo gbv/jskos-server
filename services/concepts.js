@@ -13,14 +13,16 @@ module.exports = class ConceptService {
    * Return a Promise with an array of concept data.
    */
   async getDetails(query) {
-    if (!query.uri) {
+    if (!query.uri && !query.notation) {
       return []
     }
+    const uris = query.uri ? query.uri.split("|") : []
+    const notations = query.notation ? query.notation.split("|") : []
     let mongoQuery = {
-      $or: query.uri.split("|").map(uri => ({ uri })),
+      $or: [].concat(uris.map(uri => ({ uri })), notations.map(notation => ({ notation }))),
     }
 
-    const schemes = (await Promise.all(query.uri.split("|").map(uri => this.schemeService.getScheme(uri)))).filter(scheme => scheme != null)
+    const schemes = (await Promise.all([].concat(uris, notations).map(uri => this.schemeService.getScheme(uri)))).filter(scheme => scheme != null)
     const concepts = await Concept.find(mongoQuery).lean().exec()
     const results = [].concat(schemes, concepts).slice(query.offset, query.offset + query.limit)
     results.totalCount = schemes.length + concepts.length

@@ -907,6 +907,24 @@ describe("Express Server", () => {
         })
     })
 
+    it("should GET one concept by notation", done => {
+      chai.request(server.app)
+        .get("/data")
+        .query({
+          notation: "61",
+        })
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.should.have.header("Link")
+          res.should.have.header("X-Total-Count")
+          res.body.should.be.a("array")
+          res.body.length.should.be.eql(1)
+          res.body[0].should.be.a("object")
+          res.body[0].prefLabel.de.should.be.eql("Medizin & Gesundheit")
+          done()
+        })
+    })
+
     it("should GET multiple concepts", done => {
       chai.request(server.app)
         .get("/data")
@@ -921,6 +939,25 @@ describe("Express Server", () => {
           res.body.length.should.be.eql(2)
           res.body[0].should.be.a("object")
           res.body[1].should.be.a("object")
+          done()
+        })
+    })
+
+    it("should GET multiple schemes and concepts by notation", done => {
+      chai.request(server.app)
+        .get("/data")
+        .query({
+          notation: "60|61|DDC",
+        })
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.should.have.header("Link")
+          res.should.have.header("X-Total-Count")
+          res.body.should.be.a("array")
+          res.body.length.should.be.eql(3)
+          res.body[0].should.be.a("object")
+          res.body[1].should.be.a("object")
+          res.body[2].should.be.a("object")
           done()
         })
     })
