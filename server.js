@@ -12,6 +12,10 @@ const express = require("express")
 const app = express()
 app.set("json spaces", 2)
 
+// Configure view engine to render EJS templates.
+app.set("views", __dirname + "/views")
+app.set("view engine", "ejs")
+
 // Database connection
 const mongoose = require("mongoose")
 const connect = async () => {
@@ -48,10 +52,11 @@ app.use(utils.addMiddlewareProperties)
 // Add routes
 
 // Root path for static page
-const path = require("path")
 app.get("/", (req, res) => {
   res.setHeader("Content-Type", "text/html")
-  res.sendFile(path.join(__dirname + "/index.html"))
+  res.render("base", {
+    config,
+  })
 })
 // JSON Schema for /status
 app.use("/status.schema.json", express.static(__dirname + "/status.schema.json"))
