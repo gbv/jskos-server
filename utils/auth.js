@@ -13,7 +13,9 @@ const { ForbiddenAccessError } = require("../errors")
 
 const passport = require("passport")
 
-let optional = [], auth = null
+let optional = [], auth = (req, res, next) => {
+  next(new ForbiddenAccessError("Access forbidden. No authentication configured."))
+}
 
 // Prepare authorization via JWT
 if (config.auth.algorithm && config.auth.key) {
@@ -30,17 +32,21 @@ if (config.auth.algorithm && config.auth.key) {
     }))
     // Use like this: app.get("/secureEndpoint", auth.default, (req, res) => { ... })
     // res.user will contain the current authorized user.
-    auth = passport.authenticate("jwt", { session: false })
+    auth = (req, res, next) => {
+      passport.authenticate("jwt", { session: false }, (error, user) => {
+        if (error || !user) {
+          return next(new ForbiddenAccessError("Access forbidden. Could not authenticate via JWT."))
+        }
+        req.user = user
+        return next()
+      })(req, res, next)
+    }
     optional.push("jwt")
   } catch(error) {
     config.error("Error setting up JWT authentication")
   }
 } else {
   config.warn("Note: To provide authentication via JWT, please add `auth.algorithm` and `auth.key` to the configuration file!")
-  // Deny all requests
-  auth = (req, res) => {
-    res.sendStatus(403)
-  }
 }
 
 // Configure identities whitelists and identity providers
