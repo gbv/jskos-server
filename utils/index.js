@@ -179,9 +179,6 @@ const isValidUuid = (uuid) => {
  * @param {string} action one of `read`/`create`/`update`/`delete`
  */
 const matchesCreator = (user, object, type, action) => {
-  if (!object || !user) {
-    return false
-  }
   let crossUser = false
   if (config[type] && config[type][action]) {
     crossUser = config[type][action].crossUser
@@ -189,6 +186,9 @@ const matchesCreator = (user, object, type, action) => {
   // If config.auth.allowCrossUserEditing is enabled, return true
   if (crossUser) {
     return true
+  }
+  if (!object || !user) {
+    return false
   }
   // If not, check URIs
   const userUris = [user.uri].concat(Object.values(user.identities || {}).map(identity => identity.uri)).filter(uri => uri != null)
