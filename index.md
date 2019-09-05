@@ -154,6 +154,79 @@ With the keys `schemes`, `concepts`, `mappings`, and `annotations`, you can conf
 
 Note that any properties not mentioned here are not allowed!
 
+Here are some helpful example presets for "mappings" or "annotations".
+
+**Read-only access (does not make sense for annotations):**
+```json
+{
+  "read": {
+    "auth": false
+  }
+}
+```
+
+**Anyone can create, but only logged-in users can update and delete (and only their own items):**
+```json
+{
+  "read": {
+    "auth": false
+  },
+  "create": {
+    "auth": false
+  },
+  "update": {
+    "auth": true,
+    "crossUser": false
+  },
+  "delete": {
+    "auth": true,
+    "crossUser": false
+  }
+}
+```
+
+**Anyone can create, logged-in users can update (independent of creator), logged-in users can delete their own items:**
+```json
+{
+  "read": {
+    "auth": false
+  },
+  "create": {
+    "auth": false
+  },
+  "update": {
+    "auth": true,
+    "crossUser": true
+  },
+  "delete": {
+    "auth": true,
+    "crossUser": false
+  }
+}
+```
+
+**Anyone can create, as well as update and delete, independent of creator:**
+```json
+{
+  "read": {
+    "auth": false
+  },
+  "create": {
+    "auth": false
+  },
+  "update": {
+    "auth": false,
+    "crossUser": true
+  },
+  "delete": {
+    "auth": false,
+    "crossUser": true
+  }
+}
+```
+
+---
+
 **If you are using jskos-server behind a proxy, it is necessary to provide the `baseUrl` key in your configuration (example for our production API):**
 ```json
 {
@@ -244,44 +317,12 @@ There is a [JSON Schema](https://json-schema.org) for the format of this endpoin
   {
     "config": {
       "env": "development",
-      "auth": {
-        "algorithm": "RS256",
-        "key": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA57ZWRoOjXYTQ9yujxAu7\ne3k4+JRBAqGdDVIRRq5vXB2D5nJBIhQjVjylumn+QnTX/MdZx8qn7X96npUwHwIh\nylCgUmsYXcjP08X/AXEcP5bPOkgBBCKjWmcm+p01RQSOM0nSptyxpyXzr2ppWe1b\nuYdRYDWj+JV7vm+jJA4NiFv4UnAhoG5lRATADzu0/6wpMK3dVMBL7L0jQoV5xBAb\nLADOy5hD9XEII3VPkUqDGIKM+Z24flkCIf0lQ7FjsoZ2mmM1SZJ5vPDcjMKreFkX\ncWlcwGHN0PUWZWLhb7c8yYa1rauMcwFwv0d2XyOEfgkqEJdCh8mVT/5jR48D2PNG\ncwIDAQAB\n-----END PUBLIC KEY-----\n"
-      },
-      "mappings": {
-        "read": {
-          "auth": false
-        },
-        "create": {
-          "auth": true,
-          "identities": [
-            "urn:uri:test2"
-          ]
-        },
-        "update": {
-          "crossUser": true,
-          "auth": true,
-          "identities": [
-            "urn:uri:test2"
-          ]
-        },
-        "delete": {
-          "crossUser": true,
-          "auth": true,
-          "identities": [
-            "urn:uri:test2"
-          ]
-        },
-        "identities": [
-          "urn:uri:test2"
-        ],
-        "fromSchemeWhitelist": null,
-        "toSchemeWhitelist": null,
-        "anonymous": false,
-        "cardinality": "1-to-n"
-      },
       "baseUrl": "http://localhost:3000/",
-      "version": "1.0",
+      "version": "1.1",
+      "auth": {
+        "algorithm": "HS256",
+        "key": null
+      },
       "schemes": {
         "read": {
           "auth": false
@@ -291,6 +332,26 @@ There is a [JSON Schema](https://json-schema.org) for the format of this endpoin
         "read": {
           "auth": false
         }
+      },
+      "mappings": {
+        "read": {
+          "auth": false
+        },
+        "create": {
+          "auth": true
+        },
+        "update": {
+          "auth": true,
+          "crossUser": false
+        },
+        "delete": {
+          "auth": true,
+          "crossUser": false
+        },
+        "fromSchemeWhitelist": null,
+        "toSchemeWhitelist": null,
+        "anonymous": false,
+        "cardinality": "1-to-n"
       },
       "concordances": {
         "read": {
