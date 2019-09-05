@@ -84,13 +84,15 @@ module.exports = class MappingService {
    */
   async postAnnotation({ body, user, baseUrl }) {
     let annotation = body
-    if (!annotation || !user) {
+    if (!annotation) {
       throw new MalformedBodyError()
     }
-    // Set creator
-    annotation.creator = {
-      id: user.uri,
-      name: user.name,
+    if (user) {
+      // Set creator
+      annotation.creator = {
+        id: user.uri,
+        name: user.name,
+      }
     }
     // Add created and modified dates.
     let date = (new Date()).toISOString()
