@@ -154,6 +154,79 @@ With the keys `schemes`, `concepts`, `mappings`, and `annotations`, you can conf
 
 Note that any properties not mentioned here are not allowed!
 
+Here are some helpful example presets for "mappings" or "annotations".
+
+**Read-only access (does not make sense for annotations):**
+```json
+{
+  "read": {
+    "auth": false
+  }
+}
+```
+
+**Anyone can create, but only logged-in users can update and delete (and only their own items):**
+```json
+{
+  "read": {
+    "auth": false
+  },
+  "create": {
+    "auth": false
+  },
+  "update": {
+    "auth": true,
+    "crossUser": false
+  },
+  "delete": {
+    "auth": true,
+    "crossUser": false
+  }
+}
+```
+
+**Anyone can create, logged-in users can update (independent of creator), logged-in users can delete their own items:**
+```json
+{
+  "read": {
+    "auth": false
+  },
+  "create": {
+    "auth": false
+  },
+  "update": {
+    "auth": true,
+    "crossUser": true
+  },
+  "delete": {
+    "auth": true,
+    "crossUser": false
+  }
+}
+```
+
+**Anyone can create, as well as update and delete, independent of creator:**
+```json
+{
+  "read": {
+    "auth": false
+  },
+  "create": {
+    "auth": false
+  },
+  "update": {
+    "auth": false,
+    "crossUser": true
+  },
+  "delete": {
+    "auth": false,
+    "crossUser": true
+  }
+}
+```
+
+---
+
 **If you are using jskos-server behind a proxy, it is necessary to provide the `baseUrl` key in your configuration (example for our production API):**
 ```json
 {
