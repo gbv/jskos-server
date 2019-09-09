@@ -42,6 +42,13 @@ db.on("disconnected", () => {
 // Add default headers
 app.use(utils.addDefaultHeaders)
 
+// Disable client side caching
+const nocache = require("nocache")
+app.use(nocache())
+
+// Disable ETags
+app.set("etag", false)
+
 // Add body-parser middleware
 app.use(express.urlencoded({ extended: false }))
 app.use(express.json())
