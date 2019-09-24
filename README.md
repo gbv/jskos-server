@@ -134,7 +134,17 @@ You can customize the application settings via a configuration file, e.g. by pro
 }
 ```
 
-With the keys `schemes`, `concepts`, `mappings`, and `annotations`, you can configure whether endpoints related to the specific functionality should be available. Available actions for `mappings` and `annotations` are `read`, `create`, `update`, and `delete`. By default, all types can be read, while `mappings` and `annotations` can be created, updated, and deleted with authentication. Explanantions for additional options:
+With the keys `schemes`, `concepts`, `mappings`, and `annotations`, you can configure whether endpoints related to the specific functionality should be available. A minimal configuration file to just server read-only vocabulary and concept information could look like this:
+
+```json
+{
+  "mappings": false,
+  "annotations": false,
+  "concordances": false
+}
+```
+
+Available actions for `mappings` and `annotations` are `read`, `create`, `update`, and `delete`. By default, all types can be read, while `mappings` and `annotations` can be created, updated, and deleted with authentication. Explanantions for additional options:
 
 - **`auth`**: Boolean. Can be defined only on actions. Defines whether access will require authentication. By default `false` for `read`, and `true` for all other actions.
 
