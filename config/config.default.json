@@ -56,7 +56,8 @@
     "delete": {
       "auth": true,
       "crossUser": false
-    }
+    },
+    "moderatingIdentities": []
   },
   "identityProviders": null,
   "identities": null

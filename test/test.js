@@ -23,6 +23,15 @@ const user = {
 }
 const token = jwt.sign({ user }, "test")
 
+const userWithModerating = {
+  uri: "http://test-moderating.user",
+  name: "Test User",
+  identities: {
+    test: {},
+  },
+}
+const tokenWithModerating = jwt.sign({ user: userWithModerating }, "test")
+
 const userNotOnWhitelist = {
   uri: "http://test2.user",
   name: "Test User",
@@ -1303,6 +1312,40 @@ describe("Express Server", () => {
         .set("Authorization", `Bearer ${token}`)
         .end((err, res) => {
           res.should.have.status(204)
+          done()
+        })
+    })
+
+    const annotationModerating = {
+      target: "http://dewey.info/class/60/e23/",
+      motivation: "moderating",
+    }
+
+    it("should not POST an annotation with type moderating for user", done => {
+      chai.request(server.app)
+        .post("/annotations")
+        .set("Authorization", `Bearer ${token}`)
+        .send(annotationModerating)
+        .end((err, res) => {
+          res.should.have.status(403)
+          res.body.should.be.an("object")
+          res.body.error.should.be.eql("ForbiddenAccessError")
+          done()
+        })
+    })
+
+    it("should POST an annotation with type moderating for userWithModerating", done => {
+      chai.request(server.app)
+        .post("/annotations")
+        .set("Authorization", `Bearer ${tokenWithModerating}`)
+        .send(annotationModerating)
+        .end((err, res) => {
+          res.should.have.status(201)
+          res.body.should.be.a("object")
+          res.body.id.should.be.a("string")
+          res.body.creator.should.be.eql({ id: userWithModerating.uri, name: userWithModerating.name }) // Creator gets decoded from base64
+          res.body.target.should.be.eql(annotationModerating.target)
+          res.body.motivation.should.be.eql(annotationModerating.motivation)
           done()
         })
     })

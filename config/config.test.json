@@ -39,9 +39,10 @@
       "auth": true,
       "crossUser": false,
       "identityProviders": null
-    }
+    },
+    "moderatingIdentities": ["http://test-moderating.user"]
   },
-  "identities": ["http://test.user"],
+  "identities": ["http://test.user", "http://test-moderating.user"],
   "identityProviders": ["test"],
   "namespace": "f06ab008-a909-40a2-b8e7-643e955b522d"
 }

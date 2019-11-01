@@ -4,7 +4,7 @@ const _ = require("lodash")
 const validate = require("jskos-validate")
 
 const Annotation = require("../models/annotations")
-const { EntityNotFoundError, CreatorDoesNotMatchError, DatabaseAccessError, InvalidBodyError, MalformedBodyError, MalformedRequestError } = require("../errors")
+const { EntityNotFoundError, CreatorDoesNotMatchError, DatabaseAccessError, InvalidBodyError, MalformedBodyError, MalformedRequestError, ForbiddenAccessError } = require("../errors")
 
 module.exports = class MappingService {
 
@@ -86,6 +86,15 @@ module.exports = class MappingService {
     let annotation = body
     if (!annotation) {
       throw new MalformedBodyError()
+    }
+    // For type moderating, check if user is on the whitelist.
+    if (annotation.motivation == "moderating") {
+      let uris = [user.uri].concat(Object.values(user.identities || {}).map(id => id.uri)).filter(uri => uri != null)
+      let whitelist = config.annotations.moderatingIdentities
+      if (whitelist && _.intersection(whitelist, uris).length == 0) {
+        // Disallow
+        throw new ForbiddenAccessError("Access forbidden, user is not allowed to create annotations of type \"moderating\".")
+      }
     }
     if (user) {
       // Set creator
