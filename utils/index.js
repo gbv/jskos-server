@@ -206,7 +206,13 @@ const matchesCreator = (user, object, type, action) => {
  * Middleware that adds default headers.
  */
 const addDefaultHeaders = (req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "*")
+  if (req.headers.origin) {
+    // Allow all origins by returning the request origin in the header
+    res.setHeader("Access-Control-Allow-Origin", req.headers.origin)
+  } else {
+    // Fallback to * if there is no origin in header
+    res.setHeader("Access-Control-Allow-Origin", "*")
+  }
   res.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization")
   res.setHeader("Access-Control-Allow-Methods", "GET,PUT,POST,PATCH,DELETE")
   res.setHeader("Access-Control-Expose-Headers", "X-Total-Count, Link")
