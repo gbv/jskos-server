@@ -1227,7 +1227,7 @@ Returns an array of annotations. Each annotation has a property `id` under which
 
   `bodyValue=[bodyValue]` only return annotations with a specific bodyValue (e.g. `+1`, `-1`)
 
-  `motation=[motivation]` only return annotations with a specific motivation (e.g. `assessing`, `moderating`, `tagging`)
+  `motivation=[motivation]` only return annotations with a specific motivation (e.g. `assessing`, `moderating`, `tagging`)
 
 * **Success Response**
 
