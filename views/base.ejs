@@ -29,22 +29,22 @@
     </p>
     <h3>General</h3>
     <ul>
-      <li>GET <a href="status">/status</a> - Returns a status object (<a href="status.schema.json">JSON Schema</a>, <a href="https://github.com/gbv/jskos-server#get-status" target="_blank">documentation</a>)</li>
-      <li>GET <a href="checkAuth">/checkAuth</a> - Endpoint to check whether a user is authorized (<a href="https://github.com/gbv/jskos-server#get-checkauth" target="_blank">documentation</a>)</li>
+      <li>GET <a href="<% if (config.baseUrl) { %><%= config.baseUrl %><% } %>status">/status</a> - Returns a status object (<a href="<% if (config.baseUrl) { %><%= config.baseUrl %><% } %>status.schema.json">JSON Schema</a>, <a href="https://github.com/gbv/jskos-server#get-status" target="_blank">documentation</a>)</li>
+      <li>GET <a href="<% if (config.baseUrl) { %><%= config.baseUrl %><% } %>checkAuth">/checkAuth</a> - Endpoint to check whether a user is authorized (<a href="https://github.com/gbv/jskos-server#get-checkauth" target="_blank">documentation</a>)</li>
     </ul>
     <% if (config.concordances) { %>
     <h3>Concordances</h3>
     <ul>
-      <li>GET <a href="concordances">/concordances</a> - Returns a list of concordances for mappings (<a href="https://github.com/gbv/jskos-server#get-concordances" target="_blank">documentation</a>)</li>
+      <li>GET <a href="<% if (config.baseUrl) { %><%= config.baseUrl %><% } %>concordances">/concordances</a> - Returns a list of concordances for mappings (<a href="https://github.com/gbv/jskos-server#get-concordances" target="_blank">documentation</a>)</li>
     </ul>
     <% } %>
     <% if (config.mappings) { %>
     <h3>Mappings</h3>
     <ul>
-      <li>GET <a href="mappings/suggest">/mappings/suggest</a> - Suggests notations used in mappings (<a href="https://github.com/gbv/jskos-server#get-mappingssuggest" target="_blank">documentation</a>)</li>
-      <li>GET <a href="mappings/voc">/mappings/voc</a> - Returns a list of concept schemes used in mappings (<a href="https://github.com/gbv/jskos-server#get-mappingsvoc" target="_blank">documentation</a>)</li>
+      <li>GET <a href="<% if (config.baseUrl) { %><%= config.baseUrl %><% } %>mappings/suggest">/mappings/suggest</a> - Suggests notations used in mappings (<a href="https://github.com/gbv/jskos-server#get-mappingssuggest" target="_blank">documentation</a>)</li>
+      <li>GET <a href="<% if (config.baseUrl) { %><%= config.baseUrl %><% } %>mappings/voc">/mappings/voc</a> - Returns a list of concept schemes used in mappings (<a href="https://github.com/gbv/jskos-server#get-mappingsvoc" target="_blank">documentation</a>)</li>
       <% if (config.mappings.read) { %>
-      <li>GET <a href="mappings">/mappings</a> - Returns a list of mappings (<a href="https://github.com/gbv/jskos-server#get-mappings" target="_blank">documentation</a>)</li>
+      <li>GET <a href="<% if (config.baseUrl) { %><%= config.baseUrl %><% } %>mappings">/mappings</a> - Returns a list of mappings (<a href="https://github.com/gbv/jskos-server#get-mappings" target="_blank">documentation</a>)</li>
       <li>GET /mappings/:_id - Returns a specific mapping (<a href="https://github.com/gbv/jskos-server#get-mappings_id" target="_blank">documentation</a>)</li>
       <% } %>
       <% if (config.mappings.create) { %>
@@ -62,26 +62,26 @@
     <% if (config.schemes) { %>
     <h3>Concept Schemes</h3>
     <ul>
-      <li>GET <a href="voc">/voc</a> - Returns a list of terminologies (concept schemes) (<a href="https://github.com/gbv/jskos-server#get-voc" target="_blank">documentation</a>)</li>
-      <li>GET <a href="voc/top">/voc/top</a> - Lists top concepts for a concept scheme (<a href="https://github.com/gbv/jskos-server#get-voctop" target="_blank">documentation</a>)</li>
-      <li>GET <a href="voc/concepts">/voc/concepts</a> - Lists concepts for a concept scheme (<a href="https://github.com/gbv/jskos-server#get-vocconcepts" target="_blank">documentation</a>)</li>
+      <li>GET <a href="<% if (config.baseUrl) { %><%= config.baseUrl %><% } %>voc">/voc</a> - Returns a list of terminologies (concept schemes) (<a href="https://github.com/gbv/jskos-server#get-voc" target="_blank">documentation</a>)</li>
+      <li>GET <a href="<% if (config.baseUrl) { %><%= config.baseUrl %><% } %>voc/top">/voc/top</a> - Lists top concepts for a concept scheme (<a href="https://github.com/gbv/jskos-server#get-voctop" target="_blank">documentation</a>)</li>
+      <li>GET <a href="<% if (config.baseUrl) { %><%= config.baseUrl %><% } %>voc/concepts">/voc/concepts</a> - Lists concepts for a concept scheme (<a href="https://github.com/gbv/jskos-server#get-vocconcepts" target="_blank">documentation</a>)</li>
     </ul>
     <% } %>
     <% if (config.concepts) { %>
     <h3>Concepts</h3>
     <ul>
-      <li>GET <a href="data">/data</a> - Returns detailed data for concepts or concept schemes (<a href="https://github.com/gbv/jskos-server#get-data" target="_blank">documentation</a>)</li>
-      <li>GET <a href="narrower">/narrower</a> - Returns narrower concepts for a concept (<a href="https://github.com/gbv/jskos-server#get-narrower" target="_blank">documentation</a>)</li>
-      <li>GET <a href="ancestors">/ancestors</a> - Returns ancestor concepts for a concept (<a href="https://github.com/gbv/jskos-server#get-ancestors" target="_blank">documentation</a>)</li>
-      <li>GET <a href="suggest">/suggest</a> - Returns concept suggestions (<a href="https://github.com/gbv/jskos-server#get-suggest" target="_blank">documentation</a>)</li>
-      <li>GET <a href="search">/search</a> - Concept search (<a href="https://github.com/gbv/jskos-server#get-search" target="_blank">documentation</a>)</li>
+      <li>GET <a href="<% if (config.baseUrl) { %><%= config.baseUrl %><% } %>data">/data</a> - Returns detailed data for concepts or concept schemes (<a href="https://github.com/gbv/jskos-server#get-data" target="_blank">documentation</a>)</li>
+      <li>GET <a href="<% if (config.baseUrl) { %><%= config.baseUrl %><% } %>narrower">/narrower</a> - Returns narrower concepts for a concept (<a href="https://github.com/gbv/jskos-server#get-narrower" target="_blank">documentation</a>)</li>
+      <li>GET <a href="<% if (config.baseUrl) { %><%= config.baseUrl %><% } %>ancestors">/ancestors</a> - Returns ancestor concepts for a concept (<a href="https://github.com/gbv/jskos-server#get-ancestors" target="_blank">documentation</a>)</li>
+      <li>GET <a href="<% if (config.baseUrl) { %><%= config.baseUrl %><% } %>suggest">/suggest</a> - Returns concept suggestions (<a href="https://github.com/gbv/jskos-server#get-suggest" target="_blank">documentation</a>)</li>
+      <li>GET <a href="<% if (config.baseUrl) { %><%= config.baseUrl %><% } %>search">/search</a> - Concept search (<a href="https://github.com/gbv/jskos-server#get-search" target="_blank">documentation</a>)</li>
     </ul>
     <% } %>
     <% if (config.annotations) { %>
     <h3>Annotations</h3>
     <ul>
         <% if (config.annotations.read) { %>
-        <li>GET <a href="annotations">/annotations</a> - Returns a list of annotations (<a href="https://github.com/gbv/jskos-server#get-annotations" target="_blank">documentation</a>)</li>
+        <li>GET <a href="<% if (config.baseUrl) { %><%= config.baseUrl %><% } %>annotations">/annotations</a> - Returns a list of annotations (<a href="https://github.com/gbv/jskos-server#get-annotations" target="_blank">documentation</a>)</li>
         <li>GET /annotations/:_id - Returns a specific annotation (<a href="https://github.com/gbv/jskos-server#get-annotations_id" target="_blank">documentation</a>)</li>
         <% } %>
         <% if (config.annotations.create) { %>
