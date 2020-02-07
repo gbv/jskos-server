@@ -1384,7 +1384,7 @@ There are certain things to consider when running `jskos-server` behind a revers
 
 1. Make sure the base URL is configured correctly in `config.json` so that correct URIs will be generated. Test this by creating a new mapping and making sure the URI of that mapping is correct and accessible.
 
-2. The reverse proxy should be configured so that the base URL has a trailing slash: ~~`https://example.com/api`~~ ❌ - `https://example.com/api/` ✅
+2. The reverse proxy should be configured so that the base URL has a trailing slash: ~~`https://example.com/api`~~ ❌ - `https://example.com/api/` ✅ (Note: Not implementing this has no further consequences except that `/api` will not be accessible.)
 
 3. The reverse proxy should also be configured so that any URL **except** the base URL has **no** trailing slash: ~~`https://example.com/api/status/`~~ ❌ - `https://example.com/api/status` ✅
 
