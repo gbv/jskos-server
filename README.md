@@ -45,7 +45,7 @@ JSKOS Server is a web server for [JSKOS] data. It is currently under development
   - [PATCH /annotations/:_id](#patch-annotations_id)
   - [DELETE /annotations/:_id](#delete-annotations_id)
   - [Errors](#errors)
-- [Deployment](#get-deployment)
+- [Deployment](#deployment)
   - [Notes about depolyment on Ubuntu](#notes-about-depolyment-on-ubuntu)
   - [Update an instances deployed with PM2](#update-an-instances-deployed-with-pm2)
   - [Daily Import](#daily-import)
