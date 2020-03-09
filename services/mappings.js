@@ -273,6 +273,7 @@ module.exports = class MappingService {
       mapping.uri.replace("http:", "https:")
     }
     // Save mapping
+    // eslint-disable-next-line no-useless-catch
     try {
       mapping = new Mapping(mapping)
       mapping = await mapping.save()

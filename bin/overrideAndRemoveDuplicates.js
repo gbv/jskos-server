@@ -74,7 +74,7 @@ lineReader.on("close", () => {
         db.collection("mappings").replaceOne({ uri: mapping.uri }, mapping, { upsert: true }).then(result => {
           inserted += result.upsertedId ? 1 : 0
           modified += result.modifiedCount
-        })
+        }),
       )
     }
 
@@ -82,7 +82,7 @@ lineReader.on("close", () => {
       promises.push(
         db.collection("mappings").remove({ uri: mapping.uri }).then(result => {
           deleted += result.result.n
-        })
+        }),
       )
     }
 

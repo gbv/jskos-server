@@ -299,7 +299,7 @@ function importFile(file, type, { concordance, quiet = false, format } = {}) {
           imported += newIds.length
           printStatus()
           return newIds
-        })
+        }),
       )
 
       objects = []

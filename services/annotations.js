@@ -123,6 +123,7 @@ module.exports = class MappingService {
     }
 
     // Save annotation
+    // eslint-disable-next-line no-useless-catch
     try {
       annotation = new Annotation(annotation)
       annotation = await annotation.save()
