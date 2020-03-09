@@ -38,7 +38,7 @@
     "chai-as-promised": "^7.1.1",
     "chai-http": "^4.0.0",
     "eslint": "^5.3.0",
-    "eslint-config-gbv": "git+https://github.com/gbv/eslint-config-gbv.git",
+    "eslint-config-gbv": "github:gbv/eslint-config-gbv#ecaf810",
     "jsonwebtoken": "^8.5.0",
     "lint-staged": "^7.3.0",
     "mocha": "^5.2.0",
