@@ -45,10 +45,11 @@ JSKOS Server is a web server for [JSKOS] data. It is currently under development
   - [PATCH /annotations/:_id](#patch-annotations_id)
   - [DELETE /annotations/:_id](#delete-annotations_id)
   - [Errors](#errors)
-- [Deployment](#get-deployment)
+- [Deployment](#deployment)
   - [Notes about depolyment on Ubuntu](#notes-about-depolyment-on-ubuntu)
   - [Update an instances deployed with PM2](#update-an-instances-deployed-with-pm2)
   - [Daily Import](#daily-import)
+  - [Running Behind a Reverse Proxy](#running-behind-a-reverse-proxy)
 - [Maintainers](#maintainers)
 - [Contribute](#contribute)
 - [License](#license)
@@ -134,7 +135,17 @@ You can customize the application settings via a configuration file, e.g. by pro
 }
 ```
 
-With the keys `schemes`, `concepts`, `mappings`, and `annotations`, you can configure whether endpoints related to the specific functionality should be available. Available actions for `mappings` and `annotations` are `read`, `create`, `update`, and `delete`. By default, all types can be read, while `mappings` and `annotations` can be created, updated, and deleted with authentication. Explanantions for additional options:
+With the keys `schemes`, `concepts`, `mappings`, and `annotations`, you can configure whether endpoints related to the specific functionality should be available. A minimal configuration file to just server read-only vocabulary and concept information could look like this:
+
+```json
+{
+  "mappings": false,
+  "annotations": false,
+  "concordances": false
+}
+```
+
+Available actions for `mappings` and `annotations` are `read`, `create`, `update`, and `delete`. By default, all types can be read, while `mappings` and `annotations` can be created, updated, and deleted with authentication. Explanantions for additional options:
 
 - **`auth`**: Boolean. Can be defined only on actions. Defines whether access will require authentication. By default `false` for `read`, and `true` for all other actions.
 
@@ -1217,7 +1228,7 @@ Returns an array of annotations. Each annotation has a property `id` under which
 
   `bodyValue=[bodyValue]` only return annotations with a specific bodyValue (e.g. `+1`, `-1`)
 
-  `motation=[motivation]` only return annotations with a specific motivation (e.g. `assessing`, `moderating`, `tagging`)
+  `motivation=[motivation]` only return annotations with a specific motivation (e.g. `assessing`, `moderating`, `tagging`)
 
 * **Success Response**
 
@@ -1367,6 +1378,42 @@ If you'd like to run the import script daily to refresh current mappings, you ca
 [JSKOS Concept Schemes]: https://gbv.github.io/jskos/jskos.html#concept-schemes
 [JSKOS Concepts]: https://gbv.github.io/jskos/jskos.html#concept
 [Web Annotation Data Model]: https://www.w3.org/TR/annotation-model/
+
+### Running Behind a Reverse Proxy
+There are certain things to consider when running `jskos-server` behind a reverse proxy:
+
+1. Make sure the base URL is configured correctly in `config.json` so that correct URIs will be generated. Test this by creating a new mapping and making sure the URI of that mapping is correct and accessible.
+
+2. The reverse proxy should be configured so that the base URL has a trailing slash: ~~`https://example.com/api`~~ ❌ - `https://example.com/api/` ✅ (Note: Not implementing this has no further consequences except that `/api` will not be accessible.)
+
+3. The reverse proxy should also be configured so that any URL **except** the base URL has **no** trailing slash: ~~`https://example.com/api/status/`~~ ❌ - `https://example.com/api/status` ✅
+
+4. Make sure the target parameter (i.e. the actual IP and port where `jskos-server` is running) has a trailing slash.
+
+The following would be an example for 2./3./4. with an Apache reverse proxy:
+
+```apacheconf
+<VirtualHost *:8099>
+    Define API_PATH /api
+    ServerName example.com
+
+    RewriteEngine on
+    # Remove trailing slash from everything EXCEPT the base URL
+    RewriteCond %{REQUEST_URI} !^${API_PATH}/$
+    RewriteRule ^(.*)/+$ $1 [R=301,L]
+    # Force trailing slash for base URL only
+    RewriteCond %{REQUEST_URI} ^${API_PATH}$
+    RewriteRule ^(.+[^/])$ %{REQUEST_URI}/ [R=301,L]
+
+    # Forward to jskos-server
+    ProxyPass ${API_PATH}/ http://127.0.0.1:3000/
+    ProxyPassReverse ${API_PATH}/ http://127.0.0.1:3000/
+
+    # ...
+</VirtualHost>
+```
+
+<!-- TODO: Add example for nginx. -->
 
 ## Maintainers
 

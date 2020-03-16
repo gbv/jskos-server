@@ -167,6 +167,9 @@
         "identities": {
           "$ref": "#/definitions/identities"
         },
+        "moderatingIdentities": {
+          "$ref": "#/definitions/identities"
+        },
         "anonymous": {
           "type": "boolean"
         },
