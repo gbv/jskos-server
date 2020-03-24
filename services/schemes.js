@@ -12,6 +12,16 @@ module.exports = class SchemeService {
         $or: query.uri.split("|").map(uri => ({ uri })).concat(query.uri.split("|").map(uri => ({ identifier: uri }))),
       }
     }
+    if (query.type) {
+      mongoQuery.type = query.type
+    }
+    if (query.language) {
+      mongoQuery.languages = query.language
+    }
+    if (query.subject) {
+      mongoQuery["subject.uri"] = query.subject
+    }
+
     const schemes = await Scheme.find(mongoQuery).lean().skip(query.offset).limit(query.limit).exec()
     schemes.totalCount = await Scheme.find(mongoQuery).countDocuments()
     return schemes

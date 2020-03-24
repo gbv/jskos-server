@@ -806,8 +806,8 @@ describe("Express Server", () => {
         })
     })
 
-    it("should GET one vocabulary", done => {
-      // Add a vocabulary and concepts to database
+    it("should GET two vocabularies", done => {
+      // Add vocabularies and concepts to database
       exec("NODE_ENV=test ./bin/import.js --indexes && NODE_ENV=test ./bin/import.js schemes ./test/terminologies/terminologies.json && NODE_ENV=test ./bin/import.js concepts ./test/concepts/concepts-ddc-6-60-61-62.json", (err) => {
         if (err) {
           done(err)
@@ -820,10 +820,19 @@ describe("Express Server", () => {
             res.should.have.header("Link")
             res.should.have.header("X-Total-Count")
             res.body.should.be.a("array")
-            res.body.length.should.be.eql(1)
+            res.body.length.should.be.eql(2)
             done()
           })
       })
+    })
+
+    it("should allowe filtering by language", done => {
+      chai.request(server.app)
+        .get("/voc", { language: "fr" })
+        .end((err, res) => {
+          res.body.length.should.be.eql(1)
+          done()
+        })
     })
 
   })
@@ -1421,7 +1430,7 @@ describe("Express Server", () => {
     })
 
     it("should import terminologies", done => {
-      // Add a vocabulary database
+      // Add vocabularies to database
       exec("NODE_ENV=test ./bin/import.js schemes ./test/terminologies/terminologies.json", (err) => {
         if (err) {
           done(err)
@@ -1429,7 +1438,7 @@ describe("Express Server", () => {
         }
         let db = server.db
         db.collection("terminologies").find({}).toArray().then(results => {
-          results.length.should.be.eql(1)
+          results.length.should.be.eql(2)
           done()
         }).catch(error => {
           done(error)

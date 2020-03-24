@@ -29,6 +29,45 @@
         },
         "url": "https://www.oclc.org/"
       }
+    ],
+    "type": [
+      "http://www.w3.org/2004/02/skos/core#ConceptScheme",
+      "http://w3id.org/nkos/nkostype#classification_schema"
+    ],
+    "subject": [
+      {
+        "uri": "http://dewey.info/class/0/e23/"
+      }
+    ],
+    "languages": [
+      "en",
+      "fr",
+      "de"
+    ]
+  },
+  {
+    "type": [
+      "http://www.w3.org/2004/02/skos/core#ConceptScheme",
+      "http://w3id.org/nkos/nkostype#thesaurus"
+    ],
+    "languages": [
+      "en",
+      "de"
+    ],
+    "uri": "http://bartoc.org/en/node/313",
+    "license": [
+      {
+        "uri": "http://opendatacommons.org/licenses/odbl/1.0/"
+      }
+    ],
+    "prefLabel": {
+      "de": "Standard Thesaurus Wirtschaft",
+      "en": "STW Thesaurus for Economics"
+    },
+    "subject": [
+      {
+        "uri": "http://dewey.info/class/3/e23/"
+      }
     ]
   }
 ]
