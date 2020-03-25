@@ -826,9 +826,9 @@ describe("Express Server", () => {
       })
     })
 
-    it("should allowe filtering by language", done => {
+    it("should support filtering by language", done => {
       chai.request(server.app)
-        .get("/voc", { language: "fr" })
+        .get("/voc?language=fr")
         .end((err, res) => {
           res.body.length.should.be.eql(1)
           done()
