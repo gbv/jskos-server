@@ -9,6 +9,7 @@ const auth = require("../utils/auth")
 // /mappings/suggest and /mappings/voc need to come before /mappings/:_id!
 router.get(
   "/suggest",
+  config.concepts.read.auth ? auth.default : auth.optional,
   utils.wrappers.async(async (req) => {
     return await mappingService.getNotationSuggestions(req.query)
   }),
@@ -17,6 +18,7 @@ router.get(
 )
 router.get(
   "/voc",
+  config.schemes.read.auth ? auth.default : auth.optional,
   utils.wrappers.async(async (req) => {
     return await mappingService.getMappingSchemes(req.query)
   }),
