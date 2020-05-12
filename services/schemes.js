@@ -16,7 +16,9 @@ module.exports = class SchemeService {
       mongoQuery.type = query.type
     }
     if (query.language) {
-      mongoQuery.languages = query.language
+      mongoQuery.languages = {
+        $in: query.language.split(","),
+      }
     }
     if (query.subject) {
       mongoQuery["subject.uri"] = query.subject

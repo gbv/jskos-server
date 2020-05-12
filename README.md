@@ -783,7 +783,7 @@ Lists supported terminologies (concept schemes).
 
   `type=URI` type URI to filter schemes
 
-  `language=tag` language code to filter schemes (exact value)
+  `language=tag` language codes to filter schemes, separated by `,` (exact values)
 
   `subject=URI` subject URI to filter schemes
 
