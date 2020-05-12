@@ -18,12 +18,10 @@
   },
   "lint-staged": {
     "**/*.js": [
-      "eslint --fix",
-      "git add"
+      "eslint --fix"
     ],
     "*.js": [
-      "eslint --fix",
-      "git add"
+      "eslint --fix"
     ]
   },
   "pre-commit": "lint-staged",
@@ -33,39 +31,39 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "ajv": "^6.10.2",
-    "chai": "^4.1.2",
+    "ajv": "^6.12.2",
+    "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
-    "chai-http": "^4.0.0",
-    "eslint": "^6.8.0",
+    "chai-http": "^4.3.0",
+    "eslint": "^7.0.0",
     "eslint-config-gbv": "github:gbv/eslint-config-gbv#ecaf810",
-    "jsonwebtoken": "^8.5.0",
-    "lint-staged": "^7.3.0",
-    "mocha": "^5.2.0",
+    "jsonwebtoken": "^8.5.1",
+    "lint-staged": "^10.2.2",
+    "mocha": "^7.1.2",
     "mocha-eslint": "^6.0.0",
-    "nodemon": "^1.17.5",
+    "nodemon": "^2.0.3",
     "pre-commit": "^1.2.2",
-    "request": "^2.88.0"
+    "request": "^2.88.2"
   },
   "dependencies": {
     "JSONStream": "^1.3.5",
-    "ejs": "^2.7.1",
-    "escape-string-regexp": "^1.0.5",
-    "express": "^4.16.3",
+    "ejs": "^3.1.2",
+    "escape-string-regexp": "^4.0.0",
+    "express": "^4.17.1",
     "express-basic-auth": "^1.2.0",
-    "jskos-tools": "^0.2.2",
-    "jskos-validate": "^0.2.2",
-    "lodash": "^4.17.11",
-    "meow": "^5.0.0",
-    "mongodb": "~3.1.1",
-    "mongoose": "^5.7.5",
+    "jskos-tools": "^1.0.7",
+    "jskos-validate": "^0.3.2",
+    "lodash": "^4.17.15",
+    "meow": "^7.0.1",
+    "mongodb": "~3.5.7",
+    "mongoose": "^5.9.13",
     "ndjson": "^1.5.0",
     "nocache": "^2.1.0",
-    "passport": "^0.4.0",
+    "passport": "^0.4.1",
     "passport-anonymous": "^1.0.1",
     "passport-jwt": "^4.0.0",
-    "portfinder": "^1.0.16",
+    "portfinder": "^1.0.26",
     "typedi": "^0.8.0",
-    "uuid": "^3.3.2"
+    "uuid": "^8.0.0"
   }
 }

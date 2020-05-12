@@ -27,7 +27,7 @@ try {
 if (!configUser.namespace && env != "test") {
   const fs = require("fs")
   const path = require("path")
-  const uuid = require("uuid/v4")()
+  const uuid = require("uuid").v4()
   configUser.namespace = uuid
   fs.writeFileSync(path.resolve(__dirname, "config.json"), JSON.stringify(configUser, null, 2))
   console.log("Config: Created a namespace and wrote it to config/config.json.")

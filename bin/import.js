@@ -40,7 +40,7 @@ Examples
     format: {
       type: "string",
       alias: "f",
-      default: null,
+      default: "",
     },
     help: {
       type: "boolean",
@@ -57,7 +57,7 @@ if (cli.flags.help || (!cli.input.length && !cli.flags.reset && !cli.flags.index
 const jskos = require("jskos-tools")
 const validate = require("jskos-validate")
 const config = require("../config")
-const uuidv5 = require("uuid/v5")
+const { v5: uuidv5 } = require("uuid")
 const fs = require("fs")
 const path = require("path")
 const request = require("request")
