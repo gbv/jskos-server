@@ -782,8 +782,8 @@ Lists supported terminologies (concept schemes).
   `uri=[uri]` URIs for concept schemes separated by `|`. If `uri` is not given, all supported concept schemes are returned.
 
   `type=URI` type URI to filter schemes
-
-  `language=tag` language codes to filter schemes, separated by `,` (exact values)
+  <!--
+  `language=tag` language codes to filter schemes, separated by `,` (exact values) -->
 
   `subject=URI` subject URI to filter schemes
 
