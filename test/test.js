@@ -835,6 +835,15 @@ describe("Express Server", () => {
         })
     })
 
+    it("should support filtering by multiple languages", done => {
+      chai.request(server.app)
+        .get("/voc?language=it,jp,de")
+        .end((err, res) => {
+          res.body.length.should.be.eql(2)
+          done()
+        })
+    })
+
   })
 
   describe("GET /voc/top", () => {
