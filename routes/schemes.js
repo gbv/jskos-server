@@ -19,28 +19,32 @@ router.get(
   utils.returnJSON,
 )
 
-router.get(
-  "/top",
-  config.concepts.read.auth ? auth.default : auth.optional,
-  utils.supportDownloadFormats([]),
-  utils.wrappers.async(async (req) => {
-    return await conceptService.getTop(req.query)
-  }),
-  utils.addPaginationHeaders,
-  utils.adjust,
-  utils.returnJSON,
-)
+if (config.concepts) {
 
-router.get(
-  "/concepts",
-  config.concepts.read.auth ? auth.default : auth.optional,
-  utils.supportDownloadFormats([]),
-  utils.wrappers.async(async (req) => {
-    return await conceptService.getConcepts(req.query)
-  }),
-  utils.addPaginationHeaders,
-  utils.adjust,
-  utils.returnJSON,
-)
+  router.get(
+    "/top",
+    config.concepts.read.auth ? auth.default : auth.optional,
+    utils.supportDownloadFormats([]),
+    utils.wrappers.async(async (req) => {
+      return await conceptService.getTop(req.query)
+    }),
+    utils.addPaginationHeaders,
+    utils.adjust,
+    utils.returnJSON,
+  )
+
+  router.get(
+    "/concepts",
+    config.concepts.read.auth ? auth.default : auth.optional,
+    utils.supportDownloadFormats([]),
+    utils.wrappers.async(async (req) => {
+      return await conceptService.getConcepts(req.query)
+    }),
+    utils.addPaginationHeaders,
+    utils.adjust,
+    utils.returnJSON,
+  )
+
+}
 
 module.exports = router
