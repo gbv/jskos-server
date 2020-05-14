@@ -1435,6 +1435,7 @@ jskos-server is developed together with the [cocoda](https://coli-conc.gbv.de/co
 Alternative open source applications for hosting concept schemes include:
 
 * [Skosmos](http://skosmos.org/)
+* [Skohub](https://skohub.io/)
 * [OpenSKOS](http://openskos.org)
 * [TemaTres](https://www.vocabularyserver.com)
 * [iQVoc](http://iqvoc.net/)
