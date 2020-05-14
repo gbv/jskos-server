@@ -52,6 +52,14 @@ class DatabaseAccessError extends Error {
   }
 }
 
+class ConfigurationError extends Error {
+  constructor(message) {
+    message = message || "There was an error with the server configuration. Please contact the server administrator and try again later."
+    super(message)
+    this.statusCode = 500
+  }
+}
+
 class ForbiddenAccessError extends Error {
   constructor(message) {
     message = message || "Access is forbidden."
@@ -67,5 +75,6 @@ module.exports = {
   InvalidBodyError,
   CreatorDoesNotMatchError,
   DatabaseAccessError,
+  ConfigurationError,
   ForbiddenAccessError,
 }

@@ -9,7 +9,18 @@ module.exports = class StatusService {
   async getStatus({ baseUrl }) {
     const { db } = require("../server")
     let status = {
-      config: _.omit(config, ["verbosity", "port", "mongo", "namespace", "proxies"]),
+      config: _.omit(config, ["verbosity", "port", "mongo", "namespace", "proxies", "ips"]),
+    }
+    // Remove `ips` property from all actions
+    for (let type of ["schemes", "concepts", "mappings", "concordances", "annotations"]) {
+      if (status.config[type]) {
+        delete status.config[type].ips
+        for (let action of ["read", "create", "update", "delete"]) {
+          if (status.config[type][action]) {
+            delete status.config[type][action].ips
+          }
+        }
+      }
     }
     status.config.baseUrl = baseUrl
     if (status.config.schemes) {

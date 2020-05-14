@@ -112,9 +112,9 @@ for (let type of ["schemes", "concepts", "mappings", "concordances", "annotation
       if (config[type][action] === true) {
         config[type][action] = defaultActions[action]
       }
-      // Fill identities and identityProviders if necessary (not for read)
+      // Fill identities, identityProviders, and ips if necessary (not for read)
       if (config[type][action] && action != "read") {
-        for (let prop of ["identities", "identityProviders"]) {
+        for (let prop of ["identities", "identityProviders", "ips"]) {
           if (config[type][action][prop] === undefined) {
             const value = config[type][prop] || config[prop]
             if (value) {

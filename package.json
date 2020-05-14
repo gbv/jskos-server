@@ -51,6 +51,7 @@
     "escape-string-regexp": "^4.0.0",
     "express": "^4.17.1",
     "express-basic-auth": "^1.2.0",
+    "ipaddr.js": "^1.9.1",
     "jskos-tools": "^1.0.7",
     "jskos-validate": "^0.3.2",
     "lodash": "^4.17.15",

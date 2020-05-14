@@ -82,6 +82,8 @@ app.use((req, res, next) => {
     next(new DatabaseAccessError())
   }
 })
+// IP check middleware
+app.use(require("./utils/ipcheck"))
 // /checkAuth
 const auth = require("./utils/auth")
 app.get("/checkAuth", auth.default, (req, res) => {

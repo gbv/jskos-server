@@ -75,6 +75,7 @@ You can customize the application settings via a configuration file, e.g. by pro
   "baseUrl": null,
   "version": null,
   "port": 3000,
+  "proxies": [],
   "mongo": {
     "user": "",
     "pass": "",
@@ -131,7 +132,8 @@ You can customize the application settings via a configuration file, e.g. by pro
     }
   },
   "identityProviders": null,
-  "identities": null
+  "identities": null,
+  "ips": null
 }
 ```
 
@@ -158,6 +160,8 @@ Available actions for `mappings` and `annotations` are `read`, `create`, `update
 - **`identities`**: List of URI strings. Can be defined on any level (deeper levels will take the values from higher levels if necessary\*). If set, an action can only be used by users with an URI given in the list. `null` by default (no restrictions).
 
 - **`identityProviders`**: List of strings. Can be defined on any level (deeper levels will take the values from higher levels if necessary\*). If set, an action can only be used by users who have that identity associated with them. `null` by default (no restrictions).
+
+- **`ips`**: List of strings. Strings can be IPv4 addresses (e.g. `127.0.0.1`, `123.234.123.234`) or CIDR ranges (e.g. `192.168.0.1/24`). Can be defined on any level (deeper levels will take the values from higher levels if necessary\*). If set, an action can only be used by clients with a whitelisted IP address. `null` by default (no restrictions). Note: An empty array will allow all IPs. Note: This property will be removed for security reasons when accessing [GET /status](#get-status) (meaning that clients will not be able to see the whitelisted IP addresses).
 
 - **`fromSchemeWhitelist`/`toSchemeWhitelist`**: Can be defined only on type `mappings`. List of scheme objects that are allowed for `fromScheme`/`toScheme` respectively. `null` allows all schemes.
 
@@ -1355,6 +1359,9 @@ Status code 403. Will be returned by `PUT`/`PATCH`/`DELETE` endpoints if the aut
 
 #### DatabaseAccessError
 Status code 500. Will be returned if the database is not available or if the current database request failed with an unknown error.
+
+#### ConfigurationError
+Status code 500. Will be returned if there is an error in the configuration that prevents the application from working correctly.
 
 #### ForbiddenAccessError
 Status code 403. Will be returned if the user is not allow access (i.e. when not on the whitelist or when an identity provider is missing).
