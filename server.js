@@ -11,6 +11,9 @@ if (!config.baseUrl) {
 const express = require("express")
 const app = express()
 app.set("json spaces", 2)
+if (config.proxies && config.proxies.length) {
+  app.set("trust proxy", config.proxies)
+}
 
 // Configure view engine to render EJS templates.
 app.set("views", __dirname + "/views")

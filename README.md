@@ -238,12 +238,15 @@ Here are some helpful example presets for "mappings" or "annotations".
 
 ---
 
-**If you are using jskos-server behind a proxy, it is necessary to provide the `baseUrl` key in your configuration (example for our production API):**
+**If you are using jskos-server behind a proxy, it is necessary to provide the `baseUrl` key as well as the `proxies` key in your configuration (example for our production API):**
 ```json
 {
-  "baseUrl": "https://coli-conc.gbv.de/api/"
+  "baseUrl": "https://coli-conc.gbv.de/api/",
+  "proxies": ["123.456.789.101", "234.567.891.011"]
 }
 ```
+
+See also: [Running Behind a Reverse Proxy](#running-behind-a-reverse-proxy)
 
 For authorized endpoints via JWT, you need to provide the JWT algorithm and key/secret used at the authentication server in the configuration file, like this:
 
@@ -1390,11 +1393,15 @@ There are certain things to consider when running `jskos-server` behind a revers
 
 1. Make sure the base URL is configured correctly in `config.json` so that correct URIs will be generated. Test this by creating a new mapping and making sure the URI of that mapping is correct and accessible.
 
-2. The reverse proxy should be configured so that the base URL has a trailing slash: ~~`https://example.com/api`~~ ❌ - `https://example.com/api/` ✅ (Note: Not implementing this has no further consequences except that `/api` will not be accessible.)
+1. Provide a list of trusted proxy IPs or ranges in the `proxies` key in `config.json`. E.g. `"proxies": ["123.456.789.101", "234.567.891.011"]`. See also: [Express behind proxies](https://expressjs.com/en/guide/behind-proxies.html).
 
-3. The reverse proxy should also be configured so that any URL **except** the base URL has **no** trailing slash: ~~`https://example.com/api/status/`~~ ❌ - `https://example.com/api/status` ✅
+1. The reverse proxy should be configured so that the base URL has a trailing slash: ~~`https://example.com/api`~~ ❌ - `https://example.com/api/` ✅ (Note: Not implementing this has no further consequences except that `/api` will not be accessible.)
 
-4. Make sure the target parameter (i.e. the actual IP and port where `jskos-server` is running) has a trailing slash.
+1. The reverse proxy should also be configured so that any URL **except** the base URL has **no** trailing slash: ~~`https://example.com/api/status/`~~ ❌ - `https://example.com/api/status` ✅
+
+1. Make sure the target parameter (i.e. the actual IP and port where `jskos-server` is running) has a trailing slash.
+
+1. Make sure the proxy is configured to correctly set the `X-Forwarded-For` header.
 
 The following would be an example for 2./3./4. with an Apache reverse proxy:
 

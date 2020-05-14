@@ -3,6 +3,7 @@
   "baseUrl": null,
   "version": null,
   "port": 3000,
+  "proxies": [],
   "mongo": {
     "user": "",
     "pass": "",
