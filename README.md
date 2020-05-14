@@ -7,7 +7,7 @@
 
 > Web service to access [JSKOS] data.
 
-JSKOS Server is a web server for [JSKOS] data. It is currently under development.
+JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data such as controlled vocabularies, concepts, and concept mappings.
 
 ## Table of Contents
 - [Install](#install)
@@ -1427,6 +1427,21 @@ The following would be an example for 2./3./4. with an Apache reverse proxy:
 ```
 
 <!-- TODO: Add example for nginx. -->
+
+## Related works
+
+jskos-server is developed together with the [cocoda](https://coli-conc.gbv.de/cocoda/) mapping application.
+
+Alternative open source applications for hosting concept schemes include:
+
+* [Skosmos](http://skosmos.org/)
+* [OpenSKOS](http://openskos.org)
+* [TemaTres](https://www.vocabularyserver.com)
+* [iQVoc](http://iqvoc.net/)
+* [VocPrez](https://github.com/GeoscienceAustralia/VocPrez)
+* ...
+
+See [cocoda-sdk](https://github.com/gbv/cocoda-sdk) for efforts to provide uniform access to vocabulary information from different applications and sources.
 
 ## Maintainers
 
