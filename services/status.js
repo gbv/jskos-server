@@ -22,6 +22,10 @@ module.exports = class StatusService {
         }
       }
     }
+    // Remove `key` from auth config if a symmetric algorithm is used
+    if (["HS256", "HS384", "HS512"].includes(_.get(status, "config.auth.algorithm"))) {
+      delete status.config.auth.key
+    }
     status.config.baseUrl = baseUrl
     if (status.config.schemes) {
       // Add endpoints related to schemes

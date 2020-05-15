@@ -395,6 +395,15 @@ Returns a status object.
 
 There is a [JSON Schema](https://json-schema.org) for the format of this endpoint. It is available under `/status.schema.json` for every jskos-server installation (starting from version 1.0.0). The most recent schema can be accessed here: https://gbv.github.io/jskos-server/status.schema.json
 
+Note that certain properties from the actual configuration will not be shown in the result for `/status`:
+- `verbosity`
+- `port`
+- `mongo`
+- `namespace`
+- `proxies`
+- `ips` (including inside of actions)
+- `auth.key` if a symmetrical algorithm is used (HS256, HS384, HS512)
+
 * **Success Response**
 
   ```json
