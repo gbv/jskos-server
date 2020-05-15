@@ -358,6 +358,8 @@ npm run import-batch -- mappings files.txt
 # You can, for example, store these batch import files in folder `imports` which is ignored in git.
 ```
 
+**Note: If you have concepts in your database, make sure to run `jskos-import --indexes` at least once. This will make sure all necessary indexes are created. Without this step, the `/suggest` and `/search` endpoints will not work.**
+
 ## Usage
 
 ### Run Server
