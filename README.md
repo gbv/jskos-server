@@ -14,6 +14,7 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [Dependencies](#dependencies)
   - [Clone and Install](#clone-and-install)
   - [Configuration](#configuration)
+  - [Authentication](#authentication)
   - [Data Import](#data-import)
 - [Usage](#usage)
   - [Run Server](#run-server)
@@ -252,7 +253,8 @@ Here are some helpful example presets for "mappings" or "annotations".
 
 See also: [Running Behind a Reverse Proxy](#running-behind-a-reverse-proxy)
 
-For authorized endpoints via JWT, you need to provide the JWT algorithm and key/secret used at the authentication server in the configuration file, like this:
+### Authentication
+It is possible to limit certain actions to authenticated users, indicated by the `auth` option (see example configurations above). Authorization is performed via JWTs ([JSON Web Tokens](https://jwt.io/)). To configure authentication, you need to provide the JWT algorithm and the key/secret in the configuration file, like this:
 
 ```json
 "auth": {
@@ -261,7 +263,69 @@ For authorized endpoints via JWT, you need to provide the JWT algorithm and key/
 }
 ```
 
-The JWT has to be provided as a Bearer token in the authentication header, e.g. `Authentication: Bearer <token>`. Currently, all authorized endpoints will be accessible (although `PUT`/`PATCH`/`DELETE` are limited to the user who created the object by default), but later it will be possible to set scopes for certain users (see [#47](https://github.com/gbv/jskos-server/issues/47)).
+The JWT has to be provided as a Bearer token in the authorization header, e.g. `Authorization: Bearer <token>`. Currently, all authorized endpoints will be accessible (although `PUT`/`PATCH`/`DELETE` are limited to the user who created the object by default), but later it will be possible to set scopes for certain users (see [#47](https://github.com/gbv/jskos-server/issues/47)).
+
+The authentication is designed to be used together with an instance of [login-server], but it is also possible to use your own JWTs.
+
+#### JWT Example
+The recommended Node.js library for creating JWTs is [jsonwebtoken](https://github.com/auth0/node-jsonwebtoken). Note that for simplicity, we are using the HS256 algorithm which is symmetrical. In most cases, it would be better to use RS256 with a libarary like [node-rsa](https://github.com/rzcoder/node-rsa) instead.
+
+Simple config, restricting the `/mappings` endpoint with authentication:
+```json
+{
+  "auth": {
+    "algorith": "HS256",
+    "key": "yoursecret"
+  },
+  "mappings": {
+    "read": {
+      "auth": true
+    }
+  }
+}
+```
+
+Creating a JWT:
+```js
+const jwt = require("jsonwebtoken")
+// Payload is an object containing the user object with an URI:
+const data = {
+  user: { uri: "test:hallo" }
+}
+// Sign the token with our secret
+const token = jwt.sign(data, "yoursecret", {
+  algorithm: "HS256",
+  expiresIn: "7d" // valid for 7 days
+})
+```
+
+Using the token in a request (using curl):
+```bash
+# Request without header should return ForbiddenAccessError (code 403)
+curl localhost:3000/mappings
+# Request with header should return JSON data (insert your own token and jskos-server URL of course)
+curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InVyaSI6InRlc3Q6aGFsbG8ifSwiaWF0IjoxNTg5NTMyNDU3LCJleHAiOjE1OTAxMzcyNTd9.fXIxgS0QyFk9Lvz7Z-fkb4tAueMTSNZ4zAuB6iwePq4" localhost:3000/mappings
+```
+
+If you are the only user that is supposed to be authenticated for your instance of jskos-server, you could in theory use something like this to create a token with a long lifetime and use it for all your requests. Please consider the security implications before doing this though.
+
+#### Login Server Example
+If you have multiple users using your instance of jskos-server, it is recommended to use [login-server] for authentication. login-server uses the asymmetrical RS256 algorithm by default and will create a public/private key pair on first launch. The public key will be in `./public.key` and you will need that for the configuration:
+
+```json
+{
+  "auth": {
+    "algorith": "RS256",
+    "key": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA57ZWRoOjXYTQ9yujxAu7\ne3k4+JRBAqGdDVIRRq5vXB2D5nJBIhQjVjylumn+QnTX/MdZx8qn7X96npUwHwIh\nylCgUmsYXcjP08X/AXEcP5bPOkgBBCKjWmcm+p01RQSOM0nSptyxpyXzr2ppWe1b\nuYdRYDWj+JV7vm+jJA4NiFv4UnAhoG5lRATADzu0/6wpMK3dVMBL7L0jQoV5xBAb\nLADOy5hD9XEII3VPkUqDGIKM+Z24flkCIf0lQ7FjsoZ2mmM1SZJ5vPDcjMKreFkX\ncWlcwGHN0PUWZWLhb7c8yYa1rauMcwFwv0d2XyOEfgkqEJdCh8mVT/5jR48D2PNG\ncwIDAQAB\n-----END PUBLIC KEY-----\n"
+  }
+}
+```
+
+After that, you can use [login-client](https://github.com/gbv/login-client) to interact with your login-server instance and receive JWTs. When using WebSockets, login-server will periodically send a new JWT before the previous one expires. You can then use that to authenticate your requests to jskos-server. (An example on how to use login-client can be found in the [source code of login-server](https://github.com/gbv/login-server/blob/master/views/api.ejs).)
+
+For testing your authentication without a full-fledged solution using login-client, you can use http://localhost:3004/token (where `localhost:3004` is your instance of login-server) to request a JWT.
+
+---
 
 Note about previous additional options for `auth`:
 - `postAuthRequired`: now covered by `mappings.create.auth`
@@ -1465,3 +1529,5 @@ Small note: If editing the README, please conform to the [standard-readme](https
 ## License
 
 MIT © 2018 Verbundzentrale des GBV (VZG)
+
+[login-server]: https://github.com/gbv/login-server
