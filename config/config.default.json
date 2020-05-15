@@ -16,7 +16,7 @@
     }
   },
   "auth": {
-    "algorithm": "HS256",
+    "algorithm": "RS256",
     "key": null
   },
   "schemes": true,

@@ -90,7 +90,7 @@ You can customize the application settings via a configuration file, e.g. by pro
     }
   },
   "auth": {
-    "algorithm": "HS256",
+    "algorithm": "RS256",
     "key": null
   },
   "schemes": true,
@@ -413,7 +413,7 @@ Note that certain properties from the actual configuration will not be shown in 
       "baseUrl": "http://localhost:3000/",
       "version": "1.1",
       "auth": {
-        "algorithm": "HS256",
+        "algorithm": "RS256",
         "key": null
       },
       "schemes": {
