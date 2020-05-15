@@ -1,4 +1,5 @@
 const _ = require("lodash")
+const jskos = require("jskos-tools")
 const config = require("../config")
 
 const Concept = require("../models/concepts")
@@ -161,8 +162,8 @@ module.exports = class ConceptService {
       if (labels.length >= query.limit) {
         break
       }
-      let prefLabel = result.prefLabel ? (result.prefLabel.de || result.prefLabel.en || "") : ""
-      labels.push(result.notation[0] + " " + prefLabel) // + " (" + result.priority + ")")
+      let prefLabel = jskos.prefLabel(result, { fallbackToUri: false })
+      labels.push(jskos.notation(result) + " " + prefLabel) // + " (" + result.priority + ")")
       descriptions.push("")
       uris.push(result.uri)
     }
@@ -234,7 +235,7 @@ module.exports = class ConceptService {
     for (let result of results) {
       let priority = 100
       if (result.notation && result.notation.length > 0) {
-        let _notation = result.notation[0].toUpperCase()
+        let _notation = jskos.notation(result).toUpperCase()
         // Shorter notation equals higher priority
         priority -= _notation.length
         // Notation equals search means highest priority
@@ -289,7 +290,7 @@ module.exports = class ConceptService {
         return b.priority - a.priority
       }
       if (a.notation && a.notation.length && b.notation && b.notation.length) {
-        if (b.notation[0] > a.notation[0]) {
+        if (jskos.notation(b) > jskos.notation(a)) {
           return -1
         } else {
           return 1
