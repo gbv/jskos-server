@@ -40,7 +40,7 @@ module.exports = (req, res, next) => {
         }
       }
     } catch(error) {
-      console.log(`Could not determine client's address for IP ${ip && ip.toString && ip.toString()}.`)
+      config.warn(`Could not determine client's address for IP ${ip && ip.toString && ip.toString()}.`)
       next(new ForbiddenAccessError("Access forbidden. An IP filter is in place, but the client's address could not be determined."))
       return
     }
@@ -56,7 +56,7 @@ module.exports = (req, res, next) => {
         }
       })
     } catch(error) {
-      console.error("Error: Invalid IP address in config:", ips, `=> Currently denying all requests to ${action} ${req.type}.`)
+      config.error("Error: Invalid IP address in config:", ips, `=> Currently denying all requests to ${action} ${req.type}.`)
       next(new ConfigurationError())
       return
     }

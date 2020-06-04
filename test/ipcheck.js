@@ -2,6 +2,18 @@ const proxyquire =  require("proxyquire").noCallThru()
 const assert = require("assert")
 const { ForbiddenAccessError } = require("../errors")
 
+const baseConfig = {
+  log: () => {},
+  warn: () => {},
+  error: () => {},
+}
+
+function getIpCheck(config) {
+  return proxyquire("../utils/ipcheck", {
+    "../config": Object.assign({}, baseConfig, config),
+  })
+}
+
 describe("IP Check Middleware", () => {
 
   it("should allow all requests if no IPs are given", (done) => {
@@ -10,9 +22,7 @@ describe("IP Check Middleware", () => {
         read: {},
       },
     }
-    const ipcheck = proxyquire("../utils/ipcheck", {
-      "../config": config,
-    })
+    const ipcheck = getIpCheck(config)
     let count = 0
     const tests = [
       {
@@ -57,9 +67,7 @@ describe("IP Check Middleware", () => {
         },
       },
     }
-    const ipcheck = proxyquire("../utils/ipcheck", {
-      "../config": config,
-    })
+    const ipcheck = getIpCheck(config)
     let count = 0
     const tests = [
       {
@@ -118,9 +126,7 @@ describe("IP Check Middleware", () => {
         },
       },
     }
-    const ipcheck = proxyquire("../utils/ipcheck", {
-      "../config": config,
-    })
+    const ipcheck = getIpCheck(config)
     let count = 0
     const tests = [
       {
@@ -179,9 +185,7 @@ describe("IP Check Middleware", () => {
         },
       },
     }
-    const ipcheck = proxyquire("../utils/ipcheck", {
-      "../config": config,
-    })
+    const ipcheck = getIpCheck(config)
     let count = 0
     const tests = [
       {
@@ -268,9 +272,7 @@ describe("IP Check Middleware", () => {
         },
       },
     }
-    const ipcheck = proxyquire("../utils/ipcheck", {
-      "../config": config,
-    })
+    const ipcheck = getIpCheck(config)
     let count = 0
     const tests = [
       {
