@@ -19,6 +19,48 @@ router.get(
   utils.returnJSON,
 )
 
+if (config.schemes.create) {
+  router.post(
+    "/",
+    config.schemes.create.auth ? auth.default : auth.optional,
+    utils.wrappers.async(async (req) => {
+      return await schemeService.postScheme({
+        body: req.body,
+      })
+    }),
+    utils.adjust,
+    utils.returnJSON,
+  )
+}
+
+if (config.schemes.update) {
+  router.put(
+    "/",
+    config.schemes.update.auth ? auth.default : auth.optional,
+    utils.wrappers.async(async (req) => {
+      return await schemeService.putScheme({
+        body: req.body,
+      })
+    }),
+    utils.adjust,
+    utils.returnJSON,
+  )
+}
+
+if (config.schemes.delete) {
+  router.delete(
+    "/",
+    config.schemes.delete.auth ? auth.default : auth.optional,
+    utils.wrappers.async(async (req) => {
+      return await schemeService.deleteScheme({
+        uri: req.query.uri,
+      })
+    }),
+    utils.adjust,
+    utils.returnJSON,
+  )
+}
+
 if (config.concepts) {
 
   router.get(

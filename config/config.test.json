@@ -3,8 +3,34 @@
     "algorithm": "HS256",
     "key": "test"
   },
-  "schemes": true,
-  "concepts": true,
+  "schemes": {
+    "read": {
+      "auth": false
+    },
+    "create": {
+      "auth": false
+    },
+    "update": {
+      "auth": false
+    },
+    "delete": {
+      "auth": false
+    }
+  },
+  "concepts": {
+    "read": {
+      "auth": false
+    },
+    "create": {
+      "auth": false
+    },
+    "update": {
+      "auth": false
+    },
+    "delete": {
+      "auth": false
+    }
+  },
   "mappings": {
     "read": {
       "auth": false

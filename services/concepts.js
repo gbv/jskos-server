@@ -1,8 +1,10 @@
 const _ = require("lodash")
 const jskos = require("jskos-tools")
+const validate = require("jskos-validate")
 const config = require("../config")
 
 const Concept = require("../models/concepts")
+const { MalformedBodyError, MalformedRequestError, EntityNotFoundError, InvalidBodyError, DatabaseAccessError } = require("../errors")
 
 module.exports = class ConceptService {
 
@@ -302,4 +304,231 @@ module.exports = class ConceptService {
     return results
   }
 
+  // Write endpoints start here
+
+  async postConcept({ body, fullResult = true }) {
+    if (!body) {
+      throw new MalformedBodyError()
+    }
+
+    let response
+    let isMultiple
+    let concepts
+
+    if (_.isArray(body)) {
+      concepts = body
+      isMultiple = true
+    } else if (_.isObject(body)) {
+      concepts = [body]
+      isMultiple = false
+    } else {
+      throw new MalformedBodyError()
+    }
+
+    // Prepare
+    let preparation = await this.prepareConcepts(concepts)
+    concepts = preparation.concepts
+
+    if (isMultiple) {
+      response = await Concept.insertMany(concepts, { ordered: false, rawResult: !fullResult, lean: true })
+      // TODO
+      if (!fullResult) {
+        response = response.ops.map(c => c.uri)
+      }
+    } else {
+      // Throw error if necessary
+      if (preparation.errors.length) {
+        throw preparation.errors[0]
+      }
+      // Write concept to database
+      let concept = concepts[0]
+      // eslint-disable-next-line no-useless-catch
+      try {
+        concept = new Concept(concept)
+        concept = await concept.save()
+      } catch(error) {
+        throw error
+      }
+      response = concept.toObject()
+    }
+
+    await this.conceptPostAdjustments(preparation)
+
+    return response
+  }
+
+  async putConcept({ body }) {
+    if (!body) {
+      throw new MalformedBodyError()
+    }
+
+    if (!_.isObject(body)) {
+      throw new MalformedBodyError()
+    }
+    let concept = body
+
+    // Prepare
+    let preparation = await this.prepareConcepts([concept])
+    ;[concept] = preparation.concepts[0]
+
+    // Throw error if necessary
+    if (preparation.errors.length) {
+      throw preparation.errors[0]
+    }
+    // Write concept to database
+    // eslint-disable-next-line no-useless-catch
+    try {
+      concept = new Concept(concept)
+      concept = await concept.save()
+    } catch(error) {
+      throw error
+    }
+
+    await this.conceptPostAdjustments(preparation)
+
+    return concept.toObject()
+  }
+
+  async deleteConcept({ uri }) {
+    if (!uri) {
+      throw new MalformedRequestError()
+    }
+    const concept = await Concept.findById(uri).lean()
+
+    if (!concept) {
+      throw new EntityNotFoundError()
+    }
+
+    const result = await Concept.deleteOne({ _id: concept._id })
+    if (result.n && result.ok && result.deletedCount) {
+      return
+    } else {
+      throw new DatabaseAccessError()
+    }
+  }
+
+
+
+  async prepareConcepts(allConcepts) {
+    const schemeUrisToAdjust = []
+    const conceptUrisWithNarrower = []
+    const concepts = []
+    const errors = []
+    // Load all schemes for concepts
+    const schemes = await this.schemeService.getSchemes({
+      uri: allConcepts
+        .map(c => _.get(c, "inScheme[0].uri") || _.get(c, "topConceptOf[0].uri"))
+        .filter(s => s != null)
+        .join("|"),
+    })
+    for (let concept of allConcepts) {
+      try {
+        this.prepareConcept(concept, schemes)
+        let scheme = _.get(concept, "inScheme[0].uri")
+        if (scheme && !schemeUrisToAdjust.includes(scheme)) {
+          schemeUrisToAdjust.push(scheme)
+        }
+        for (let broader of concept.broader || []) {
+          if (!conceptUrisWithNarrower.includes(broader.uri)) {
+            conceptUrisWithNarrower.push(broader.uri)
+          }
+        }
+        concepts.push(concept)
+      } catch(error) {
+        errors.push(error)
+      }
+    }
+    return {
+      concepts,
+      errors,
+      schemeUrisToAdjust,
+      conceptUrisWithNarrower,
+    }
+  }
+
+  prepareConcept(concept, schemes) {
+    concept._id = concept.uri
+    // Add "inScheme" for all top concepts
+    if (!concept.inScheme && concept.topConceptOf) {
+      concept.inScheme = concept.topConceptOf
+    }
+    // Validate concept
+    if (!validate.concept(concept)) {
+      throw new InvalidBodyError()
+    }
+    // Check concept scheme
+    const inScheme = _.get(concept, "inScheme[0]")
+    const scheme = schemes.find(s => jskos.compare(s, inScheme))
+    if (!scheme) {
+    // Either no scheme at all or not found in database
+      let message = "Error when adding concept to database: "
+      if (inScheme) {
+        message += `Concept scheme with URI ${inScheme.uri} is not supported.`
+      } else {
+        message += "Concept has no concept scheme."
+      }
+      throw new MalformedRequestError(message)
+    }
+    // Adjust URIs of schemes
+    concept.inScheme[0].uri = scheme.uri
+    if (concept.topConceptOf && concept.topConceptOf.length) {
+      concept.topConceptOf[0].uri = scheme.uri
+    }
+    // Add index keywords
+    concept._keywordsNotation = makePrefixes(concept.notation || [])
+    // Do not write text index keywords for synthetic concepts
+    if (!concept.type || !concept.type.includes("http://rdf-vocabulary.ddialliance.org/xkos#CombinedConcept")) {
+    // Labels
+    // Assemble all labels
+      let labels = _.flattenDeep(Object.values(concept.prefLabel || {}).concat(Object.values(concept.altLabel || {})))
+      // Split labels by space and dash
+      concept._keywordsLabels = makeSuffixes(labels)
+      // Other properties
+      concept._keywordsOther = []
+      for (let map of (concept.creator || []).concat(concept.scopeNote, concept.editorialNote, concept.definition)) {
+        if (map) {
+          concept._keywordsOther = concept._keywordsOther.concat(Object.values(map))
+        }
+      }
+      concept._keywordsOther = _.flattenDeep(concept._keywordsOther)
+    }
+  }
+
+  async conceptPostAdjustments(preparation) {
+    // Adjust scheme after adding concept
+    await this.schemeService.schemePostAdjustments(preparation.schemeUrisToAdjust.map(uri => ({ uri })))
+    // Adjust narrower concepts if added cocept had broader prop
+    for (let uri of preparation.conceptUrisWithNarrower) {
+      await Concept.updateOne({ _id: uri }, { narrower: [null] })
+    }
+  }
+
+}
+
+// from https://web.archive.org/web/20170609122132/http://jam.sg/blog/efficient-partial-keyword-searches/
+function makeSuffixes(values) {
+  var results = []
+  values.sort().reverse().forEach(function(val) {
+    var tmp, hasSuffix
+    for (var i=0; i<val.length-1; i++) {
+      tmp = val.substr(i).toUpperCase()
+      hasSuffix = results.includes(tmp)
+      if (!hasSuffix) results.push(tmp)
+    }
+  })
+  return results
+}
+// adapted from above
+function makePrefixes(values) {
+  var results = []
+  values.sort().reverse().forEach(function(val) {
+    var tmp, hasPrefix
+    results.push(val)
+    for (var i=2; i<val.length; i++) {
+      tmp = val.substr(0, i).toUpperCase()
+      hasPrefix = results.includes(tmp)
+      if (!hasPrefix) results.push(tmp)
+    }
+  })
+  return results
 }
