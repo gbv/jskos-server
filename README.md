@@ -372,7 +372,7 @@ NODE_ENV=production node ./server.js
 ```
 
 ### Run Tests
-Tests will use the real MongoDB with `-test` appended to the database name.
+Tests will use the real MongoDB with `-test-${namespace}` appended to the database name.
 
 ```bash
 npm test

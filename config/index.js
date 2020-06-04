@@ -57,7 +57,7 @@ config.mongo.auth = config.mongo.user ? `${config.mongo.user}:${config.mongo.pas
 config.mongo.url = `mongodb://${config.mongo.auth}${config.mongo.host}:${config.mongo.port}`
 // Adjust database name during tests
 if (env === "test") {
-  config.mongo.db += "-test"
+  config.mongo.db += "-test-" + config.namespace
 }
 
 // Set baseUrl to localhost if not set

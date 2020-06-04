@@ -10,6 +10,7 @@ const should = chai.should()
 const server = require("../server")
 const exec = require("child_process").exec
 const _ = require("lodash")
+const { dropDatabaseBeforeAndAfter } = require("./test-utils")
 
 // Prepare jwt
 const jwt = require("jsonwebtoken")
@@ -112,20 +113,7 @@ describe("MongoDB", () => {
 
 describe("Express Server", () => {
 
-  let clearDatabase = done => {
-    // Empty database before testing
-    exec("NODE_ENV=test ./bin/import.js --reset", (err) => {
-      if (err) {
-        console.error("    x Error: Clearing database failed.")
-      } else {
-        console.log("    ✓ Cleared database")
-      }
-      done(err)
-    })
-  }
-
-  before(clearDatabase)
-  after(clearDatabase)
+  dropDatabaseBeforeAndAfter()
 
   describe("GET /status", () => {
 
