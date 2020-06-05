@@ -56,8 +56,7 @@ if (config.schemes.delete) {
         uri: req.query.uri,
       })
     }),
-    utils.adjust,
-    utils.returnJSON,
+    (req, res) => res.sendStatus(204),
   )
 }
 
