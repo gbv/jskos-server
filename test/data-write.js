@@ -78,8 +78,18 @@ describe("/voc write access", () => {
   })
 
   it("should not POST an invalid scheme", done => {
-    done()
-    // TODO
+    chai.request(server.app)
+      .post("/voc")
+      .send({
+        prefLabel: "test",
+      })
+      .end((error, res) => {
+        assert.equal(error, null)
+        res.should.have.status(422)
+        res.body.should.be.an("object")
+        assert.equal(res.body.error, "InvalidBodyError")
+        done()
+      })
   })
 
   it("should not POST a scheme that already exists", done => {
@@ -112,23 +122,63 @@ describe("/voc write access", () => {
   })
 
   it("should not PUT an invalid scheme", done => {
-    done()
-    // TODO
+    const patch = {
+      notation: "A",
+    }
+    chai.request(server.app)
+      .put("/voc")
+      .send(Object.assign({}, schemes[0], patch))
+      .end((error, res) => {
+        assert.equal(error, null)
+        res.should.have.status(422)
+        res.body.should.be.an("object")
+        assert.equal(res.body.error, "InvalidBodyError")
+        done()
+      })
   })
 
   it("should not PUT a scheme that doesn't exist", done => {
-    done()
-    // TODO
+    chai.request(server.app)
+      .put("/voc")
+      .send({
+        uri: "test:scheme-that-does-not-exist",
+        notation: ["A"],
+      })
+      .end((error, res) => {
+        assert.equal(error, null)
+        res.should.have.status(404)
+        res.body.should.be.an("object")
+        assert.equal(res.body.error, "EntityNotFoundError")
+        done()
+      })
   })
 
   it("should DELETE a scheme", done => {
-    done()
-    // TODO
+    chai.request(server.app)
+      .delete("/voc")
+      .query({
+        uri: schemes[2].uri,
+      })
+      .end((error, res) => {
+        assert.equal(error, null)
+        res.should.have.status(204)
+        done()
+      })
   })
 
   it("should not DELETE a scheme that doesn't exist", done => {
-    done()
-    // TODO
+    chai.request(server.app)
+      .delete("/voc")
+      .query({
+        uri: "test:scheme-that-does-not-exist",
+      })
+      .end((error, res) => {
+        assert.equal(error, null)
+        res.should.have.status(404)
+        res.body.should.be.an("object")
+        assert.equal(res.body.error, "EntityNotFoundError")
+        done()
+      })
   })
 
 })
@@ -147,7 +197,7 @@ describe("/data write access", () => {
     },
     {
       uri: "test:concept3",
-      inScheme: [schemes[2]],
+      inScheme: [schemes[0]],
       broader: [concept],
     },
   ]
@@ -177,12 +227,32 @@ describe("/data write access", () => {
   })
 
   it("should not POST a concept without scheme", done => {
-    done()
-    // TODO
+    chai.request(server.app)
+      .post("/data")
+      .send({
+        uri: "test:concept-without-scheme",
+      })
+      .end((error, res) => {
+        res.should.have.status(400)
+        res.body.should.be.a("object")
+        assert.equal(res.body.error, "MalformedRequestError")
+        done()
+      })
   })
 
   it("should not POST an invalid concept", done => {
-    done()
+    chai.request(server.app)
+      .post("/data")
+      .send({
+        uri: "concept-invalid-uri",
+        inScheme: [schemes[1]],
+      })
+      .end((error, res) => {
+        res.should.have.status(422)
+        res.body.should.be.a("object")
+        assert.equal(res.body.error, "InvalidBodyError")
+        done()
+      })
   })
 
   it("should not POST a concept that already exists", done => {
@@ -199,8 +269,22 @@ describe("/data write access", () => {
   })
 
   it("should not POST a concept with scheme that is not in database", done => {
-    done()
-    // TODO
+    chai.request(server.app)
+      .post("/data")
+      .send({
+        uri: "test:concept-with-missing-scheme",
+        inScheme: [
+          {
+            uri: "test:scheme-that-does-not-exist",
+          },
+        ],
+      })
+      .end((error, res) => {
+        res.should.have.status(400)
+        res.body.should.be.a("object")
+        assert.equal(res.body.error, "MalformedRequestError")
+        done()
+      })
   })
 
   it("should PUT a concept", done => {
@@ -220,11 +304,35 @@ describe("/data write access", () => {
   })
 
   it("should not PUT an invalid concept", done => {
-    done()
+    chai.request(server.app)
+      .put("/data")
+      .send({
+        uri: "test:concept2",
+        inScheme: [schemes[1]],
+        prefLabel: "should be an object",
+      })
+      .end((error, res) => {
+        res.should.have.status(422)
+        res.body.should.be.a("object")
+        assert.equal(res.body.error, "InvalidBodyError")
+        done()
+      })
   })
 
   it("should not PUT a concept that doesn't exist", done => {
-    done()
+    chai.request(server.app)
+      .put("/data")
+      .send({
+        uri: "test:concept-that-does-not-exist",
+        inScheme: [schemes[1]],
+        prefLabel: { en: "should be an object" },
+      })
+      .end((error, res) => {
+        res.should.have.status(404)
+        res.body.should.be.a("object")
+        assert.equal(res.body.error, "EntityNotFoundError")
+        done()
+      })
   })
 
   it("should DELETE posted concepts", done => {
@@ -250,8 +358,17 @@ describe("/data write access", () => {
   })
 
   it("should not DELETE a concept that doesn't exist", done => {
-    done()
-    // TODO
+    chai.request(server.app)
+      .delete("/data")
+      .query({
+        uri: "test:concept-that-does-not-exist",
+      })
+      .end((error, res) => {
+        res.should.have.status(404)
+        res.body.should.be.a("object")
+        assert.equal(res.body.error, "EntityNotFoundError")
+        done()
+      })
   })
 
 })
