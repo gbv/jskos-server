@@ -378,11 +378,12 @@ module.exports = class ConceptService {
     concept = preparation.concepts[0]
 
     // Write concept to database
-    // eslint-disable-next-line no-useless-catch
-    try {
-      await Concept.replaceOne({ _id: concept.uri }, concept)
-    } catch(error) {
-      throw error
+    const result = await Concept.replaceOne({ _id: concept.uri }, concept)
+    if (!result.ok) {
+      throw new DatabaseAccessError()
+    }
+    if (!result.n) {
+      throw new EntityNotFoundError()
     }
 
     // ? Can we return the request without waiting for this step?
@@ -395,20 +396,15 @@ module.exports = class ConceptService {
     if (!uri) {
       throw new MalformedRequestError()
     }
-    const concept = await Concept.findById(uri).lean()
-
-    if (!concept) {
+    const result = await Concept.deleteOne({ _id: uri })
+    if (!result.ok) {
+      throw new DatabaseAccessError()
+    }
+    if (!result.n) {
       throw new EntityNotFoundError()
     }
 
     // TODO: conceptPostAdjustments
-
-    const result = await Concept.deleteOne({ _id: concept._id })
-    if (result.n && result.ok && result.deletedCount) {
-      return
-    } else {
-      throw new DatabaseAccessError()
-    }
   }
 
 
