@@ -66,7 +66,7 @@ module.exports = class SchemeService {
     if (isMultiple) {
       await Scheme.insertMany(schemes, { ordered: false, lean: true })
     } else {
-      // Write concept to database
+      // Write scheme to database
       let scheme = schemes[0]
       // eslint-disable-next-line no-useless-catch
       try {
@@ -97,7 +97,7 @@ module.exports = class SchemeService {
     // Prepare
     scheme._id = scheme.uri
 
-    // Write concept to database
+    // Write scheme to database
     // eslint-disable-next-line no-useless-catch
     try {
       scheme = new Scheme(scheme)
