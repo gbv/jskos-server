@@ -650,7 +650,7 @@ describe("Express Server", () => {
             .set("Authorization", `Bearer ${token}`)
             .send(Object.assign({ uri }, mapping))
             .end((err, res) => {
-              res.should.have.status(500)
+              res.should.have.status(422)
               done()
             })
         })

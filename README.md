@@ -1426,6 +1426,9 @@ Status code 400. Will be returned for `POST`/`PUT`/`PATCH` if the body was not J
 #### MalformedRequestError
 Status code 400. Will be returned if a required parameter is missing (currently implemented in `GET /.../:_id` endpoints, but should not be possible to reach).
 
+### DuplicateEntityError
+Status code 422. Will be returned for `POST` if an entity with the same ID/URI already exists in the database.
+
 #### InvalidBodyError
 Status code 422. Will be returned for `POST`/`PUT`/`PATCH` if the body was valid JSON, but could not be validated (e.g. does not pass the JSKOS Schema).
 

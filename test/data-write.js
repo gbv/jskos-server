@@ -83,8 +83,16 @@ describe("/voc write access", () => {
   })
 
   it("should not POST a scheme that already exists", done => {
-    done()
-    // TODO
+    chai.request(server.app)
+      .post("/voc")
+      .send(schemes[0])
+      .end((error, res) => {
+        assert.equal(error, null)
+        res.should.have.status(422)
+        res.body.should.be.an("object")
+        assert.equal(res.body.error, "DuplicateEntityError")
+        done()
+      })
   })
 
   it("should PUT a scheme", done => {
@@ -167,7 +175,16 @@ describe("/data write access", () => {
   })
 
   it("should not POST a concept that already exists", done => {
-    done()
+    chai.request(server.app)
+      .post("/data")
+      .send(concept)
+      .end((error, res) => {
+        assert.equal(error, null)
+        res.should.have.status(422)
+        res.body.should.be.an("object")
+        assert.equal(res.body.error, "DuplicateEntityError")
+        done()
+      })
   })
 
   it("should not POST a concept with scheme that is not in database", done => {

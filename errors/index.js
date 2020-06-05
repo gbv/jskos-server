@@ -28,6 +28,14 @@ class MalformedRequestError extends Error {
   }
 }
 
+class DuplicateEntityError extends Error {
+  constructor(message, id) {
+    message = message || `The entity ${id} already exists in the database.`
+    super(message)
+    this.statusCode = 422
+  }
+}
+
 class InvalidBodyError extends Error {
   constructor(message) {
     message = message || "The body of the request is well formed, but could not be validated."
@@ -72,6 +80,7 @@ module.exports = {
   EntityNotFoundError,
   MalformedBodyError,
   MalformedRequestError,
+  DuplicateEntityError,
   InvalidBodyError,
   CreatorDoesNotMatchError,
   DatabaseAccessError,

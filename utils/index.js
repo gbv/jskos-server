@@ -1,6 +1,7 @@
 const config = require("../config")
 const _ = require("lodash")
 const jskos = require("jskos-tools")
+const { DuplicateEntityError } = require("../errors")
 
 /**
  * These are wrappers for Express middleware which receive a middleware function as a first parameter,
@@ -22,7 +23,11 @@ const wrappers = {
         req.data = data
         next()
       }).catch(error => {
-        // On error, pass error to the next error middleware.
+        // Catch and change certain errors
+        if (error.name === "MongoError" && error.code === 11000) {
+          error = new DuplicateEntityError(null, error.keyValue._id)
+        }
+        // Pass error to the next error middleware.
         next(error)
       })
     }
