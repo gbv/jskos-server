@@ -193,7 +193,7 @@ describe("/data write access", () => {
   const concepts = [
     {
       uri: "test:concept2",
-      inScheme: [schemes[1]],
+      topConceptOf: [schemes[1]],
     },
     {
       uri: "test:concept3",
@@ -214,6 +214,37 @@ describe("/data write access", () => {
       })
   })
 
+  it("should have refreshed the `concepts` property of the scheme after POSTing a concept", done => {
+    chai.request(server.app)
+      .get("/voc")
+      .query({
+        uri: concept.inScheme[0].uri,
+      })
+      .end((error, res) => {
+        res.should.have.status(200)
+        res.body.should.be.a("array")
+        res.body[0].should.be.a("object")
+        assert.equal(res.body[0].uri, concept.inScheme[0].uri)
+        assert.deepEqual(res.body[0].concepts, [null])
+        done()
+      })
+  })
+
+  it("should not DELETE a scheme when it currently has concepts", done => {
+    chai.request(server.app)
+      .delete("/voc")
+      .query({
+        uri: concept.inScheme[0].uri,
+      })
+      .end((error, res) => {
+        assert.equal(error, null)
+        res.should.have.status(400)
+        res.body.should.be.a("object")
+        assert.equal(res.body.error, "MalformedRequestError")
+        done()
+      })
+  })
+
   it("should POST multiple concepts", done => {
     chai.request(server.app)
       .post("/data")
@@ -222,6 +253,22 @@ describe("/data write access", () => {
         res.should.have.status(201)
         res.body.should.be.an("array")
         assert.deepEqual(res.body.map(c => c.uri), concepts.map(c => c.uri))
+        done()
+      })
+  })
+
+  it("should have refreshed the `topConcepts` property of the scheme after POSTing a top concept", done => {
+    chai.request(server.app)
+      .get("/voc")
+      .query({
+        uri: concepts[0].topConceptOf[0].uri,
+      })
+      .end((error, res) => {
+        res.should.have.status(200)
+        res.body.should.be.a("array")
+        res.body[0].should.be.a("object")
+        assert.equal(res.body[0].uri, concepts[0].topConceptOf[0].uri)
+        assert.deepEqual(res.body[0].topConcepts, [null])
         done()
       })
   })
@@ -355,6 +402,51 @@ describe("/data write access", () => {
           maybeDone()
         })
     }
+  })
+
+  it("should have refreshed the `concepts` property of the scheme after DELETEing a concept", done => {
+    chai.request(server.app)
+      .get("/voc")
+      .query({
+        uri: concept.inScheme[0].uri,
+      })
+      .end((error, res) => {
+        res.should.have.status(200)
+        res.body.should.be.a("array")
+        res.body[0].should.be.a("object")
+        assert.equal(res.body[0].uri, concept.inScheme[0].uri)
+        assert.deepEqual(res.body[0].concepts, [])
+        done()
+      })
+  })
+
+  it("should DELETE a scheme after its last concept was removed", done => {
+    chai.request(server.app)
+      .delete("/voc")
+      .query({
+        uri: concept.inScheme[0].uri,
+      })
+      .end((error, res) => {
+        assert.equal(error, null)
+        res.should.have.status(204)
+        done()
+      })
+  })
+
+  it("should have refreshed the `topConcepts` property of the scheme after DELETEing a top concept", done => {
+    chai.request(server.app)
+      .get("/voc")
+      .query({
+        uri: concepts[0].topConceptOf[0].uri,
+      })
+      .end((error, res) => {
+        res.should.have.status(200)
+        res.body.should.be.a("array")
+        res.body[0].should.be.a("object")
+        assert.equal(res.body[0].uri, concepts[0].topConceptOf[0].uri)
+        assert.deepEqual(res.body[0].topConcepts, [])
+        done()
+      })
   })
 
   it("should not DELETE a concept that doesn't exist", done => {
