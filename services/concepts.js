@@ -396,7 +396,13 @@ module.exports = class ConceptService {
     if (!uri) {
       throw new MalformedRequestError()
     }
-    const result = await Concept.deleteOne({ _id: uri })
+    const concept = await Concept.findById(uri).lean()
+
+    if (!concept) {
+      throw new EntityNotFoundError()
+    }
+
+    const result = await Concept.deleteOne({ _id: concept._id })
     if (!result.ok) {
       throw new DatabaseAccessError()
     }
@@ -404,7 +410,11 @@ module.exports = class ConceptService {
       throw new EntityNotFoundError()
     }
 
-    // TODO: conceptPostAdjustments
+    await this.conceptPostAdjustments({
+      // Adjust scheme in case it was its last concept
+      schemeUrisToAdjust: [_.get(concept, "inScheme[0].uri")],
+      conceptUrisWithNarrower: [],
+    })
   }
 
 
