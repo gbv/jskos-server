@@ -352,6 +352,7 @@ module.exports = class ConceptService {
       response = concept.toObject()
     }
 
+    // ? Can we return the request without waiting for this step?
     await this.conceptPostAdjustments(preparation)
 
     return response
@@ -368,25 +369,26 @@ module.exports = class ConceptService {
     let concept = body
 
     // Prepare
-    let preparation = await this.prepareConcepts([concept])
-    ;[concept] = preparation.concepts[0]
+    const preparation = await this.prepareConcepts([concept])
 
     // Throw error if necessary
     if (preparation.errors.length) {
       throw preparation.errors[0]
     }
+    concept = preparation.concepts[0]
+
     // Write concept to database
     // eslint-disable-next-line no-useless-catch
     try {
-      concept = new Concept(concept)
-      concept = await concept.save()
+      await Concept.replaceOne({ _id: concept.uri }, concept)
     } catch(error) {
       throw error
     }
 
+    // ? Can we return the request without waiting for this step?
     await this.conceptPostAdjustments(preparation)
 
-    return concept.toObject()
+    return concept
   }
 
   async deleteConcept({ uri }) {
@@ -398,6 +400,8 @@ module.exports = class ConceptService {
     if (!concept) {
       throw new EntityNotFoundError()
     }
+
+    // TODO: conceptPostAdjustments
 
     const result = await Concept.deleteOne({ _id: concept._id })
     if (result.n && result.ok && result.deletedCount) {

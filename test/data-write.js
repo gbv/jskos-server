@@ -96,8 +96,19 @@ describe("/voc write access", () => {
   })
 
   it("should PUT a scheme", done => {
-    done()
-    // TODO
+    const patch = {
+      notation: ["A"],
+    }
+    chai.request(server.app)
+      .put("/voc")
+      .send(Object.assign({}, schemes[0], patch))
+      .end((error, res) => {
+        assert.equal(error, null)
+        res.should.have.status(200)
+        res.body.should.be.an("object")
+        assert.deepEqual(res.body.notation, patch.notation)
+        done()
+      })
   })
 
   it("should not PUT an invalid scheme", done => {
@@ -193,8 +204,19 @@ describe("/data write access", () => {
   })
 
   it("should PUT a concept", done => {
-    done()
-    // TODO
+    const patch = {
+      notation: ["A"],
+    }
+    chai.request(server.app)
+      .put("/data")
+      .send(Object.assign({}, concept, patch))
+      .end((error, res) => {
+        assert.equal(error, null)
+        res.should.have.status(200)
+        res.body.should.be.an("object")
+        assert.deepEqual(res.body.notation, patch.notation)
+        done()
+      })
   })
 
   it("should not PUT an invalid concept", done => {

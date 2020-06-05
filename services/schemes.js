@@ -41,9 +41,6 @@ module.exports = class SchemeService {
   // Write endpoints start here
 
   async postScheme({ body }) {
-    if (!body) {
-      throw new MalformedBodyError()
-    }
 
     let isMultiple
     let schemes
@@ -59,9 +56,7 @@ module.exports = class SchemeService {
     }
 
     // Prepare
-    for (let scheme of schemes) {
-      scheme._id = scheme.uri
-    }
+    schemes = await Promise.all(schemes.map(scheme => this.prepareScheme(scheme, "create")))
 
     if (isMultiple) {
       await Scheme.insertMany(schemes, { ordered: false, lean: true })
@@ -84,30 +79,20 @@ module.exports = class SchemeService {
   }
 
   async putScheme({ body }) {
-    if (!body) {
-      throw new MalformedBodyError()
-    }
-
-
-    if (!_.isObject(body)) {
-      throw new MalformedBodyError()
-    }
     let scheme = body
 
     // Prepare
-    scheme._id = scheme.uri
+    scheme = await this.prepareScheme(scheme)
 
     // Write scheme to database
     // eslint-disable-next-line no-useless-catch
     try {
-      scheme = new Scheme(scheme)
-      scheme = await scheme.save()
+      await Scheme.replaceOne({ _id: scheme.uri }, scheme)
     } catch(error) {
       throw error
     }
-    scheme.toObject()
 
-    ;[scheme] = await this.schemePostAdjustments([scheme])
+    scheme = (await this.schemePostAdjustments([scheme]))[0]
 
     return scheme
   }
@@ -116,13 +101,7 @@ module.exports = class SchemeService {
     if (!uri) {
       throw new MalformedRequestError()
     }
-    const scheme = await Scheme.findById(uri).lean()
-
-    if (!scheme) {
-      throw new EntityNotFoundError()
-    }
-
-    // TODO: Only allow deletion if no concepts exists - OR: delete all concepts as well.
+    const scheme = await this.prepareScheme({ uri })
 
     const result = await Scheme.deleteOne({ _id: scheme._id })
     if (result.n && result.ok && result.deletedCount) {
@@ -130,6 +109,32 @@ module.exports = class SchemeService {
     } else {
       throw new DatabaseAccessError()
     }
+  }
+
+  async prepareScheme(scheme, action) {
+    if (!_.isObject(scheme)) {
+      throw new MalformedBodyError()
+    }
+    // Add _id for create and update
+    if (["create", "update"].includes(action)) {
+      scheme._id = scheme.uri
+    }
+    if (action == "delete") {
+      // Replace scheme with scheme from databas
+      const uri = scheme.uri
+      scheme = await Scheme.findById(uri).lean()
+      if (!scheme) {
+        throw new EntityNotFoundError(null, uri)
+      }
+      // Check if concepts exists
+      if (scheme.concepts.length) {
+        // Disallow deletion
+        // ? Which error type?
+        throw new MalformedRequestError(`Concept scheme ${uri} still has concepts in the database and therefore can't be deleted.`)
+      }
+    }
+
+    return scheme
   }
 
   async schemePostAdjustments(schemes) {
