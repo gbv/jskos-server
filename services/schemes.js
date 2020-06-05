@@ -1,6 +1,7 @@
 const _ = require("lodash")
+const validate = require("jskos-validate")
 
-const { MalformedBodyError, MalformedRequestError, EntityNotFoundError, DatabaseAccessError } = require("../errors")
+const { MalformedBodyError, MalformedRequestError, EntityNotFoundError, DatabaseAccessError, InvalidBodyError } = require("../errors")
 const Scheme = require("../models/schemes")
 const Concept = require("../models/concepts")
 
@@ -82,14 +83,15 @@ module.exports = class SchemeService {
     let scheme = body
 
     // Prepare
-    scheme = await this.prepareScheme(scheme)
+    scheme = await this.prepareScheme(scheme, "update")
 
     // Write scheme to database
-    // eslint-disable-next-line no-useless-catch
-    try {
-      await Scheme.replaceOne({ _id: scheme.uri }, scheme)
-    } catch(error) {
-      throw error
+    const result = await Scheme.replaceOne({ _id: scheme.uri }, scheme)
+    if (!result.ok) {
+      throw new DatabaseAccessError()
+    }
+    if (!result.n) {
+      throw new EntityNotFoundError()
     }
 
     scheme = (await this.schemePostAdjustments([scheme]))[0]
@@ -101,13 +103,13 @@ module.exports = class SchemeService {
     if (!uri) {
       throw new MalformedRequestError()
     }
-    const scheme = await this.prepareScheme({ uri })
-
+    const scheme = await this.prepareScheme({ uri }, "delete")
     const result = await Scheme.deleteOne({ _id: scheme._id })
-    if (result.n && result.ok && result.deletedCount) {
-      return
-    } else {
+    if (!result.ok) {
       throw new DatabaseAccessError()
+    }
+    if (!result.n) {
+      throw new EntityNotFoundError()
     }
   }
 
@@ -115,8 +117,12 @@ module.exports = class SchemeService {
     if (!_.isObject(scheme)) {
       throw new MalformedBodyError()
     }
-    // Add _id for create and update
     if (["create", "update"].includes(action)) {
+      // Validate scheme
+      if (!validate.scheme(scheme)) {
+        throw new InvalidBodyError()
+      }
+      // Add _id
       scheme._id = scheme.uri
     }
     if (action == "delete") {
