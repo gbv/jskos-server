@@ -326,7 +326,7 @@ module.exports = class ConceptService {
     }
 
     // Prepare
-    let preparation = await this.prepareConcepts(concepts)
+    let preparation = await this.prepareAndCheckConcepts(concepts)
     concepts = preparation.concepts
 
     if (isMultiple) {
@@ -353,7 +353,7 @@ module.exports = class ConceptService {
     }
 
     // ? Can we return the request without waiting for this step?
-    await this.conceptPostAdjustments(preparation)
+    await this.postAdjustmentsForConcepts(preparation)
 
     return response
   }
@@ -369,7 +369,7 @@ module.exports = class ConceptService {
     let concept = body
 
     // Prepare
-    const preparation = await this.prepareConcepts([concept])
+    const preparation = await this.prepareAndCheckConcepts([concept])
 
     // Throw error if necessary
     if (preparation.errors.length) {
@@ -387,7 +387,7 @@ module.exports = class ConceptService {
     }
 
     // ? Can we return the request without waiting for this step?
-    await this.conceptPostAdjustments(preparation)
+    await this.postAdjustmentsForConcepts(preparation)
 
     return concept
   }
@@ -410,16 +410,20 @@ module.exports = class ConceptService {
       throw new EntityNotFoundError()
     }
 
-    await this.conceptPostAdjustments({
+    await this.postAdjustmentsForConcepts({
       // Adjust scheme in case it was its last concept
       schemeUrisToAdjust: [_.get(concept, "inScheme[0].uri")],
       conceptUrisWithNarrower: [],
     })
   }
 
-
-
-  async prepareConcepts(allConcepts) {
+  /**
+   * Prepares and checks a list of concepts before inserting/updating (see `prepareAndCheckConcept`).
+   *
+   * @param {Object} allConcept concept objects
+   * @returns {Object} preparation object with properties `concepts`, `errors`, `schemeUrisToAdjust`, and `conceptUrisWithNarrower`; needs to be provided to `postAdjustmentsForConcepts`
+   */
+  async prepareAndCheckConcepts(allConcepts) {
     const schemeUrisToAdjust = []
     const conceptUrisWithNarrower = []
     const concepts = []
@@ -433,7 +437,7 @@ module.exports = class ConceptService {
     })
     for (let concept of allConcepts) {
       try {
-        this.prepareConcept(concept, schemes)
+        this.prepareAndCheckConcept(concept, schemes)
         let scheme = _.get(concept, "inScheme[0].uri")
         if (scheme && !schemeUrisToAdjust.includes(scheme)) {
           schemeUrisToAdjust.push(scheme)
@@ -456,7 +460,20 @@ module.exports = class ConceptService {
     }
   }
 
-  prepareConcept(concept, schemes) {
+  /**
+   * Prepares and checks a concept before inserting/updating:
+   * - copies `topConceptOf` to `inScheme` if necessary
+   * - validates object, throws error if it doesn't
+   * - makes sure that it has a valid scheme, throws error if it doesn't
+   * - adjust scheme URI if necessary
+   * - adds certain keyword properties necessary for text indexes
+   *
+   * TODO: If `schemes` is not available, get single scheme from database.
+   *
+   * @param {Object} concept concept object
+   * @param {[Object]} schemes array of schemes
+   */
+  prepareAndCheckConcept(concept, schemes) {
     concept._id = concept.uri
     // Add "inScheme" for all top concepts
     if (!concept.inScheme && concept.topConceptOf) {
@@ -504,9 +521,16 @@ module.exports = class ConceptService {
     }
   }
 
-  async conceptPostAdjustments(preparation) {
+  /**
+   * Post-adjustments for concepts:
+   * - runs `postAdjustmentsForScheme` for relevant schemes in `preparation.schemeUrisToAdjust`
+   * - adds `narrower: [null]` for concepts in `preparation.conceptUrisWithNarrower`
+   *
+   * @param {Object} preparation preparation object that is returned by `prepareAndCheckConcepts`
+   */
+  async postAdjustmentsForConcepts(preparation) {
     // Adjust scheme after adding concept
-    await this.schemeService.schemePostAdjustments(preparation.schemeUrisToAdjust.map(uri => ({ uri })))
+    await this.schemeService.postAdjustmentsForScheme(preparation.schemeUrisToAdjust.map(uri => ({ uri })))
     // Adjust narrower concepts if added cocept had broader prop
     for (let uri of preparation.conceptUrisWithNarrower) {
       await Concept.updateOne({ _id: uri }, { narrower: [null] })

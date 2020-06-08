@@ -57,7 +57,7 @@ module.exports = class SchemeService {
     }
 
     // Prepare
-    schemes = await Promise.all(schemes.map(scheme => this.prepareScheme(scheme, "create")))
+    schemes = await Promise.all(schemes.map(scheme => this.prepareAndCheckSchemeForAction(scheme, "create")))
 
     if (isMultiple) {
       await Scheme.insertMany(schemes, { ordered: false, lean: true })
@@ -74,7 +74,7 @@ module.exports = class SchemeService {
       scheme.toObject()
     }
 
-    schemes = await this.schemePostAdjustments(schemes)
+    schemes = await this.postAdjustmentsForScheme(schemes)
 
     return isMultiple ? schemes : schemes[0]
   }
@@ -83,7 +83,7 @@ module.exports = class SchemeService {
     let scheme = body
 
     // Prepare
-    scheme = await this.prepareScheme(scheme, "update")
+    scheme = await this.prepareAndCheckSchemeForAction(scheme, "update")
 
     // Write scheme to database
     const result = await Scheme.replaceOne({ _id: scheme.uri }, scheme)
@@ -94,7 +94,7 @@ module.exports = class SchemeService {
       throw new EntityNotFoundError()
     }
 
-    scheme = (await this.schemePostAdjustments([scheme]))[0]
+    scheme = (await this.postAdjustmentsForScheme([scheme]))[0]
 
     return scheme
   }
@@ -103,7 +103,7 @@ module.exports = class SchemeService {
     if (!uri) {
       throw new MalformedRequestError()
     }
-    const scheme = await this.prepareScheme({ uri }, "delete")
+    const scheme = await this.prepareAndCheckSchemeForAction({ uri }, "delete")
     const result = await Scheme.deleteOne({ _id: scheme._id })
     if (!result.ok) {
       throw new DatabaseAccessError()
@@ -113,7 +113,18 @@ module.exports = class SchemeService {
     }
   }
 
-  async prepareScheme(scheme, action) {
+  /**
+   * Prepares and checks a concept scheme before inserting/updating:
+   * - validates object, throws error if it doesn't (create/update)
+   * - add `_id` property (create/update)
+   * - check if it exists, throws error if it doesn't (delete)
+   * - check if it has existing concepts in database, throws error if it has (delete)
+   *
+   * @param {Object} scheme concept scheme object
+   * @param {string} action one of "create", "update", and "delete"
+   * @returns {Object} prepared concept scheme
+   */
+  async prepareAndCheckSchemeForAction(scheme, action) {
     if (!_.isObject(scheme)) {
       throw new MalformedBodyError()
     }
@@ -143,7 +154,16 @@ module.exports = class SchemeService {
     return scheme
   }
 
-  async schemePostAdjustments(schemes) {
+  /**
+   * Post-adjustments for concept schemes:
+   * - update `concepts` property
+   * - update `topConcepts` property
+   * - get updated concept scheme from database
+   *
+   * @param {[Object]} schemes array of concept schemes to be adjusted
+   * @returns {[Object]} array of adjusted concept schemes
+   */
+  async postAdjustmentsForScheme(schemes) {
     const result = []
     for (let scheme of schemes) {
       const hasTopConcepts = !!(await Concept.findOne({ $or: [scheme.uri].concat(scheme.identifier || []).map(uri => ({ "topConceptOf.uri": uri })) }))
