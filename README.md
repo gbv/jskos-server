@@ -32,9 +32,15 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [PATCH /mappings/:_id](#patch-mappings_id)
   - [DELETE /mappings/:_id](#delete-mappings_id)
   - [GET /voc](#get-voc)
+  - [POST /voc](#post-voc)
+  - [PUT /voc](#put-voc)
+  - [DELETE /voc](#delete-voc)
   - [GET /voc/top](#get-voctop)
   - [GET /voc/concepts](#get-vocconcepts)
   - [GET /data](#get-data)
+  - [POST /data](#post-data)
+  - [PUT /data](#put-data)
+  - [DELETE /data](#delete-data)
   - [GET /narrower](#get-narrower)
   - [GET /ancestors](#get-ancestors)
   - [GET /suggest](#get-suggest)
@@ -148,7 +154,7 @@ With the keys `schemes`, `concepts`, `mappings`, and `annotations`, you can conf
 }
 ```
 
-Available actions for `mappings` and `annotations` are `read`, `create`, `update`, and `delete`. By default, all types can be read, while `mappings` and `annotations` can be created, updated, and deleted with authentication. Explanantions for additional options:
+Available actions for `schemes`, `concepts`, `mappings`, and `annotations` are `read`, `create`, `update`, and `delete`. By default, all types can be read, while `mappings` and `annotations` can be created, updated, and deleted with authentication. Explanantions for additional options:
 
 - **`auth`**: Boolean. Can be defined only on actions. Defines whether access will require authentication. By default `false` for `read`, and `true` for all other actions.
 
@@ -240,6 +246,53 @@ Here are some helpful example presets for "mappings" or "annotations".
   }
 }
 ```
+
+If write access for concept schemes and/or concepts is necessary, it is recommended that they are secured by only allowing certain users (via `identities`) or only allowing certain IP addresses (via `ips`):
+
+
+**Only user with URI `https://coli-conc.gbv.de/login/users/c0c1914a-f9d6-4b92-a624-bf44118b6619` can write:**
+```json
+{
+  "read": {
+    "auth": false
+  },
+  "create": {
+    "auth": true,
+    "identities": ["https://coli-conc.gbv.de/login/users/c0c1914a-f9d6-4b92-a624-bf44118b6619"]
+  },
+  "update": {
+    "auth": true,
+    "identities": ["https://coli-conc.gbv.de/login/users/c0c1914a-f9d6-4b92-a624-bf44118b6619"]
+  },
+  "delete": {
+    "auth": true,
+    "identities": ["https://coli-conc.gbv.de/login/users/c0c1914a-f9d6-4b92-a624-bf44118b6619"]
+  }
+}
+```
+
+**Only localhost can write:**
+
+```json
+{
+  "read": {
+    "auth": false
+  },
+  "create": {
+    "auth": false,
+    "ips": ["127.0.0.1"]
+  },
+  "update": {
+    "auth": false,
+    "ips": ["127.0.0.1"]
+  },
+  "delete": {
+    "auth": false,
+    "ips": ["127.0.0.1"]
+  }
+}
+```
+Note that `auth` is set to `false` because it refers to authentication via JWT. The IP filter is separate from that. An even more secure way would be to use both JWT authentication with an `identities` filter as well as an IP filter.
 
 ---
 
@@ -917,6 +970,35 @@ Lists supported terminologies (concept schemes).
   ]
   ```
 
+### POST /voc
+Saves a concept scheme or multiple concept schemes in the database. Each concept scheme has to have a unique `uri`.
+
+* **Success Reponse**
+
+  JSKOS Concept Scheme object or array as was saved in the database.
+
+* **Error Response**
+
+  When a single concept scheme is provided, an error can be returned if there's something wrong with it (see [errors](#errors)). When multiple concept schemes are provided, those concept schemes that cause an error are ignored.
+
+### PUT /voc
+Overwrites a concept scheme in the database. Is identified via its `uri` field.
+
+* **Success Reponse**
+
+  JSKOS Concept Scheme object as it was saved in the database.
+
+### DELETE /voc
+Deletes a concept scheme from the database.
+
+* **URL Params**
+
+  `uri=URI` URI for concept scheme to be deleted.
+
+* **Success Reponse**
+
+  Status 204, no content.
+
 ### GET /voc/top
 Lists top concepts for a concept scheme.
 
@@ -1013,6 +1095,35 @@ Returns detailed data for concepts or concept schemes. Note that there is no cer
     }
   ]
   ```
+
+### POST /data
+Saves a concept or multiple concepts in the database. Each concept has to have a unique `uri` as well as a concept scheme that is available on the server in the `inScheme` field.
+
+* **Success Reponse**
+
+  JSKOS Concept object or array as was saved in the database.
+
+* **Error Response**
+
+  When a single concept is provided, an error can be returned if there's something wrong with it (see [errors](#errors)). When multiple concepts are provided, those concepts that cause an error are ignored.
+
+### PUT /data
+Overwrites a concept in the database. Is identified via its `uri` field.
+
+* **Success Reponse**
+
+  JSKOS Concept object as it was saved in the database.
+
+### DELETE /data
+Deletes a concept from the database.
+
+* **URL Params**
+
+  `uri=URI` URI for concept to be deleted.
+
+* **Success Reponse**
+
+  Status 204, no content.
 
 ### GET /narrower
 Returns narrower concepts for a concept.
