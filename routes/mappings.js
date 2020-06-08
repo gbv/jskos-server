@@ -60,7 +60,6 @@ if (config.mappings.create) {
       return await mappingService.postMapping({
         body: req.body,
         user: req.user,
-        baseUrl: req.myBaseUrl,
       })
     }),
     utils.adjust,

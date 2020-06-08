@@ -82,7 +82,7 @@ module.exports = class MappingService {
   /**
    * Save a new annotation in the database. Adds created date if necessary.
    */
-  async postAnnotation({ body, user, baseUrl }) {
+  async postAnnotation({ body, user }) {
     let annotation = body
     if (!annotation) {
       throw new MalformedBodyError()
@@ -116,7 +116,7 @@ module.exports = class MappingService {
     }
     // Add _id and URI
     annotation._id = utils.uuid()
-    annotation.id = baseUrl + "annotations/" + annotation._id
+    annotation.id = config.baseUrl + "annotations/" + annotation._id
     // Make sure URI is a https URI when in production
     if (config.env === "production") {
       annotation.id = annotation.id.replace("http:", "https:")

@@ -38,7 +38,6 @@ if (config.annotations.create) {
       return await annotationService.postAnnotation({
         body: req.body,
         user: req.user,
-        baseUrl: req.myBaseUrl,
       })
     }),
     utils.adjust,

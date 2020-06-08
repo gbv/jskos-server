@@ -229,7 +229,6 @@ const addDefaultHeaders = (req, res, next) => {
  * Middleware that adds default properties:
  *
  * - If req.query exists, make sure req.query.limit and req.query.offset are set as numbers.
- * - Set req.myBaseUrl to the applications baseUrl (with trailing slash).
  * - If possible, set req.type depending on the endpoint (one of concepts, schemes, mappings, annotations, suggest).
  */
 const addMiddlewareProperties = (req, res, next) => {
@@ -243,8 +242,6 @@ const addMiddlewareProperties = (req, res, next) => {
     req.query.offset = parseInt(req.query.offset)
     req.query.offset = req.query.offset || defaultOffset
   }
-  // baseUrl
-  req.myBaseUrl = config.baseUrl
   // req.path -> req.type
   let type = req.path.substring(1)
   type = type.substring(0, type.indexOf("/") == -1 ? type.length : type.indexOf("/") )
@@ -302,7 +299,7 @@ const addPaginationHeaders = (req, res, next) => {
   if (req == null || res == null || limit == null || offset == null || total == null) {
     return
   }
-  const baseUrl = req.myBaseUrl.substring(0, req.myBaseUrl.length - 1) + req.path
+  const baseUrl = config.baseUrl.substring(0, config.baseUrl.length - 1) + req.path
   const url = (query, rel) => {
     let url = baseUrl
     let index = 0

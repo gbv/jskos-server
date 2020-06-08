@@ -229,7 +229,7 @@ module.exports = class MappingService {
    *
    * TODO: Make sure user matches?
    */
-  async postMapping({ body, baseUrl }) {
+  async postMapping({ body }) {
     let mapping = body
     if (!mapping) {
       throw new MalformedBodyError()
@@ -254,7 +254,7 @@ module.exports = class MappingService {
     this.checkWhitelists(mapping)
     // _id and URI
     delete mapping._id
-    let uriBase = baseUrl + "mappings/"
+    let uriBase = config.baseUrl + "mappings/"
     if (mapping.uri) {
       let uri = mapping.uri
       // URI already exists, use if it's valid, otherwise move to identifier
