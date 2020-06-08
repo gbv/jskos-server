@@ -979,7 +979,7 @@ Saves a concept scheme or multiple concept schemes in the database. Each concept
 
 * **Error Response**
 
-  When a single concept scheme is provided, an error can be returned if there's something wrong with it (see [errors](#errors)). When multiple concept schemes are provided, those concept schemes that cause an error are ignored.
+  If any of the submitted concept schemes is invalid in some way or can't be inserted for another reason, an error will be returned (see [errors](#errors)).
 
 ### PUT /voc
 Overwrites a concept scheme in the database. Is identified via its `uri` field.
