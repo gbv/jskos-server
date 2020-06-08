@@ -437,7 +437,7 @@ module.exports = class ConceptService {
     })
     for (let concept of allConcepts) {
       try {
-        this.prepareAndCheckConcept(concept, schemes)
+        await this.prepareAndCheckConcept(concept, schemes)
         let scheme = _.get(concept, "inScheme[0].uri")
         if (scheme && !schemeUrisToAdjust.includes(scheme)) {
           schemeUrisToAdjust.push(scheme)
@@ -468,12 +468,10 @@ module.exports = class ConceptService {
    * - adjust scheme URI if necessary
    * - adds certain keyword properties necessary for text indexes
    *
-   * TODO: If `schemes` is not available, get single scheme from database.
-   *
    * @param {Object} concept concept object
    * @param {[Object]} schemes array of schemes
    */
-  prepareAndCheckConcept(concept, schemes) {
+  async prepareAndCheckConcept(concept, schemes) {
     concept._id = concept.uri
     // Add "inScheme" for all top concepts
     if (!concept.inScheme && concept.topConceptOf) {
@@ -485,6 +483,10 @@ module.exports = class ConceptService {
     }
     // Check concept scheme
     const inScheme = _.get(concept, "inScheme[0]")
+    // Load scheme from database if necessary
+    if (!schemes || !schemes.length) {
+      schemes = await this.schemeService.getSchemes({ uri: inScheme.uri })
+    }
     const scheme = schemes.find(s => jskos.compare(s, inScheme))
     if (!scheme) {
     // Either no scheme at all or not found in database
