@@ -24,7 +24,7 @@ const wrappers = {
         next()
       }).catch(error => {
         // Catch and change certain errors
-        if (error.name === "MongoError" && error.code === 11000) {
+        if (error.code === 11000) {
           error = new DuplicateEntityError(null, _.get(error, "keyValue._id"))
         }
         // Pass error to the next error middleware.
