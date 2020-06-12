@@ -315,6 +315,56 @@ describe("/data write access", () => {
       })
   })
 
+  it("should not POST a concept that already exists even if bulk is set", done => {
+    chai.request(server.app)
+      .post("/data")
+      .query({
+        bulk: true,
+      })
+      .send(concept)
+      .end((error, res) => {
+        assert.equal(error, null)
+        res.should.have.status(422)
+        res.body.should.be.an("object")
+        assert.equal(res.body.error, "DuplicateEntityError")
+        done()
+      })
+  })
+
+  it("should POST upsert multiple concepts", done => {
+    chai.request(server.app)
+      .post("/data")
+      .query({
+        bulk: true,
+      })
+      .send(concepts)
+      .end((error, res) => {
+        res.should.have.status(201)
+        res.body.should.be.an("array")
+        assert.deepEqual(res.body.map(c => c.uri), concepts.map(c => c.uri))
+        assert.deepEqual(Object.keys(res.body[0]), ["uri", "@context", "type"])
+        done()
+      })
+  })
+
+  it("should ignore POST errors when bulk is set", done => {
+    chai.request(server.app)
+      .post("/data")
+      .query({
+        bulk: true,
+      })
+      .send([{
+        uri: "concept-invalid-uri",
+        inScheme: [schemes[1]],
+      }])
+      .end((error, res) => {
+        res.should.have.status(201)
+        res.body.should.be.an("array")
+        assert.equal(res.body.length, 0)
+        done()
+      })
+  })
+
   it("should not POST a concept with scheme that is not in database", done => {
     chai.request(server.app)
       .post("/data")

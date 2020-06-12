@@ -1097,15 +1097,19 @@ Returns detailed data for concepts or concept schemes. Note that there is no cer
   ```
 
 ### POST /data
-Saves a concept or multiple concepts in the database. Each concept has to have a unique `uri` as well as a concept scheme that is available on the server in the `inScheme` field.
+Saves a concept or multiple concepts in the database. Each concept has to have a unique `uri` as well as a concept scheme that is available on the server in the `inScheme` or `topConceptOf` field.
+
+* **URL Params**
+
+  `bulk=[boolean]` `1` or `true` enable bulk mode for importing multiple concepts into the database. Errors for individual concepts will be ignored and existing concepts will be overridden. The resulting set will only include the URI for each concept that was written into the database.
 
 * **Success Reponse**
 
-  JSKOS Concept object or array as was saved in the database.
+  JSKOS Concept object or array as was saved in the database, or array of concept objects with only a URI if bulk mode was used.
 
 * **Error Response**
 
-  When a single concept is provided, an error can be returned if there's something wrong with it (see [errors](#errors)). When multiple concepts are provided, those concepts that cause an error are ignored.
+  When a single concept is provided, an error can be returned if there's something wrong with it (see [errors](#errors)). When multiple concepts are provided, the first error will be returned, except if bulk mode is enabled in which errors for individual concepts are ignored.
 
 ### PUT /data
 Overwrites a concept in the database. Is identified via its `uri` field.

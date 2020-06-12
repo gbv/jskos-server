@@ -6,6 +6,40 @@ const config = require("../config")
 const Concept = require("../models/concepts")
 const { MalformedBodyError, MalformedRequestError, EntityNotFoundError, InvalidBodyError, DatabaseAccessError } = require("../errors")
 
+function conceptFind(query, $skip, $limit) {
+  const pipeline = [
+    {
+      $match: query,
+    },
+    {
+      $lookup: {
+        from: Concept.collection.name,
+        localField: "uri",
+        foreignField: "broader.uri",
+        as: "narrower",
+      },
+    },
+    {
+      $set: {
+        narrower: {
+          $reduce: {
+            input: "$narrower",
+            initialValue: [],
+            in: [null],
+          },
+        },
+      },
+    },
+  ]
+  if (_.isNumber($skip)) {
+    pipeline.push({ $skip })
+  }
+  if (_.isNumber($limit)) {
+    pipeline.push({ $limit })
+  }
+  return Concept.aggregate(pipeline)
+}
+
 module.exports = class ConceptService {
 
   constructor(container) {
@@ -38,7 +72,7 @@ module.exports = class ConceptService {
 
     // Note: If query.voc is given, no schemes are returned
     const schemes = query.voc ? [] : (await Promise.all([].concat(uris, notations).map(uri => this.schemeService.getScheme(uri)))).filter(scheme => scheme != null)
-    const concepts = await Concept.find(mongoQuery).lean().exec()
+    const concepts = await conceptFind(mongoQuery)
     const results = [].concat(schemes, concepts).slice(query.offset, query.offset + query.limit)
     results.totalCount = schemes.length + concepts.length
     return results
@@ -63,7 +97,7 @@ module.exports = class ConceptService {
       // Search for all top concepts in all vocabularies
       criteria = { topConceptOf: { $exists: true } }
     }
-    const concepts = await Concept.find(criteria).lean().skip(query.offset).limit(query.limit).exec()
+    const concepts = await conceptFind(criteria, query.offset, query.limit)
     concepts.totalCount = await Concept.find(criteria).countDocuments()
     return concepts
   }
@@ -85,7 +119,7 @@ module.exports = class ConceptService {
       }
       criteria = { $or: uris.map(uri => ({ "inScheme.uri": uri })) }
     }
-    const concepts = await Concept.find(criteria).lean().skip(query.offset).limit(query.limit).exec()
+    const concepts = await conceptFind(criteria, query.offset, query.limit)
     concepts.totalCount = await Concept.find(criteria).countDocuments()
     return concepts
   }
@@ -97,7 +131,7 @@ module.exports = class ConceptService {
     if (!query.uri) {
       return []
     }
-    return await Concept.find({ broader: { $elemMatch: { uri: query.uri } } }).lean()
+    return await conceptFind({ broader: { $elemMatch: { uri: query.uri } } })
   }
 
   /**
@@ -109,7 +143,7 @@ module.exports = class ConceptService {
     }
     const uri = query.uri
     // First retrieve the concept object from database
-    const concept = await Concept.findById(uri).lean()
+    const concept = (await conceptFind({ _id: uri }))[0]
     if (!concept) {
       return []
     }
@@ -231,7 +265,7 @@ module.exports = class ConceptService {
       }
       query = { $and: [query, { $or: uris.map(uri => ({ "inScheme.uri": uri })) } ] }
     }
-    let results = await Concept.find(query).lean().exec()
+    let results = await conceptFind(query)
     let _search = search.toUpperCase()
     // Prioritize results
     for (let result of results) {
@@ -306,7 +340,7 @@ module.exports = class ConceptService {
 
   // Write endpoints start here
 
-  async postConcept({ body, fullResult = true }) {
+  async postConcept({ body, bulk = false }) {
     if (!body) {
       throw new MalformedBodyError()
     }
@@ -321,6 +355,8 @@ module.exports = class ConceptService {
     } else if (_.isObject(body)) {
       concepts = [body]
       isMultiple = false
+      // ignore `bulk` option
+      bulk = false
     } else {
       throw new MalformedBodyError()
     }
@@ -329,33 +365,28 @@ module.exports = class ConceptService {
     let preparation = await this.prepareAndCheckConcepts(concepts)
     concepts = preparation.concepts
 
-    if (isMultiple) {
-      response = await Concept.insertMany(concepts, { ordered: false, rawResult: !fullResult, lean: true })
-      // TODO
-      if (!fullResult) {
-        response = response.ops.map(c => c.uri)
-      }
-    } else {
-      // Throw error if necessary
-      if (preparation.errors.length) {
-        throw preparation.errors[0]
-      }
-      // Write concept to database
-      let concept = concepts[0]
-      // eslint-disable-next-line no-useless-catch
-      try {
-        concept = new Concept(concept)
-        concept = await concept.save()
-      } catch(error) {
-        throw error
-      }
-      response = concept.toObject()
+    if (!bulk && preparation.errors.length) {
+      // Throw first error
+      throw preparation.errors[0]
     }
 
-    // ? Can we return the request without waiting for this step?
+    if (bulk) {
+      // Use bulkWrite for most efficiency
+      concepts.length && await Concept.bulkWrite(concepts.map(c => ({
+        replaceOne: {
+          filter: { _id: c._id },
+          replacement: c,
+          upsert: true,
+        },
+      })))
+      response = concepts.map(c => ({ uri: c.uri }))
+    } else {
+      response = await Concept.insertMany(concepts, { lean: true })
+    }
+
     await this.postAdjustmentsForConcepts(preparation)
 
-    return response
+    return isMultiple ? response : response[0]
   }
 
   async putConcept({ body }) {
@@ -425,7 +456,6 @@ module.exports = class ConceptService {
    */
   async prepareAndCheckConcepts(allConcepts) {
     const schemeUrisToAdjust = []
-    const conceptUrisWithNarrower = []
     const concepts = []
     const errors = []
     // Load all schemes for concepts
@@ -442,11 +472,6 @@ module.exports = class ConceptService {
         if (scheme && !schemeUrisToAdjust.includes(scheme)) {
           schemeUrisToAdjust.push(scheme)
         }
-        for (let broader of concept.broader || []) {
-          if (!conceptUrisWithNarrower.includes(broader.uri)) {
-            conceptUrisWithNarrower.push(broader.uri)
-          }
-        }
         concepts.push(concept)
       } catch(error) {
         errors.push(error)
@@ -456,7 +481,6 @@ module.exports = class ConceptService {
       concepts,
       errors,
       schemeUrisToAdjust,
-      conceptUrisWithNarrower,
     }
   }
 
@@ -533,10 +557,6 @@ module.exports = class ConceptService {
   async postAdjustmentsForConcepts(preparation) {
     // Adjust scheme after adding concept
     await this.schemeService.postAdjustmentsForScheme(preparation.schemeUrisToAdjust.map(uri => ({ uri })))
-    // Adjust narrower concepts if added cocept had broader prop
-    for (let uri of preparation.conceptUrisWithNarrower) {
-      await Concept.updateOne({ _id: uri }, { narrower: [null] })
-    }
   }
 
 }
