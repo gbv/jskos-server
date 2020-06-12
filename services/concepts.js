@@ -95,7 +95,7 @@ module.exports = class ConceptService {
       criteria = { $or: uris.map(uri => ({ "topConceptOf.uri": uri })) }
     } else {
       // Search for all top concepts in all vocabularies
-      criteria = { topConceptOf: { $exists: true } }
+      criteria = { "topConceptOf.uri": { $type: 2 } }
     }
     const concepts = await conceptFind(criteria, query.offset, query.limit)
     concepts.totalCount = await Concept.find(criteria).countDocuments()
