@@ -20,7 +20,7 @@ function conceptFind(query, $skip, $limit) {
       },
     },
     {
-      $set: {
+      $addFields: {
         narrower: {
           $reduce: {
             input: "$narrower",
