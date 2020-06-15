@@ -1377,6 +1377,65 @@ describe("Express Server", () => {
         })
     })
 
+    it("should bulk POST annotations properly", done => {
+      const annotationToBeUpdated = {
+        target: "test:blubb",
+        motivation: "assessing",
+        bodyValue: "+1",
+      }
+      const update = { bodyValue: "-1" }
+      const bulkAnnotations = [
+        // Two empty annotations that are still valid
+        {},
+        {},
+        // One invalid annoation that should be ignored
+        {
+          target: "test", // target needs to be a URI
+        },
+      ]
+      // 1. Post normal annotation
+      chai.request(server.app)
+        .post("/annotations")
+        .set("Authorization", `Bearer ${token}`)
+        .send(annotationToBeUpdated)
+        .end((error, res) => {
+          res.should.have.status(201)
+          res.body.should.be.an("object")
+          res.body.id.should.be.a("string")
+          assert.notEqual(res.body.bodyValue, update.bodyValue)
+          annotationToBeUpdated.id = res.body.id
+          let _id = res.body.id.substring(res.body.id.lastIndexOf("/") + 1)
+          // Add update to bulk annotations
+          bulkAnnotations.push(Object.assign({}, annotationToBeUpdated, update))
+          // 2. Post bulk annoations
+          chai.request(server.app)
+            .post("/annotations")
+            .query({
+              bulk: true,
+            })
+            .set("Authorization", `Bearer ${token}`)
+            .send(bulkAnnotations)
+            .end((error, res) => {
+              assert.equal(error, null)
+              res.should.have.status(201)
+              res.body.should.be.an("array")
+              assert.equal(res.body.length, bulkAnnotations.length - 1)
+              console.log(res.body)
+              // 3. Check updated annotation
+              chai.request(server.app)
+                .get(`/annotations/${_id}`)
+                .end((error, res) => {
+                  assert.equal(error, null)
+                  res.should.have.status(200)
+                  res.body.should.be.an("object")
+                  console.log(res.body)
+                  assert.equal(res.body.bodyValue, update.bodyValue)
+                  done()
+                })
+            })
+        })
+    })
+
     const annotationModerating = {
       target: "http://dewey.info/class/60/e23/",
       motivation: "moderating",

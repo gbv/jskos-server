@@ -38,6 +38,7 @@ if (config.annotations.create) {
       return await annotationService.postAnnotation({
         body: req.body,
         user: req.user,
+        bulk: req.query.bulk === "true" || req.query.bulk === "1",
       })
     }),
     utils.adjust,

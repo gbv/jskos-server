@@ -80,57 +80,104 @@ module.exports = class MappingService {
   }
 
   /**
-   * Save a new annotation in the database. Adds created date if necessary.
+   * Save a new annotation or multiple annotations in the database. Adds created date if necessary.
    */
-  async postAnnotation({ body, user }) {
-    let annotation = body
-    if (!annotation) {
+  async postAnnotation({ body, user, bulk = false }) {
+
+    if (!body) {
       throw new MalformedBodyError()
     }
-    // For type moderating, check if user is on the whitelist.
-    if (annotation.motivation == "moderating") {
-      let uris = [user.uri].concat(Object.values(user.identities || {}).map(id => id.uri)).filter(uri => uri != null)
-      let whitelist = config.annotations.moderatingIdentities
-      if (whitelist && _.intersection(whitelist, uris).length == 0) {
-        // Disallow
-        throw new ForbiddenAccessError("Access forbidden, user is not allowed to create annotations of type \"moderating\".")
-      }
-    }
-    if (user) {
-      // Set creator
-      annotation.creator = {
-        id: user.uri,
-        name: user.name,
-      }
-    }
-    // Add created and modified dates.
-    let date = (new Date()).toISOString()
-    if (!annotation.created) {
-      annotation.created = date
-    }
-    // Remove type property
-    _.unset(annotation, "type")
-    // Validate mapping
-    if (!validate.annotation(annotation)) {
-      throw new InvalidBodyError()
-    }
-    // Add _id and URI
-    annotation._id = utils.uuid()
-    annotation.id = config.baseUrl + "annotations/" + annotation._id
-    // Make sure URI is a https URI when in production
-    if (config.env === "production") {
-      annotation.id = annotation.id.replace("http:", "https:")
+
+    let response
+    let isMultiple
+    let annotations
+
+    if (_.isArray(body)) {
+      annotations = body
+      isMultiple = true
+    } else if (_.isObject(body)) {
+      annotations = [body]
+      isMultiple = false
+      // ignore `bulk` option
+      bulk = false
+    } else {
+      throw new MalformedBodyError()
     }
 
-    // Save annotation
-    // eslint-disable-next-line no-useless-catch
-    try {
-      annotation = new Annotation(annotation)
-      annotation = await annotation.save()
-      return annotation.toObject()
-    } catch(error) {
-      throw error
+    // Adjust all mappings
+    annotations = annotations.map(annotation => {
+      try {
+        // For type moderating, check if user is on the whitelist.
+        if (annotation.motivation == "moderating") {
+          let uris = [user.uri].concat(Object.values(user.identities || {}).map(id => id.uri)).filter(uri => uri != null)
+          let whitelist = config.annotations.moderatingIdentities
+          if (whitelist && _.intersection(whitelist, uris).length == 0) {
+            // Disallow
+            throw new ForbiddenAccessError("Access forbidden, user is not allowed to create annotations of type \"moderating\".")
+          }
+        }
+        if (user) {
+          // Set creator
+          annotation.creator = {
+            id: user.uri,
+            name: user.name,
+          }
+        }
+        // Add created and modified dates.
+        let date = (new Date()).toISOString()
+        if (!annotation.created) {
+          annotation.created = date
+        }
+        // Remove type property
+        _.unset(annotation, "type")
+        // Validate mapping
+        if (!validate.annotation(annotation)) {
+          throw new InvalidBodyError()
+        }
+        // Add _id and URI
+        delete annotation._id
+        let uriBase = config.baseUrl + "annotations/"
+        if (annotation.id) {
+          let id = annotation.id
+          // ID already exists, use if it's valid, otherwise remove
+          if (id.startsWith(uriBase) && utils.isValidUuid(id.slice(uriBase.length, id.length))) {
+            annotation._id = id.slice(uriBase.length, id.length)
+          }
+        }
+        if (!annotation._id) {
+          annotation._id = utils.uuid()
+          annotation.id = config.baseUrl + "annotations/" + annotation._id
+        }
+        // Make sure URI is a https URI when in production
+        if (config.env === "production") {
+          annotation.id = annotation.id.replace("http:", "https:")
+        }
+
+        return annotation
+      } catch(error) {
+        if (bulk) {
+          return null
+        }
+        throw error
+      }
+    })
+    annotations = annotations.filter(a => a)
+
+    if (bulk) {
+      // Use bulkWrite for most efficiency
+      annotations.length && await Annotation.bulkWrite(annotations.map(a => ({
+        replaceOne: {
+          filter: { _id: a._id },
+          replacement: a,
+          upsert: true,
+        },
+      })))
+      response = annotations.map(a => ({ uri: a.id }))
+    } else {
+      response = await Annotation.insertMany(annotations, { lean: true })
     }
+
+    return isMultiple ? response : response[0]
   }
 
   async putAnnotation({ _id, body, user }) {
