@@ -384,7 +384,7 @@ describe("/data write access", () => {
         res.should.have.status(201)
         res.body.should.be.an("array")
         assert.deepEqual(res.body.map(c => c.uri), concepts.map(c => c.uri))
-        assert.deepEqual(Object.keys(res.body[0]), ["uri", "@context", "type"])
+        assert.deepEqual(Object.keys(res.body[0]), ["uri"])
         done()
       })
   })

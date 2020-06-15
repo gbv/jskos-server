@@ -25,7 +25,7 @@ if (config.concepts.create) {
     utils.wrappers.async(async (req) => {
       return await conceptService.postConcept({
         body: req.body,
-        bulk: req.query.bulk === "true" || req.query.bulk === "1",
+        bulk: req.query.bulk,
       })
     }),
     utils.adjust,

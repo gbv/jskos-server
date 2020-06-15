@@ -68,7 +68,13 @@ const Container = require("typedi").Container
 
 // Adjust data in req.data based on req.type (which is set by `addMiddlewareProperties`)
 const adjust = async (req, res, next) => {
-  if (!req.data || !req.type) {
+  /**
+   * Skip adjustments if either:
+   * - there is no data
+   * - there is no data type (i.e. we don't know which adjustment method to use)
+   * - the request was a bulk operation
+   */
+  if (!req.data || !req.type || req.query.bulk) {
     next()
   }
   let type = req.type
@@ -241,6 +247,8 @@ const addMiddlewareProperties = (req, res, next) => {
     const defaultOffset = 0
     req.query.offset = parseInt(req.query.offset)
     req.query.offset = req.query.offset || defaultOffset
+    // Bulk option for POST endpoints
+    req.query.bulk = req.query.bulk === "true" || req.query.bulk === "1"
   }
   // req.path -> req.type
   let type = req.path.substring(1)
