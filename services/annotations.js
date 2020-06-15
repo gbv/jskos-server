@@ -172,7 +172,7 @@ module.exports = class MappingService {
           upsert: true,
         },
       })))
-      response = annotations.map(a => ({ uri: a.id }))
+      response = annotations.map(a => ({ id: a.id }))
     } else {
       response = await Annotation.insertMany(annotations, { lean: true })
     }

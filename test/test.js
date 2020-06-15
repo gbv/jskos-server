@@ -1420,7 +1420,6 @@ describe("Express Server", () => {
               res.should.have.status(201)
               res.body.should.be.an("array")
               assert.equal(res.body.length, bulkAnnotations.length - 1)
-              console.log(res.body)
               // 3. Check updated annotation
               chai.request(server.app)
                 .get(`/annotations/${_id}`)
@@ -1428,7 +1427,6 @@ describe("Express Server", () => {
                   assert.equal(error, null)
                   res.should.have.status(200)
                   res.body.should.be.an("object")
-                  console.log(res.body)
                   assert.equal(res.body.bodyValue, update.bodyValue)
                   done()
                 })
