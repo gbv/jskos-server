@@ -315,7 +315,7 @@ describe("/data write access", () => {
       })
   })
 
-  it("should not POST a concept that already exists even if bulk is set", done => {
+  it("should not POST a single concept that already exists even if bulk is set", done => {
     chai.request(server.app)
       .post("/data")
       .query({
