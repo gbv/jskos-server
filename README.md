@@ -882,11 +882,19 @@ Returns a specific mapping.
   ```
 
 ### POST /mappings
-Saves a mapping in the database.
+Saves a mapping or multiple mappings in the database.
+
+* **URL Params**
+
+  `bulk=[boolean]` `1` or `true` enable bulk mode for importing multiple mappings into the database. Errors for individual mappings will be ignored and existing mappings will be overridden. The resulting set will only include the `id` for each mapping that was written into the database.
 
 * **Success Reponse**
 
-  JSKOS Mapping object as it was saved in the database.
+  JSKOS Mapping object as it was saved in the database, or array of mapping objects with only a `uri` if bulk mode was used..
+
+* **Error Response**
+
+  When a single mapping is provided, an error can be returned if there's something wrong with it (see [errors](#errors)). When multiple mappings are provided, the first error will be returned, except if bulk mode is enabled in which errors for individual mappings are ignored.
 
 ### PUT /mappings/:_id
 Overwrites a mapping in the database.
@@ -973,13 +981,17 @@ Lists supported terminologies (concept schemes).
 ### POST /voc
 Saves a concept scheme or multiple concept schemes in the database. Each concept scheme has to have a unique `uri`.
 
+* **URL Params**
+
+  `bulk=[boolean]` `1` or `true` enable bulk mode for importing multiple concept schemes into the database. Errors for individual concept schemes will be ignored and existing concept schemes will be overridden. The resulting set will only include the `id` for each concept scheme that was written into the database.
+
 * **Success Reponse**
 
-  JSKOS Concept Scheme object or array as was saved in the database.
+  JSKOS Concept Scheme object or array as was saved in the database, or array of concept scheme objects with only a `uri` if bulk mode was used.
 
 * **Error Response**
 
-  If any of the submitted concept schemes is invalid in some way or can't be inserted for another reason, an error will be returned (see [errors](#errors)).
+  When a single concept scheme is provided, an error can be returned if there's something wrong with it (see [errors](#errors)). When multiple concept schemes are provided, the first error will be returned, except if bulk mode is enabled in which errors for individual concept schemes are ignored.
 
 ### PUT /voc
 Overwrites a concept scheme in the database. Is identified via its `uri` field.
@@ -1492,11 +1504,19 @@ Returns a specific annotation.
   ```
 
 ### POST /annotations
-Saves an annotation in the database.
+Saves an annotation or multiple annotations in the database.
+
+* **URL Params**
+
+  `bulk=[boolean]` `1` or `true` enable bulk mode for importing multiple annotations into the database. Errors for individual annotations will be ignored and existing annotations will be overridden. The resulting set will only include the `id` for each annotation that was written into the database.
 
 * **Success Reponse**
 
-  Annotation object as it was saved in the database in [Web Annotation Data Model] format.
+  Annotation object or array of object as was saved in the database in [Web Annotation Data Model] format, or array of annotation objects with only a `id` if bulk mode was used.
+
+* **Error Response**
+
+  When a single annotation is provided, an error can be returned if there's something wrong with it (see [errors](#errors)). When multiple annotations are provided, the first error will be returned, except if bulk mode is enabled in which errors for individual annotations are ignored.
 
 ### PUT /annotations/:_id
 Overwrites an annotation in the database.
