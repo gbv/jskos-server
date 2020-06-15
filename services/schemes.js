@@ -41,8 +41,12 @@ module.exports = class SchemeService {
 
   // Write endpoints start here
 
-  async postScheme({ body }) {
+  async postScheme({ body, bulk = false }) {
+    if (!body) {
+      throw new MalformedBodyError()
+    }
 
+    let response
     let isMultiple
     let schemes
 
@@ -52,31 +56,43 @@ module.exports = class SchemeService {
     } else if (_.isObject(body)) {
       schemes = [body]
       isMultiple = false
+      // ignore `bulk` option
+      bulk = false
     } else {
       throw new MalformedBodyError()
     }
 
     // Prepare
-    schemes = await Promise.all(schemes.map(scheme => this.prepareAndCheckSchemeForAction(scheme, "create")))
+    schemes = await Promise.all(schemes.map(scheme => {
+      return this.prepareAndCheckSchemeForAction(scheme, "create")
+        .catch(error => {
+          // Ignore errors for bulk
+          if (bulk) {
+            return null
+          }
+          throw error
+        })
+    }))
+    // Filter out null
+    schemes = schemes.filter(s => s)
 
-    if (isMultiple) {
-      await Scheme.insertMany(schemes, { ordered: false, lean: true })
+    if (bulk) {
+      // Use bulkWrite for most efficiency
+      schemes.length && await Scheme.bulkWrite(schemes.map(s => ({
+        replaceOne: {
+          filter: { _id: s._id },
+          replacement: s,
+          upsert: true,
+        },
+      })))
+      schemes = await this.postAdjustmentsForScheme(schemes)
+      response = schemes.map(s => ({ uri: s.uri }))
     } else {
-      // Write scheme to database
-      let scheme = schemes[0]
-      // eslint-disable-next-line no-useless-catch
-      try {
-        scheme = new Scheme(scheme)
-        scheme = await scheme.save()
-      } catch(error) {
-        throw error
-      }
-      scheme.toObject()
+      schemes = await Scheme.insertMany(schemes, { lean: true })
+      response = await this.postAdjustmentsForScheme(schemes)
     }
 
-    schemes = await this.postAdjustmentsForScheme(schemes)
-
-    return isMultiple ? schemes : schemes[0]
+    return isMultiple ? response : response[0]
   }
 
   async putScheme({ body }) {

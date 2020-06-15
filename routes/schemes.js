@@ -26,6 +26,7 @@ if (config.schemes.create) {
     utils.wrappers.async(async (req) => {
       return await schemeService.postScheme({
         body: req.body,
+        bulk: req.query.bulk === "true" || req.query.bulk === "1",
       })
     }),
     utils.adjust,

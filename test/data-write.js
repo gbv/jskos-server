@@ -105,6 +105,48 @@ describe("/voc write access", () => {
       })
   })
 
+  it("should bulk POST schemes and ignore errors", done => {
+    const bulkSchemes = [
+      {
+        uri: "test:scheme-bulk1",
+      },
+      {
+        uri: "test:scheme-bulk2",
+      },
+      {
+        uri: "test-scheme-bulk-invalid",
+      },
+      {
+        uri: schemes[0].uri,
+        prefLabel: { en: "Bulk updated scheme" },
+      },
+    ]
+    chai.request(server.app)
+      .post("/voc")
+      .query({
+        bulk: true,
+      })
+      .send(bulkSchemes)
+      .end((error, res) => {
+        assert.equal(error, null)
+        res.should.have.status(201)
+        res.body.should.be.an("array")
+        assert.equal(res.body.length, 3) // one invalid scheme removed
+        // Check updated scheme
+        chai.request(server.app).get("/voc").query({ uri: schemes[0].uri }).end((error, res) => {
+          assert.equal(error, null)
+          res.should.have.status(200)
+          res.body.should.be.an("array")
+          assert.equal(res.body.length, 1)
+          assert.equal(res.body[0].uri, schemes[0].uri)
+          assert.deepEqual(res.body[0].prefLabel, bulkSchemes.find(s => s.uri == schemes[0].uri).prefLabel)
+          res.body[0].concepts.should.be.an("array")
+          res.body[0].topConcepts.should.be.an("array")
+          done()
+        })
+      })
+  })
+
   it("should PUT a scheme", done => {
     const patch = {
       notation: ["A"],
