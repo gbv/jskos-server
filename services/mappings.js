@@ -225,62 +225,101 @@ module.exports = class MappingService {
   }
 
   /**
-   * Save a single mapping in the database. Adds created date, validates tge mapping, and adds identifiers.
+   * Save a single mapping or multiple mappings in the database. Adds created date, validates the mapping, and adds identifiers.
    *
    * TODO: Make sure user matches?
    */
-  async postMapping({ body }) {
-    let mapping = body
-    if (!mapping) {
+  async postMapping({ body, bulk = false }) {
+
+    if (!body) {
       throw new MalformedBodyError()
     }
-    // Add created and modified dates.
-    const now = (new Date()).toISOString()
-    if (!mapping.created) {
-      mapping.created = now
+
+    let response
+    let isMultiple
+    let mappings
+
+    if (_.isArray(body)) {
+      mappings = body
+      isMultiple = true
+    } else if (_.isObject(body)) {
+      mappings = [body]
+      isMultiple = false
+      // ignore `bulk` option
+      bulk = false
+    } else {
+      throw new MalformedBodyError()
     }
-    mapping.modified = now
-    // Validate mapping
-    if (!validate.mapping(mapping)) {
-      throw new InvalidBodyError()
-    }
-    if (mapping.partOf) {
-      throw new InvalidBodyError("Property `partOf` is currently not allow.")
-    }
-    // Check cardinality for 1-to-1
-    if (config.mappings.cardinality == "1-to-1" && jskos.conceptsOfMapping(mapping, "to").length > 1) {
-      throw new InvalidBodyError("Only 1-to-1 mappings are supported.")
-    }
-    this.checkWhitelists(mapping)
-    // _id and URI
-    delete mapping._id
-    let uriBase = config.baseUrl + "mappings/"
-    if (mapping.uri) {
-      let uri = mapping.uri
-      // URI already exists, use if it's valid, otherwise move to identifier
-      if (uri.startsWith(uriBase) && utils.isValidUuid(uri.slice(uriBase.length, uri.length))) {
-        mapping._id = uri.slice(uriBase.length, uri.length)
-      } else {
-        mapping.identifier = (mapping.identifier || []).concat([uri])
+
+    // Adjust all mappings
+    mappings = mappings.map(mapping => {
+      try {
+        // Add created and modified dates.
+        const now = (new Date()).toISOString()
+        if (!mapping.created) {
+          mapping.created = now
+        }
+        mapping.modified = now
+        // Validate mapping
+        if (!validate.mapping(mapping)) {
+          throw new InvalidBodyError()
+        }
+        if (mapping.partOf) {
+          throw new InvalidBodyError("Property `partOf` is currently not allow.")
+        }
+        // Check cardinality for 1-to-1
+        if (config.mappings.cardinality == "1-to-1" && jskos.conceptsOfMapping(mapping, "to").length > 1) {
+          throw new InvalidBodyError("Only 1-to-1 mappings are supported.")
+        }
+        this.checkWhitelists(mapping)
+        // _id and URI
+        delete mapping._id
+        let uriBase = config.baseUrl + "mappings/"
+        if (mapping.uri) {
+          let uri = mapping.uri
+          // URI already exists, use if it's valid, otherwise move to identifier
+          if (uri.startsWith(uriBase) && utils.isValidUuid(uri.slice(uriBase.length, uri.length))) {
+            mapping._id = uri.slice(uriBase.length, uri.length)
+          } else {
+            mapping.identifier = (mapping.identifier || []).concat([uri])
+          }
+        }
+        if (!mapping._id) {
+          mapping._id = utils.uuid()
+          mapping.uri = uriBase + mapping._id
+        }
+        // Make sure URI is a https URI when in production
+        if (config.env === "production") {
+          mapping.uri.replace("http:", "https:")
+        }
+        // Set mapping identifier
+        mapping.identifier = jskos.addMappingIdentifiers(mapping).identifier
+
+        return mapping
+      } catch(error) {
+        if (bulk) {
+          return null
+        }
+        throw error
       }
+    })
+    mappings = mappings.filter(m => m)
+
+    if (bulk) {
+      // Use bulkWrite for most efficiency
+      mappings.length && await Mapping.bulkWrite(mappings.map(m => ({
+        replaceOne: {
+          filter: { _id: m._id },
+          replacement: m,
+          upsert: true,
+        },
+      })))
+      response = mappings.map(c => ({ uri: c.uri }))
+    } else {
+      response = await Mapping.insertMany(mappings, { lean: true })
     }
-    if (!mapping._id) {
-      mapping._id = utils.uuid()
-      mapping.uri = uriBase + mapping._id
-    }
-    // Make sure URI is a https URI when in production
-    if (config.env === "production") {
-      mapping.uri.replace("http:", "https:")
-    }
-    // Save mapping
-    // eslint-disable-next-line no-useless-catch
-    try {
-      mapping = new Mapping(mapping)
-      mapping = await mapping.save()
-      return mapping.toObject()
-    } catch(error) {
-      throw error
-    }
+
+    return isMultiple ? response : response[0]
   }
 
   async putMapping({ _id, body, user }) {

@@ -8,6 +8,7 @@ chai.use(chaiHttp)
 // eslint-disable-next-line no-unused-vars
 const should = chai.should()
 const server = require("../server")
+const assert = require("assert")
 const exec = require("child_process").exec
 const _ = require("lodash")
 const { dropDatabaseBeforeAndAfter } = require("./test-utils")
@@ -684,6 +685,59 @@ describe("Express Server", () => {
                 done()
               })
           })
+        })
+    })
+
+    it("should bulk POST mappings properly", done => {
+      const mappingToBeUpdated = { from: { memberSet: [] }, to: { memberSet: [] } }
+      const update = { fromScheme: { uri: "test:test" } }
+      const bulkMappings = [
+        // Two empty mappings that are still valid
+        { from: { memberSet: [] }, to: { memberSet: [] } },
+        { from: { memberSet: [] }, to: { memberSet: [] } },
+        // One invalid mapping that should be ignored
+        {
+          partOf: [{}],
+        },
+      ]
+      // 1. Post normal mapping
+      chai.request(server.app)
+        .post("/mappings")
+        .set("Authorization", `Bearer ${token}`)
+        .send(mappingToBeUpdated)
+        .end((error, res) => {
+          res.should.have.status(201)
+          res.body.should.be.an("object")
+          res.body.uri.should.be.a("string")
+          assert.notDeepEqual(res.body.fromScheme, update.fromScheme)
+          mappingToBeUpdated.uri = res.body.uri
+          let _id = res.body.uri.substring(res.body.uri.lastIndexOf("/") + 1)
+          // Add update to bulk mappings
+          bulkMappings.push(Object.assign({}, mappingToBeUpdated, update))
+          // 2. Post bulk mappings
+          chai.request(server.app)
+            .post("/mappings")
+            .query({
+              bulk: true,
+            })
+            .set("Authorization", `Bearer ${token}`)
+            .send(bulkMappings)
+            .end((error, res) => {
+              assert.equal(error, null)
+              res.should.have.status(201)
+              res.body.should.be.an("array")
+              assert.equal(res.body.length, bulkMappings.length - 1)
+              // 3. Check updated mapping
+              chai.request(server.app)
+                .get(`/mappings/${_id}`)
+                .end((error, res) => {
+                  assert.equal(error, null)
+                  res.should.have.status(200)
+                  res.body.should.be.an("object")
+                  assert.deepEqual(res.body.fromScheme, update.fromScheme)
+                  done()
+                })
+            })
         })
     })
 

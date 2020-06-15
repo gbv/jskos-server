@@ -60,6 +60,7 @@ if (config.mappings.create) {
       return await mappingService.postMapping({
         body: req.body,
         user: req.user,
+        bulk: req.query.bulk === "true" || req.query.bulk === "1",
       })
     }),
     utils.adjust,
