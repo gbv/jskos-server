@@ -53,7 +53,7 @@
     "express-basic-auth": "^1.2.0",
     "jskos-tools": "^1.0.7",
     "jskos-validate": "^0.3.2",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.19",
     "meow": "^7.0.1",
     "mongodb": "~3.5.7",
     "mongoose": "^5.9.13",
