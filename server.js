@@ -125,9 +125,9 @@ app.use((error, req, res, next) => {
 })
 
 const start = async () => {
-  const portfinder = require("portfinder")
   let port = config.port
   if (config.env == "test") {
+    const portfinder = require("portfinder")
     portfinder.basePort = config.port
     port = await portfinder.getPortPromise()
   }
