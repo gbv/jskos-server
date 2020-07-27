@@ -383,6 +383,7 @@ const handleDownload = (filename) => (req, res) => {
   let transform = JSONStream.stringify("[\n", ",\n", "\n]\n")
   let fileEnding = "json"
   let first = true, delimiter = ","
+  let csv
   switch (req.query.download) {
     case "ndjson":
       fileEnding = "ndjson"
@@ -405,19 +406,21 @@ const handleDownload = (filename) => (req, res) => {
         delimiter = "\t"
         res.set("Content-Type", "text/tab-separated-values; charset=utf-8")
       }
+      csv = jskos.mappingCSV({
+        lineTerminator: "\r\n",
+        creator: true,
+        schemes: true,
+        delimiter,
+      })
       transform = new Transform({
         objectMode: true,
         transform(chunk, encoding, callback) {
         // Small workaround to prepend a line to CSV
           if (first) {
-            this.push(`"fromNotation"${delimiter}"toNotation"${delimiter}"type"\n`)
+            this.push(`"fromScheme"${delimiter}"fromNotation"${delimiter}"toScheme"${delimiter}"toNotation"${delimiter}"toNotation2"${delimiter}"toNotation3"${delimiter}"toNotation4"${delimiter}"toNotation5"${delimiter}"type"${delimiter}"creator"\n`)
             first = false
           }
-          let mappingToCSV = jskos.mappingToCSV({
-            lineTerminator: "\r\n",
-            delimiter,
-          })
-          this.push(mappingToCSV(chunk))
+          this.push(csv.fromMapping(chunk, { fromCount: 1, toCount: 5 }))
           callback()
         },
       })
