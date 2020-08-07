@@ -360,6 +360,8 @@ npm run import-batch -- mappings files.txt
 
 **Note: If you have concepts in your database, make sure to run `jskos-import --indexes` at least once. This will make sure all necessary indexes are created. Without this step, the `/suggest` and `/search` endpoints will not work.**
 
+Note about hierarchy for concepts: jskos-server solely uses the `broader` field on concepts to determine the hierarchy. The `narrower` field will be dynamically filled for every request, and `ancestors` are determined via requests to [`GET /ancestors`](#get-ancestors) or via `properties=ancestors`. If there is data already inside the `narrower` or `ancestors` fields, it will be ignored.
+
 ## Usage
 
 ### Run Server
