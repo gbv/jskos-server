@@ -4,6 +4,40 @@ const config = require("../config")
 
 const Concept = require("../models/concepts")
 
+function conceptFind(query, $skip, $limit) {
+  const pipeline = [
+    {
+      $match: query,
+    },
+    {
+      $lookup: {
+        from: Concept.collection.name,
+        localField: "uri",
+        foreignField: "broader.uri",
+        as: "narrower",
+      },
+    },
+    {
+      $addFields: {
+        narrower: {
+          $reduce: {
+            input: "$narrower",
+            initialValue: [],
+            in: [null],
+          },
+        },
+      },
+    },
+  ]
+  if (_.isNumber($skip)) {
+    pipeline.push({ $skip })
+  }
+  if (_.isNumber($limit)) {
+    pipeline.push({ $limit })
+  }
+  return Concept.aggregate(pipeline)
+}
+
 module.exports = class ConceptService {
 
   constructor(container) {
@@ -36,7 +70,7 @@ module.exports = class ConceptService {
 
     // Note: If query.voc is given, no schemes are returned
     const schemes = query.voc ? [] : (await Promise.all([].concat(uris, notations).map(uri => this.schemeService.getScheme(uri)))).filter(scheme => scheme != null)
-    const concepts = await Concept.find(mongoQuery).lean().exec()
+    const concepts = await conceptFind(mongoQuery)
     const results = [].concat(schemes, concepts).slice(query.offset, query.offset + query.limit)
     results.totalCount = schemes.length + concepts.length
     return results
@@ -61,7 +95,7 @@ module.exports = class ConceptService {
       // Search for all top concepts in all vocabularies
       criteria = { topConceptOf: { $exists: true } }
     }
-    const concepts = await Concept.find(criteria).lean().skip(query.offset).limit(query.limit).exec()
+    const concepts = await conceptFind(criteria, query.offset, query.limit)
     concepts.totalCount = await Concept.find(criteria).countDocuments()
     return concepts
   }
@@ -83,7 +117,7 @@ module.exports = class ConceptService {
       }
       criteria = { $or: uris.map(uri => ({ "inScheme.uri": uri })) }
     }
-    const concepts = await Concept.find(criteria).lean().skip(query.offset).limit(query.limit).exec()
+    const concepts = await conceptFind(criteria, query.offset, query.limit)
     concepts.totalCount = await Concept.find(criteria).countDocuments()
     return concepts
   }
@@ -95,7 +129,7 @@ module.exports = class ConceptService {
     if (!query.uri) {
       return []
     }
-    return await Concept.find({ broader: { $elemMatch: { uri: query.uri } } }).lean()
+    return await conceptFind({ broader: { $elemMatch: { uri: query.uri } } })
   }
 
   /**
@@ -107,7 +141,7 @@ module.exports = class ConceptService {
     }
     const uri = query.uri
     // First retrieve the concept object from database
-    const concept = await Concept.findById(uri).lean()
+    const concept = (await conceptFind({ _id: uri }))[0]
     if (!concept) {
       return []
     }
@@ -229,7 +263,7 @@ module.exports = class ConceptService {
       }
       query = { $and: [query, { $or: uris.map(uri => ({ "inScheme.uri": uri })) } ] }
     }
-    let results = await Concept.find(query).lean().exec()
+    let results = await conceptFind(query)
     let _search = search.toUpperCase()
     // Prioritize results
     for (let result of results) {
