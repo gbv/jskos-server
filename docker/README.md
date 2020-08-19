@@ -86,4 +86,4 @@ The folder `/config` (mounted as `./data/config` if configured as above) contain
 ### Data Import
 To get your data into jskos-server, please refer to [this section](https://github.com/gbv/jskos-server#data-import) in the documentation. For those commands to work inside the Docker container, skip the linking part and replace `jskos-import` with `docker-compose exec jskos-server /usr/src/app/bin/import.js` for each command.
 
-**Note:** We are planning to improve the import process with the 1.2.0 release, so those commands might change in the near future.
+**Note:** If files are imported, these have to be mounted into the container first, and the path inside the container has to be given. For example, you could mount the host folder `./data/imports` to `/imports` inside the container and then use the path `/imports/myfile.ndjson` with the import command. **We are planning to improve the import process with the 1.2.0 release, so those commands will change in the near future.** It will also be possible to upload files via a web interface so that no commands will be necessary anymore.
