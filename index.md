@@ -7,13 +7,14 @@
 
 > Web service to access [JSKOS] data.
 
-JSKOS Server is a web server for [JSKOS] data. It is currently under development.
+JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data such as controlled vocabularies, concepts, and concept mappings.
 
 ## Table of Contents
 - [Install](#install)
   - [Dependencies](#dependencies)
   - [Clone and Install](#clone-and-install)
   - [Configuration](#configuration)
+  - [Authentication](#authentication)
   - [Data Import](#data-import)
 - [Usage](#usage)
   - [Run Server](#run-server)
@@ -67,7 +68,17 @@ npm install
 ```
 
 ### Configuration
-You can customize the application settings via a configuration file, e.g. by providing a generic `config.json` file and/or a more specific `config.{env}.json` file (where `{env}` is the environment like `development` or `production`). The latter will have precendent over the former, and all missing keys will be defaulted with values from `config.default.json`.
+You can customize the application settings via a configuration file. By default, this configuration file resides in `config/config.json`. However, it is possible to adjust this path via the `CONFIG_FILE` environment variable. Note that the given path has to be either absolute (i.e. starting with `/`) or relative to the `config/` folder (i.e. it defaults to `./config.json`). **Note** that the path to the configuration file needs to be valid and writable because a `namespace` key will be generated and written to the file if it doesn't currently exist.
+
+Currently, there are only two environment variables:
+- `NODE_ENV` - either `development` (default) or `production`; currently, the only difference is that in `production`, HTTPS URIs are forced for entities created on POST requests.
+- `CONFIG_FILE` - alternate path to a configuration file, relative to the `config/` folder; defaults to `./config.json`.
+
+You can either provide the environment variables during the command to start the server, or in a `.env` file in the root folder.
+
+It is also possible to have more specific configuration based on the environment. These are set in `config/config.development.json` or `config/config.production.json`. Values from these files have precedent over the user configuration.
+
+All missing keys will be defaulted from `config/config.default.json`:
 
 ```json
 {
@@ -75,6 +86,7 @@ You can customize the application settings via a configuration file, e.g. by pro
   "baseUrl": null,
   "version": null,
   "port": 3000,
+  "proxies": [],
   "mongo": {
     "user": "",
     "pass": "",
@@ -88,7 +100,7 @@ You can customize the application settings via a configuration file, e.g. by pro
     }
   },
   "auth": {
-    "algorithm": "HS256",
+    "algorithm": "RS256",
     "key": null
   },
   "schemes": true,
@@ -131,7 +143,8 @@ You can customize the application settings via a configuration file, e.g. by pro
     }
   },
   "identityProviders": null,
-  "identities": null
+  "identities": null,
+  "ips": null
 }
 ```
 
@@ -147,7 +160,7 @@ With the keys `schemes`, `concepts`, `mappings`, and `annotations`, you can conf
 
 Available actions for `mappings` and `annotations` are `read`, `create`, `update`, and `delete`. By default, all types can be read, while `mappings` and `annotations` can be created, updated, and deleted with authentication. Explanantions for additional options:
 
-- **`auth`**: Boolean. Can be defined only on actions. Defines whether access will require authentication. By default `false` for `read`, and `true` for all other actions.
+- **`auth`**: Boolean. Can be defined only on actions. Defines whether access will require [authentication via JWT](#authentication). By default `false` for `read`, and `true` for all other actions.
 
 - **`crossUser`**: Boolean. Can be defined only on `update` and `delete` actions. Defines whether it is possible to edit an entity from a different user than the authenticated one. `false` by default.
 
@@ -158,6 +171,8 @@ Available actions for `mappings` and `annotations` are `read`, `create`, `update
 - **`identities`**: List of URI strings. Can be defined on any level (deeper levels will take the values from higher levels if necessary\*). If set, an action can only be used by users with an URI given in the list. `null` by default (no restrictions).
 
 - **`identityProviders`**: List of strings. Can be defined on any level (deeper levels will take the values from higher levels if necessary\*). If set, an action can only be used by users who have that identity associated with them. `null` by default (no restrictions).
+
+- **`ips`**: List of strings. Strings can be IPv4 addresses (e.g. `127.0.0.1`, `123.234.123.234`) or CIDR ranges (e.g. `192.168.0.1/24`). Can be defined on any level (deeper levels will take the values from higher levels if necessary\*). If set, an action can only be used by clients with a whitelisted IP address. `null` by default (no restrictions). Note: An empty array will allow all IPs. Note: This property will be removed for security reasons when accessing [GET /status](#get-status) (meaning that clients will not be able to see the whitelisted IP addresses).
 
 - **`fromSchemeWhitelist`/`toSchemeWhitelist`**: Can be defined only on type `mappings`. List of scheme objects that are allowed for `fromScheme`/`toScheme` respectively. `null` allows all schemes.
 
@@ -238,14 +253,18 @@ Here are some helpful example presets for "mappings" or "annotations".
 
 ---
 
-**If you are using jskos-server behind a proxy, it is necessary to provide the `baseUrl` key in your configuration (example for our production API):**
+**If you are using jskos-server behind a proxy, it is necessary to provide the `baseUrl` key as well as the `proxies` key in your configuration (example for our production API):**
 ```json
 {
-  "baseUrl": "https://coli-conc.gbv.de/api/"
+  "baseUrl": "https://coli-conc.gbv.de/api/",
+  "proxies": ["123.456.789.101", "234.567.891.011"]
 }
 ```
 
-For authorized endpoints via JWT, you need to provide the JWT algorithm and key/secret used at the authentication server in the configuration file, like this:
+See also: [Running Behind a Reverse Proxy](#running-behind-a-reverse-proxy)
+
+### Authentication
+It is possible to limit certain actions to authenticated users, indicated by the `auth` option (see example configurations above). Authorization is performed via JWTs ([JSON Web Tokens](https://jwt.io/)). To configure authentication, you need to provide the JWT algorithm and the key/secret in the configuration file, like this:
 
 ```json
 "auth": {
@@ -254,7 +273,69 @@ For authorized endpoints via JWT, you need to provide the JWT algorithm and key/
 }
 ```
 
-The JWT has to be provided as a Bearer token in the authentication header, e.g. `Authentication: Bearer <token>`. Currently, all authorized endpoints will be accessible (although `PUT`/`PATCH`/`DELETE` are limited to the user who created the object by default), but later it will be possible to set scopes for certain users (see [#47](https://github.com/gbv/jskos-server/issues/47)).
+The JWT has to be provided as a Bearer token in the authorization header, e.g. `Authorization: Bearer <token>`. Currently, all authorized endpoints will be accessible (although `PUT`/`PATCH`/`DELETE` are limited to the user who created the object by default), but later it will be possible to set scopes for certain users (see [#47](https://github.com/gbv/jskos-server/issues/47)).
+
+The authentication is designed to be used together with an instance of [login-server], but it is also possible to use your own JWTs.
+
+#### JWT Example
+The recommended Node.js library for creating JWTs is [jsonwebtoken](https://github.com/auth0/node-jsonwebtoken). Note that for simplicity, we are using the HS256 algorithm which is symmetrical. In most cases, it would be better to use RS256 with a libarary like [node-rsa](https://github.com/rzcoder/node-rsa) instead.
+
+Simple config, restricting the `/mappings` endpoint with authentication:
+```json
+{
+  "auth": {
+    "algorith": "HS256",
+    "key": "yoursecret"
+  },
+  "mappings": {
+    "read": {
+      "auth": true
+    }
+  }
+}
+```
+
+Creating a JWT:
+```js
+const jwt = require("jsonwebtoken")
+// Payload is an object containing the user object with an URI:
+const data = {
+  user: { uri: "test:hallo" }
+}
+// Sign the token with our secret
+const token = jwt.sign(data, "yoursecret", {
+  algorithm: "HS256",
+  expiresIn: "7d" // valid for 7 days
+})
+```
+
+Using the token in a request (using curl):
+```bash
+# Request without header should return ForbiddenAccessError (code 403)
+curl localhost:3000/mappings
+# Request with header should return JSON data (insert your own token and jskos-server URL of course)
+curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InVyaSI6InRlc3Q6aGFsbG8ifSwiaWF0IjoxNTg5NTMyNDU3LCJleHAiOjE1OTAxMzcyNTd9.fXIxgS0QyFk9Lvz7Z-fkb4tAueMTSNZ4zAuB6iwePq4" localhost:3000/mappings
+```
+
+If you are the only user that is supposed to be authenticated for your instance of jskos-server, you could in theory use something like this to create a token with a long lifetime and use it for all your requests. Please consider the security implications before doing this though.
+
+#### Login Server Example
+If you have multiple users using your instance of jskos-server, it is recommended to use [login-server] for authentication. login-server uses the asymmetrical RS256 algorithm by default and will create a public/private key pair on first launch. The public key will be in `./public.key` and you will need that for the configuration:
+
+```json
+{
+  "auth": {
+    "algorith": "RS256",
+    "key": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA57ZWRoOjXYTQ9yujxAu7\ne3k4+JRBAqGdDVIRRq5vXB2D5nJBIhQjVjylumn+QnTX/MdZx8qn7X96npUwHwIh\nylCgUmsYXcjP08X/AXEcP5bPOkgBBCKjWmcm+p01RQSOM0nSptyxpyXzr2ppWe1b\nuYdRYDWj+JV7vm+jJA4NiFv4UnAhoG5lRATADzu0/6wpMK3dVMBL7L0jQoV5xBAb\nLADOy5hD9XEII3VPkUqDGIKM+Z24flkCIf0lQ7FjsoZ2mmM1SZJ5vPDcjMKreFkX\ncWlcwGHN0PUWZWLhb7c8yYa1rauMcwFwv0d2XyOEfgkqEJdCh8mVT/5jR48D2PNG\ncwIDAQAB\n-----END PUBLIC KEY-----\n"
+  }
+}
+```
+
+After that, you can use [login-client](https://github.com/gbv/login-client) to interact with your login-server instance and receive JWTs. When using WebSockets, login-server will periodically send a new JWT before the previous one expires. You can then use that to authenticate your requests to jskos-server. (An example on how to use login-client can be found in the [source code of login-server](https://github.com/gbv/login-server/blob/master/views/api.ejs).)
+
+For testing your authentication without a full-fledged solution using login-client, you can use http://localhost:3004/token (where `localhost:3004` is your instance of login-server) to request a JWT.
+
+---
 
 Note about previous additional options for `auth`:
 - `postAuthRequired`: now covered by `mappings.create.auth`
@@ -287,6 +368,10 @@ npm run import-batch -- mappings files.txt
 # You can, for example, store these batch import files in folder `imports` which is ignored in git.
 ```
 
+**Note: If you have concepts in your database, make sure to run `jskos-import --indexes` at least once. This will make sure all necessary indexes are created. Without this step, the `/suggest` and `/search` endpoints will not work.**
+
+Note about hierarchy for concepts: jskos-server solely uses the `broader` field on concepts to determine the hierarchy. The `narrower` field will be dynamically filled for every request, and `ancestors` are determined via requests to [`GET /ancestors`](#get-ancestors) or via `properties=ancestors`. If there is data already inside the `narrower` or `ancestors` fields, it will be ignored.
+
 ## Usage
 
 ### Run Server
@@ -299,7 +384,7 @@ NODE_ENV=production node ./server.js
 ```
 
 ### Run Tests
-Tests will use the real MongoDB with `-test` appended to the database name.
+Tests will use the real MongoDB with `-test-${namespace}` appended to the database name.
 
 ```bash
 npm test
@@ -322,6 +407,15 @@ Returns a status object.
 
 There is a [JSON Schema](https://json-schema.org) for the format of this endpoint. It is available under `/status.schema.json` for every jskos-server installation (starting from version 1.0.0). The most recent schema can be accessed here: https://gbv.github.io/jskos-server/status.schema.json
 
+Note that certain properties from the actual configuration will not be shown in the result for `/status`:
+- `verbosity`
+- `port`
+- `mongo`
+- `namespace`
+- `proxies`
+- `ips` (including inside of actions)
+- `auth.key` if a symmetrical algorithm is used (HS256, HS384, HS512)
+
 * **Success Response**
 
   ```json
@@ -331,7 +425,7 @@ There is a [JSON Schema](https://json-schema.org) for the format of this endpoin
       "baseUrl": "http://localhost:3000/",
       "version": "1.1",
       "auth": {
-        "algorithm": "HS256",
+        "algorithm": "RS256",
         "key": null
       },
       "schemes": {
@@ -522,7 +616,7 @@ Returns an array of mappings. Each mapping has a property `uri` under which the 
 
   `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting only `annotations` for mappings)
 
-  `download=[type]` returns the whole result as a download (available types are `json`, `ndjson`, `csv`, and `tsv`), ignores `limit` and `offset`
+  `download=[type]` returns the whole result as a download (available types are `json`, `ndjson`, `csv`, and `tsv`), ignores `limit` and `offset`; **note**: `csv` and `tsv` are restricted (and fixed) to 5 target concepts, meaning that if the data set includes a mapping with more than 5 target concepts, only the first 5 will appear in the export
 
   `sort=[sort]` sorts by a specific field. Available are `created` and `modified` (default).
 
@@ -1353,6 +1447,9 @@ Status code 403. Will be returned by `PUT`/`PATCH`/`DELETE` endpoints if the aut
 #### DatabaseAccessError
 Status code 500. Will be returned if the database is not available or if the current database request failed with an unknown error.
 
+#### ConfigurationError
+Status code 500. Will be returned if there is an error in the configuration that prevents the application from working correctly.
+
 #### ForbiddenAccessError
 Status code 403. Will be returned if the user is not allow access (i.e. when not on the whitelist or when an identity provider is missing).
 
@@ -1390,11 +1487,15 @@ There are certain things to consider when running `jskos-server` behind a revers
 
 1. Make sure the base URL is configured correctly in `config.json` so that correct URIs will be generated. Test this by creating a new mapping and making sure the URI of that mapping is correct and accessible.
 
-2. The reverse proxy should be configured so that the base URL has a trailing slash: ~~`https://example.com/api`~~ ❌ - `https://example.com/api/` ✅ (Note: Not implementing this has no further consequences except that `/api` will not be accessible.)
+1. Provide a list of trusted proxy IPs or ranges in the `proxies` key in `config.json`. E.g. `"proxies": ["123.456.789.101", "234.567.891.011"]`. See also: [Express behind proxies](https://expressjs.com/en/guide/behind-proxies.html).
 
-3. The reverse proxy should also be configured so that any URL **except** the base URL has **no** trailing slash: ~~`https://example.com/api/status/`~~ ❌ - `https://example.com/api/status` ✅
+1. The reverse proxy should be configured so that the base URL has a trailing slash: ~~`https://example.com/api`~~ ❌ - `https://example.com/api/` ✅ (Note: Not implementing this has no further consequences except that `/api` will not be accessible.)
 
-4. Make sure the target parameter (i.e. the actual IP and port where `jskos-server` is running) has a trailing slash.
+1. The reverse proxy should also be configured so that any URL **except** the base URL has **no** trailing slash: ~~`https://example.com/api/status/`~~ ❌ - `https://example.com/api/status` ✅
+
+1. Make sure the target parameter (i.e. the actual IP and port where `jskos-server` is running) has a trailing slash.
+
+1. Make sure the proxy is configured to correctly set the `X-Forwarded-For` header.
 
 The following would be an example for 2./3./4. with an Apache reverse proxy:
 
@@ -1421,6 +1522,22 @@ The following would be an example for 2./3./4. with an Apache reverse proxy:
 
 <!-- TODO: Add example for nginx. -->
 
+## Related works
+
+jskos-server is developed together with the [cocoda](https://coli-conc.gbv.de/cocoda/) mapping application.
+
+Alternative open source applications for hosting concept schemes include:
+
+* [Skosmos](http://skosmos.org/)
+* [Skohub](https://skohub.io/)
+* [OpenSKOS](http://openskos.org)
+* [TemaTres](https://www.vocabularyserver.com)
+* [iQVoc](http://iqvoc.net/)
+* [VocPrez](https://github.com/GeoscienceAustralia/VocPrez)
+* ...
+
+See [cocoda-sdk](https://github.com/gbv/cocoda-sdk) for efforts to provide uniform access to vocabulary information from different applications and sources.
+
 ## Maintainers
 
 - [@stefandesu](https://github.com/stefandesu)
@@ -1435,3 +1552,5 @@ Small note: If editing the README, please conform to the [standard-readme](https
 ## License
 
 MIT © 2018 Verbundzentrale des GBV (VZG)
+
+[login-server]: https://github.com/gbv/login-server
