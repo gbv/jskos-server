@@ -74,7 +74,17 @@ npm install
 ```
 
 ### Configuration
-You can customize the application settings via a configuration file, e.g. by providing a generic `config.json` file and/or a more specific `config.{env}.json` file (where `{env}` is the environment like `development` or `production`). The latter will have precendent over the former, and all missing keys will be defaulted with values from `config.default.json`.
+You can customize the application settings via a configuration file. By default, this configuration file resides in `config/config.json`. However, it is possible to adjust this path via the `CONFIG_FILE` environment variable. Note that the given path has to be either absolute (i.e. starting with `/`) or relative to the `config/` folder (i.e. it defaults to `./config.json`). **Note** that the path to the configuration file needs to be valid and writable because a `namespace` key will be generated and written to the file if it doesn't currently exist.
+
+Currently, there are only two environment variables:
+- `NODE_ENV` - either `development` (default) or `production`; currently, the only difference is that in `production`, HTTPS URIs are forced for entities created on POST requests.
+- `CONFIG_FILE` - alternate path to a configuration file, relative to the `config/` folder; defaults to `./config.json`.
+
+You can either provide the environment variables during the command to start the server, or in a `.env` file in the root folder.
+
+It is also possible to have more specific configuration based on the environment. These are set in `config/config.development.json` or `config/config.production.json`. Values from these files have precedent over the user configuration.
+
+All missing keys will be defaulted from `config/config.default.json`:
 
 ```json
 {
@@ -413,6 +423,8 @@ npm run import-batch -- mappings files.txt
 
 **Note: If you have concepts in your database, make sure to run `jskos-import --indexes` at least once. This will make sure all necessary indexes are created. Without this step, the `/suggest` and `/search` endpoints will not work.**
 
+Note about hierarchy for concepts: jskos-server solely uses the `broader` field on concepts to determine the hierarchy. The `narrower` field will be dynamically filled for every request, and `ancestors` are determined via requests to [`GET /ancestors`](#get-ancestors) or via `properties=ancestors`. If there is data already inside the `narrower` or `ancestors` fields, it will be ignored.
+
 ## Usage
 
 ### Run Server
@@ -657,7 +669,7 @@ Returns an array of mappings. Each mapping has a property `uri` under which the 
 
   `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting only `annotations` for mappings)
 
-  `download=[type]` returns the whole result as a download (available types are `json`, `ndjson`, `csv`, and `tsv`), ignores `limit` and `offset`
+  `download=[type]` returns the whole result as a download (available types are `json`, `ndjson`, `csv`, and `tsv`), ignores `limit` and `offset`; **note**: `csv` and `tsv` are restricted (and fixed) to 5 target concepts, meaning that if the data set includes a mapping with more than 5 target concepts, only the first 5 will appear in the export
 
   `sort=[sort]` sorts by a specific field. Available are `created` and `modified` (default).
 
@@ -925,8 +937,10 @@ Lists supported terminologies (concept schemes).
   `uri=[uri]` URIs for concept schemes separated by `|`. If `uri` is not given, all supported concept schemes are returned.
 
   `type=URI` type URI to filter schemes
-  <!--
-  `language=tag` language codes to filter schemes, separated by `,` (exact values) -->
+
+  `languages=tag` language codes to filter schemes, separated by `,` (exact values). *Not to be confused with query parameter `language` at other endpoints!*
+
+    // Note: The `language` parameter at other endpoints means "give me labels in these languages". That's why it should have a different name here. Until then, it is removed.
 
   `subject=URI` subject URI to filter schemes
 

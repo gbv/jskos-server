@@ -247,8 +247,6 @@ function importFile(file, type, { concordance, quiet = false, format } = {}) {
       log(...params)
     }
   }
-  // Only for concepts, needed for post-import adjustments
-  let hasChildren = {}
   // Database collection depending on type
   let collection = collectionForType(type)
   return new Promise(resolve => {
@@ -328,13 +326,6 @@ function importFile(file, type, { concordance, quiet = false, format } = {}) {
           // Add "inScheme" for all top concepts
           if (!object.inScheme && object.topConceptOf) {
             object.inScheme = object.topConceptOf
-          }
-          // Set hasChildren for all broader URIs
-          for (let broader of object.broader || []) {
-            let uri = broader && broader.uri
-            if (uri) {
-              hasChildren[uri] = true
-            }
           }
           break
         case "mapping":
@@ -472,9 +463,7 @@ function importFile(file, type, { concordance, quiet = false, format } = {}) {
           printStatus()
           lastPromise = lastPromise.then(() => collection.find({ $or: idChunk.map(_id => ({ _id })) }).toArray().then(results => {
             for (let concept of results) {
-              let update = {
-                narrower: hasChildren[concept._id] ? [null] : [],
-              }
+              let update = {}
               update._keywordsNotation = makePrefixes(concept.notation || [])
               // Do not write text index keywords for synthetic concepts
               if (!concept.type || !concept.type.includes("http://rdf-vocabulary.ddialliance.org/xkos#CombinedConcept")) {

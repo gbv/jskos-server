@@ -1,0 +1,20 @@
+version: "3"
+
+services:
+  jskos-server:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    depends_on:
+      - mongo
+    volumes:
+      - ./data/config:/config
+    ports:
+      - 3000:3000
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:4
+    volumes:
+      - ./data/db:/data/db
+    restart: unless-stopped

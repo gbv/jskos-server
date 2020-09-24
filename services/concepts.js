@@ -40,6 +40,40 @@ function conceptFind(query, $skip, $limit) {
   return Concept.aggregate(pipeline)
 }
 
+function conceptFind(query, $skip, $limit) {
+  const pipeline = [
+    {
+      $match: query,
+    },
+    {
+      $lookup: {
+        from: Concept.collection.name,
+        localField: "uri",
+        foreignField: "broader.uri",
+        as: "narrower",
+      },
+    },
+    {
+      $addFields: {
+        narrower: {
+          $reduce: {
+            input: "$narrower",
+            initialValue: [],
+            in: [null],
+          },
+        },
+      },
+    },
+  ]
+  if (_.isNumber($skip)) {
+    pipeline.push({ $skip })
+  }
+  if (_.isNumber($limit)) {
+    pipeline.push({ $limit })
+  }
+  return Concept.aggregate(pipeline)
+}
+
 module.exports = class ConceptService {
 
   constructor(container) {

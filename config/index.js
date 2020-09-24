@@ -1,9 +1,12 @@
 const _ = require("lodash")
 
+// Prepare environment
+require("dotenv").config()
+const env = process.env.NODE_ENV || "development"
+const configFile = process.env.CONFIG_FILE || "./config.json"
+
 // Load default config
 const configDefault = require("./config.default.json")
-// Current environment
-const env = process.env.NODE_ENV || "development"
 // Load environment config
 let configEnv
 try {
@@ -12,15 +15,14 @@ try {
   configEnv = {}
 }
 // Load user config
-let configUser
-try {
-  // Don't load user config for test environment
-  if (env == "test") {
-    throw new Error()
+let configUser = {}
+// Don't load user config for test environment
+if (env != "test") {
+  try {
+    configUser = require(configFile)
+  } catch(error) {
+    console.warn(`Warning: Could not load configuration file from ${configFile}. The application might not behave as expected.`)
   }
-  configUser = require("./config.json")
-} catch(error) {
-  configUser = {}
 }
 
 // Before merging, check whether `namespace` exists in the user config and if not, generate a namespace and save it to user config
@@ -29,8 +31,15 @@ if (!configUser.namespace && env != "test") {
   const path = require("path")
   const uuid = require("uuid").v4()
   configUser.namespace = uuid
-  fs.writeFileSync(path.resolve(__dirname, "config.json"), JSON.stringify(configUser, null, 2))
-  console.log("Config: Created a namespace and wrote it to config/config.json.")
+  // Adjust path if it's relative
+  let configFilePath
+  if (configFile.startsWith("/")) {
+    configFilePath = configFile
+  } else {
+    configFilePath = path.resolve(__dirname, configFile)
+  }
+  fs.writeFileSync(configFilePath, JSON.stringify(configUser, null, 2))
+  console.log(`Info/Config: Created a namespace and wrote it to ${configFilePath}.`)
 }
 
 let config = _.defaultsDeep({ env }, configEnv, configUser, configDefault)

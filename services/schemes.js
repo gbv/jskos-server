@@ -20,12 +20,11 @@ module.exports = class SchemeService {
     if (query.type) {
       mongoQuery.type = query.type
     }
-    // Note: The `language` parameter at other endpoints means "give me labels in these languages". That's why it should have a different name here. Until then, it is removed.
-    // if (query.language) {
-    //   mongoQuery.languages = {
-    //     $in: query.language.split(","),
-    //   }
-    // }
+    if (query.languages) {
+      mongoQuery.languages = {
+        $in: query.languages.split(","),
+      }
+    }
     if (query.subject) {
       mongoQuery["subject.uri"] = query.subject
     }

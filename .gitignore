@@ -21,3 +21,8 @@ yarn-error.log*
 
 # Lists for import script
 imports/
+
+# Docker
+docker/data/*
+## .env file for Docker build
+!docker/.env
