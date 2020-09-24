@@ -814,24 +814,23 @@ describe("Express Server", () => {
       })
     })
 
-    // Note: The following tests were temporarily removed. Add them again as soon as an alternative name for the language filter parameter for /voc is implemented (services/schemes.js L18).
-    // it("should support filtering by language", done => {
-    //   chai.request(server.app)
-    //     .get("/voc?language=fr")
-    //     .end((err, res) => {
-    //       res.body.length.should.be.eql(1)
-    //       done()
-    //     })
-    // })
+    it("should support filtering by language", done => {
+      chai.request(server.app)
+        .get("/voc?languages=fr")
+        .end((err, res) => {
+          res.body.length.should.be.eql(1)
+          done()
+        })
+    })
 
-    // it("should support filtering by multiple languages", done => {
-    //   chai.request(server.app)
-    //     .get("/voc?language=it,jp,de")
-    //     .end((err, res) => {
-    //       res.body.length.should.be.eql(2)
-    //       done()
-    //     })
-    // })
+    it("should support filtering by multiple languages", done => {
+      chai.request(server.app)
+        .get("/voc?languages=it,jp,de")
+        .end((err, res) => {
+          res.body.length.should.be.eql(2)
+          done()
+        })
+    })
 
   })
 
