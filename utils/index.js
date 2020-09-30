@@ -151,8 +151,10 @@ adjust.mappings = async (mappings, properties) => {
 
 // Add @context and type to schemes.
 adjust.scheme = (scheme) => {
-  scheme["@context"] = "https://gbv.github.io/jskos/context.json"
-  scheme.type = scheme.type || ["http://www.w3.org/2004/02/skos/core#ConceptScheme"]
+  if (scheme) {
+    scheme["@context"] = "https://gbv.github.io/jskos/context.json"
+    scheme.type = scheme.type || ["http://www.w3.org/2004/02/skos/core#ConceptScheme"]
+  }
   return scheme
 }
 adjust.schemes = (schemes) => {
