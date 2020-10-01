@@ -16,6 +16,10 @@
           "type": "string",
           "format": "uri"
         },
+        "title": {
+          "description": "A custom title of the JSKOS API instance",
+          "type": "string"
+        },
         "version": {
           "description": "The version of the JSKOS API specification that is used",
           "type": "string",

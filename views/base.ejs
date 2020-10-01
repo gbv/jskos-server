@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>JSKOS Server</title>
+    <title><%= config.title %></title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style type="text/css">
     body {
@@ -18,14 +18,10 @@
     </style>
   </head>
   <body>
-    <h1>JSKOS Server</h1>
-    <h2>Documentation</h2>
-    <p>
-      Visit the project on <a href="https://github.com/gbv/jskos-server" target="_blank">GitHub</a> for the full documentation.
-    </p>
+    <h1><%= config.title %></h1>
     <h2>Available Endpoints</h2>
     <p>
-      This service provides a subset of JSKOS API <%= config.version %>. All the following endpoints are available on this instance of jskos-server:
+      This service provides a subset of JSKOS API <%= config.version %>. All the following endpoints are available on this instance of jskos-server. See documentation <a href="https://github.com/gbv/jskos-server" target="_blank">on GitHub</a> for details.
     </p>
     <h3>General</h3>
     <ul>

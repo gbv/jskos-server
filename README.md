@@ -90,6 +90,7 @@ All missing keys will be defaulted from `config/config.default.json`:
 {
   "verbosity": false,
   "baseUrl": null,
+  "title": "JSKOS Server",
   "version": null,
   "port": 3000,
   "proxies": [],

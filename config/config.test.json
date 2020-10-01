@@ -1,4 +1,5 @@
 {
+  "title": "Testing",
   "auth": {
     "algorithm": "HS256",
     "key": "test"
