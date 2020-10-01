@@ -502,7 +502,7 @@ module.exports = class ConceptService {
       concept.inScheme = concept.topConceptOf
     }
     // Validate concept
-    if (!validate.concept(concept)) {
+    if (!validate.concept(concept) || !concept.uri) {
       throw new InvalidBodyError()
     }
     // Check concept scheme

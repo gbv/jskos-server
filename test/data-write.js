@@ -77,11 +77,27 @@ describe("/voc write access", () => {
       })
   })
 
-  it("should not POST an invalid scheme", done => {
+  it("should not POST an invalid scheme (1 - invalid prefLabel)", done => {
     chai.request(server.app)
       .post("/voc")
       .send({
+        uri: "uri:test",
         prefLabel: "test",
+      })
+      .end((error, res) => {
+        assert.equal(error, null)
+        res.should.have.status(422)
+        res.body.should.be.an("object")
+        assert.equal(res.body.error, "InvalidBodyError")
+        done()
+      })
+  })
+
+  it("should not POST an invalid scheme (2 - missing URI)", done => {
+    chai.request(server.app)
+      .post("/voc")
+      .send({
+        prefLabel: { en: "test" },
       })
       .end((error, res) => {
         assert.equal(error, null)
@@ -329,11 +345,25 @@ describe("/data write access", () => {
       })
   })
 
-  it("should not POST an invalid concept", done => {
+  it("should not POST a concept with invalid URI", done => {
     chai.request(server.app)
       .post("/data")
       .send({
         uri: "concept-invalid-uri",
+        inScheme: [schemes[1]],
+      })
+      .end((error, res) => {
+        res.should.have.status(422)
+        res.body.should.be.a("object")
+        assert.equal(res.body.error, "InvalidBodyError")
+        done()
+      })
+  })
+
+  it("should not POST a concept with missing URI", done => {
+    chai.request(server.app)
+      .post("/data")
+      .send({
         inScheme: [schemes[1]],
       })
       .end((error, res) => {

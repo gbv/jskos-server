@@ -145,7 +145,7 @@ module.exports = class SchemeService {
     }
     if (["create", "update"].includes(action)) {
       // Validate scheme
-      if (!validate.scheme(scheme)) {
+      if (!validate.scheme(scheme) || !scheme.uri) {
         throw new InvalidBodyError()
       }
       // Add _id
