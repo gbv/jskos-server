@@ -340,26 +340,32 @@ module.exports = class ConceptService {
 
   // Write endpoints start here
 
-  async postConcept({ body, bulk = false }) {
-    if (!body) {
+  async postConcept({ bodyStream, bulk = false }) {
+    if (!bodyStream) {
       throw new MalformedBodyError()
     }
+
+    let isMultiple = true
+
+    // As a workaround, build body from bodyStream
+    // TODO: Use actual stream
+    let concepts = await new Promise((resolve) => {
+      const body = []
+      bodyStream.on("data", concept => {
+        body.push(concept)
+      })
+      bodyStream.on("isSingleObject", () => {
+        isMultiple = false
+      })
+      bodyStream.on("end", () => {
+        resolve(body)
+      })
+    })
 
     let response
-    let isMultiple
-    let concepts
 
-    if (_.isArray(body)) {
-      concepts = body
-      isMultiple = true
-    } else if (_.isObject(body)) {
-      concepts = [body]
-      isMultiple = false
-      // ignore `bulk` option
-      bulk = false
-    } else {
-      throw new MalformedBodyError()
-    }
+    // Ignore bulk option for single object
+    bulk = !isMultiple ? false : bulk
 
     // Prepare
     let preparation = await this.prepareAndCheckConcepts(concepts)

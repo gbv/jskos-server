@@ -82,27 +82,32 @@ module.exports = class MappingService {
   /**
    * Save a new annotation or multiple annotations in the database. Adds created date if necessary.
    */
-  async postAnnotation({ body, user, bulk = false }) {
-
-    if (!body) {
+  async postAnnotation({ bodyStream, user, bulk = false }) {
+    if (!bodyStream) {
       throw new MalformedBodyError()
     }
+
+    let isMultiple = true
+
+    // As a workaround, build body from bodyStream
+    // TODO: Use actual stream
+    let annotations = await new Promise((resolve) => {
+      const body = []
+      bodyStream.on("data", annotation => {
+        body.push(annotation)
+      })
+      bodyStream.on("isSingleObject", () => {
+        isMultiple = false
+      })
+      bodyStream.on("end", () => {
+        resolve(body)
+      })
+    })
 
     let response
-    let isMultiple
-    let annotations
 
-    if (_.isArray(body)) {
-      annotations = body
-      isMultiple = true
-    } else if (_.isObject(body)) {
-      annotations = [body]
-      isMultiple = false
-      // ignore `bulk` option
-      bulk = false
-    } else {
-      throw new MalformedBodyError()
-    }
+    // Ignore bulk option for single object
+    bulk = !isMultiple ? false : bulk
 
     // Adjust all mappings
     annotations = annotations.map(annotation => {

@@ -25,7 +25,7 @@ if (config.schemes.create) {
     config.schemes.create.auth ? auth.default : auth.optional,
     utils.wrappers.async(async (req) => {
       return await schemeService.postScheme({
-        body: req.body,
+        bodyStream: req.bodyStream,
         bulk: req.query.bulk,
       })
     }),

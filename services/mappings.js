@@ -229,27 +229,32 @@ module.exports = class MappingService {
    *
    * TODO: Make sure user matches?
    */
-  async postMapping({ body, bulk = false }) {
-
-    if (!body) {
+  async postMapping({ bodyStream, bulk = false }) {
+    if (!bodyStream) {
       throw new MalformedBodyError()
     }
+
+    let isMultiple = true
+
+    // As a workaround, build body from bodyStream
+    // TODO: Use actual stream
+    let mappings = await new Promise((resolve) => {
+      const body = []
+      bodyStream.on("data", mapping => {
+        body.push(mapping)
+      })
+      bodyStream.on("isSingleObject", () => {
+        isMultiple = false
+      })
+      bodyStream.on("end", () => {
+        resolve(body)
+      })
+    })
 
     let response
-    let isMultiple
-    let mappings
 
-    if (_.isArray(body)) {
-      mappings = body
-      isMultiple = true
-    } else if (_.isObject(body)) {
-      mappings = [body]
-      isMultiple = false
-      // ignore `bulk` option
-      bulk = false
-    } else {
-      throw new MalformedBodyError()
-    }
+    // Ignore bulk option for single object
+    bulk = !isMultiple ? false : bulk
 
     // Adjust all mappings
     mappings = mappings.map(mapping => {

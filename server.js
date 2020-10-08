@@ -54,7 +54,15 @@ app.set("etag", false)
 
 // Add body-parser middleware
 app.use(express.urlencoded({ extended: false }))
-app.use(express.json())
+app.use((req, res, next) => {
+  if (req.method == "POST") {
+    // For POST requests, parse body as stream
+    utils.addBodyStream(req, res, next)
+  } else {
+    // For all other requests, parse as JSON
+    express.json()(req, res, next)
+  }
+})
 
 // Set some properties on req that will be used by other middleware
 app.use(utils.addMiddlewareProperties)

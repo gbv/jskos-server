@@ -40,26 +40,32 @@ module.exports = class SchemeService {
 
   // Write endpoints start here
 
-  async postScheme({ body, bulk = false }) {
-    if (!body) {
+  async postScheme({ bodyStream, bulk = false }) {
+    if (!bodyStream) {
       throw new MalformedBodyError()
     }
+
+    let isMultiple = true
+
+    // As a workaround, build body from bodyStream
+    // TODO: Use actual stream
+    let schemes = await new Promise((resolve) => {
+      const body = []
+      bodyStream.on("data", scheme => {
+        body.push(scheme)
+      })
+      bodyStream.on("isSingleObject", () => {
+        isMultiple = false
+      })
+      bodyStream.on("end", () => {
+        resolve(body)
+      })
+    })
 
     let response
-    let isMultiple
-    let schemes
 
-    if (_.isArray(body)) {
-      schemes = body
-      isMultiple = true
-    } else if (_.isObject(body)) {
-      schemes = [body]
-      isMultiple = false
-      // ignore `bulk` option
-      bulk = false
-    } else {
-      throw new MalformedBodyError()
-    }
+    // Ignore bulk option for single object
+    bulk = !isMultiple ? false : bulk
 
     // Prepare
     schemes = await Promise.all(schemes.map(scheme => {

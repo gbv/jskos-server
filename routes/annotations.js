@@ -36,7 +36,7 @@ if (config.annotations.create) {
     config.annotations.create.auth ? auth.default : auth.optional,
     utils.wrappers.async(async (req) => {
       return await annotationService.postAnnotation({
-        body: req.body,
+        bodyStream: req.bodyStream,
         user: req.user,
         bulk: req.query.bulk,
       })
