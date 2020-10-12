@@ -58,7 +58,7 @@ if (config.mappings.create) {
     config.mappings.create.auth ? auth.default : auth.optional,
     utils.wrappers.async(async (req) => {
       return await mappingService.postMapping({
-        bodyStream: req.bodyStream,
+        bodyStream: req.anystream,
         user: req.user,
         bulk: req.query.bulk,
       })

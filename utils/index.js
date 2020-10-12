@@ -460,5 +460,4 @@ module.exports = {
   addPaginationHeaders,
   returnJSON,
   handleDownload,
-  addBodyStream: require("./json-stream").addBodyStream,
 }

@@ -24,7 +24,7 @@ if (config.concepts.create) {
     config.concepts.create.auth ? auth.default : auth.optional,
     utils.wrappers.async(async (req) => {
       return await conceptService.postConcept({
-        bodyStream: req.bodyStream,
+        bodyStream: req.anystream,
         bulk: req.query.bulk,
       })
     }),
