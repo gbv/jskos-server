@@ -89,4 +89,28 @@ if (config.concepts) {
 
 }
 
+router.get(
+  "/suggest",
+  config.schemes.read.auth ? auth.default : auth.optional,
+  utils.supportDownloadFormats([]),
+  utils.wrappers.async(async (req) => {
+    return await schemeService.getSuggestions(req.query)
+  }),
+  utils.addPaginationHeaders,
+  utils.adjust,
+  utils.returnJSON,
+)
+
+router.get(
+  "/search",
+  config.schemes.read.auth ? auth.default : auth.optional,
+  utils.supportDownloadFormats([]),
+  utils.wrappers.async(async (req) => {
+    return await schemeService.search(req.query)
+  }),
+  utils.addPaginationHeaders,
+  utils.adjust,
+  utils.returnJSON,
+)
+
 module.exports = router

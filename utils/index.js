@@ -460,4 +460,5 @@ module.exports = {
   addPaginationHeaders,
   returnJSON,
   handleDownload,
+  searchHelper: require("./searchHelper"),
 }

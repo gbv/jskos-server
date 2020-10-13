@@ -214,6 +214,24 @@ function createIndexes(type) {
     } else if (type == "scheme") {
       indexes.push([{ "uri": 1 }, {}])
       indexes.push([{ "identifier": 1 }, {}])
+      indexes.push([{ "notation": 1 }, {}])
+      indexes.push([{ "_keywordsLabels": 1 }, {}])
+      indexes.push([
+        {
+          "_keywordsNotation": "text",
+          "_keywordsLabels": "text",
+          "_keywordsOther": "text",
+        },
+        {
+          name: "text",
+          default_language: "german",
+          weights: {
+            "_keywordsNotation": 10,
+            "_keywordsLabels": 6,
+            "_keywordsOther": 3,
+          },
+        },
+      ])
     }
     // Create all indexes
     for(let [index, options] of indexes) {

@@ -1,5 +1,6 @@
 const _ = require("lodash")
 const validate = require("jskos-validate")
+const utils = require("../utils")
 
 const { MalformedBodyError, MalformedRequestError, EntityNotFoundError, DatabaseAccessError, InvalidBodyError } = require("../errors")
 const Scheme = require("../models/schemes")
@@ -36,6 +37,43 @@ module.exports = class SchemeService {
 
   async getScheme(identifierOrNotation) {
     return await Scheme.findOne({ $or: [{ uri: identifierOrNotation }, { identifier: identifierOrNotation }, { notation: new RegExp(`^${identifierOrNotation}$`, "i") }]}).lean().exec()
+  }
+
+  /**
+   * Return a Promise with suggestions, either in OpenSearch Suggest Format or JSKOS (?format=jskos).
+   */
+  async getSuggestions(query) {
+    let search = query.search = query.search || ""
+    let format = query.format || ""
+    let results = await this.searchScheme(search, query.voc)
+    if (format.toLowerCase() == "jskos") {
+      // Return in JSKOS format
+      return results.slice(query.offset, query.offset + query.limit)
+    }
+    return utils.searchHelper.toOpenSearchSuggestFormat({
+      query,
+      results,
+    })
+  }
+
+  /**
+   * Return a Promise with an array of suggestions in JSKOS format.
+   */
+  async search(query) {
+    let search = query.query || query.search || ""
+    let results = await this.searchScheme(search)
+    const searchResults = results.slice(query.offset, query.offset + query.limit)
+    searchResults.totalCount = results.length
+    return searchResults
+  }
+
+  async searchScheme(search) {
+    return utils.searchHelper.searchItem({
+      search,
+      queryFunction: (query) => {
+        return Scheme.find(query).lean()
+      },
+    })
   }
 
   // Write endpoints start here
@@ -156,6 +194,8 @@ module.exports = class SchemeService {
       }
       // Add _id
       scheme._id = scheme.uri
+      // Add index keywords
+      utils.searchHelper.addKeywords(scheme)
     }
     if (action == "delete") {
       // Replace scheme with scheme from databas

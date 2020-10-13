@@ -14,12 +14,28 @@ const { dropDatabaseBeforeAndAfter } = require("./test-utils")
 const schemes = [
   {
     uri: "test:scheme1",
+    notation: ["scheme1"],
   },
   {
     uri: "test:scheme2",
+    prefLabel: {
+      fr: "somelabel",
+    },
+    altLabel: {
+      de: [
+        "an altLabel",
+      ],
+    },
+    notation: ["scheme2"],
   },
   {
     uri: "test:scheme3",
+    definition: {
+      en: [
+        "this contains somelabel but shouldn't be found when leaving off the some",
+      ],
+    },
+    notation: ["scheme3"],
   },
 ]
 
@@ -39,6 +55,36 @@ describe("MongoDB", () => {
     }
   })
 
+})
+
+describe("Indexes", () => {
+  // TODO: Duplicate of test.js
+  const exec = require("child_process").exec
+  it("should create indexes", done => {
+    // Create indexes
+    exec("NODE_ENV=test ./bin/import.js --indexes", (err) => {
+      if (err) {
+        done(err)
+        return
+      }
+      let db = server.db
+      let promises = []
+      let collections = ["terminologies", "concepts", "mappings", "annotations"]
+      for (let collection of collections) {
+        promises.push(db.collection(collection).indexInformation())
+      }
+      Promise.all(promises).then(results => {
+        for (let result of results) {
+          // There should be more than the _id, uri, and identifier index
+          // TODO: Adjust so that the exact indexes can be checked
+          Object.keys(result).length.should.be.greaterThan(3)
+        }
+        done()
+      }).catch(error => {
+        done(error)
+      })
+    })
+  })
 })
 
 describe("/voc write access", () => {
@@ -73,6 +119,77 @@ describe("/voc write access", () => {
           assert.deepEqual(scheme.concepts, [])
           assert.deepEqual(scheme.topConcepts, [])
         }
+        done()
+      })
+  })
+
+  // TODO: Maybe move somewhere else?
+  it("should GET correct results for notation", done => {
+    chai.request(server.app)
+      .get("/voc/suggest")
+      .query({
+        search: "sche",
+      })
+      .end((err, res) => {
+        res.should.have.status(200)
+        res.should.have.header("Link")
+        res.should.have.header("X-Total-Count")
+        res.body.should.be.a("array")
+        res.body.length.should.be.eql(4) // OpenSearch Suggest Format
+        res.body[0].should.be.a("string")
+        res.body[1].should.be.a("array")
+        res.body[1].length.should.be.eql(schemes.length)
+        res.body[1][0].should.be.eql("scheme1")
+        res.body[3].should.be.a("array")
+        res.body[3].length.should.be.eql(schemes.length)
+        res.body[3][0].should.be.eql("test:scheme1")
+        done()
+      })
+  })
+
+  // TODO: Maybe move somewhere else?
+  it("should GET correct results for term (1)", done => {
+    chai.request(server.app)
+      .get("/voc/suggest")
+      .query({
+        search: "label",
+      })
+      .end((err, res) => {
+        res.should.have.status(200)
+        res.should.have.header("Link")
+        res.should.have.header("X-Total-Count")
+        res.body.should.be.a("array")
+        res.body.length.should.be.eql(4) // OpenSearch Suggest Format
+        res.body[0].should.be.a("string")
+        res.body[1].should.be.a("array")
+        res.body[1].length.should.be.eql(1)
+        res.body[3].should.be.a("array")
+        res.body[3].length.should.be.eql(1)
+        res.body[3][0].should.be.eql("test:scheme2")
+        done()
+      })
+  })
+
+  // TODO: Maybe move somewhere else?
+  it("should GET correct results for term (2)", done => {
+    chai.request(server.app)
+      .get("/voc/suggest")
+      .query({
+        search: "somelabel",
+      })
+      .end((err, res) => {
+        res.should.have.status(200)
+        res.should.have.header("Link")
+        res.should.have.header("X-Total-Count")
+        res.body.should.be.a("array")
+        res.body.length.should.be.eql(4) // OpenSearch Suggest Format
+        res.body[0].should.be.a("string")
+        res.body[1].should.be.a("array")
+        res.body[1].length.should.be.eql(2)
+        res.body[3].should.be.a("array")
+        res.body[3].length.should.be.eql(2)
+        res.body[3][0].should.be.eql("test:scheme2")
+        res.body[3][1].should.be.eql("test:scheme3")
         done()
       })
   })

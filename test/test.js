@@ -1504,14 +1504,15 @@ describe("Express Server", () => {
         }
         let db = server.db
         let promises = []
-        let collections = ["concepts", "mappings", "annotations"]
+        let collections = ["terminologies", "concepts", "mappings", "annotations"]
         for (let collection of collections) {
           promises.push(db.collection(collection).indexInformation())
         }
         Promise.all(promises).then(results => {
           for (let result of results) {
-            // There should be more than the _id index
-            Object.keys(result).length.should.be.greaterThan(1)
+            // There should be more than the _id, uri, and identifier index
+            // TODO: Adjust so that the exact indexes can be checked
+            Object.keys(result).length.should.be.greaterThan(3)
           }
           done()
         }).catch(error => {
