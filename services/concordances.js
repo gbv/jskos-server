@@ -61,4 +61,19 @@ module.exports = class ConcordanceService {
     }
   }
 
+  async createIndexes() {
+    const indexes = []
+    // Create collection if necessary
+    try {
+      await Concordance.createCollection()
+    } catch (error) {
+      // Ignore error
+    }
+    // Drop existing indexes
+    await Concordance.collection.dropIndexes()
+    for (let [index, options] of indexes) {
+      await Concordance.collection.createIndex(index, options)
+    }
+  }
+
 }

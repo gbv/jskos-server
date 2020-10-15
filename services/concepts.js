@@ -420,4 +420,41 @@ module.exports = class ConceptService {
     await this.schemeService.postAdjustmentsForScheme(preparation.schemeUrisToAdjust.map(uri => ({ uri })))
   }
 
+  async createIndexes() {
+    const indexes = []
+    indexes.push([{ "broader.uri": 1 }, {}])
+    indexes.push([{ "topConceptOf.uri": 1 }, {}])
+    indexes.push([{ "inScheme.uri": 1 }, {}])
+    indexes.push([{ "uri": 1 }, {}])
+    indexes.push([{ "notation": 1 }, {}])
+    indexes.push([{ "_keywordsLabels": 1 }, {}])
+    indexes.push([
+      {
+        "_keywordsNotation": "text",
+        "_keywordsLabels": "text",
+        "_keywordsOther": "text",
+      },
+      {
+        name: "text",
+        default_language: "german",
+        weights: {
+          "_keywordsNotation": 10,
+          "_keywordsLabels": 6,
+          "_keywordsOther": 3,
+        },
+      },
+    ])
+    // Create collection if necessary
+    try {
+      await Concept.createCollection()
+    } catch (error) {
+      // Ignore error
+    }
+    // Drop existing indexes
+    await Concept.collection.dropIndexes()
+    for (let [index, options] of indexes) {
+      await Concept.collection.createIndex(index, options)
+    }
+  }
+
 }

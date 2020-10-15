@@ -271,4 +271,25 @@ module.exports = class MappingService {
     }
   }
 
+  async createIndexes() {
+    const indexes = [
+      [{ "id": 1 }, {}],
+      [{ "target": 1 }, {}],
+      [{ "creator": 1 }, {}],
+      [{ "creator.id": 1 }, {}],
+      [{ "creator.name": 1 }, {}],
+    ]
+    // Create collection if necessary
+    try {
+      await Annotation.createCollection()
+    } catch (error) {
+      // Ignore error
+    }
+    // Drop existing indexes
+    await Annotation.collection.dropIndexes()
+    for (let [index, options] of indexes) {
+      await Annotation.collection.createIndex(index, options)
+    }
+  }
+
 }

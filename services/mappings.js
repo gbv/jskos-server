@@ -568,4 +568,38 @@ module.exports = class MappingService {
     return toBeReturned
   }
 
+  async createIndexes() {
+    const indexes = []
+    for (let path of ["from.memberSet", "from.memberList", "from.memberChoice", "to.memberSet", "to.memberList", "to.memberChoice", "fromScheme", "toScheme"]) {
+      for (let type of ["notation", "uri"]) {
+        indexes.push([{ [`${path}.${type}`]: 1 }, {}])
+      }
+    }
+    // Separately create multi-indexes for fromScheme/toScheme
+    indexes.push([{
+      "fromScheme.uri": 1,
+      "toScheme.uri": 1,
+    }, {}])
+    indexes.push([{ "uri": 1 }, {}])
+    indexes.push([{ "identifier": 1 }, {}])
+    indexes.push([{ "type": 1 }, {}])
+    indexes.push([{ "created": 1 }, {}])
+    indexes.push([{ "modified": 1 }, {}])
+    indexes.push([{ "partOf.uri": 1 }, {}])
+    indexes.push([{ "creator.uri": 1 }, {}])
+    indexes.push([{ "creator.prefLabel.de": 1 }, {}])
+    indexes.push([{ "creator.prefLabel.en": 1 }, {}])
+    // Create collection if necessary
+    try {
+      await Mapping.createCollection()
+    } catch (error) {
+      // Ignore error
+    }
+    // Drop existing indexes
+    await Mapping.collection.dropIndexes()
+    for (let [index, options] of indexes) {
+      await Mapping.collection.createIndex(index, options)
+    }
+  }
+
 }
