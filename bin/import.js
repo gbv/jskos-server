@@ -57,12 +57,11 @@ if (cli.flags.help || (!cli.input.length && !cli.flags.reset && !cli.flags.index
 const jskos = require("jskos-tools")
 const validate = require("jskos-validate")
 const config = require("../config")
+const utils = require("../utils")
 const { v5: uuidv5 } = require("uuid")
 const fs = require("fs")
 const path = require("path")
-const request = require("request")
-const JSONStream = require("JSONStream")
-const ndjson = require("ndjson")
+const anystream = require("json-anystream")
 const mongo = require("mongodb").MongoClient
 const _ = require("lodash")
 const log = (...args) => {
@@ -267,173 +266,172 @@ function importFile(file, type, { concordance, quiet = false, format } = {}) {
   }
   // Database collection depending on type
   let collection = collectionForType(type)
-  return new Promise(resolve => {
-    let rs = (
-      file.startsWith("http") ?
-        request(file) :
-        fs.createReadStream(file, { encoding: "utf8" })
-    ).pipe((format == "ndjson" || file.endsWith("ndjson")) ? ndjson.parse() : JSONStream.parse("*"))
-    let count = 0
-    let loaded = 0
-    let imported = 0
-    let importedPrev = 0
-    let objects = []
-    let promises = []
-    let printStatus = () => {
-      if (loaded % 1000 == 0 || imported != importedPrev) {
-        if (!quiet) {
-          if (process.stdout.cursorTo) {
-            process.stdout.cursorTo(0)
-          } else {
-            process.stdout.write("\n")
-          }
-          process.stdout.write(`Loaded ${loaded} ${type}s, imported ${imported} ${type}s.`)
-        }
-        importedPrev = imported
-      }
-    }
-    // Function that saves current batch of objects
-    let saveObjects = () => {
-      if (objects.length == 0) {
-        return Promise.resolve([])
-      }
-      let ids = objects.map(object => object._id).filter(id => id != null)
-      promises.push(
-        collection.bulkWrite(objects.map(object => object._id ? ({
-          replaceOne: {
-            filter: { _id: object._id },
-            replacement: object,
-            upsert: true,
-          },
-        }) : {
-          insertOne: {
-            document: object,
-          },
-        })).then(result => {
-          let newIds = Object.values(result.insertedIds).concat(Object.values(result.upsertedIds))
-          newIds = _.union(newIds, ids)
-          imported += newIds.length
-          printStatus()
-          return newIds
-        }),
-      )
-
-      objects = []
-    }
-    rs.on("data", object => {
-      count += 1
-      // Pre-import adjustments
-      // 1. Validate object and skip if validation failed.
-      if (!validate[type] || !validate[type](object)) {
-        console.warn(`Warning: Could not validate ${type} number ${count}.` + (object.uri ? ` (${object.uri})` : ""))
-        return
-      }
-      if (type == "concept" && !object.inScheme && !object.topConceptOf) {
-        console.warn(`Warning: Missing inScheme property for ${type} number ${count}.` + (object.uri ? ` (${object.uri})` : ""))
-        return
-      }
-      // 2. Pre-import adjustments depending on type.
-      switch (type) {
-        case "scheme":
-          // Adjustments for schemes
-          object._id = object.uri
-          break
-        case "concept":
-          // Adjustments for concepts
-          object._id = object.uri
-          // Add "inScheme" for all top concepts
-          if (!object.inScheme && object.topConceptOf) {
-            object.inScheme = object.topConceptOf
-          }
-          break
-        case "mapping":
-          // Adjustments for mappings
-          if (object.uri) {
-            if (object.uri.startsWith(config.baseUrl)) {
-              object._id = object.uri.slice(object.uri.lastIndexOf("/") + 1)
+  return anystream.make(file, format).then(rs => {
+    return new Promise(resolve => {
+      let count = 0
+      let loaded = 0
+      let imported = 0
+      let importedPrev = 0
+      let objects = []
+      let promises = []
+      let printStatus = () => {
+        if (loaded % 1000 == 0 || imported != importedPrev) {
+          if (!quiet) {
+            if (process.stdout.cursorTo) {
+              process.stdout.cursorTo(0)
             } else {
-              // Put URI into identifier because it's not valid for this server
-              object.identifier = [].concat(object.identifier || [], object.uri)
-              delete object.uri
+              process.stdout.write("\n")
             }
+            process.stdout.write(`Loaded ${loaded} ${type}s, imported ${imported} ${type}s.`)
           }
-          // Add reference to concordance.
-          if (concordance && concordance.uri) {
-            object.partOf = [{
-              uri: concordance.uri,
-            }]
-          }
-          // Copy creator from concordance if it doesn't exist.
-          if (!object.creator && concordance && concordance.creator) {
-            object.creator = concordance.creator
-          }
-          // Set created of concordance if created is not set
-          if (!object.created && concordance && concordance.created) {
-            object.created = concordance.created
-          }
-          // Set modified if necessary
-          if (!object.modified && concordance && concordance.modified) {
-            object.modified = concordance.modified
-          }
-          if (!object.modified && object.created) {
-            object.modified = object.created
-          }
-          // Add mapping identifier
-          try {
-            object.identifier = jskos.addMappingIdentifiers(object).identifier
-          } catch(error) {
-            _log("Could not add identifier to mapping.", error)
-          }
-          // Generate an identifier and a URI if necessary
-          if (!object.uri) {
-            const contentIdentifier = object.identifier.find(id => id.startsWith("urn:jskos:mapping:content:"))
-            const concordance = _.get(object, "partOf[0].uri") || ""
-            if (contentIdentifier) {
-              object._id = uuidv5(contentIdentifier + concordance, config.namespace)
-              object.uri = config.baseUrl + "mappings/" + object._id
-            }
-          }
-          break
-        case "concordance":
-          // Adjustments for concordances
-          object._id = object.uri
-          break
-        case "annotation":
-          // Adjustments for annotations
-          if (object.uri) {
-            // TODO: Extract ID from URI
-            object._id = object.uri
-          }
-          break
+          importedPrev = imported
+        }
       }
-      objects.push(object)
+      // Function that saves current batch of objects
+      let saveObjects = () => {
+        if (objects.length == 0) {
+          return Promise.resolve([])
+        }
+        let ids = objects.map(object => object._id).filter(id => id != null)
+        promises.push(
+          collection.bulkWrite(objects.map(object => object._id ? ({
+            replaceOne: {
+              filter: { _id: object._id },
+              replacement: object,
+              upsert: true,
+            },
+          }) : {
+            insertOne: {
+              document: object,
+            },
+          })).then(result => {
+            let newIds = Object.values(result.insertedIds).concat(Object.values(result.upsertedIds))
+            newIds = _.union(newIds, ids)
+            imported += newIds.length
+            printStatus()
+            return newIds
+          }),
+        )
 
-      // Print status
-      loaded += 1
-      printStatus()
-      // Import in bulk
-      if (objects.length == 5000) {
-        saveObjects()
+        objects = []
       }
-    })
-    rs.on("end", () => {
+      rs.on("data", object => {
+        count += 1
+        // Pre-import adjustments
+        // 1. Validate object and skip if validation failed.
+        if (!validate[type] || !validate[type](object)) {
+          console.warn(`Warning: Could not validate ${type} number ${count}.` + (object.uri ? ` (${object.uri})` : ""))
+          return
+        }
+        if (type == "concept" && !object.inScheme && !object.topConceptOf) {
+          console.warn(`Warning: Missing inScheme property for ${type} number ${count}.` + (object.uri ? ` (${object.uri})` : ""))
+          return
+        }
+        // 2. Pre-import adjustments depending on type.
+        switch (type) {
+          case "scheme":
+          // Adjustments for schemes
+            object._id = object.uri
+            utils.searchHelper.addKeywords(object)
+            break
+          case "concept":
+          // Adjustments for concepts
+            object._id = object.uri
+            utils.searchHelper.addKeywords(object)
+            // Add "inScheme" for all top concepts
+            if (!object.inScheme && object.topConceptOf) {
+              object.inScheme = object.topConceptOf
+            }
+            break
+          case "mapping":
+          // Adjustments for mappings
+            if (object.uri) {
+              if (object.uri.startsWith(config.baseUrl)) {
+                object._id = object.uri.slice(object.uri.lastIndexOf("/") + 1)
+              } else {
+              // Put URI into identifier because it's not valid for this server
+                object.identifier = [].concat(object.identifier || [], object.uri)
+                delete object.uri
+              }
+            }
+            // Add reference to concordance.
+            if (concordance && concordance.uri) {
+              object.partOf = [{
+                uri: concordance.uri,
+              }]
+            }
+            // Copy creator from concordance if it doesn't exist.
+            if (!object.creator && concordance && concordance.creator) {
+              object.creator = concordance.creator
+            }
+            // Set created of concordance if created is not set
+            if (!object.created && concordance && concordance.created) {
+              object.created = concordance.created
+            }
+            // Set modified if necessary
+            if (!object.modified && concordance && concordance.modified) {
+              object.modified = concordance.modified
+            }
+            if (!object.modified && object.created) {
+              object.modified = object.created
+            }
+            // Add mapping identifier
+            try {
+              object.identifier = jskos.addMappingIdentifiers(object).identifier
+            } catch(error) {
+              _log("Could not add identifier to mapping.", error)
+            }
+            // Generate an identifier and a URI if necessary
+            if (!object.uri) {
+              const contentIdentifier = object.identifier.find(id => id.startsWith("urn:jskos:mapping:content:"))
+              const concordance = _.get(object, "partOf[0].uri") || ""
+              if (contentIdentifier) {
+                object._id = uuidv5(contentIdentifier + concordance, config.namespace)
+                object.uri = config.baseUrl + "mappings/" + object._id
+              }
+            }
+            break
+          case "concordance":
+          // Adjustments for concordances
+            object._id = object.uri
+            break
+          case "annotation":
+          // Adjustments for annotations
+            if (object.uri) {
+            // TODO: Extract ID from URI
+              object._id = object.uri
+            }
+            break
+        }
+        objects.push(object)
+
+        // Print status
+        loaded += 1
+        printStatus()
+        // Import in bulk
+        if (objects.length == 5000) {
+          saveObjects()
+        }
+      })
+      rs.on("end", () => {
       // Save remaining objects
-      saveObjects()
-      Promise.all(promises).then(result => {
+        saveObjects()
+        Promise.all(promises).then(result => {
+          !quiet && process.stdout.write("\n")
+          _log(`Done! Loaded ${loaded} ${type}s, imported ${imported} ${type}s.`)
+          // Flatten resulting IDs
+          resolve(_.flatten(result))
+        }).catch(error => {
+          console.error(error)
+          resolve(false)
+        })
+      })
+      rs.on("error", error => {
         !quiet && process.stdout.write("\n")
-        _log(`Done! Loaded ${loaded} ${type}s, imported ${imported} ${type}s.`)
-        // Flatten resulting IDs
-        resolve(_.flatten(result))
-      }).catch(error => {
         console.error(error)
+        // TODO: Should this really end the import?
         resolve(false)
       })
-    })
-    rs.on("error", error => {
-      !quiet && process.stdout.write("\n")
-      console.error(error)
-      // TODO: Should this really end the import?
-      resolve(false)
     })
   }).then(ids => {
     if (!ids) {
@@ -446,7 +444,6 @@ function importFile(file, type, { concordance, quiet = false, format } = {}) {
     let count = 0
     let adjusted = 0
     let adjustedPrev = 0
-    let lastPromise = Promise.resolve()
     let printStatus = () => {
       if (count % 500 == 0 || adjusted != adjustedPrev) {
         if (!quiet) {
@@ -475,48 +472,6 @@ function importFile(file, type, { concordance, quiet = false, format } = {}) {
         break
       case "concept":
         promises.push(adjustSchemes())
-        // Update properties for concept
-        for (let idChunk of _.chunk(ids, 500)) {
-          count += idChunk.length
-          printStatus()
-          lastPromise = lastPromise.then(() => collection.find({ $or: idChunk.map(_id => ({ _id })) }).toArray().then(results => {
-            for (let concept of results) {
-              let update = {}
-              update._keywordsNotation = makePrefixes(concept.notation || [])
-              // Do not write text index keywords for synthetic concepts
-              if (!concept.type || !concept.type.includes("http://rdf-vocabulary.ddialliance.org/xkos#CombinedConcept")) {
-                // Labels
-                // Assemble all labels
-                let labels = _.flattenDeep(Object.values(concept.prefLabel || {}).concat(Object.values(concept.altLabel || {})))
-                // Split labels by space and dash
-                // labels = _.flattenDeep(labels.map(label => label.split(" ")))
-                // labels = _.flattenDeep(labels.map(label => label.split("-")))
-                update._keywordsLabels = makeSuffixes(labels)
-                // Other properties
-                update._keywordsOther = []
-                for (let map of (concept.creator || []).concat(concept.scopeNote, concept.editorialNote, concept.definition)) {
-                  if (map) {
-                    update._keywordsOther = update._keywordsOther.concat(Object.values(map))
-                  }
-                }
-                update._keywordsOther = _.flattenDeep(update._keywordsOther)
-              }
-              writes.push({
-                updateOne: {
-                  filter: { _id: concept._id },
-                  update: {
-                    $set: update,
-                  },
-                },
-              })
-            }
-            if (writes.length >= 1000) {
-              return write()
-            }
-            return null
-          }))
-          promises.push(lastPromise)
-        }
         break
       case "mapping":
         // No adjustments necessary.
@@ -622,35 +577,3 @@ function collectionNameForType(type) {
 function collectionForType(type) {
   return connection.db.collection(collectionNameForType(type))
 }
-
-// from https://web.archive.org/web/20170609122132/http://jam.sg/blog/efficient-partial-keyword-searches/
-function makeSuffixes(values) {
-  var results = []
-  values.sort().reverse().forEach(function(val) {
-    var tmp, hasSuffix
-    for (var i=0; i<val.length-1; i++) {
-      tmp = val.substr(i).toUpperCase()
-      hasSuffix = results.includes(tmp)
-      if (!hasSuffix) results.push(tmp)
-    }
-  })
-  return results
-}
-// adapted from above
-function makePrefixes(values) {
-  var results = []
-  values.sort().reverse().forEach(function(val) {
-    var tmp, hasPrefix
-    results.push(val)
-    for (var i=2; i<val.length; i++) {
-      tmp = val.substr(0, i).toUpperCase()
-      hasPrefix = results.includes(tmp)
-      if (!hasPrefix) results.push(tmp)
-    }
-  })
-  return results
-}
-// Combines makeSuffixes and makePrefixes, uncomment if needed!
-// function makeGrams(values) {
-//   return makeSuffixes(values).concat(makePrefixes(values))
-// }

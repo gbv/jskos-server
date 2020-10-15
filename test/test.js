@@ -925,6 +925,75 @@ describe("Express Server", () => {
 
   })
 
+  describe("GET /voc/suggest", () => {
+
+    it("should GET correct results for notation", done => {
+      chai.request(server.app)
+        .get("/voc/suggest")
+        .query({
+          search: "dd",
+        })
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.should.have.header("Link")
+          res.should.have.header("X-Total-Count")
+          res.body.should.be.a("array")
+          res.body.length.should.be.eql(4) // OpenSearch Suggest Format
+          res.body[0].should.be.a("string")
+          res.body[1].should.be.a("array")
+          res.body[1].length.should.be.eql(1)
+          done()
+        })
+    })
+
+    // TODO: Maybe move somewhere else?
+    it("should GET correct results for term (1)", done => {
+      chai.request(server.app)
+        .get("/voc/suggest")
+        .query({
+          search: "Thesauru",
+        })
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.should.have.header("Link")
+          res.should.have.header("X-Total-Count")
+          res.body.should.be.a("array")
+          res.body.length.should.be.eql(4) // OpenSearch Suggest Format
+          res.body[0].should.be.a("string")
+          res.body[1].should.be.a("array")
+          res.body[1].length.should.be.eql(1)
+          done()
+        })
+    })
+
+    // TODO: Maybe move somewhere else?
+    it("should GET correct results for term (2)", done => {
+      chai.request(server.app)
+        .get("/voc/suggest")
+        .query({
+          search: "Dewey",
+        })
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.should.have.header("Link")
+          res.should.have.header("X-Total-Count")
+          res.body.should.be.a("array")
+          res.body.length.should.be.eql(4) // OpenSearch Suggest Format
+          res.body[0].should.be.a("string")
+          res.body[1].should.be.a("array")
+          res.body[1].length.should.be.eql(1)
+          done()
+        })
+    })
+
+  })
+
+  describe("GET /voc/search", () => {
+
+
+
+  })
+
   describe("GET /data", () => {
 
     it("should GET empty list when no URL is provided", done => {
