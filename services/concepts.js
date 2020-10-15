@@ -217,47 +217,65 @@ module.exports = class ConceptService {
     }
 
     let isMultiple = true
-
-    // As a workaround, build body from bodyStream
-    // TODO: Use actual stream
-    let concepts = await new Promise((resolve) => {
-      const body = []
-      bodyStream.on("data", concept => {
-        body.push(concept)
-      })
-      bodyStream.on("isSingleObject", () => {
-        isMultiple = false
-      })
-      bodyStream.on("end", () => {
-        resolve(body)
-      })
+    bodyStream.on("isSingleObject", () => {
+      isMultiple = false
     })
 
-    let response
-
-    // Ignore bulk option for single object
-    bulk = !isMultiple ? false : bulk
-
-    // Prepare
-    let preparation = await this.prepareAndCheckConcepts(concepts)
-    concepts = preparation.concepts
-
-    if (!bulk && preparation.errors.length) {
-      // Throw first error
-      throw preparation.errors[0]
-    }
+    let response, preparation
 
     if (bulk) {
-      // Use bulkWrite for most efficiency
-      concepts.length && await Concept.bulkWrite(concepts.map(c => ({
-        replaceOne: {
-          filter: { _id: c._id },
-          replacement: c,
-          upsert: true,
-        },
-      })))
-      response = concepts.map(c => ({ uri: c.uri }))
+      preparation = await new Promise((resolve) => {
+        const preparation = {
+          concepts: [],
+          schemeUrisToAdjust: [],
+        }
+        let current = []
+        const saveObjects = async (objects) => {
+          const { concepts, schemeUrisToAdjust } = await this.prepareAndCheckConcepts(objects)
+          concepts.length && await Concept.bulkWrite(concepts.map(c => ({
+            replaceOne: {
+              filter: { _id: c._id },
+              replacement: c,
+              upsert: true,
+            },
+          })))
+          preparation.concepts = preparation.concepts.concat(concepts.map(c => ({ uri: c.uri })))
+          preparation.schemeUrisToAdjust = _.uniq(preparation.schemeUrisToAdjust.concat(schemeUrisToAdjust))
+        }
+        const promises = []
+        bodyStream.on("data", (concept) => {
+          current.push(concept)
+          if (current.length % 5000 == 0) {
+            promises.push(saveObjects(current))
+            current = []
+          }
+        })
+        bodyStream.on("end", async () => {
+          promises.push(saveObjects(current))
+          await Promise.all(promises)
+          resolve(preparation)
+        })
+      })
+      response = preparation.concepts
     } else {
+      // Fully assemble body for non-bulk operations
+      let concepts = await new Promise((resolve) => {
+        const body = []
+        bodyStream.on("data", concept => {
+          body.push(concept)
+        })
+        bodyStream.on("end", () => {
+          resolve(body)
+        })
+      })
+      // Prepare
+      preparation = await this.prepareAndCheckConcepts(concepts)
+      concepts = preparation.concepts
+      if (preparation.errors.length) {
+        // Throw first error
+        throw preparation.errors[0]
+      }
+      // Insert concepts
       response = await Concept.insertMany(concepts, { lean: true })
     }
 

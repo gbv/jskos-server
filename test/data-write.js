@@ -504,7 +504,7 @@ describe("/data write access", () => {
       })
   })
 
-  it("should not POST a single concept that already exists even if bulk is set", done => {
+  it("should POST a single concept that already exists if bulk is set", done => {
     chai.request(server.app)
       .post("/data")
       .query({
@@ -513,9 +513,8 @@ describe("/data write access", () => {
       .send(concept)
       .end((error, res) => {
         assert.equal(error, null)
-        res.should.have.status(422)
+        res.should.have.status(201)
         res.body.should.be.an("object")
-        assert.equal(res.body.error, "DuplicateEntityError")
         done()
       })
   })
