@@ -320,11 +320,11 @@ function importFile(file, type, { concordance, quiet = false, format } = {}) {
         // Pre-import adjustments
         // 1. Validate object and skip if validation failed.
         if (!validate[type] || !validate[type](object)) {
-          console.warn(`Warning: Could not validate ${type} number ${count}.` + (object.uri ? ` (${object.uri})` : ""))
+          log(`Warning: Could not validate ${type} number ${count}.` + (object.uri ? ` (${object.uri})` : ""))
           return
         }
         if (type == "concept" && !object.inScheme && !object.topConceptOf) {
-          console.warn(`Warning: Missing inScheme property for ${type} number ${count}.` + (object.uri ? ` (${object.uri})` : ""))
+          log(`Warning: Missing inScheme property for ${type} number ${count}.` + (object.uri ? ` (${object.uri})` : ""))
           return
         }
         // 2. Pre-import adjustments depending on type.
