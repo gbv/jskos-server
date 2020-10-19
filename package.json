@@ -55,7 +55,7 @@
     "ipaddr.js": "^2.0.0",
     "jskos-tools": "^1.0.14",
     "jskos-validate": "^0.3.2",
-    "json-anystream": "github:gbv/json-anystream",
+    "json-anystream": "^1.0.1",
     "lodash": "^4.17.20",
     "meow": "^7.1.1",
     "mongodb": "~3.5.11",
