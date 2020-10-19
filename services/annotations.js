@@ -256,8 +256,8 @@ module.exports = class MappingService {
     }
   }
 
-  async deleteAnnotation({ _id, user }) {
-    const existingAnnotation = await this.getAnnotation(_id)
+  async deleteAnnotation({ uri, user }) {
+    const existingAnnotation = await this.getAnnotation(uri)
 
     if (!utils.matchesCreator(user, existingAnnotation, "annotations", "delete")) {
       throw new CreatorDoesNotMatchError()

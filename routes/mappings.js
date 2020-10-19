@@ -104,7 +104,7 @@ if (config.mappings.delete) {
     config.mappings.delete.auth ? auth.default : auth.optional,
     utils.wrappers.async(async (req) => {
       return await mappingService.deleteMapping({
-        _id: req.params._id,
+        uri: req.params._id,
         user: req.user,
       })
     }),

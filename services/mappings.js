@@ -406,8 +406,8 @@ module.exports = class MappingService {
     }
   }
 
-  async deleteMapping({ _id, user }) {
-    const existingMapping = await this.getMapping(_id)
+  async deleteMapping({ uri, user }) {
+    const existingMapping = await this.getMapping(uri)
 
     if (!utils.matchesCreator(user, existingMapping, "mappings", "delete")) {
       throw new CreatorDoesNotMatchError()
