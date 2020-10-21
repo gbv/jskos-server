@@ -41,6 +41,7 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
     - [DELETE /voc](#delete-voc)
     - [GET /voc/top](#get-voctop)
     - [GET /voc/concepts](#get-vocconcepts)
+    - [DELETE /voc/concepts](#delete-vocconcepts)
     - [GET /data](#get-data)
     - [POST /data](#post-data)
     - [PUT /data](#put-data)
@@ -1077,6 +1078,17 @@ Lists concepts for a concept scheme.
   ```bash
   curl https://coli-conc.gbv.de/api/voc/concepts?uri=http://dewey.info/scheme/edition/e23/
   ```
+
+### DELETE /voc/concepts
+Deletes all concepts of a certain concept scheme from the database.
+
+* **URL Params**
+
+  `uri=URI` URI for a concept scheme
+
+* **Success Reponse**
+
+  Status 204, no content.
 
 ### GET /data
 Returns detailed data for concepts or concept schemes. Note that there is no certain order to the result set (but it should be consistent across requests).
