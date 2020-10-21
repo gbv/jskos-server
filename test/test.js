@@ -350,7 +350,7 @@ describe("Express Server", () => {
 
     it("should GET only mappings from GND", done => {
       // Add mappings to database
-      exec("NODE_ENV=test ./bin/import.js --reset mappings ./test/mappings/mappings-ddc.json", (err) => {
+      exec("yes | NODE_ENV=test ./bin/reset.js -t mappings && NODE_ENV=test ./bin/import.js mappings ./test/mappings/mappings-ddc.json", (err) => {
         if (err) {
           done(err)
           return
@@ -478,7 +478,7 @@ describe("Express Server", () => {
 
     // Reinsert mappings again
     before(done => {
-      exec("NODE_ENV=test ./bin/import.js --reset mappings ./test/mappings/mappings-ddc.json", (err) => {
+      exec("yes | NODE_ENV=test ./bin/reset.js -t mappings && NODE_ENV=test ./bin/import.js mappings ./test/mappings/mappings-ddc.json", (err) => {
         if (err) {
           done(err)
           return
@@ -1542,7 +1542,7 @@ describe("Express Server", () => {
 
     it("should clear the database", done => {
       // Clear database
-      exec("NODE_ENV=test ./bin/import.js --reset", (err) => {
+      exec("yes | NODE_ENV=test ./bin/reset.js", (err) => {
         if (err) {
           done(err)
           return
@@ -1590,23 +1590,6 @@ describe("Express Server", () => {
       })
     })
 
-    it("should import concepts", done => {
-      // Add concepts to database
-      exec("NODE_ENV=test ./bin/import.js concepts ./test/concepts/concepts-ddc-6-60-61-62.json", (err) => {
-        if (err) {
-          done(err)
-          return
-        }
-        let db = server.db
-        db.collection("concepts").find({}).toArray().then(results => {
-          results.length.should.be.eql(4)
-          done()
-        }).catch(error => {
-          done(error)
-        })
-      })
-    })
-
     it("should import terminologies", done => {
       // Add vocabularies to database
       exec("NODE_ENV=test ./bin/import.js schemes ./test/terminologies/terminologies.json", (err) => {
@@ -1617,6 +1600,23 @@ describe("Express Server", () => {
         let db = server.db
         db.collection("terminologies").find({}).toArray().then(results => {
           results.length.should.be.eql(2)
+          done()
+        }).catch(error => {
+          done(error)
+        })
+      })
+    })
+
+    it("should import concepts", done => {
+      // Add concepts to database
+      exec("NODE_ENV=test ./bin/import.js concepts ./test/concepts/concepts-ddc-6-60-61-62.json", (err) => {
+        if (err) {
+          done(err)
+          return
+        }
+        let db = server.db
+        db.collection("concepts").find({}).toArray().then(results => {
+          results.length.should.be.eql(4)
           done()
         }).catch(error => {
           done(error)
