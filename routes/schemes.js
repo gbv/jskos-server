@@ -87,6 +87,19 @@ if (config.concepts) {
     utils.returnJSON,
   )
 
+  if (config.concepts.delete) {
+    router.delete(
+      "/concepts",
+      config.concepts.delete.auth ? auth.default : auth.optional,
+      utils.wrappers.async(async (req) => {
+        return await conceptService.deleteConceptsFromScheme({
+          uri: req.query.uri,
+        })
+      }),
+      (req, res) => res.sendStatus(204),
+    )
+  }
+
 }
 
 router.get(

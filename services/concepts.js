@@ -343,6 +343,29 @@ module.exports = class ConceptService {
     })
   }
 
+  async deleteConceptsFromScheme({ uri }) {
+    if (!uri) {
+      throw new MalformedRequestError()
+    }
+    const scheme = await this.schemeService.getScheme(uri)
+
+    if (!scheme) {
+      throw new EntityNotFoundError(`Could not find scheme with URI ${uri} to delete concepts from.`)
+    }
+
+    const result = await Concept.deleteMany({ "inScheme.uri": { $in: [scheme.uri].concat(scheme.identifier || []) } })
+    if (!result.ok) {
+      throw new DatabaseAccessError()
+    }
+    if (!result.n) {
+      throw new EntityNotFoundError("No concepts found to delete.")
+    }
+    await this.postAdjustmentsForConcepts({
+      schemeUrisToAdjust: [uri],
+      conceptUrisWithNarrower: [],
+    })
+  }
+
   /**
    * Prepares and checks a list of concepts before inserting/updating (see `prepareAndCheckConcept`).
    *

@@ -687,6 +687,32 @@ describe("/data write access", () => {
       })
   })
 
+  it("should DELETE all concepts of a scheme", async () => {
+    const uri = concepts[0].topConceptOf[0].uri
+    let res
+    // Post concept
+    res = await chai.request(server.app)
+      .post("/data")
+      .send(concepts[0])
+    res.should.have.status(201)
+    res.body.should.be.an("object")
+    res.body.uri.should.be.eql(concepts[0].uri)
+    // Delete from scheme
+    res = await chai.request(server.app)
+      .delete("/voc/concepts")
+      .query({
+        uri,
+      })
+    res.should.have.status(204)
+    // Get from scheme
+    res = await chai.request(server.app)
+      .get("/voc/concepts")
+      .query({ uri })
+    res.should.have.status(200)
+    res.body.should.be.a("array")
+    res.body.length.should.be.eql(0)
+  })
+
   it("should not DELETE a concept that doesn't exist", done => {
     chai.request(server.app)
       .delete("/data")
