@@ -315,6 +315,29 @@ async function doImport({ input, format, type, concordance }) {
     }
     mappings.length && await saveMappings(mappings)
     log(`... done: ${imported} mappings imported (${total - imported} skipped).`)
+    if (concordance) {
+      // Recalculate extent of concordance
+      const uri = concordance.uri
+      const count = (await Mapping.countDocuments({ "partOf.uri": uri })) || ""
+      log(`... recalculated extend of concordance ${uri} to be ${count}...`)
+      await Concordance.updateOne({ _id: uri }, {
+        $set:
+        {
+          extent: `${count}`,
+          distribution: [
+            {
+              "download": `${config.baseUrl}mappings?partOf=${encodeURIComponent(uri)}&download=ndjson`,
+              "format": "http://format.gbv.de/jskos",
+              "mimetype": "application/x-ndjson; charset=utf-8",
+            },
+            {
+              "download": `${config.baseUrl}mappings?partOf=${encodeURIComponent(uri)}&download=csv`,
+              "mimetype": "text/csv; charset=utf-8",
+            },
+          ],
+        },
+      })
+    }
   } else if (type == "concordance") {
     // TODO: Eventually, this should also be done through the service.
     let imported = 0
@@ -349,26 +372,6 @@ async function doImport({ input, format, type, concordance }) {
             url = path.dirname(input) + "/" + distribution.download
           }
           await doImport({ input: url, type: "mapping", concordance })
-          // Recalculate extent
-          const count = (await Mapping.countDocuments({ "partOf.uri": uri })) || ""
-          log(`... recalculated extend of concordance ${uri} to be ${count}...`)
-          await Concordance.updateOne({ _id: uri }, {
-            $set:
-            {
-              extent: `${count}`,
-              distribution: [
-                {
-                  "download": `${config.baseUrl}mappings?partOf=${encodeURIComponent(uri)}&download=ndjson`,
-                  "format": "http://format.gbv.de/jskos",
-                  "mimetype": "application/x-ndjson; charset=utf-8",
-                },
-                {
-                  "download": `${config.baseUrl}mappings?partOf=${encodeURIComponent(uri)}&download=csv`,
-                  "mimetype": "text/csv; charset=utf-8",
-                },
-              ],
-            },
-          })
         } else {
           log("... no mapping distribution found.")
         }
