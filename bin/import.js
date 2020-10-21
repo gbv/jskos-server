@@ -17,6 +17,8 @@ Options
   --indexes               -i          Create indexes without import (can also be used in addition to import)
   --quiet                 -q          Only output warnings and errors
   --format                -f          Either json or ndjson. Defaults to file ending or content type if available.
+  --concordance           -c          Only for mappings. Adds imported mappings into a concordance for specified URI.
+                                      The concordance must already exist.
 
 Examples
   $ jskos-import --indexes
@@ -42,6 +44,11 @@ Examples
     format: {
       type: "string",
       alias: "f",
+      default: "",
+    },
+    concordance: {
+      type: "string",
+      alias: "c",
       default: "",
     },
     help: {
@@ -100,6 +107,13 @@ if (cli.input[0] && !type) {
 if (!indexes && !type) {
   logError({
     message: "The <type> argument is necessary to import data.",
+    showHelp: true,
+    exit: true,
+  })
+}
+if (cli.flags.concordance && type != "mapping") {
+  logError({
+    message: `The -c option is not compatible with type ${type}.`,
     showHelp: true,
     exit: true,
   })
@@ -183,8 +197,19 @@ const allTypes = Object.keys(services)
   }
 
   if (input) {
+    let concordance
+    if (cli.flags.concordance) {
+      // Query concordance from database
+      concordance = await Concordance.findById(cli.flags.concordance).lean()
+      if (!concordance) {
+        logError({
+          message: `Concordance with URI ${cli.flags.concordance} not found, aborting...`,
+          exit: true,
+        })
+      }
+    }
     try {
-      await doImport({ input, format, type })
+      await doImport({ input, format, type, concordance })
     } catch (error) {
       logError({ message: `Import failed - ${error}` })
     }
@@ -311,7 +336,7 @@ async function doImport({ input, format, type, concordance }) {
       const result = await Concordance.replaceOne({ _id: concordance._id }, concordance, { upsert: true })
       if (result.nModified + (result.upserted || []).length == 1) {
         imported += 1
-        log(`... imported concordace ${uri}, now importing its mappings...`)
+        log(`... imported concordance ${uri}, now importing its mappings...`)
         // TODO: Should concordance be dropped?
         let distribution = (concordance.distribution || []).find(element => element.mimetype.includes("json"))
         if (distribution) {
@@ -326,7 +351,7 @@ async function doImport({ input, format, type, concordance }) {
           await doImport({ input: url, type: "mapping", concordance })
           // Recalculate extent
           const count = (await Mapping.countDocuments({ "partOf.uri": uri })) || ""
-          log(`... recalculated extend of concordace ${uri} to be ${count}...`)
+          log(`... recalculated extend of concordance ${uri} to be ${count}...`)
           await Concordance.updateOne({ _id: uri }, {
             $set:
             {
