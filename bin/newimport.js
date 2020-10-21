@@ -182,10 +182,12 @@ const allTypes = Object.keys(services)
     log()
   }
 
-  try {
-    await doImport({ input, format, type })
-  } catch (error) {
-    logError({ message: `Import failed - ${error}` })
+  if (input) {
+    try {
+      await doImport({ input, format, type })
+    } catch (error) {
+      logError({ message: `Import failed - ${error}` })
+    }
   }
 
   mongoose.disconnect()
@@ -294,9 +296,11 @@ async function doImport({ input, format, type, concordance }) {
     let total = 0
     for await (let concordance of stream) {
       total += 1
-      // For testing, uncomment this, otherwise it'll fail validation (`distribution` was mistakenly called `distributions`):
-      // concordance.distribution = concordance.distributions
-      // delete concordance.distributions
+      // TODO: For testing, uncomment this, otherwise it'll fail validation (`distribution` was mistakenly called `distributions`):
+      if (concordance.distributions) {
+        concordance.distribution = concordance.distributions
+        delete concordance.distributions
+      }
       // Validation
       if (!validate[type] || !validate[type](concordance)) {
         logError({ message: `Could not validate ${type} number ${total}: ${concordance && concordance.uri}` })
