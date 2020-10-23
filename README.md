@@ -412,24 +412,19 @@ Note about previous additional options for `auth`:
 - `allowCrossUserEditing`: now covered by `mappings.update.crossUser` and `mappings.delete.crossUser`
 
 ### Data Import
-JSKOS Server provides a script to import JSKOS data into the database. Right now, mappings, terminologies (concept schemes), concepts, concordances, and annotations, in JSON (array only) or [NDJSON](http://ndjson.org) format are supported.
-
-Before you can use the script, you need to link it: `npm link`. This makes the command `jskos-import` available in your path. To see how to use the script, run `jskos-import --help`. **Note:** If you have multiple jskos-server instances running on the same machine, this command will make the import for the **current** instance available in the path. Alternatively, you can use `./bin/import.js` or `npm run import --`.
+JSKOS Server provides scripts to import JSKOS data into the database or delete data from the database. Right now, mappings, terminologies (concept schemes), concepts, concordances, and annotations, in JSON (object or array of objects) or [NDJSON](http://ndjson.org) format are supported.
 
 Examples:
 ```bash
-# Linking is necessary to be able to use the `jskos-import` command.
-npm link
-# Alternatively, replace `jskos-import` with `./bin/import.js` or `npm run import --`. This is recommended for cronjobs etc.
 
 # Create indexes for all types
-jskos-import --indexes
+./bin/import.js --indexes
 # Import RVK scheme (from coli-conc API)
-jskos-import schemes https://coli-conc.gbv.de/rvk/api/voc
-# Import RVK concepts (this might take a while)
-jskos-import concepts https://coli-conc.gbv.de/rvk/data/2019_1/rvko_2019_1.ndjson
+./bin/import.js schemes https://coli-conc.gbv.de/rvk/api/voc
+# Import RVK concepts (this will take a while)
+./bin/import.js concepts https://coli-conc.gbv.de/rvk/data/2019_1/rvko_2019_1.ndjson
 # Import coli-conc concordances
-jskos-import concordances https://coli-conc.gbv.de/concordances/csv/concordances.ndjson
+./bin/import.js concordances https://coli-conc.gbv.de/api/concordances
 
 # Batch import multiple files or URLs
 npm run import-batch -- mappings files.txt
@@ -437,9 +432,29 @@ npm run import-batch -- mappings files.txt
 # You can, for example, store these batch import files in folder `imports` which is ignored in git.
 ```
 
-**Note: If you have concepts in your database, make sure to run `jskos-import --indexes` at least once. This will make sure all necessary indexes are created. Without this step, the `/suggest` and `/search` endpoints will not work.**
+**Note: If you have concepts in your database, make sure to run `./bin/import.js --indexes` at least once. This will make sure all necessary indexes are created. Without this step, the `/suggest` and `/search` endpoints will not work.**
 
-Note about hierarchy for concepts: jskos-server solely uses the `broader` field on concepts to determine the hierarchy. The `narrower` field will be dynamically filled for every request, and `ancestors` are determined via requests to [`GET /ancestors`](#get-ancestors) or via `properties=ancestors`. If there is data already inside the `narrower` or `ancestors` fields, it will be ignored.
+Note about hierarchy for concepts: jskos-server solely uses the `broader` field on concepts to determine the hierarchy. The `narrower` field will be dynamically filled for every request, and `ancestors` are determined via requests to [`GET /ancestors`](#get-ancestors) or via `properties=ancestors`. If there is data already inside the `narrower` or `ancestors` fields, it will currently be ignored.
+
+For more information about the import script, run `./bin/import.js --help`.
+
+It is also possible to delete entities from the server via the command line. Running the command will first determine what exactly will be deleted and ask you for confirmation:
+```bash
+# Will delete everything from database
+./bin/reset.js
+# Will delete mappings from database
+./bin/reset.js -t mappings
+# Will delete all concepts that belong to a certain concept scheme URI
+./bin/reset.js -s http://uri.gbv.de/terminology/rvk/
+# Will delete all mappings that belong to a certain concordance URI
+./bin/reset.js -c https://gbv.github.io/jskos/context.json
+# Will delete entities with certain URIs
+./bin/reset.js http://rvk.uni-regensburg.de/nt/A http://rvk.uni-regensburg.de/nt/B
+# Will show help for more information
+./bin/reset.js --help
+```
+
+For scripting, you can use the `yes` command to skip confirmation. **Make sure you know what you're doing!** Example: `yes | ./bin/reset.js test:uri`.
 
 ## Usage
 
