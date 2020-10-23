@@ -3,7 +3,7 @@
 const meow = require("meow")
 const cli = meow(`
 Usage
-  $ jskos-import [options] [type input]
+  $ ./bin/import.js [options] [type input]
 
   type and input are required unless with options --indexes.
   input can be a .json file (single object or array), an .ndjson file (newline delimited JSON),
@@ -21,9 +21,9 @@ Options
                                       The concordance must already exist.
 
 Examples
-  $ jskos-import --indexes
-  $ jskos-import schemes schemes.ndjson
-  $ jskos-import concepts concepts.ndjson
+  $ ./bin/import.js --indexes
+  $ ./bin/import.js schemes schemes.ndjson
+  $ ./bin/import.js concepts concepts.ndjson
 `, {
   flags: {
     reset: {

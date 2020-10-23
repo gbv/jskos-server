@@ -9,7 +9,7 @@ const Container = require("typedi").Container
 const meow = require("meow")
 const cli = meow(`
 Usage
-  $ jskos-server-reset [options] [URIs]
+  $ ./bin/reset.js [options] [URIs]
 
   type is required unless you want to reset the whole database.
 
@@ -20,7 +20,7 @@ Options
   --concordance           -c          Only for mappings. Deletes only mappings from a certain concordance (partOf). (Not applicable when URIs are specified.)
 
 Examples
-  $ jskos-server-reset concepts -s http://uri.gbv.de/terminology/rvk/
+  $ ./bin/reset.js concepts -s http://uri.gbv.de/terminology/rvk/
 `, {
   flags: {
     type: {
