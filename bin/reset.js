@@ -9,7 +9,7 @@ const Container = require("typedi").Container
 const meow = require("meow")
 const cli = meow(`
 Usage
-  $ ./bin/reset.js [options] [URIs]
+  $ npm run reset -- [options] [URIs]
 
   type is required unless you want to reset the whole database.
 
@@ -20,7 +20,7 @@ Options
   --concordance           -c          Only for mappings. Deletes only mappings from a certain concordance (partOf). (Not applicable when URIs are specified.)
 
 Examples
-  $ ./bin/reset.js concepts -s http://uri.gbv.de/terminology/rvk/
+  $ npm run reset -- -t concepts -s http://uri.gbv.de/terminology/rvk/
 `, {
   flags: {
     type: {

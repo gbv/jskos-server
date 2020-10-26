@@ -14,7 +14,8 @@
     "fix": "./node_modules/.bin/eslint --fix './**/*.js'",
     "lint-staged": "lint-staged",
     "import": "./bin/import.js",
-    "import-batch": "func() { tr '\\n' '\\0' < \"$2\"  | xargs -0 -n1 ./bin/import.js $1; }; func"
+    "import-batch": "func() { tr '\\n' '\\0' < \"$2\"  | xargs -0 -n1 ./bin/import.js $1; }; func",
+    "reset": "./bin/reset.js"
   },
   "lint-staged": {
     "**/*.js": [

@@ -418,13 +418,13 @@ Examples:
 ```bash
 
 # Create indexes for all types
-./bin/import.js --indexes
+npm run import -- --indexes
 # Import RVK scheme (from coli-conc API)
-./bin/import.js schemes https://coli-conc.gbv.de/rvk/api/voc
+npm run import -- schemes https://coli-conc.gbv.de/rvk/api/voc
 # Import RVK concepts (this will take a while)
-./bin/import.js concepts https://coli-conc.gbv.de/rvk/data/2019_1/rvko_2019_1.ndjson
+npm run import -- concepts https://coli-conc.gbv.de/rvk/data/2019_1/rvko_2019_1.ndjson
 # Import coli-conc concordances
-./bin/import.js concordances https://coli-conc.gbv.de/api/concordances
+npm run import -- concordances https://coli-conc.gbv.de/api/concordances
 
 # Batch import multiple files or URLs
 npm run import-batch -- mappings files.txt
@@ -432,29 +432,29 @@ npm run import-batch -- mappings files.txt
 # You can, for example, store these batch import files in folder `imports` which is ignored in git.
 ```
 
-**Note: If you have concepts in your database, make sure to run `./bin/import.js --indexes` at least once. This will make sure all necessary indexes are created. Without this step, the `/suggest` and `/search` endpoints will not work.**
+**Note: If you have concepts in your database, make sure to run `npm run import -- --indexes` at least once. This will make sure all necessary indexes are created. Without this step, the `/suggest` and `/search` endpoints will not work.**
 
 Note about hierarchy for concepts: jskos-server solely uses the `broader` field on concepts to determine the hierarchy. The `narrower` field will be dynamically filled for every request, and `ancestors` are determined via requests to [`GET /ancestors`](#get-ancestors) or via `properties=ancestors`. If there is data already inside the `narrower` or `ancestors` fields, it will currently be ignored.
 
-For more information about the import script, run `./bin/import.js --help`.
+For more information about the import script, run `npm run import -- --help`.
 
 It is also possible to delete entities from the server via the command line. Running the command will first determine what exactly will be deleted and ask you for confirmation:
 ```bash
 # Will delete everything from database
-./bin/reset.js
+npm run reset
 # Will delete mappings from database
-./bin/reset.js -t mappings
+npm run reset -- -t mappings
 # Will delete all concepts that belong to a certain concept scheme URI
-./bin/reset.js -s http://uri.gbv.de/terminology/rvk/
+npm run reset -- -s http://uri.gbv.de/terminology/rvk/
 # Will delete all mappings that belong to a certain concordance URI
-./bin/reset.js -c https://gbv.github.io/jskos/context.json
+npm run reset -- -c https://gbv.github.io/jskos/context.json
 # Will delete entities with certain URIs
-./bin/reset.js http://rvk.uni-regensburg.de/nt/A http://rvk.uni-regensburg.de/nt/B
+npm run reset -- http://rvk.uni-regensburg.de/nt/A http://rvk.uni-regensburg.de/nt/B
 # Will show help for more information
-./bin/reset.js --help
+npm run reset -- --help
 ```
 
-For scripting, you can use the `yes` command to skip confirmation. **Make sure you know what you're doing!** Example: `yes | ./bin/reset.js test:uri`.
+For scripting, you can use the `yes` command to skip confirmation. **Make sure you know what you're doing!** Example: `yes | npm run reset -- test:uri`.
 
 ## Usage
 
