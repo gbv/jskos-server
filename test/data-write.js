@@ -9,7 +9,7 @@ chai.use(chaiHttp)
 const should = chai.should()
 const server = require("../server")
 const assert = require("assert")
-const { dropDatabaseBeforeAndAfter } = require("./test-utils")
+const { assertIndexes, assertMongoDB, dropDatabaseBeforeAndAfter } = require("./test-utils")
 
 const schemes = [
   {
@@ -39,52 +39,11 @@ const schemes = [
   },
 ]
 
+assertMongoDB()
 dropDatabaseBeforeAndAfter()
 
-/**
- * Database suite to make sure the following test suits have access.
- */
-describe("MongoDB", () => {
-
-  it("should connect to database successfully", (done) => {
-    if (server.db.readyState === 1) {
-      done()
-    } else {
-      server.db.on("connected", () => done())
-      server.db.on("error", (error) => done(error))
-    }
-  })
-
-})
-
 describe("Indexes", () => {
-  // TODO: Duplicate of test.js
-  const exec = require("child_process").exec
-  it("should create indexes", done => {
-    // Create indexes
-    exec("NODE_ENV=test ./bin/import.js --indexes", (err) => {
-      if (err) {
-        done(err)
-        return
-      }
-      let db = server.db
-      let promises = []
-      let collections = ["terminologies", "concepts", "mappings", "annotations"]
-      for (let collection of collections) {
-        promises.push(db.collection(collection).indexInformation())
-      }
-      Promise.all(promises).then(results => {
-        for (let result of results) {
-          // There should be more than the _id, uri, and identifier index
-          // TODO: Adjust so that the exact indexes can be checked
-          Object.keys(result).length.should.be.greaterThan(3)
-        }
-        done()
-      }).catch(error => {
-        done(error)
-      })
-    })
-  })
+  assertIndexes()
 })
 
 describe("/voc write access", () => {

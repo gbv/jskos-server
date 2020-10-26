@@ -11,7 +11,7 @@ const server = require("../server")
 const assert = require("assert")
 const cpexec = require("child_process").exec
 const _ = require("lodash")
-const { dropDatabaseBeforeAndAfter, exec } = require("./test-utils")
+const { assertMongoDB, dropDatabaseBeforeAndAfter } = require("./test-utils")
 
 // Prepare jwt
 const jwt = require("jsonwebtoken")
@@ -99,18 +99,7 @@ let mapping = {
   ],
 }
 
-describe("MongoDB", () => {
-
-  it("should connect to database successfully", (done) => {
-    if (server.db.readyState === 1) {
-      done()
-    } else {
-      server.db.on("connected", () => done())
-      server.db.on("error", (error) => done(error))
-    }
-  })
-
-})
+assertMongoDB()
 
 describe("Express Server", () => {
 
@@ -1534,128 +1523,6 @@ describe("Express Server", () => {
           res.body.motivation.should.be.eql(annotationModerating.motivation)
           done()
         })
-    })
-
-  })
-
-  describe("Import Script", () => {
-
-    it("should clear the database", done => {
-      // Clear database
-      cpexec("yes | NODE_ENV=test ./bin/reset.js", (err) => {
-        if (err) {
-          done(err)
-          return
-        }
-        let db = server.db
-        let promises = []
-        let collections = ["concepts", "mappings", "terminologies"]
-        for (let collection of collections) {
-          promises.push(db.collection(collection).find({}).toArray())
-        }
-        Promise.all(promises).then(results => {
-          for (let result of results) {
-            result.length.should.be.eql(0)
-          }
-          done()
-        }).catch(error => {
-          done(error)
-        })
-      })
-    })
-
-    it("should create indexes", done => {
-      // Create indexes
-      cpexec("NODE_ENV=test ./bin/import.js --indexes", (err) => {
-        if (err) {
-          done(err)
-          return
-        }
-        let db = server.db
-        let promises = []
-        let collections = ["terminologies", "concepts", "mappings", "annotations"]
-        for (let collection of collections) {
-          promises.push(db.collection(collection).indexInformation())
-        }
-        Promise.all(promises).then(results => {
-          for (let result of results) {
-            // There should be more than the _id, uri, and identifier index
-            // TODO: Adjust so that the exact indexes can be checked
-            Object.keys(result).length.should.be.greaterThan(3)
-          }
-          done()
-        }).catch(error => {
-          done(error)
-        })
-      })
-    })
-
-    it("should import terminologies", done => {
-      // Add vocabularies to database
-      cpexec("NODE_ENV=test ./bin/import.js schemes ./test/terminologies/terminologies.json", (err) => {
-        if (err) {
-          done(err)
-          return
-        }
-        let db = server.db
-        db.collection("terminologies").find({}).toArray().then(results => {
-          results.length.should.be.eql(2)
-          done()
-        }).catch(error => {
-          done(error)
-        })
-      })
-    })
-
-    it("should import concepts", done => {
-      // Add concepts to database
-      cpexec("NODE_ENV=test ./bin/import.js concepts ./test/concepts/concepts-ddc-6-60-61-62.json", (err) => {
-        if (err) {
-          done(err)
-          return
-        }
-        let db = server.db
-        db.collection("concepts").find({}).toArray().then(results => {
-          results.length.should.be.eql(4)
-          done()
-        }).catch(error => {
-          done(error)
-        })
-      })
-    })
-
-    it("should import concordances", done => {
-      // Add concordances to database
-      cpexec("NODE_ENV=test ./bin/import.js concordances ./test/concordances/concordances.ndjson", (err) => {
-        if (err) {
-          done(err)
-          return
-        }
-        let db = server.db
-        db.collection("concordances").find({}).toArray().then(results => {
-          results.length.should.be.eql(2)
-          done()
-        }).catch(error => {
-          done(error)
-        })
-      })
-    })
-
-    it("should import mappings", async () => {
-      // Add mappings to database
-      await exec("NODE_ENV=test ./bin/import.js mappings ./test/mappings/mapping-ddc-gnd.json")
-      const results = await server.db.collection("mappings").find({}).toArray()
-      results.length.should.be.eql(3)
-    })
-
-    it("should import annotations", async () => {
-      // Import one annotation
-      let results
-      results = await server.db.collection("annotations").find({}).toArray()
-      results.length.should.be.eql(0)
-      await exec("NODE_ENV=test ./bin/import.js annotations ./test/annotations/annotation.json")
-      results = await server.db.collection("annotations").find({}).toArray()
-      results.length.should.be.eql(1)
     })
 
   })
