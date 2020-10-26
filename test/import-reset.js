@@ -205,6 +205,44 @@ describe("Import and Reset Script", () => {
       assert.strictEqual(results.length, lengthBefore - uris.length)
     })
 
+    const abortMessageForNoEntities = "Did not find any entities to be deleted, aborting"
+
+    it("should fail when -s and -c are given", async () => {
+      try {
+        await exec("yes | NODE_ENV=test ./bin/reset.js -s a:b -c c:d")
+        assert.fail("Expected exec to fail.")
+      } catch (error) {
+        assert(!error.stderr.includes(abortMessageForNoEntities))
+      }
+    })
+
+    it("should fail when -s is used with type other than concepts", async () => {
+      try {
+        await exec("yes | NODE_ENV=test ./bin/reset.js -s a:b -t mappings")
+        assert.fail("Expected exec to fail.")
+      } catch (error) {
+        assert(!error.stderr.includes(abortMessageForNoEntities))
+      }
+    })
+
+    it("should fail when -c is used with type other than mappings", async () => {
+      try {
+        await exec("yes | NODE_ENV=test ./bin/reset.js -c c:d -t concepts")
+        assert.fail("Expected exec to fail.")
+      } catch (error) {
+        assert(!error.stderr.includes(abortMessageForNoEntities))
+      }
+    })
+
+    it("should fail when -s is used with URI", async () => {
+      try {
+        await exec("yes | NODE_ENV=test ./bin/reset.js -s a:b c:d")
+        assert.fail("Expected exec to fail.")
+      } catch (error) {
+        assert(!error.stderr.includes(abortMessageForNoEntities))
+      }
+    })
+
     it("should clear the whole database", async () => {
       // Clear database
       await exec("yes | NODE_ENV=test ./bin/reset.js")
@@ -219,7 +257,7 @@ describe("Import and Reset Script", () => {
         await exec("yes | NODE_ENV=test ./bin/reset.js")
         assert.fail("Expected reset script to fail if there are no entities to delete.")
       } catch (error) {
-        // Ignore error
+        assert(error.stderr.includes(abortMessageForNoEntities))
       }
     })
 
