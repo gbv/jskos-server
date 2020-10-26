@@ -63,6 +63,11 @@ module.exports = class ConcordanceService {
 
   async createIndexes() {
     const indexes = []
+    indexes.push([{ "uri": 1 }, {}])
+    indexes.push([{ "identifier": 1 }, {}])
+    indexes.push([{ "notation": 1 }, {}])
+    indexes.push([{ "fromScheme.uri": 1 }, {}])
+    indexes.push([{ "toScheme.uri": 1 }, {}])
     // Create collection if necessary
     try {
       await Concordance.createCollection()
