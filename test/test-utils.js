@@ -30,7 +30,27 @@ function dropDatabaseBeforeAndAfter() {
   after(dropDatabase)
 }
 
+const cpexec = require("child_process").exec
+
+/**
+ * A wrapper around child_process' exec function for async/await.
+ *
+ * @param {*} command
+ * @param {*} options
+ */
+async function exec(command, options) {
+  return new Promise((resolve, reject) => {
+    cpexec(command, options || {}, (error, stdout) => {
+      if (error) {
+        return reject(error)
+      }
+      resolve(stdout)
+    })
+  })
+}
+
 module.exports = {
   dropDatabase,
   dropDatabaseBeforeAndAfter,
+  exec,
 }

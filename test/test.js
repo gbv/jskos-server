@@ -9,9 +9,9 @@ chai.use(chaiHttp)
 const should = chai.should()
 const server = require("../server")
 const assert = require("assert")
-const exec = require("child_process").exec
+const cpexec = require("child_process").exec
 const _ = require("lodash")
-const { dropDatabaseBeforeAndAfter } = require("./test-utils")
+const { dropDatabaseBeforeAndAfter, exec } = require("./test-utils")
 
 // Prepare jwt
 const jwt = require("jsonwebtoken")
@@ -255,7 +255,7 @@ describe("Express Server", () => {
 
     it("should GET two concordances", done => {
       // Add concordances to database
-      exec("NODE_ENV=test ./bin/import.js concordances ./test/concordances/concordances.ndjson", (err) => {
+      cpexec("NODE_ENV=test ./bin/import.js concordances ./test/concordances/concordances.ndjson", (err) => {
         if (err) {
           done(err)
           return
@@ -292,7 +292,7 @@ describe("Express Server", () => {
 
     it("should GET three mappings", done => {
       // Add mappings to database
-      exec("NODE_ENV=test ./bin/import.js mappings ./test/mappings/mapping-ddc-gnd.json", (err) => {
+      cpexec("NODE_ENV=test ./bin/import.js mappings ./test/mappings/mapping-ddc-gnd.json", (err) => {
         if (err) {
           done(err)
           return
@@ -350,7 +350,7 @@ describe("Express Server", () => {
 
     it("should GET only mappings from GND", done => {
       // Add mappings to database
-      exec("yes | NODE_ENV=test ./bin/reset.js -t mappings && NODE_ENV=test ./bin/import.js mappings ./test/mappings/mappings-ddc.json", (err) => {
+      cpexec("yes | NODE_ENV=test ./bin/reset.js -t mappings && NODE_ENV=test ./bin/import.js mappings ./test/mappings/mappings-ddc.json", (err) => {
         if (err) {
           done(err)
           return
@@ -478,7 +478,7 @@ describe("Express Server", () => {
 
     // Reinsert mappings again
     before(done => {
-      exec("yes | NODE_ENV=test ./bin/reset.js -t mappings && NODE_ENV=test ./bin/import.js mappings ./test/mappings/mappings-ddc.json", (err) => {
+      cpexec("yes | NODE_ENV=test ./bin/reset.js -t mappings && NODE_ENV=test ./bin/import.js mappings ./test/mappings/mappings-ddc.json", (err) => {
         if (err) {
           done(err)
           return
@@ -850,7 +850,7 @@ describe("Express Server", () => {
 
     it("should GET two vocabularies", done => {
       // Add vocabularies and concepts to database
-      exec("NODE_ENV=test ./bin/import.js --indexes && NODE_ENV=test ./bin/import.js schemes ./test/terminologies/terminologies.json && NODE_ENV=test ./bin/import.js concepts ./test/concepts/concepts-ddc-6-60-61-62.json", (err) => {
+      cpexec("NODE_ENV=test ./bin/import.js --indexes && NODE_ENV=test ./bin/import.js schemes ./test/terminologies/terminologies.json && NODE_ENV=test ./bin/import.js concepts ./test/concepts/concepts-ddc-6-60-61-62.json", (err) => {
         if (err) {
           done(err)
           return
@@ -1542,7 +1542,7 @@ describe("Express Server", () => {
 
     it("should clear the database", done => {
       // Clear database
-      exec("yes | NODE_ENV=test ./bin/reset.js", (err) => {
+      cpexec("yes | NODE_ENV=test ./bin/reset.js", (err) => {
         if (err) {
           done(err)
           return
@@ -1566,7 +1566,7 @@ describe("Express Server", () => {
 
     it("should create indexes", done => {
       // Create indexes
-      exec("NODE_ENV=test ./bin/import.js --indexes", (err) => {
+      cpexec("NODE_ENV=test ./bin/import.js --indexes", (err) => {
         if (err) {
           done(err)
           return
@@ -1592,7 +1592,7 @@ describe("Express Server", () => {
 
     it("should import terminologies", done => {
       // Add vocabularies to database
-      exec("NODE_ENV=test ./bin/import.js schemes ./test/terminologies/terminologies.json", (err) => {
+      cpexec("NODE_ENV=test ./bin/import.js schemes ./test/terminologies/terminologies.json", (err) => {
         if (err) {
           done(err)
           return
@@ -1609,7 +1609,7 @@ describe("Express Server", () => {
 
     it("should import concepts", done => {
       // Add concepts to database
-      exec("NODE_ENV=test ./bin/import.js concepts ./test/concepts/concepts-ddc-6-60-61-62.json", (err) => {
+      cpexec("NODE_ENV=test ./bin/import.js concepts ./test/concepts/concepts-ddc-6-60-61-62.json", (err) => {
         if (err) {
           done(err)
           return
@@ -1626,7 +1626,7 @@ describe("Express Server", () => {
 
     it("should import concordances", done => {
       // Add concordances to database
-      exec("NODE_ENV=test ./bin/import.js concordances ./test/concordances/concordances.ndjson", (err) => {
+      cpexec("NODE_ENV=test ./bin/import.js concordances ./test/concordances/concordances.ndjson", (err) => {
         if (err) {
           done(err)
           return
@@ -1641,21 +1641,21 @@ describe("Express Server", () => {
       })
     })
 
-    it("should import mappings", done => {
+    it("should import mappings", async () => {
       // Add mappings to database
-      exec("NODE_ENV=test ./bin/import.js mappings ./test/mappings/mapping-ddc-gnd.json", (err) => {
-        if (err) {
-          done(err)
-          return
-        }
-        let db = server.db
-        db.collection("mappings").find({}).toArray().then(results => {
-          results.length.should.be.eql(3)
-          done()
-        }).catch(error => {
-          done(error)
-        })
-      })
+      await exec("NODE_ENV=test ./bin/import.js mappings ./test/mappings/mapping-ddc-gnd.json")
+      const results = await server.db.collection("mappings").find({}).toArray()
+      results.length.should.be.eql(3)
+    })
+
+    it("should import annotations", async () => {
+      // Import one annotation
+      let results
+      results = await server.db.collection("annotations").find({}).toArray()
+      results.length.should.be.eql(0)
+      await exec("NODE_ENV=test ./bin/import.js annotations ./test/annotations/annotation.json")
+      results = await server.db.collection("annotations").find({}).toArray()
+      results.length.should.be.eql(1)
     })
 
   })

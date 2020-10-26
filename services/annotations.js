@@ -82,7 +82,7 @@ module.exports = class MappingService {
   /**
    * Save a new annotation or multiple annotations in the database. Adds created date if necessary.
    */
-  async postAnnotation({ bodyStream, user, bulk = false }) {
+  async postAnnotation({ bodyStream, user, bulk = false, admin = false }) {
     if (!bodyStream) {
       throw new MalformedBodyError()
     }
@@ -112,8 +112,8 @@ module.exports = class MappingService {
     // Adjust all mappings
     annotations = annotations.map(annotation => {
       try {
-        // For type moderating, check if user is on the whitelist.
-        if (annotation.motivation == "moderating") {
+        // For type moderating, check if user is on the whitelist (except for admin=true).
+        if (!admin && annotation.motivation == "moderating") {
           let uris = [user.uri].concat(Object.values(user.identities || {}).map(id => id.uri)).filter(uri => uri != null)
           let whitelist = config.annotations.moderatingIdentities
           if (whitelist && _.intersection(whitelist, uris).length == 0) {

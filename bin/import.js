@@ -378,5 +378,14 @@ async function doImport({ input, format, type, concordance }) {
       }
     }
     log(`... done: ${imported} concordances imported (${total - imported} skipped).`)
+  } else if (type == "annotation") {
+    log("Importing annotations...")
+    // TODO: Find way to output progress.
+    const result = await services.annotation.postAnnotation({
+      bodyStream: stream,
+      bulk: true,
+      admin: true,
+    })
+    log(`... done: ${_.isArray(result) ? result.length : 1} annotations imported.`)
   }
 }

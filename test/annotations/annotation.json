@@ -1,0 +1,13 @@
+{
+  "_id": "92b778b2-54c5-4802-8822-ce5341b28fce",
+  "target": "http://localhost:3000/mappings/13878e75-3521-4ff1-9e04-cd29ee69a164",
+  "motivation": "assessing",
+  "bodyValue": "+1",
+  "creator": {
+    "id": "http://localhost:3004/users/0895ee22-cfd3-492a-a84c-f1bb2a2a1bc1",
+    "name": "Test-User"
+  },
+  "created": "2020-10-08T12:10:02.012Z",
+  "id": "http://localhost:3000/annotations/92b778b2-54c5-4802-8822-ce5341b28fce",
+  "modified": "2020-10-08T12:33:15.059Z"
+}
