@@ -150,12 +150,76 @@ describe("Import and Reset Script", () => {
 
   describe("Reset Script", () => {
 
-    it("should clear the database", async () => {
+    it("should abort reset script when given no as input", async () => {
+      try {
+        await exec("echo no | NODE_ENV=test ./bin/reset.js")
+        assert.fail("Expected reset script to abort.")
+      } catch (error) {
+        assert(error.stdout.includes("Is that okay?"))
+        assert(error.stderr.includes("Error: Aborting"))
+      }
+    })
+
+    const type = "annotations"
+    it(`should delete ${type}`, async () => {
+      await exec(`yes | NODE_ENV=test ./bin/reset.js -t ${type}`)
+      for (let collection of ["concepts", "mappings", "terminologies", "annotations", "concordances"]) {
+        const result = await server.db.collection(collection).find({}).toArray()
+        if (collection == type) {
+          assert.strictEqual(result.length, 0)
+        } else {
+          assert.notStrictEqual(result.length, 0)
+        }
+      }
+    })
+
+    it("should delete concepts from certain scheme", async () => {
+      const scheme = "http://dewey.info/scheme/edition/e23/"
+      try {
+        await exec(`echo no | NODE_ENV=test ./bin/reset.js -s ${scheme}`)
+        assert.fail("Expected exec to fail.")
+      } catch (error) {
+        assert(error.stdout.includes(`from scheme ${scheme}`))
+        assert(error.stdout.includes("concepts will be deleted"))
+      }
+    })
+
+    it("should delete mappings from certain concordance", async () => {
+      const concordance = "http://coli-conc.gbv.de/concordances/ddc_rvk_medizin"
+      try {
+        await exec(`echo no | NODE_ENV=test ./bin/reset.js -c ${concordance}`)
+        assert.fail("Expected exec to fail.")
+      } catch (error) {
+        assert(error.stdout.includes(`from concordance ${concordance}`))
+        assert(error.stdout.includes("mappings will be deleted"))
+      }
+    })
+
+    it("should delete entities with specific URIs", async () => {
+      let results
+      results = await server.db.collection("concepts").find({}).toArray()
+      const lengthBefore = results.length
+      const uris = results.map(r => r.uri).slice(0, 2)
+      await exec(`yes | NODE_ENV=test ./bin/reset.js ${uris.join(" ")}`)
+      results = await server.db.collection("concepts").find({}).toArray()
+      assert.strictEqual(results.length, lengthBefore - uris.length)
+    })
+
+    it("should clear the whole database", async () => {
       // Clear database
       await exec("yes | NODE_ENV=test ./bin/reset.js")
       for (let collection of ["concepts", "mappings", "terminologies"]) {
         const result = await server.db.collection(collection).find({}).toArray()
         assert.strictEqual(result.length, 0)
+      }
+    })
+
+    it("should fail if trying to clear the database a second time", async () => {
+      try {
+        await exec("yes | NODE_ENV=test ./bin/reset.js")
+        assert.fail("Expected reset script to fail if there are no entities to delete.")
+      } catch (error) {
+        // Ignore error
       }
     })
 

@@ -71,8 +71,10 @@ const cpexec = require("child_process").exec
  */
 async function exec(command, options) {
   return new Promise((resolve, reject) => {
-    cpexec(command, options || {}, (error, stdout) => {
+    cpexec(command, options || {}, (error, stdout, stderr) => {
       if (error) {
+        error.stdout = stdout
+        error.stderr = stderr
         return reject(error)
       }
       resolve(stdout)
