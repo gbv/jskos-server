@@ -13,6 +13,7 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
 - [JSKOS Server](#jskos-server)
   - [Table of Contents](#table-of-contents)
   - [Install](#install)
+    - [Docker](#docker)
     - [Dependencies](#dependencies)
     - [Clone and Install](#clone-and-install)
     - [Configuration](#configuration)
@@ -77,6 +78,9 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [License](#license)
 
 ## Install
+
+### Docker
+The easiest way to install and use JSKOS Server is with Docker and Docker Compose. Please refer to the [documentation on Docker Hub](https://hub.docker.com/r/coliconc/jskos-server) for more information and instructions.
 
 ### Dependencies
 You need to have access to a [MongoDB database](https://docs.mongodb.com/manual/installation/).
