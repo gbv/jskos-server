@@ -977,7 +977,7 @@ Lists supported terminologies (concept schemes).
 
     // Note: The `language` parameter at other endpoints means "give me labels in these languages". That's why it should have a different name here. Until then, it is removed.
 
-  `subject=URI` subject URI to filter schemes
+  `subject=URIs` subject URI(s) to filter schemes, separated by `|`
 
   `license=URIs` license URI(s) to filter schemes, separated by `|`
 

@@ -27,7 +27,9 @@ module.exports = class SchemeService {
       }
     }
     if (query.subject) {
-      mongoQuery["subject.uri"] = query.subject
+      mongoQuery["subject.uri"] = {
+        $in: query.subject.split("|"),
+      }
     }
     if (query.license) {
       mongoQuery["license.uri"] = {
@@ -250,6 +252,7 @@ module.exports = class SchemeService {
     indexes.push([{ "uri": 1 }, {}])
     indexes.push([{ "identifier": 1 }, {}])
     indexes.push([{ "notation": 1 }, {}])
+    indexes.push([{ "subject.uri": 1 }, {}])
     indexes.push([{ "license.uri": 1 }, {}])
     indexes.push([{ "_keywordsLabels": 1 }, {}])
     indexes.push([
