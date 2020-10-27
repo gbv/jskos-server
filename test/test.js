@@ -875,6 +875,16 @@ describe("Express Server", () => {
         })
     })
 
+    it("should support filtering by license", async () => {
+      const res = await chai.request(server.app)
+        .get("/voc")
+        .query({
+          license: "http://creativecommons.org/licenses/by-nc-nd/3.0/",
+        })
+      assert.strictEqual(res.body.length, 1)
+      assert.strictEqual(res.body[0].uri, "http://dewey.info/scheme/edition/e23/")
+    })
+
   })
 
   describe("GET /voc/top", () => {

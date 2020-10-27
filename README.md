@@ -979,6 +979,8 @@ Lists supported terminologies (concept schemes).
 
   `subject=URI` subject URI to filter schemes
 
+  `license=URIs` license URI(s) to filter schemes, separated by `|`
+
 * **Success Response**
 
   JSON array of [JSKOS Concept Schemes]

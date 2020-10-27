@@ -29,6 +29,11 @@ module.exports = class SchemeService {
     if (query.subject) {
       mongoQuery["subject.uri"] = query.subject
     }
+    if (query.license) {
+      mongoQuery["license.uri"] = {
+        $in: query.license.split("|"),
+      }
+    }
 
     const schemes = await Scheme.find(mongoQuery).lean().skip(query.offset).limit(query.limit).exec()
     schemes.totalCount = await Scheme.find(mongoQuery).countDocuments()
@@ -245,6 +250,7 @@ module.exports = class SchemeService {
     indexes.push([{ "uri": 1 }, {}])
     indexes.push([{ "identifier": 1 }, {}])
     indexes.push([{ "notation": 1 }, {}])
+    indexes.push([{ "license.uri": 1 }, {}])
     indexes.push([{ "_keywordsLabels": 1 }, {}])
     indexes.push([
       {
