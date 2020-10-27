@@ -5,7 +5,7 @@ const config = require("../config")
 // from https://web.archive.org/web/20170609122132/http://jam.sg/blog/efficient-partial-keyword-searches/
 function makeSuffixes(values) {
   var results = []
-  values.sort().reverse().forEach(function (val) {
+  values.forEach(function (val) {
     var tmp, hasSuffix
     for (var i = 0; i < val.length - 1; i++) {
       tmp = val.substr(i).toUpperCase()
@@ -18,7 +18,7 @@ function makeSuffixes(values) {
 // adapted from above
 function makePrefixes(values) {
   var results = []
-  values.sort().reverse().forEach(function (val) {
+  values.forEach(function (val) {
     var tmp, hasPrefix
     results.push(val)
     for (var i = 2; i < val.length; i++) {
