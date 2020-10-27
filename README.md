@@ -981,6 +981,8 @@ Lists supported terminologies (concept schemes).
 
   `license=URIs` license URI(s) to filter schemes, separated by `|`
 
+  `sort=property` sort the results by a certain property. Possible values: `label`, `notation`
+
 * **Success Response**
 
   JSON array of [JSKOS Concept Schemes]

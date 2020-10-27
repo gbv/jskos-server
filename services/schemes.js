@@ -36,8 +36,17 @@ module.exports = class SchemeService {
         $in: query.license.split("|"),
       }
     }
+    const sort = {}
+    switch (query.sort) {
+      case "label":
+        sort["_keywordsLabels.0"] = 1
+        break
+      case "notation":
+        sort["notation"] = 1
+        break
+    }
 
-    const schemes = await Scheme.find(mongoQuery).lean().skip(query.offset).limit(query.limit).exec()
+    const schemes = await Scheme.find(mongoQuery).sort(sort).lean().skip(query.offset).limit(query.limit).exec()
     schemes.totalCount = await Scheme.find(mongoQuery).countDocuments()
     return schemes
   }
@@ -255,6 +264,8 @@ module.exports = class SchemeService {
     indexes.push([{ "subject.uri": 1 }, {}])
     indexes.push([{ "license.uri": 1 }, {}])
     indexes.push([{ "_keywordsLabels": 1 }, {}])
+    // Add additional index for first entry which is used for sorting
+    indexes.push([{ "_keywordsLabels.0": 1 }, {}])
     indexes.push([
       {
         "_keywordsNotation": "text",

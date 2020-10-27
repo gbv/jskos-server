@@ -1,5 +1,30 @@
 [
   {
+    "type": [
+      "http://www.w3.org/2004/02/skos/core#ConceptScheme",
+      "http://w3id.org/nkos/nkostype#thesaurus"
+    ],
+    "languages": [
+      "en",
+      "de"
+    ],
+    "uri": "http://bartoc.org/en/node/313",
+    "license": [
+      {
+        "uri": "http://opendatacommons.org/licenses/odbl/1.0/"
+      }
+    ],
+    "prefLabel": {
+      "de": "Standard Thesaurus Wirtschaft",
+      "en": "STW Thesaurus for Economics"
+    },
+    "subject": [
+      {
+        "uri": "http://dewey.info/class/3/e23/"
+      }
+    ]
+  },
+  {
     "uri": "http://dewey.info/scheme/edition/e23/",
     "prefLabel": {
       "de": "Dewey-Dezimalklassifikation",
@@ -43,31 +68,6 @@
       "en",
       "fr",
       "de"
-    ]
-  },
-  {
-    "type": [
-      "http://www.w3.org/2004/02/skos/core#ConceptScheme",
-      "http://w3id.org/nkos/nkostype#thesaurus"
-    ],
-    "languages": [
-      "en",
-      "de"
-    ],
-    "uri": "http://bartoc.org/en/node/313",
-    "license": [
-      {
-        "uri": "http://opendatacommons.org/licenses/odbl/1.0/"
-      }
-    ],
-    "prefLabel": {
-      "de": "Standard Thesaurus Wirtschaft",
-      "en": "STW Thesaurus for Economics"
-    },
-    "subject": [
-      {
-        "uri": "http://dewey.info/class/3/e23/"
-      }
     ]
   }
 ]

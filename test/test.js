@@ -885,6 +885,27 @@ describe("Express Server", () => {
       assert.strictEqual(res.body[0].uri, "http://dewey.info/scheme/edition/e23/")
     })
 
+    it("should support sorting by label", async () => {
+      const res = await chai.request(server.app)
+        .get("/voc")
+        .query({
+          sort: "label",
+        })
+      assert.strictEqual(res.body[0].uri, "http://dewey.info/scheme/edition/e23/")
+      assert.strictEqual(res.body[1].uri, "http://bartoc.org/en/node/313")
+    })
+
+    it("should support sorting by notation", async () => {
+      const res = await chai.request(server.app)
+        .get("/voc")
+        .query({
+          sort: "notation",
+        })
+      // STW in our test does not have a notation, so it should be on top
+      assert.strictEqual(res.body[0].uri, "http://bartoc.org/en/node/313")
+      assert.strictEqual(res.body[1].uri, "http://dewey.info/scheme/edition/e23/")
+    })
+
   })
 
   describe("GET /voc/top", () => {
