@@ -6,7 +6,8 @@ module.exports = class StatusService {
   /**
    * Return a Promise with a status object.
    */
-  async getStatus({ baseUrl }) {
+  async getStatus() {
+    const baseUrl = config.baseUrl
     const { db } = require("../server")
     let status = {
       config: _.omit(_.cloneDeep(config), ["verbosity", "port", "mongo", "namespace", "proxies", "ips"]),

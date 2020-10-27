@@ -80,57 +80,109 @@ module.exports = class MappingService {
   }
 
   /**
-   * Save a new annotation in the database. Adds created date if necessary.
+   * Save a new annotation or multiple annotations in the database. Adds created date if necessary.
    */
-  async postAnnotation({ body, user, baseUrl }) {
-    let annotation = body
-    if (!annotation) {
+  async postAnnotation({ bodyStream, user, bulk = false, admin = false }) {
+    if (!bodyStream) {
       throw new MalformedBodyError()
     }
-    // For type moderating, check if user is on the whitelist.
-    if (annotation.motivation == "moderating") {
-      let uris = [user.uri].concat(Object.values(user.identities || {}).map(id => id.uri)).filter(uri => uri != null)
-      let whitelist = config.annotations.moderatingIdentities
-      if (whitelist && _.intersection(whitelist, uris).length == 0) {
-        // Disallow
-        throw new ForbiddenAccessError("Access forbidden, user is not allowed to create annotations of type \"moderating\".")
+
+    let isMultiple = true
+
+    // As a workaround, build body from bodyStream
+    // TODO: Use actual stream
+    let annotations = await new Promise((resolve) => {
+      const body = []
+      bodyStream.on("data", annotation => {
+        body.push(annotation)
+      })
+      bodyStream.on("isSingleObject", () => {
+        isMultiple = false
+      })
+      bodyStream.on("end", () => {
+        resolve(body)
+      })
+    })
+
+    let response
+
+    // Ignore bulk option for single object
+    bulk = !isMultiple ? false : bulk
+
+    // Adjust all mappings
+    annotations = annotations.map(annotation => {
+      try {
+        // For type moderating, check if user is on the whitelist (except for admin=true).
+        if (!admin && annotation.motivation == "moderating") {
+          let uris = [user.uri].concat(Object.values(user.identities || {}).map(id => id.uri)).filter(uri => uri != null)
+          let whitelist = config.annotations.moderatingIdentities
+          if (whitelist && _.intersection(whitelist, uris).length == 0) {
+            // Disallow
+            throw new ForbiddenAccessError("Access forbidden, user is not allowed to create annotations of type \"moderating\".")
+          }
+        }
+        if (user) {
+          // Set creator
+          annotation.creator = {
+            id: user.uri,
+            name: user.name,
+          }
+        }
+        // Add created and modified dates.
+        let date = (new Date()).toISOString()
+        if (!annotation.created) {
+          annotation.created = date
+        }
+        // Remove type property
+        _.unset(annotation, "type")
+        // Validate mapping
+        if (!validate.annotation(annotation)) {
+          throw new InvalidBodyError()
+        }
+        // Add _id and URI
+        delete annotation._id
+        let uriBase = config.baseUrl + "annotations/"
+        if (annotation.id) {
+          let id = annotation.id
+          // ID already exists, use if it's valid, otherwise remove
+          if (id.startsWith(uriBase) && utils.isValidUuid(id.slice(uriBase.length, id.length))) {
+            annotation._id = id.slice(uriBase.length, id.length)
+          }
+        }
+        if (!annotation._id) {
+          annotation._id = utils.uuid()
+          annotation.id = config.baseUrl + "annotations/" + annotation._id
+        }
+        // Make sure URI is a https URI when in production
+        if (config.env === "production") {
+          annotation.id = annotation.id.replace("http:", "https:")
+        }
+
+        return annotation
+      } catch(error) {
+        if (bulk) {
+          return null
+        }
+        throw error
       }
-    }
-    if (user) {
-      // Set creator
-      annotation.creator = {
-        id: user.uri,
-        name: user.name,
-      }
-    }
-    // Add created and modified dates.
-    let date = (new Date()).toISOString()
-    if (!annotation.created) {
-      annotation.created = date
-    }
-    // Remove type property
-    _.unset(annotation, "type")
-    // Validate mapping
-    if (!validate.annotation(annotation)) {
-      throw new InvalidBodyError()
-    }
-    // Add _id and URI
-    annotation._id = utils.uuid()
-    annotation.id = baseUrl + "annotations/" + annotation._id
-    // Make sure URI is a https URI when in production
-    if (config.env === "production") {
-      annotation.id = annotation.id.replace("http:", "https:")
+    })
+    annotations = annotations.filter(a => a)
+
+    if (bulk) {
+      // Use bulkWrite for most efficiency
+      annotations.length && await Annotation.bulkWrite(annotations.map(a => ({
+        replaceOne: {
+          filter: { _id: a._id },
+          replacement: a,
+          upsert: true,
+        },
+      })))
+      response = annotations.map(a => ({ id: a.id }))
+    } else {
+      response = await Annotation.insertMany(annotations, { lean: true })
     }
 
-    // Save annotation
-    // eslint-disable-next-line no-useless-catch
-    try {
-      annotation = new Annotation(annotation)
-      annotation = await annotation.save()
-      return annotation.toObject()
-    } catch(error) {
-      throw error
-    }
+    return isMultiple ? response : response[0]
   }
 
   async putAnnotation({ _id, body, user }) {
@@ -204,8 +256,8 @@ module.exports = class MappingService {
     }
   }
 
-  async deleteAnnotation({ _id, user }) {
-    const existingAnnotation = await this.getAnnotation(_id)
+  async deleteAnnotation({ uri, user }) {
+    const existingAnnotation = await this.getAnnotation(uri)
 
     if (!utils.matchesCreator(user, existingAnnotation, "annotations", "delete")) {
       throw new CreatorDoesNotMatchError()
@@ -216,6 +268,27 @@ module.exports = class MappingService {
       return
     } else {
       throw new DatabaseAccessError()
+    }
+  }
+
+  async createIndexes() {
+    const indexes = [
+      [{ "id": 1 }, {}],
+      [{ "target": 1 }, {}],
+      [{ "creator": 1 }, {}],
+      [{ "creator.id": 1 }, {}],
+      [{ "creator.name": 1 }, {}],
+    ]
+    // Create collection if necessary
+    try {
+      await Annotation.createCollection()
+    } catch (error) {
+      // Ignore error
+    }
+    // Drop existing indexes
+    await Annotation.collection.dropIndexes()
+    for (let [index, options] of indexes) {
+      await Annotation.collection.createIndex(index, options)
     }
   }
 

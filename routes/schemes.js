@@ -19,6 +19,48 @@ router.get(
   utils.returnJSON,
 )
 
+if (config.schemes.create) {
+  router.post(
+    "/",
+    config.schemes.create.auth ? auth.default : auth.optional,
+    utils.wrappers.async(async (req) => {
+      return await schemeService.postScheme({
+        bodyStream: req.anystream,
+        bulk: req.query.bulk,
+      })
+    }),
+    utils.adjust,
+    utils.returnJSON,
+  )
+}
+
+if (config.schemes.update) {
+  router.put(
+    "/",
+    config.schemes.update.auth ? auth.default : auth.optional,
+    utils.wrappers.async(async (req) => {
+      return await schemeService.putScheme({
+        body: req.body,
+      })
+    }),
+    utils.adjust,
+    utils.returnJSON,
+  )
+}
+
+if (config.schemes.delete) {
+  router.delete(
+    "/",
+    config.schemes.delete.auth ? auth.default : auth.optional,
+    utils.wrappers.async(async (req) => {
+      return await schemeService.deleteScheme({
+        uri: req.query.uri,
+      })
+    }),
+    (req, res) => res.sendStatus(204),
+  )
+}
+
 if (config.concepts) {
 
   router.get(
@@ -45,6 +87,43 @@ if (config.concepts) {
     utils.returnJSON,
   )
 
+  if (config.concepts.delete) {
+    router.delete(
+      "/concepts",
+      config.concepts.delete.auth ? auth.default : auth.optional,
+      utils.wrappers.async(async (req) => {
+        return await conceptService.deleteConceptsFromScheme({
+          uri: req.query.uri,
+        })
+      }),
+      (req, res) => res.sendStatus(204),
+    )
+  }
+
 }
+
+router.get(
+  "/suggest",
+  config.schemes.read.auth ? auth.default : auth.optional,
+  utils.supportDownloadFormats([]),
+  utils.wrappers.async(async (req) => {
+    return await schemeService.getSuggestions(req.query)
+  }),
+  utils.addPaginationHeaders,
+  utils.adjust,
+  utils.returnJSON,
+)
+
+router.get(
+  "/search",
+  config.schemes.read.auth ? auth.default : auth.optional,
+  utils.supportDownloadFormats([]),
+  utils.wrappers.async(async (req) => {
+    return await schemeService.search(req.query)
+  }),
+  utils.addPaginationHeaders,
+  utils.adjust,
+  utils.returnJSON,
+)
 
 module.exports = router

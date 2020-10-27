@@ -1,6 +1,7 @@
 const config = require("../config")
 const _ = require("lodash")
 const jskos = require("jskos-tools")
+const { DuplicateEntityError } = require("../errors")
 
 /**
  * These are wrappers for Express middleware which receive a middleware function as a first parameter,
@@ -22,7 +23,11 @@ const wrappers = {
         req.data = data
         next()
       }).catch(error => {
-        // On error, pass error to the next error middleware.
+        // Catch and change certain errors
+        if (error.code === 11000) {
+          error = new DuplicateEntityError(null, _.get(error, "keyValue._id"))
+        }
+        // Pass error to the next error middleware.
         next(error)
       })
     }
@@ -63,7 +68,13 @@ const Container = require("typedi").Container
 
 // Adjust data in req.data based on req.type (which is set by `addMiddlewareProperties`)
 const adjust = async (req, res, next) => {
-  if (!req.data || !req.type) {
+  /**
+   * Skip adjustments if either:
+   * - there is no data
+   * - there is no data type (i.e. we don't know which adjustment method to use)
+   * - the request was a bulk operation
+   */
+  if (!req.data || !req.type || req.query.bulk) {
     next()
   }
   let type = req.type
@@ -140,8 +151,10 @@ adjust.mappings = async (mappings, properties) => {
 
 // Add @context and type to schemes.
 adjust.scheme = (scheme) => {
-  scheme["@context"] = "https://gbv.github.io/jskos/context.json"
-  scheme.type = scheme.type || ["http://www.w3.org/2004/02/skos/core#ConceptScheme"]
+  if (scheme) {
+    scheme["@context"] = "https://gbv.github.io/jskos/context.json"
+    scheme.type = scheme.type || ["http://www.w3.org/2004/02/skos/core#ConceptScheme"]
+  }
   return scheme
 }
 adjust.schemes = (schemes) => {
@@ -224,7 +237,6 @@ const addDefaultHeaders = (req, res, next) => {
  * Middleware that adds default properties:
  *
  * - If req.query exists, make sure req.query.limit and req.query.offset are set as numbers.
- * - Set req.myBaseUrl to the applications baseUrl (with trailing slash).
  * - If possible, set req.type depending on the endpoint (one of concepts, schemes, mappings, annotations, suggest).
  */
 const addMiddlewareProperties = (req, res, next) => {
@@ -237,9 +249,9 @@ const addMiddlewareProperties = (req, res, next) => {
     const defaultOffset = 0
     req.query.offset = parseInt(req.query.offset)
     req.query.offset = req.query.offset || defaultOffset
+    // Bulk option for POST endpoints
+    req.query.bulk = req.query.bulk === "true" || req.query.bulk === "1"
   }
-  // baseUrl
-  req.myBaseUrl = config.baseUrl
   // req.path -> req.type
   let type = req.path.substring(1)
   type = type.substring(0, type.indexOf("/") == -1 ? type.length : type.indexOf("/") )
@@ -297,7 +309,7 @@ const addPaginationHeaders = (req, res, next) => {
   if (req == null || res == null || limit == null || offset == null || total == null) {
     return
   }
-  const baseUrl = req.myBaseUrl.substring(0, req.myBaseUrl.length - 1) + req.path
+  const baseUrl = config.baseUrl.substring(0, config.baseUrl.length - 1) + req.path
   const url = (query, rel) => {
     let url = baseUrl
     let index = 0
@@ -448,4 +460,5 @@ module.exports = {
   addPaginationHeaders,
   returnJSON,
   handleDownload,
+  searchHelper: require("./searchHelper"),
 }

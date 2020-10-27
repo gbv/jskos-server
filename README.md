@@ -10,50 +10,71 @@
 JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data such as controlled vocabularies, concepts, and concept mappings.
 
 ## Table of Contents
-- [Install](#install)
-  - [Dependencies](#dependencies)
-  - [Clone and Install](#clone-and-install)
-  - [Configuration](#configuration)
-  - [Authentication](#authentication)
-  - [Data Import](#data-import)
-- [Usage](#usage)
-  - [Run Server](#run-server)
-  - [Run Tests](#run-tests)
-- [API](#api)
-  - [GET /status](#get-status)
-  - [GET /checkAuth](#get-checkauth)
-  - [GET /concordances](#get-concordances)
-  - [GET /mappings](#get-mappings)
-  - [GET /mappings/suggest](#get-mappingssuggest)
-  - [GET /mappings/voc](#get-mappingsvoc)
-  - [GET /mappings/:_id](#get-mappings_id)
-  - [POST /mappings](#post-mappings)
-  - [PUT /mappings/:_id](#put-mappings_id)
-  - [PATCH /mappings/:_id](#patch-mappings_id)
-  - [DELETE /mappings/:_id](#delete-mappings_id)
-  - [GET /voc](#get-voc)
-  - [GET /voc/top](#get-voctop)
-  - [GET /voc/concepts](#get-vocconcepts)
-  - [GET /data](#get-data)
-  - [GET /narrower](#get-narrower)
-  - [GET /ancestors](#get-ancestors)
-  - [GET /suggest](#get-suggest)
-  - [GET /search](#get-search)
-  - [GET /annotations](#get-annotations)
-  - [GET /annotations/:_id](#get-annotations_id)
-  - [POST /annotations](#post-annotations)
-  - [PUT /annotations/:_id](#put-annotations_id)
-  - [PATCH /annotations/:_id](#patch-annotations_id)
-  - [DELETE /annotations/:_id](#delete-annotations_id)
-  - [Errors](#errors)
-- [Deployment](#deployment)
-  - [Notes about depolyment on Ubuntu](#notes-about-depolyment-on-ubuntu)
-  - [Update an instances deployed with PM2](#update-an-instances-deployed-with-pm2)
-  - [Daily Import](#daily-import)
-  - [Running Behind a Reverse Proxy](#running-behind-a-reverse-proxy)
-- [Maintainers](#maintainers)
-- [Contribute](#contribute)
-- [License](#license)
+- [JSKOS Server](#jskos-server)
+  - [Table of Contents](#table-of-contents)
+  - [Install](#install)
+    - [Dependencies](#dependencies)
+    - [Clone and Install](#clone-and-install)
+    - [Configuration](#configuration)
+    - [Authentication](#authentication)
+      - [JWT Example](#jwt-example)
+      - [Login Server Example](#login-server-example)
+    - [Data Import](#data-import)
+  - [Usage](#usage)
+    - [Run Server](#run-server)
+    - [Run Tests](#run-tests)
+  - [API](#api)
+    - [GET /status](#get-status)
+    - [GET /checkAuth](#get-checkauth)
+    - [GET /concordances](#get-concordances)
+    - [GET /mappings](#get-mappings)
+    - [GET /mappings/suggest](#get-mappingssuggest)
+    - [GET /mappings/voc](#get-mappingsvoc)
+    - [GET /mappings/:_id](#get-mappings_id)
+    - [POST /mappings](#post-mappings)
+    - [PUT /mappings/:_id](#put-mappings_id)
+    - [PATCH /mappings/:_id](#patch-mappings_id)
+    - [DELETE /mappings/:_id](#delete-mappings_id)
+    - [GET /voc](#get-voc)
+    - [POST /voc](#post-voc)
+    - [PUT /voc](#put-voc)
+    - [DELETE /voc](#delete-voc)
+    - [GET /voc/top](#get-voctop)
+    - [GET /voc/concepts](#get-vocconcepts)
+    - [DELETE /voc/concepts](#delete-vocconcepts)
+    - [GET /data](#get-data)
+    - [POST /data](#post-data)
+    - [PUT /data](#put-data)
+    - [DELETE /data](#delete-data)
+    - [GET /narrower](#get-narrower)
+    - [GET /ancestors](#get-ancestors)
+    - [GET /suggest](#get-suggest)
+    - [GET /search](#get-search)
+    - [GET /annotations](#get-annotations)
+    - [GET /annotations/:_id](#get-annotations_id)
+    - [POST /annotations](#post-annotations)
+    - [PUT /annotations/:_id](#put-annotations_id)
+    - [PATCH /annotations/:_id](#patch-annotations_id)
+    - [DELETE /annotations/:_id](#delete-annotations_id)
+    - [Errors](#errors)
+      - [EntityNotFoundError](#entitynotfounderror)
+      - [MalformedBodyError](#malformedbodyerror)
+      - [MalformedRequestError](#malformedrequesterror)
+      - [DuplicateEntityError](#duplicateentityerror)
+      - [InvalidBodyError](#invalidbodyerror)
+      - [CreatorDoesNotMatchError](#creatordoesnotmatcherror)
+      - [DatabaseAccessError](#databaseaccesserror)
+      - [ConfigurationError](#configurationerror)
+      - [ForbiddenAccessError](#forbiddenaccesserror)
+  - [Deployment](#deployment)
+    - [Notes about depolyment on Ubuntu](#notes-about-depolyment-on-ubuntu)
+    - [Update an instances deployed with PM2](#update-an-instances-deployed-with-pm2)
+    - [Daily Import](#daily-import)
+    - [Running Behind a Reverse Proxy](#running-behind-a-reverse-proxy)
+  - [Related works](#related-works)
+  - [Maintainers](#maintainers)
+  - [Contribute](#contribute)
+  - [License](#license)
 
 ## Install
 
@@ -84,6 +105,7 @@ All missing keys will be defaulted from `config/config.default.json`:
 {
   "verbosity": false,
   "baseUrl": null,
+  "title": "JSKOS Server",
   "version": null,
   "port": 3000,
   "proxies": [],
@@ -158,7 +180,7 @@ With the keys `schemes`, `concepts`, `mappings`, and `annotations`, you can conf
 }
 ```
 
-Available actions for `mappings` and `annotations` are `read`, `create`, `update`, and `delete`. By default, all types can be read, while `mappings` and `annotations` can be created, updated, and deleted with authentication. Explanantions for additional options:
+Available actions for `schemes`, `concepts`, `mappings`, and `annotations` are `read`, `create`, `update`, and `delete`. By default, all types can be read, while `mappings` and `annotations` can be created, updated, and deleted with authentication. Explanantions for additional options:
 
 - **`auth`**: Boolean. Can be defined only on actions. Defines whether access will require [authentication via JWT](#authentication). By default `false` for `read`, and `true` for all other actions.
 
@@ -250,6 +272,53 @@ Here are some helpful example presets for "mappings" or "annotations".
   }
 }
 ```
+
+If write access for concept schemes and/or concepts is necessary, it is recommended that they are secured by only allowing certain users (via `identities`) or only allowing certain IP addresses (via `ips`):
+
+
+**Only user with URI `https://coli-conc.gbv.de/login/users/c0c1914a-f9d6-4b92-a624-bf44118b6619` can write:**
+```json
+{
+  "read": {
+    "auth": false
+  },
+  "create": {
+    "auth": true,
+    "identities": ["https://coli-conc.gbv.de/login/users/c0c1914a-f9d6-4b92-a624-bf44118b6619"]
+  },
+  "update": {
+    "auth": true,
+    "identities": ["https://coli-conc.gbv.de/login/users/c0c1914a-f9d6-4b92-a624-bf44118b6619"]
+  },
+  "delete": {
+    "auth": true,
+    "identities": ["https://coli-conc.gbv.de/login/users/c0c1914a-f9d6-4b92-a624-bf44118b6619"]
+  }
+}
+```
+
+**Only localhost can write:**
+
+```json
+{
+  "read": {
+    "auth": false
+  },
+  "create": {
+    "auth": false,
+    "ips": ["127.0.0.1"]
+  },
+  "update": {
+    "auth": false,
+    "ips": ["127.0.0.1"]
+  },
+  "delete": {
+    "auth": false,
+    "ips": ["127.0.0.1"]
+  }
+}
+```
+Note that `auth` is set to `false` because it refers to authentication via JWT. The IP filter is separate from that. An even more secure way would be to use both JWT authentication with an `identities` filter as well as an IP filter.
 
 ---
 
@@ -343,24 +412,19 @@ Note about previous additional options for `auth`:
 - `allowCrossUserEditing`: now covered by `mappings.update.crossUser` and `mappings.delete.crossUser`
 
 ### Data Import
-JSKOS Server provides a script to import JSKOS data into the database. Right now, mappings, terminologies (concept schemes), concepts, concordances, and annotations, in JSON (array only) or [NDJSON](http://ndjson.org) format are supported.
-
-Before you can use the script, you need to link it: `npm link`. This makes the command `jskos-import` available in your path. To see how to use the script, run `jskos-import --help`. **Note:** If you have multiple jskos-server instances running on the same machine, this command will make the import for the **current** instance available in the path. Alternatively, you can use `./bin/import.js` or `npm run import --`.
+JSKOS Server provides scripts to import JSKOS data into the database or delete data from the database. Right now, mappings, terminologies (concept schemes), concepts, concordances, and annotations, in JSON (object or array of objects) or [NDJSON](http://ndjson.org) format are supported.
 
 Examples:
 ```bash
-# Linking is necessary to be able to use the `jskos-import` command.
-npm link
-# Alternatively, replace `jskos-import` with `./bin/import.js` or `npm run import --`. This is recommended for cronjobs etc.
 
 # Create indexes for all types
-jskos-import --indexes
+npm run import -- --indexes
 # Import RVK scheme (from coli-conc API)
-jskos-import schemes https://coli-conc.gbv.de/rvk/api/voc
-# Import RVK concepts (this might take a while)
-jskos-import concepts https://coli-conc.gbv.de/rvk/data/2019_1/rvko_2019_1.ndjson
+npm run import -- schemes https://coli-conc.gbv.de/rvk/api/voc
+# Import RVK concepts (this will take a while)
+npm run import -- concepts https://coli-conc.gbv.de/rvk/data/2019_1/rvko_2019_1.ndjson
 # Import coli-conc concordances
-jskos-import concordances https://coli-conc.gbv.de/concordances/csv/concordances.ndjson
+npm run import -- concordances https://coli-conc.gbv.de/api/concordances
 
 # Batch import multiple files or URLs
 npm run import-batch -- mappings files.txt
@@ -368,9 +432,29 @@ npm run import-batch -- mappings files.txt
 # You can, for example, store these batch import files in folder `imports` which is ignored in git.
 ```
 
-**Note: If you have concepts in your database, make sure to run `jskos-import --indexes` at least once. This will make sure all necessary indexes are created. Without this step, the `/suggest` and `/search` endpoints will not work.**
+**Note: If you have concepts in your database, make sure to run `npm run import -- --indexes` at least once. This will make sure all necessary indexes are created. Without this step, the `/suggest` and `/search` endpoints will not work.**
 
-Note about hierarchy for concepts: jskos-server solely uses the `broader` field on concepts to determine the hierarchy. The `narrower` field will be dynamically filled for every request, and `ancestors` are determined via requests to [`GET /ancestors`](#get-ancestors) or via `properties=ancestors`. If there is data already inside the `narrower` or `ancestors` fields, it will be ignored.
+Note about hierarchy for concepts: jskos-server solely uses the `broader` field on concepts to determine the hierarchy. The `narrower` field will be dynamically filled for every request, and `ancestors` are determined via requests to [`GET /ancestors`](#get-ancestors) or via `properties=ancestors`. If there is data already inside the `narrower` or `ancestors` fields, it will currently be ignored.
+
+For more information about the import script, run `npm run import -- --help`.
+
+It is also possible to delete entities from the server via the command line. Running the command will first determine what exactly will be deleted and ask you for confirmation:
+```bash
+# Will delete everything from database
+npm run reset
+# Will delete mappings from database
+npm run reset -- -t mappings
+# Will delete all concepts that belong to a certain concept scheme URI
+npm run reset -- -s http://uri.gbv.de/terminology/rvk/
+# Will delete all mappings that belong to a certain concordance URI
+npm run reset -- -c https://gbv.github.io/jskos/context.json
+# Will delete entities with certain URIs
+npm run reset -- http://rvk.uni-regensburg.de/nt/A http://rvk.uni-regensburg.de/nt/B
+# Will show help for more information
+npm run reset -- --help
+```
+
+For scripting, you can use the `yes` command to skip confirmation. **Make sure you know what you're doing!** Example: `yes | npm run reset -- test:uri`.
 
 ## Usage
 
@@ -841,11 +925,19 @@ Returns a specific mapping.
   ```
 
 ### POST /mappings
-Saves a mapping in the database.
+Saves a mapping or multiple mappings in the database.
+
+* **URL Params**
+
+  `bulk=[boolean]` `1` or `true` enable bulk mode for importing multiple mappings into the database. Errors for individual mappings will be ignored and existing mappings will be overridden. The resulting set will only include the `id` for each mapping that was written into the database.
 
 * **Success Reponse**
 
-  JSKOS Mapping object as it was saved in the database.
+  JSKOS Mapping object as it was saved in the database, or array of mapping objects with only a `uri` if bulk mode was used..
+
+* **Error Response**
+
+  When a single mapping is provided, an error can be returned if there's something wrong with it (see [errors](#errors)). When multiple mappings are provided, the first error will be returned, except if bulk mode is enabled in which errors for individual mappings are ignored.
 
 ### PUT /mappings/:_id
 Overwrites a mapping in the database.
@@ -931,6 +1023,39 @@ Lists supported terminologies (concept schemes).
   ]
   ```
 
+### POST /voc
+Saves a concept scheme or multiple concept schemes in the database. Each concept scheme has to have a unique `uri`.
+
+* **URL Params**
+
+  `bulk=[boolean]` `1` or `true` enable bulk mode for importing multiple concept schemes into the database. Errors for individual concept schemes will be ignored and existing concept schemes will be overridden. The resulting set will only include the `id` for each concept scheme that was written into the database.
+
+* **Success Reponse**
+
+  JSKOS Concept Scheme object or array as was saved in the database, or array of concept scheme objects with only a `uri` if bulk mode was used.
+
+* **Error Response**
+
+  When a single concept scheme is provided, an error can be returned if there's something wrong with it (see [errors](#errors)). When multiple concept schemes are provided, the first error will be returned, except if bulk mode is enabled in which errors for individual concept schemes are ignored.
+
+### PUT /voc
+Overwrites a concept scheme in the database. Is identified via its `uri` field.
+
+* **Success Reponse**
+
+  JSKOS Concept Scheme object as it was saved in the database.
+
+### DELETE /voc
+Deletes a concept scheme from the database.
+
+* **URL Params**
+
+  `uri=URI` URI for concept scheme to be deleted.
+
+* **Success Reponse**
+
+  Status 204, no content.
+
 ### GET /voc/top
 Lists top concepts for a concept scheme.
 
@@ -968,6 +1093,17 @@ Lists concepts for a concept scheme.
   ```bash
   curl https://coli-conc.gbv.de/api/voc/concepts?uri=http://dewey.info/scheme/edition/e23/
   ```
+
+### DELETE /voc/concepts
+Deletes all concepts of a certain concept scheme from the database.
+
+* **URL Params**
+
+  `uri=URI` URI for a concept scheme
+
+* **Success Reponse**
+
+  Status 204, no content.
 
 ### GET /data
 Returns detailed data for concepts or concept schemes. Note that there is no certain order to the result set (but it should be consistent across requests).
@@ -1027,6 +1163,39 @@ Returns detailed data for concepts or concept schemes. Note that there is no cer
     }
   ]
   ```
+
+### POST /data
+Saves a concept or multiple concepts in the database. Each concept has to have a unique `uri` as well as a concept scheme that is available on the server in the `inScheme` or `topConceptOf` field.
+
+* **URL Params**
+
+  `bulk=[boolean]` `1` or `true` enable bulk mode for importing multiple concepts into the database. Errors for individual concepts will be ignored and existing concepts will be overridden. The resulting set will only include the URI for each concept that was written into the database.
+
+* **Success Reponse**
+
+  JSKOS Concept object or array as was saved in the database, or array of concept objects with only a URI if bulk mode was used.
+
+* **Error Response**
+
+  When a single concept is provided, an error can be returned if there's something wrong with it (see [errors](#errors)). When multiple concepts are provided, the first error will be returned, except if bulk mode is enabled in which errors for individual concepts are ignored.
+
+### PUT /data
+Overwrites a concept in the database. Is identified via its `uri` field.
+
+* **Success Reponse**
+
+  JSKOS Concept object as it was saved in the database.
+
+### DELETE /data
+Deletes a concept from the database.
+
+* **URL Params**
+
+  `uri=URI` URI for concept to be deleted.
+
+* **Success Reponse**
+
+  Status 204, no content.
 
 ### GET /narrower
 Returns narrower concepts for a concept.
@@ -1391,11 +1560,19 @@ Returns a specific annotation.
   ```
 
 ### POST /annotations
-Saves an annotation in the database.
+Saves an annotation or multiple annotations in the database.
+
+* **URL Params**
+
+  `bulk=[boolean]` `1` or `true` enable bulk mode for importing multiple annotations into the database. Errors for individual annotations will be ignored and existing annotations will be overridden. The resulting set will only include the `id` for each annotation that was written into the database.
 
 * **Success Reponse**
 
-  Annotation object as it was saved in the database in [Web Annotation Data Model] format.
+  Annotation object or array of object as was saved in the database in [Web Annotation Data Model] format, or array of annotation objects with only a `id` if bulk mode was used.
+
+* **Error Response**
+
+  When a single annotation is provided, an error can be returned if there's something wrong with it (see [errors](#errors)). When multiple annotations are provided, the first error will be returned, except if bulk mode is enabled in which errors for individual annotations are ignored.
 
 ### PUT /annotations/:_id
 Overwrites an annotation in the database.
@@ -1440,6 +1617,9 @@ Status code 400. Will be returned for `POST`/`PUT`/`PATCH` if the body was not J
 #### MalformedRequestError
 Status code 400. Will be returned if a required parameter is missing (currently implemented in `GET /.../:_id` endpoints, but should not be possible to reach).
 
+#### DuplicateEntityError
+Status code 422. Will be returned for `POST` if an entity with the same ID/URI already exists in the database.
+
 #### InvalidBodyError
 Status code 422. Will be returned for `POST`/`PUT`/`PATCH` if the body was valid JSON, but could not be validated (e.g. does not pass the JSKOS Schema).
 
@@ -1459,12 +1639,15 @@ Status code 403. Will be returned if the user is not allow access (i.e. when not
 The application is currently deployed at http://coli-conc.gbv.de/api/. At the moment, there is no automatic deployment of new versions.
 
 ### Notes about depolyment on Ubuntu
-It is recommended to use a [newer version of Node.js](https://nodejs.org/en/download/package-manager/#debian-and-ubuntu-based-linux-distributions). Installing the dependencies might also require installing nodejs-legacy: `sudo apt-get install nodejs-legacy` ([more info here](https://stackoverflow.com/questions/21168141/cannot-install-packages-using-node-package-manager-in-ubuntu)). One possibility for running the application in production on Ubuntu 16.04 is described [here](https://www.digitalocean.com/community/tutorials/how-to-set-up-a-node-js-application-for-production-on-ubuntu-16-04).
+It is recommended to use a [newer version of Node.js](https://nodejs.org/en/download/package-manager/#debian-and-ubuntu-based-linux-distributions). Installing the dependencies might also require installing nodejs-legacy: `sudo apt-get install nodejs-legacy` ([more info here](https://stackoverflow.com/questions/21168141/cannot-install-packages-using-node-package-manager-in-ubuntu)). One possibility for running the application in production on Ubuntu 16.04 is described [here](https://www.digitalocean.com/community/tutorials/how-to-set-up-a-node-js-application-for-production-on-ubuntu-16-04). (Information about restarting pm2-based services on system reboot [here](https://pm2.keymetrics.io/docs/usage/startup/).)
 
 ### Update an instances deployed with PM2
 ```
 # get updates from repository
 git pull
+
+# install dependencies
+npm ci
 
 # restart the process (adjust process name if needed)
 pm2 restart jskos-server

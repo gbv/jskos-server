@@ -6,8 +6,8 @@ const utils = require("../utils")
 
 router.get(
   "/",
-  utils.wrappers.async(async (req) => {
-    return await statusService.getStatus({ baseUrl: req.myBaseUrl })
+  utils.wrappers.async(async () => {
+    return await statusService.getStatus()
   }),
   utils.wrappers.download(utils.returnJSON, false),
 )

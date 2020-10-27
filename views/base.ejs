@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>JSKOS Server</title>
+    <title><%= config.title %></title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style type="text/css">
     body {
@@ -18,14 +18,10 @@
     </style>
   </head>
   <body>
-    <h1>JSKOS Server</h1>
-    <h2>Documentation</h2>
-    <p>
-      Visit the project on <a href="https://github.com/gbv/jskos-server" target="_blank">GitHub</a> for the full documentation.
-    </p>
+    <h1><%= config.title %></h1>
     <h2>Available Endpoints</h2>
     <p>
-      This service provides a subset of JSKOS API <%= config.version %>. All the following endpoints are available on this instance of jskos-server:
+      This service provides a subset of JSKOS API <%= config.version %>. All the following endpoints are available on this instance of jskos-server. See documentation <a href="https://github.com/gbv/jskos-server" target="_blank">on GitHub</a> for details.
     </p>
     <h3>General</h3>
     <ul>
@@ -55,16 +51,25 @@
       <li>PATCH /mappings/:_id - Adjusts a mapping in the database (<% if (config.mappings.update.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#patch-mappings_id" target="_blank">documentation</a>)</li>
       <% } %>
       <% if (config.mappings.delete) { %>
-      <li>DELETE /mappings/:_id - Deletes a mapping from the database (<% if (config.mappings.delete.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#put-mappings_id" target="_blank">documentation</a>)</li>
+      <li>DELETE /mappings/:_id - Deletes a mapping from the database (<% if (config.mappings.delete.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#delete-mappings_id" target="_blank">documentation</a>)</li>
       <% } %>
     </ul>
     <% } %>
     <% if (config.schemes) { %>
     <h3>Concept Schemes</h3>
     <ul>
-      <li>GET <a href="voc">/voc</a> - Returns a list of terminologies (concept schemes) (<a href="https://github.com/gbv/jskos-server#get-voc" target="_blank">documentation</a>)</li>
+      <li>GET <a href="voc">/voc</a> - Returns a list of vocabularies (concept schemes) (<a href="https://github.com/gbv/jskos-server#get-voc" target="_blank">documentation</a>)</li>
       <li>GET <a href="voc/top">/voc/top</a> - Lists top concepts for a concept scheme (<a href="https://github.com/gbv/jskos-server#get-voctop" target="_blank">documentation</a>)</li>
       <li>GET <a href="voc/concepts">/voc/concepts</a> - Lists concepts for a concept scheme (<a href="https://github.com/gbv/jskos-server#get-vocconcepts" target="_blank">documentation</a>)</li>
+      <% if (config.schemes.create) { %>
+      <li>POST /voc - Saves a concept scheme or multiple concept schemes in the database (<% if (config.schemes.create.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#post-voc" target="_blank">documentation</a>)</li>
+      <% } %>
+      <% if (config.schemes.update) { %>
+      <li>PUT /voc - Overwrites a concept scheme in the database (<% if (config.schemes.update.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#put-voc" target="_blank">documentation</a>)</li>
+      <% } %>
+      <% if (config.schemes.delete) { %>
+      <li>DELETE /voc - Deletes a concept scheme from the database (<% if (config.schemes.delete.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#delete-voc" target="_blank">documentation</a>)</li>
+      <% } %>
     </ul>
     <% } %>
     <% if (config.concepts) { %>
@@ -75,6 +80,15 @@
       <li>GET <a href="ancestors">/ancestors</a> - Returns ancestor concepts for a concept (<a href="https://github.com/gbv/jskos-server#get-ancestors" target="_blank">documentation</a>)</li>
       <li>GET <a href="suggest">/suggest</a> - Returns concept suggestions (<a href="https://github.com/gbv/jskos-server#get-suggest" target="_blank">documentation</a>)</li>
       <li>GET <a href="search">/search</a> - Concept search (<a href="https://github.com/gbv/jskos-server#get-search" target="_blank">documentation</a>)</li>
+      <% if (config.concepts.create) { %>
+      <li>POST /data - Saves a concept or multiple concepts in the database (<% if (config.schemes.create.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#post-data" target="_blank">documentation</a>)</li>
+      <% } %>
+      <% if (config.concepts.update) { %>
+      <li>PUT /data - Overwrites a concept in the database (<% if (config.schemes.update.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#put-data" target="_blank">documentation</a>)</li>
+      <% } %>
+      <% if (config.concepts.delete) { %>
+      <li>DELETE /data - Deletes a concept from the database (<% if (config.schemes.delete.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#delete-data" target="_blank">documentation</a>)</li>
+      <% } %>
     </ul>
     <% } %>
     <% if (config.annotations) { %>

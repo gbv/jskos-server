@@ -36,9 +36,9 @@ if (config.annotations.create) {
     config.annotations.create.auth ? auth.default : auth.optional,
     utils.wrappers.async(async (req) => {
       return await annotationService.postAnnotation({
-        body: req.body,
+        bodyStream: req.anystream,
         user: req.user,
-        baseUrl: req.myBaseUrl,
+        bulk: req.query.bulk,
       })
     }),
     utils.adjust,
@@ -82,7 +82,7 @@ if (config.annotations.delete) {
     config.annotations.delete.auth ? auth.default : auth.optional,
     utils.wrappers.async(async (req) => {
       return await annotationService.deleteAnnotation({
-        _id: req.params._id,
+        uri: req.params._id,
         user: req.user,
       })
     }),

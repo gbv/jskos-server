@@ -14,7 +14,8 @@
     "fix": "./node_modules/.bin/eslint --fix './**/*.js'",
     "lint-staged": "lint-staged",
     "import": "./bin/import.js",
-    "import-batch": "func() { tr '\\n' '\\0' < \"$2\"  | xargs -0 -n1 ./bin/import.js $1; }; func"
+    "import-batch": "func() { tr '\\n' '\\0' < \"$2\"  | xargs -0 -n1 ./bin/import.js $1; }; func",
+    "reset": "./bin/reset.js"
   },
   "lint-staged": {
     "**/*.js": [
@@ -25,9 +26,6 @@
     ]
   },
   "pre-commit": "lint-staged",
-  "bin": {
-    "jskos-import": "./bin/import.js"
-  },
   "author": "",
   "license": "MIT",
   "devDependencies": {
@@ -55,18 +53,18 @@
     "ipaddr.js": "^2.0.0",
     "jskos-tools": "^1.0.14",
     "jskos-validate": "^0.3.2",
+    "json-anystream": "^1.0.1",
     "lodash": "^4.17.20",
     "meow": "^7.1.1",
     "mongodb": "~3.5.11",
     "mongoose": "^5.10.6",
-    "ndjson": "^2.0.0",
     "nocache": "^2.1.0",
     "nodemon": "^2.0.4",
     "passport": "^0.4.1",
     "passport-anonymous": "^1.0.1",
     "passport-jwt": "^4.0.0",
-    "request": "^2.88.2",
     "typedi": "^0.8.0",
-    "uuid": "^8.3.0"
+    "uuid": "^8.3.0",
+    "yesno": "^0.3.1"
   }
 }

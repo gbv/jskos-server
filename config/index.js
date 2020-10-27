@@ -83,13 +83,6 @@ if (!config.version) {
   config.version = version.split(".").slice(0,2).join(".")
 }
 
-// Check for configuration that is not yet supported or implemented
-for (let type of ["schemes", "concepts"]) {
-  if (config[type] && !_.isBoolean(config[type])) {
-    config.warn(`Unsupported config in key \`${type}\`: Currently only read without auth is supported. Options will be ignored.`)
-  }
-}
-
 // Further expansion of config
 const defaultActions = {
   read: {

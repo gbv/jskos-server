@@ -8,9 +8,10 @@ chai.use(chaiHttp)
 // eslint-disable-next-line no-unused-vars
 const should = chai.should()
 const server = require("../server")
-const exec = require("child_process").exec
+const assert = require("assert")
+const cpexec = require("child_process").exec
 const _ = require("lodash")
-const { dropDatabaseBeforeAndAfter } = require("./test-utils")
+const { assertMongoDB, dropDatabaseBeforeAndAfter } = require("./test-utils")
 
 // Prepare jwt
 const jwt = require("jsonwebtoken")
@@ -98,18 +99,7 @@ let mapping = {
   ],
 }
 
-describe("MongoDB", () => {
-
-  it("should connect to database successfully", (done) => {
-    if (server.db.readyState === 1) {
-      done()
-    } else {
-      server.db.on("connected", () => done())
-      server.db.on("error", (error) => done(error))
-    }
-  })
-
-})
+assertMongoDB()
 
 describe("Express Server", () => {
 
@@ -254,7 +244,7 @@ describe("Express Server", () => {
 
     it("should GET two concordances", done => {
       // Add concordances to database
-      exec("NODE_ENV=test ./bin/import.js concordances ./test/concordances/concordances.ndjson", (err) => {
+      cpexec("NODE_ENV=test ./bin/import.js concordances ./test/concordances/concordances.ndjson", (err) => {
         if (err) {
           done(err)
           return
@@ -291,7 +281,7 @@ describe("Express Server", () => {
 
     it("should GET three mappings", done => {
       // Add mappings to database
-      exec("NODE_ENV=test ./bin/import.js mappings ./test/mappings/mapping-ddc-gnd.json", (err) => {
+      cpexec("NODE_ENV=test ./bin/import.js mappings ./test/mappings/mapping-ddc-gnd.json", (err) => {
         if (err) {
           done(err)
           return
@@ -349,7 +339,7 @@ describe("Express Server", () => {
 
     it("should GET only mappings from GND", done => {
       // Add mappings to database
-      exec("NODE_ENV=test ./bin/import.js --reset mappings ./test/mappings/mappings-ddc.json", (err) => {
+      cpexec("yes | NODE_ENV=test ./bin/reset.js -t mappings && NODE_ENV=test ./bin/import.js mappings ./test/mappings/mappings-ddc.json", (err) => {
         if (err) {
           done(err)
           return
@@ -477,7 +467,7 @@ describe("Express Server", () => {
 
     // Reinsert mappings again
     before(done => {
-      exec("NODE_ENV=test ./bin/import.js --reset mappings ./test/mappings/mappings-ddc.json", (err) => {
+      cpexec("yes | NODE_ENV=test ./bin/reset.js -t mappings && NODE_ENV=test ./bin/import.js mappings ./test/mappings/mappings-ddc.json", (err) => {
         if (err) {
           done(err)
           return
@@ -650,7 +640,7 @@ describe("Express Server", () => {
             .set("Authorization", `Bearer ${token}`)
             .send(Object.assign({ uri }, mapping))
             .end((err, res) => {
-              res.should.have.status(500)
+              res.should.have.status(422)
               done()
             })
         })
@@ -684,6 +674,59 @@ describe("Express Server", () => {
                 done()
               })
           })
+        })
+    })
+
+    it("should bulk POST mappings properly", done => {
+      const mappingToBeUpdated = { from: { memberSet: [] }, to: { memberSet: [] } }
+      const update = { fromScheme: { uri: "test:test" } }
+      const bulkMappings = [
+        // Two empty mappings that are still valid
+        { from: { memberSet: [] }, to: { memberSet: [] } },
+        { from: { memberSet: [] }, to: { memberSet: [] } },
+        // One invalid mapping that should be ignored
+        {
+          partOf: [{}],
+        },
+      ]
+      // 1. Post normal mapping
+      chai.request(server.app)
+        .post("/mappings")
+        .set("Authorization", `Bearer ${token}`)
+        .send(mappingToBeUpdated)
+        .end((error, res) => {
+          res.should.have.status(201)
+          res.body.should.be.an("object")
+          res.body.uri.should.be.a("string")
+          assert.notDeepEqual(res.body.fromScheme, update.fromScheme)
+          mappingToBeUpdated.uri = res.body.uri
+          let _id = res.body.uri.substring(res.body.uri.lastIndexOf("/") + 1)
+          // Add update to bulk mappings
+          bulkMappings.push(Object.assign({}, mappingToBeUpdated, update))
+          // 2. Post bulk mappings
+          chai.request(server.app)
+            .post("/mappings")
+            .query({
+              bulk: true,
+            })
+            .set("Authorization", `Bearer ${token}`)
+            .send(bulkMappings)
+            .end((error, res) => {
+              assert.equal(error, null)
+              res.should.have.status(201)
+              res.body.should.be.an("array")
+              assert.equal(res.body.length, bulkMappings.length - 1)
+              // 3. Check updated mapping
+              chai.request(server.app)
+                .get(`/mappings/${_id}`)
+                .end((error, res) => {
+                  assert.equal(error, null)
+                  res.should.have.status(200)
+                  res.body.should.be.an("object")
+                  assert.deepEqual(res.body.fromScheme, update.fromScheme)
+                  done()
+                })
+            })
         })
     })
 
@@ -796,7 +839,7 @@ describe("Express Server", () => {
 
     it("should GET two vocabularies", done => {
       // Add vocabularies and concepts to database
-      exec("NODE_ENV=test ./bin/import.js --indexes && NODE_ENV=test ./bin/import.js schemes ./test/terminologies/terminologies.json && NODE_ENV=test ./bin/import.js concepts ./test/concepts/concepts-ddc-6-60-61-62.json", (err) => {
+      cpexec("NODE_ENV=test ./bin/import.js --indexes && NODE_ENV=test ./bin/import.js schemes ./test/terminologies/terminologies.json && NODE_ENV=test ./bin/import.js concepts ./test/concepts/concepts-ddc-6-60-61-62.json", (err) => {
         if (err) {
           done(err)
           return
@@ -868,6 +911,75 @@ describe("Express Server", () => {
           done()
         })
     })
+
+  })
+
+  describe("GET /voc/suggest", () => {
+
+    it("should GET correct results for notation", done => {
+      chai.request(server.app)
+        .get("/voc/suggest")
+        .query({
+          search: "dd",
+        })
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.should.have.header("Link")
+          res.should.have.header("X-Total-Count")
+          res.body.should.be.a("array")
+          res.body.length.should.be.eql(4) // OpenSearch Suggest Format
+          res.body[0].should.be.a("string")
+          res.body[1].should.be.a("array")
+          res.body[1].length.should.be.eql(1)
+          done()
+        })
+    })
+
+    // TODO: Maybe move somewhere else?
+    it("should GET correct results for term (1)", done => {
+      chai.request(server.app)
+        .get("/voc/suggest")
+        .query({
+          search: "Thesauru",
+        })
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.should.have.header("Link")
+          res.should.have.header("X-Total-Count")
+          res.body.should.be.a("array")
+          res.body.length.should.be.eql(4) // OpenSearch Suggest Format
+          res.body[0].should.be.a("string")
+          res.body[1].should.be.a("array")
+          res.body[1].length.should.be.eql(1)
+          done()
+        })
+    })
+
+    // TODO: Maybe move somewhere else?
+    it("should GET correct results for term (2)", done => {
+      chai.request(server.app)
+        .get("/voc/suggest")
+        .query({
+          search: "Dewey",
+        })
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.should.have.header("Link")
+          res.should.have.header("X-Total-Count")
+          res.body.should.be.a("array")
+          res.body.length.should.be.eql(4) // OpenSearch Suggest Format
+          res.body[0].should.be.a("string")
+          res.body[1].should.be.a("array")
+          res.body[1].length.should.be.eql(1)
+          done()
+        })
+    })
+
+  })
+
+  describe("GET /voc/search", () => {
+
+
 
   })
 
@@ -1322,6 +1434,63 @@ describe("Express Server", () => {
         })
     })
 
+    it("should bulk POST annotations properly", done => {
+      const annotationToBeUpdated = {
+        target: "test:blubb",
+        motivation: "assessing",
+        bodyValue: "+1",
+      }
+      const update = { bodyValue: "-1" }
+      const bulkAnnotations = [
+        // Two empty annotations that are still valid
+        {},
+        {},
+        // One invalid annoation that should be ignored
+        {
+          target: "test", // target needs to be a URI
+        },
+      ]
+      // 1. Post normal annotation
+      chai.request(server.app)
+        .post("/annotations")
+        .set("Authorization", `Bearer ${token}`)
+        .send(annotationToBeUpdated)
+        .end((error, res) => {
+          res.should.have.status(201)
+          res.body.should.be.an("object")
+          res.body.id.should.be.a("string")
+          assert.notEqual(res.body.bodyValue, update.bodyValue)
+          annotationToBeUpdated.id = res.body.id
+          let _id = res.body.id.substring(res.body.id.lastIndexOf("/") + 1)
+          // Add update to bulk annotations
+          bulkAnnotations.push(Object.assign({}, annotationToBeUpdated, update))
+          // 2. Post bulk annoations
+          chai.request(server.app)
+            .post("/annotations")
+            .query({
+              bulk: true,
+            })
+            .set("Authorization", `Bearer ${token}`)
+            .send(bulkAnnotations)
+            .end((error, res) => {
+              assert.equal(error, null)
+              res.should.have.status(201)
+              res.body.should.be.an("array")
+              assert.equal(res.body.length, bulkAnnotations.length - 1)
+              // 3. Check updated annotation
+              chai.request(server.app)
+                .get(`/annotations/${_id}`)
+                .end((error, res) => {
+                  assert.equal(error, null)
+                  res.should.have.status(200)
+                  res.body.should.be.an("object")
+                  assert.equal(res.body.bodyValue, update.bodyValue)
+                  done()
+                })
+            })
+        })
+    })
+
     const annotationModerating = {
       target: "http://dewey.info/class/60/e23/",
       motivation: "moderating",
@@ -1354,127 +1523,6 @@ describe("Express Server", () => {
           res.body.motivation.should.be.eql(annotationModerating.motivation)
           done()
         })
-    })
-
-  })
-
-  describe("Import Script", () => {
-
-    it("should clear the database", done => {
-      // Clear database
-      exec("NODE_ENV=test ./bin/import.js --reset", (err) => {
-        if (err) {
-          done(err)
-          return
-        }
-        let db = server.db
-        let promises = []
-        let collections = ["concepts", "mappings", "terminologies"]
-        for (let collection of collections) {
-          promises.push(db.collection(collection).find({}).toArray())
-        }
-        Promise.all(promises).then(results => {
-          for (let result of results) {
-            result.length.should.be.eql(0)
-          }
-          done()
-        }).catch(error => {
-          done(error)
-        })
-      })
-    })
-
-    it("should create indexes", done => {
-      // Create indexes
-      exec("NODE_ENV=test ./bin/import.js --indexes", (err) => {
-        if (err) {
-          done(err)
-          return
-        }
-        let db = server.db
-        let promises = []
-        let collections = ["concepts", "mappings", "annotations"]
-        for (let collection of collections) {
-          promises.push(db.collection(collection).indexInformation())
-        }
-        Promise.all(promises).then(results => {
-          for (let result of results) {
-            // There should be more than the _id index
-            Object.keys(result).length.should.be.greaterThan(1)
-          }
-          done()
-        }).catch(error => {
-          done(error)
-        })
-      })
-    })
-
-    it("should import concepts", done => {
-      // Add concepts to database
-      exec("NODE_ENV=test ./bin/import.js concepts ./test/concepts/concepts-ddc-6-60-61-62.json", (err) => {
-        if (err) {
-          done(err)
-          return
-        }
-        let db = server.db
-        db.collection("concepts").find({}).toArray().then(results => {
-          results.length.should.be.eql(4)
-          done()
-        }).catch(error => {
-          done(error)
-        })
-      })
-    })
-
-    it("should import terminologies", done => {
-      // Add vocabularies to database
-      exec("NODE_ENV=test ./bin/import.js schemes ./test/terminologies/terminologies.json", (err) => {
-        if (err) {
-          done(err)
-          return
-        }
-        let db = server.db
-        db.collection("terminologies").find({}).toArray().then(results => {
-          results.length.should.be.eql(2)
-          done()
-        }).catch(error => {
-          done(error)
-        })
-      })
-    })
-
-    it("should import concordances", done => {
-      // Add concordances to database
-      exec("NODE_ENV=test ./bin/import.js concordances ./test/concordances/concordances.ndjson", (err) => {
-        if (err) {
-          done(err)
-          return
-        }
-        let db = server.db
-        db.collection("concordances").find({}).toArray().then(results => {
-          results.length.should.be.eql(2)
-          done()
-        }).catch(error => {
-          done(error)
-        })
-      })
-    })
-
-    it("should import mappings", done => {
-      // Add mappings to database
-      exec("NODE_ENV=test ./bin/import.js mappings ./test/mappings/mapping-ddc-gnd.json", (err) => {
-        if (err) {
-          done(err)
-          return
-        }
-        let db = server.db
-        db.collection("mappings").find({}).toArray().then(results => {
-          results.length.should.be.eql(3)
-          done()
-        }).catch(error => {
-          done(error)
-        })
-      })
     })
 
   })

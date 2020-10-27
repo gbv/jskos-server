@@ -58,9 +58,9 @@ if (config.mappings.create) {
     config.mappings.create.auth ? auth.default : auth.optional,
     utils.wrappers.async(async (req) => {
       return await mappingService.postMapping({
-        body: req.body,
+        bodyStream: req.anystream,
         user: req.user,
-        baseUrl: req.myBaseUrl,
+        bulk: req.query.bulk,
       })
     }),
     utils.adjust,
@@ -104,7 +104,7 @@ if (config.mappings.delete) {
     config.mappings.delete.auth ? auth.default : auth.optional,
     utils.wrappers.async(async (req) => {
       return await mappingService.deleteMapping({
-        _id: req.params._id,
+        uri: req.params._id,
         user: req.user,
       })
     }),
