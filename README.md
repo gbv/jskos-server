@@ -43,6 +43,8 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
     - [GET /voc/top](#get-voctop)
     - [GET /voc/concepts](#get-vocconcepts)
     - [DELETE /voc/concepts](#delete-vocconcepts)
+    - [GET /voc/suggest](#get-vocsuggest)
+    - [GET /voc/search](#get-vocsearch)
     - [GET /data](#get-data)
     - [POST /data](#post-data)
     - [PUT /data](#put-data)
@@ -573,6 +575,8 @@ Note that certain properties from the actual configuration will not be shown in 
     "schemes": "http://localhost:3000/voc",
     "top": "http://localhost:3000/voc/top",
     "concepts": "http://localhost:3000/voc/concepts",
+    "voc-suggest": "http://localhost:3000/voc/suggest",
+    "voc-search": "http://localhost:3000/voc/search",
     "data": "http://localhost:3000/data",
     "narrower": "http://localhost:3000/narrower",
     "ancestors": "http://localhost:3000/ancestors",
@@ -1113,6 +1117,22 @@ Deletes all concepts of a certain concept scheme from the database.
 
   Status 204, no content.
 
+### GET /voc/suggest
+Returns concept scheme suggestions.
+
+* **URL Params**
+
+  `search=[keyword|notation]` specifies the keyword or notation (prefix) to search for
+
+  `format=[string]` return format for suggestions: `jskos` or [`opensearch`]((http://www.opensearch.org/Specifications/OpenSearch/Extensions/Suggestions/1.1#Response_format)) (default)
+
+* **Success Response**
+
+  JSON array of suggestions.
+
+### GET /voc/search
+Currently the same as `/voc/suggest` with parameter `format=jskos`.
+
 ### GET /data
 Returns detailed data for concepts or concept schemes. Note that there is no certain order to the result set (but it should be consistent across requests).
 
@@ -1377,7 +1397,7 @@ Returns concept suggestions.
 
 * **URL Params**
 
-  `search=[notation]` specifies the notation (prefix) to search for
+  `search=[keyword|notation]` specifies the keyword or notation (prefix) to search for
 
   `format=[string]` return format for suggestions: `jskos` or [`opensearch`]((http://www.opensearch.org/Specifications/OpenSearch/Extensions/Suggestions/1.1#Response_format)) (default)
 
