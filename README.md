@@ -109,7 +109,7 @@ All missing keys will be defaulted from `config/config.default.json`:
 
 ```json
 {
-  "verbosity": false,
+  "verbosity": "warn",
   "baseUrl": null,
   "title": "JSKOS Server",
   "version": null,

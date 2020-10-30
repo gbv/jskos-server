@@ -44,19 +44,24 @@ if (!configUser.namespace && env != "test") {
 
 let config = _.defaultsDeep({ env }, configEnv, configUser, configDefault)
 
+if (![true, false, "log", "warn", "error"].includes(config.verbosity)) {
+  console.warn(`Invalid verbosity value "${config.verbosity}", defaulting to "${configDefault.verbosity}" instead.`)
+  config.verbosity = configDefault.verbosity
+}
+
 // Logging functions
 config.log = (...args) => {
-  if (env != "test" && config.verbosity) {
+  if (env != "test" && (config.verbosity === true || config.verbosity === "log")) {
     console.log(...args)
   }
 }
 config.warn = (...args) => {
-  if (env != "test" && config.verbosity) {
+  if (env != "test" && (config.verbosity === true || config.verbosity === "log" || config.verbosity === "warn")) {
     console.warn(...args)
   }
 }
 config.error = (...args) => {
-  if (env != "test" && config.verbosity) {
+  if (env != "test" && config.verbosity !== false) {
     console.error(...args)
   }
 }

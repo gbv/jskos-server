@@ -1,5 +1,5 @@
 {
-  "verbosity": false,
+  "verbosity": "warn",
   "baseUrl": null,
   "title": "JSKOS Server",
   "version": null,
