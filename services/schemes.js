@@ -44,6 +44,12 @@ module.exports = class SchemeService {
       case "notation":
         sort["notation"] = 1
         break
+      case "created":
+        sort["created"] = 1
+        break
+      case "modified":
+        sort["modified"] = 1
+        break
     }
 
     const schemes = await Scheme.find(mongoQuery).sort(sort).lean().skip(query.offset).limit(query.limit).exec()
@@ -261,6 +267,8 @@ module.exports = class SchemeService {
     indexes.push([{ "uri": 1 }, {}])
     indexes.push([{ "identifier": 1 }, {}])
     indexes.push([{ "notation": 1 }, {}])
+    indexes.push([{ "created": 1 }, {}])
+    indexes.push([{ "modified": 1 }, {}])
     indexes.push([{ "subject.uri": 1 }, {}])
     indexes.push([{ "license.uri": 1 }, {}])
     indexes.push([{ "_keywordsLabels": 1 }, {}])
