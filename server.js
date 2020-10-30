@@ -21,22 +21,30 @@ app.set("view engine", "ejs")
 
 // Database connection
 const mongoose = require("mongoose")
+const db = mongoose.connection
 const connect = async () => {
   try {
     await mongoose.connect(`${config.mongo.url}/${config.mongo.db}`, config.mongo.options)
+    config.log("Connected to database")
+    if (config.schemes && !(await db.collection("terminologies").indexExists("text"))) {
+      config.warn("Text index on terminologies collection missing. /voc/search and /voc/suggest are disabled. Run `npm run import -- --indexes` or `npm run import -- -i schemes` to created indexes.")
+      config.status["voc-search"] = null
+      config.status["voc-suggest"] = null
+    }
+    if (config.concepts && !(await db.collection("concepts").indexExists("text"))) {
+      config.warn("Text index on concepts collection missing. /search and /suggest are disabled. Run `npm run import -- --indexes` or `npm run import -- -i concepts` to created indexes.")
+      config.status.search = null
+      config.status.suggest = null
+    }
   } catch(error) {
     config.log("Error connecting to database, reconnect in a few seconds...")
   }
 }
 // Connect immediately on startup
 connect()
-const db = mongoose.connection
 
 db.on("error", () => {
   mongoose.disconnect()
-})
-db.on("connected", () => {
-  config.log("Connected to database")
 })
 db.on("disconnected", () => {
   setTimeout(connect, 2500)

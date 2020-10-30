@@ -310,6 +310,16 @@
       "type": "string",
       "format": "uri"
     },
+    "voc-suggest": {
+      "description": "API URL for vocabulary suggest",
+      "$comment": "format: uri is not used here because something like ?search={searchTerms} will not pass validation.",
+      "type": "string"
+    },
+    "voc-search": {
+      "description": "API URL for vocabulary search",
+      "$comment": "format: uri is not used here because something like ?search={searchTerms} will not pass validation.",
+      "type": "string"
+    },
     "data": {
       "description": "API URL for data",
       "type": "string",
@@ -326,12 +336,12 @@
       "format": "uri"
     },
     "suggest": {
-      "description": "API URL for suggest",
+      "description": "API URL for concept suggest",
       "$comment": "format: uri is not used here because something like ?search={searchTerms} will not pass validation.",
       "type": "string"
     },
     "search": {
-      "description": "API URL for search",
+      "description": "API URL for concept search",
       "$comment": "format: uri is not used here because something like ?search={searchTerms} will not pass validation.",
       "type": "string"
     },
