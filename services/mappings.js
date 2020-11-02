@@ -199,13 +199,17 @@ module.exports = class MappingService {
     // Currently default sort by modified descending
     const sorting = { [sort]: order }
 
+    const pipeline = [
+      { $match: query },
+    ]
+
     if (download) {
       // For a download, return a stream
-      return Mapping.find(query).sort(sorting).lean().stream()
+      return Mapping.aggregate(pipeline).cursor().exec()
     } else {
       // Otherwise, return results
-      const mappings = await Mapping.find(query).sort(sorting).lean().skip(offset).limit(limit).exec()
-      mappings.totalCount = await Mapping.find(query).countDocuments()
+      const mappings = await Mapping.aggregate(pipeline).sort(sorting).skip(offset).limit(limit).exec()
+      mappings.totalCount = _.get(await Mapping.aggregate(pipeline).count("count").exec(), "[0].count", 0)
       return mappings
     }
   }
