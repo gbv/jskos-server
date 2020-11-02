@@ -421,6 +421,30 @@ describe("/data write access", () => {
       })
   })
 
+  it("should POST a concept without scheme when scheme param is given, then delete it", async () => {
+    const scheme = schemes[0]
+    const concept = {
+      uri: "test:concept-without-scheme",
+    }
+    let res
+    // POST concept
+    res = await chai.request(server.app)
+      .post("/data")
+      .query({
+        scheme: scheme.uri,
+      })
+      .send(concept)
+    res.should.have.status(201)
+    res.body.should.be.a("object")
+    assert.strictEqual(res.body.uri, concept.uri)
+    assert.strictEqual(res.body.inScheme[0].uri, scheme.uri)
+    // DELETE concept
+    res = await chai.request(server.app)
+      .delete("/data")
+      .query(concept)
+    res.should.have.status(204)
+  })
+
   it("should not POST a concept with invalid URI", done => {
     chai.request(server.app)
       .post("/data")

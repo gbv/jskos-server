@@ -26,6 +26,7 @@ if (config.concepts.create) {
       return await conceptService.postConcept({
         bodyStream: req.anystream,
         bulk: req.query.bulk,
+        scheme: req.query.scheme,
       })
     }),
     utils.adjust,

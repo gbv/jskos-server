@@ -17,6 +17,8 @@ Options
   --indexes               -i          Create indexes without import (can also be used in addition to import)
   --quiet                 -q          Only output warnings and errors
   --format                -f          Either json or ndjson. Defaults to file ending or content type if available.
+  --scheme                -s          Only for concepts. Adds imported concepts to a scheme for specified URI.
+                                      The scheme must already exist. (topConceptOf still needs to be set if applicable.)
   --concordance           -c          Only for mappings. Adds imported mappings into a concordance for specified URI.
                                       The concordance must already exist.
 
@@ -44,6 +46,11 @@ Examples
     format: {
       type: "string",
       alias: "f",
+      default: "",
+    },
+    scheme: {
+      type: "string",
+      alias: "s",
       default: "",
     },
     concordance: {
@@ -107,6 +114,13 @@ if (cli.input[0] && !type) {
 if (!indexes && !type) {
   logError({
     message: "The <type> argument is necessary to import data.",
+    showHelp: true,
+    exit: true,
+  })
+}
+if (cli.flags.scheme && type != "concept") {
+  logError({
+    message: `The -s option is not compatible with type ${type}.`,
     showHelp: true,
     exit: true,
   })
@@ -236,6 +250,7 @@ async function doImport({ input, format, type, concordance }) {
     const result = await services.concept.postConcept({
       bodyStream: stream,
       bulk: true,
+      scheme: cli.flags.scheme,
     })
     log(`... done: ${_.isArray(result) ? result.length : 1} concepts imported.`)
   } else if (type == "mapping") {

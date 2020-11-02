@@ -211,7 +211,7 @@ module.exports = class ConceptService {
 
   // Write endpoints start here
 
-  async postConcept({ bodyStream, bulk = false }) {
+  async postConcept({ bodyStream, bulk = false, scheme }) {
     if (!bodyStream) {
       throw new MalformedBodyError()
     }
@@ -231,7 +231,7 @@ module.exports = class ConceptService {
         }
         let current = []
         const saveObjects = async (objects) => {
-          const { concepts, schemeUrisToAdjust } = await this.prepareAndCheckConcepts(objects)
+          const { concepts, schemeUrisToAdjust } = await this.prepareAndCheckConcepts(objects, { scheme })
           concepts.length && await Concept.bulkWrite(concepts.map(c => ({
             replaceOne: {
               filter: { _id: c._id },
@@ -269,7 +269,7 @@ module.exports = class ConceptService {
         })
       })
       // Prepare
-      preparation = await this.prepareAndCheckConcepts(concepts)
+      preparation = await this.prepareAndCheckConcepts(concepts, { scheme })
       concepts = preparation.concepts
       if (preparation.errors.length) {
         // Throw first error
@@ -372,14 +372,23 @@ module.exports = class ConceptService {
    * @param {Object} allConcept concept objects
    * @returns {Object} preparation object with properties `concepts`, `errors`, `schemeUrisToAdjust`, and `conceptUrisWithNarrower`; needs to be provided to `postAdjustmentsForConcepts`
    */
-  async prepareAndCheckConcepts(allConcepts) {
+  async prepareAndCheckConcepts(allConcepts, { scheme } = {}) {
+    const getSchemeUri = c => _.get(c, "inScheme[0].uri") || _.get(c, "topConceptOf[0].uri")
     const schemeUrisToAdjust = []
     const concepts = []
     const errors = []
+    // Set inScheme for concepts when `scheme` option is given
+    if (scheme) {
+      allConcepts.forEach(concept => {
+        if (!getSchemeUri(concept)) {
+          concept.inScheme = [{ uri: scheme }]
+        }
+      })
+    }
     // Load all schemes for concepts
     const schemes = await this.schemeService.getSchemes({
       uri: allConcepts
-        .map(c => _.get(c, "inScheme[0].uri") || _.get(c, "topConceptOf[0].uri"))
+        .map(c => getSchemeUri(c))
         .filter(s => s != null)
         .join("|"),
     })
