@@ -419,6 +419,9 @@ module.exports = class ConceptService {
     if (!concept.inScheme && concept.topConceptOf) {
       concept.inScheme = concept.topConceptOf
     }
+    // Remove `narrower` and `ancestors` properties => we're only using `broader` to build the concept hierarchy
+    delete concept.narrower
+    delete concept.ancestors
     // Validate concept
     if (!validate.concept(concept) || !concept.uri) {
       throw new InvalidBodyError()
