@@ -441,7 +441,7 @@ const handleDownload = (filename) => (req, res) => {
   // Add file header
   res.set("Content-disposition", `attachment; filename=${filename}.${fileEnding}`)
   // results is a database cursor
-  results.stream()
+  results
     .pipe(removeIdTransform)
     .pipe(transform)
     .pipe(res)
