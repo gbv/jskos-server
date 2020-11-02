@@ -420,7 +420,31 @@ Note about previous additional options for `auth`:
 ### Data Import
 JSKOS Server provides scripts to import JSKOS data into the database or delete data from the database. Right now, mappings, terminologies (concept schemes), concepts, concordances, and annotations, in JSON (object or array of objects) or [NDJSON](http://ndjson.org) format are supported.
 
-Examples:
+**Note about hierarchies within concepts:** Hierarchies are supported. However, only the `broader` field will be used during import. Both `ancestors` and `narrower` will be removed and the respective endpoints ([GET /ancestors](#get-ancestors) and [GET /narrower](#get-narrower)) will dynamically rebuild these properties. That means that when converting your data, please normalize it so that the hierarchy is expressed via the `broader` field in JSKOS.
+
+Example scheme (as JSON object) with concepts in a hierarchy (as NDJSON):
+```json
+{
+  "uri": "test:scheme",
+  "notation": [
+    "TEST"
+  ],
+  "uriPattern": "^test:concept-(.+)$"
+}
+```
+```json
+{ "topConceptOf": [{ "uri": "test:scheme" }], "uri": "test:concept-a" }
+{ "inScheme":     [{ "uri": "test:scheme" }], "uri": "test:concept-a.1",    "broader": [{ "uri": "test:concept-a" }] }
+{ "inScheme":     [{ "uri": "test:scheme" }], "uri": "test:concept-a.2",    "broader": [{ "uri": "test:concept-a" }] }
+{ "topConceptOf": [{ "uri": "test:scheme" }], "uri": "test:concept-b" }
+{ "inScheme":     [{ "uri": "test:scheme" }], "uri": "test:concept-b.1",    "broader": [{ "uri": "test:concept-b" }] }
+{ "inScheme":     [{ "uri": "test:scheme" }], "uri": "test:concept-b.1.1",  "broader": [{ "uri": "test:concept-b.1" }] }
+{ "inScheme":     [{ "uri": "test:scheme" }], "uri": "test:concept-b.1.2",  "broader": [{ "uri": "test:concept-b.1" }] }
+```
+
+(Note that a notation for the concepts can be omitted because we have defined `uriPattern` on the concept scheme. Also, we don't need to define `inScheme` for concepts with `topConceptOf`.)
+
+Examples of using the import script:
 ```bash
 
 # Create indexes for all types
