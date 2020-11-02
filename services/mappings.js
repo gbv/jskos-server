@@ -6,6 +6,7 @@ const validate = require("jskos-validate")
 const escapeStringRegexp = require("escape-string-regexp")
 
 const Mapping = require("../models/mappings")
+const Annotation = require("../models/annotations")
 const { MalformedBodyError, MalformedRequestError, EntityNotFoundError, InvalidBodyError, DatabaseAccessError, CreatorDoesNotMatchError } = require("../errors")
 
 module.exports = class MappingService {
@@ -50,7 +51,7 @@ module.exports = class MappingService {
     }
   }
 
-  async getMappings({ uri, identifier, from, to, fromScheme, toScheme, mode, direction, type, partOf, creator, sort, order, limit, offset, download }) {
+  async getMappings({ uri, identifier, from, to, fromScheme, toScheme, mode, direction, type, partOf, creator, sort, order, limit, offset, download, annotatedWith, annotatedFor, annotatedBy }) {
     direction = direction || "forward"
 
     let count = 0
@@ -199,17 +200,93 @@ module.exports = class MappingService {
     // Currently default sort by modified descending
     const sorting = { [sort]: order }
 
-    const pipeline = [
-      { $match: query },
-    ]
+    let pipeline = []
+    let model = Mapping
+
+    // Filter by annotations
+    // Three different paths
+    // 1. No filter by annotations
+    if (!annotatedWith && !annotatedBy && !annotatedFor) {
+      // Simply match mapping query
+      pipeline.push({ $match: query })
+    }
+    // 2. Filter by annotation, and from/to/creator is defined
+    else if (from || to || creator) {
+      // We'll first filter the mappings, then add annotations and filter by those
+      const annotationQuery = {}
+      if (annotatedWith) {
+        annotationQuery["annotations.bodyValue"] = annotatedWith
+      }
+      if (annotatedFor) {
+        annotationQuery["annotations.motivation"] = annotatedFor
+      }
+      if (annotatedBy) {
+        annotationQuery["annotations.creator.id"] = { $in: annotatedBy.split("|") }
+      }
+      pipeline = [
+        { $match: query },
+        {
+          $lookup: {
+            from: "annotations",
+            localField: "uri",
+            foreignField: "target",
+            as: "annotations",
+          },
+        },
+        {
+          $match: annotationQuery,
+        },
+        { $unset: "annotations" },
+      ]
+    }
+    // 3. Filter by annotation, and none of the properties is given
+    else {
+      // We'll first filter the annotations, then get the associated mappings, remove duplicates, and filter those
+      model = Annotation
+      const annotationQuery = {}
+      if (annotatedWith) {
+        annotationQuery["bodyValue"] = annotatedWith
+      }
+      if (annotatedFor) {
+        annotationQuery["motivation"] = annotatedFor
+      }
+      if (annotatedBy) {
+        annotationQuery["creator.id"] = { $in: annotatedBy.split("|") }
+      }
+      pipeline = [
+        // First, match annotations
+        {
+          $match: annotationQuery,
+        },
+        // Get mappings for annotations
+        {
+          $lookup: {
+            from: "mappings",
+            localField: "target",
+            foreignField: "uri",
+            as: "mappings",
+          },
+        },
+        // Unwind and replace root
+        { $unwind: "$mappings" },
+        { $replaceRoot: { newRoot: "$mappings" } },
+        // Filter duplicates by grouping by _id and getting only the first element
+        { $group: { _id: "$_id", data: { $push: "$$ROOT" } } },
+        { $addFields: { mapping: { $arrayElemAt: ["$data", 0] } } },
+        // Replace root with mapping
+        { $replaceRoot: { newRoot: "$mapping" } },
+        // Match mappings
+        { $match: query },
+      ]
+    }
 
     if (download) {
       // For a download, return a stream
-      return Mapping.aggregate(pipeline).cursor().exec()
+      return model.aggregate(pipeline).cursor().exec()
     } else {
       // Otherwise, return results
-      const mappings = await Mapping.aggregate(pipeline).sort(sorting).skip(offset).limit(limit).exec()
-      mappings.totalCount = _.get(await Mapping.aggregate(pipeline).count("count").exec(), "[0].count", 0)
+      const mappings = await model.aggregate(pipeline).sort(sorting).skip(offset).limit(limit).exec()
+      mappings.totalCount = _.get(await model.aggregate(pipeline).count("count").exec(), "[0].count", 0)
       return mappings
     }
   }

@@ -706,6 +706,12 @@ Returns an array of mappings. Each mapping has a property `uri` under which the 
 
   `creator=[string1|string2|...]` only show mappings that have a certain creator (separated by `|`)
 
+  `annotatedBy=[uri1|uri2|...]` has annotations by user with URI(s)
+
+  `annotatedFor=[motivation]` has annotations with a certain motivation (e.g. `assessing`)
+
+  `annotatedWith=[body]` has annotations with a certian body value (e.g. `+1`)
+
   `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting only `annotations` for mappings)
 
   `download=[type]` returns the whole result as a download (available types are `json`, `ndjson`, `csv`, and `tsv`), ignores `limit` and `offset`; **note**: `csv` and `tsv` are restricted (and fixed) to 5 target concepts, meaning that if the data set includes a mapping with more than 5 target concepts, only the first 5 will appear in the export
