@@ -218,6 +218,10 @@ module.exports = class SchemeService {
       scheme._id = scheme.uri
       // Add index keywords
       utils.searchHelper.addKeywords(scheme)
+      // Remove created for update action
+      if (action === "update") {
+        delete scheme.created
+      }
     }
     if (action == "delete") {
       // Replace scheme with scheme from databas
@@ -247,6 +251,16 @@ module.exports = class SchemeService {
    * @returns {[Object]} array of adjusted concept schemes
    */
   async postAdjustmentsForScheme(schemes) {
+    // First, set created field if necessary
+    await Scheme.updateMany(
+      {
+        _id: { $in: schemes.map(s => s.uri) },
+        "$or": [
+          { "created": { $eq: null } }, { "created": { "$exists": false } },
+        ],
+      },
+      { created: (new Date()).toISOString() },
+    )
     const result = []
     for (let scheme of schemes) {
       const hasTopConcepts = !!(await Concept.findOne({ $or: [scheme.uri].concat(scheme.identifier || []).map(uri => ({ "topConceptOf.uri": uri })) }))
@@ -255,6 +269,7 @@ module.exports = class SchemeService {
         "$set": {
           concepts: hasConcepts ? [null] : [],
           topConcepts: hasTopConcepts ? [null] : [],
+          modified: (new Date()).toISOString(),
         },
       })
       result.push(await Scheme.findById(scheme.uri))
