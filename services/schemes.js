@@ -163,6 +163,14 @@ module.exports = class SchemeService {
     // Prepare
     scheme = await this.prepareAndCheckSchemeForAction(scheme, "update")
 
+    const existingScheme = await Scheme.findById(scheme.uri).lean()
+    if (!existingScheme) {
+      throw new EntityNotFoundError()
+    }
+    if (existingScheme.created) {
+      scheme.created = existingScheme.created
+    }
+
     // Write scheme to database
     const result = await Scheme.replaceOne({ _id: scheme.uri }, scheme)
     if (!result.ok) {
@@ -252,11 +260,15 @@ module.exports = class SchemeService {
     await Scheme.updateMany(
       {
         _id: { $in: schemes.map(s => s.uri) },
-        "$or": [
-          { "created": { $eq: null } }, { "created": { "$exists": false } },
+        $or: [
+          { created: { $eq: null } }, { created: { $exists: false } },
         ],
       },
-      { created: (new Date()).toISOString() },
+      {
+        $set: {
+          created: (new Date()).toISOString(),
+        },
+      },
     )
     const result = []
     for (let scheme of schemes) {
