@@ -82,10 +82,20 @@ async function exec(command, options) {
   })
 }
 
+const Stream = require("stream")
+const anystream = require("json-anystream")
+async function arrayToStream(array) {
+  const readable = new Stream.Readable({ objectMode: true })
+  array.forEach(item => readable.push(JSON.stringify(item) + "\n"))
+  readable.push(null)
+  return anystream.make(readable, "ndjson")
+}
+
 module.exports = {
   assertIndexes,
   assertMongoDB,
   dropDatabase,
   dropDatabaseBeforeAndAfter,
   exec,
+  arrayToStream,
 }
