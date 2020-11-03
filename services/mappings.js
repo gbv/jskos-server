@@ -228,7 +228,7 @@ module.exports = class MappingService {
         {
           $match: annotationQuery,
         },
-        { $unset: "annotations" },
+        { $project: { annotations: 0 } },
       ]
     }
     // 3. Filter by annotation, and none of the properties is given
