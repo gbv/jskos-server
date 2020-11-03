@@ -326,9 +326,6 @@ module.exports = class MappingService {
 
     let response
 
-    // Ignore bulk option for single object
-    bulk = !isMultiple ? false : bulk
-
     // Adjust all mappings
     mappings = mappings.map(mapping => {
       try {

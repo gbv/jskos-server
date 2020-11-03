@@ -124,9 +124,6 @@ module.exports = class SchemeService {
 
     let response
 
-    // Ignore bulk option for single object
-    bulk = !isMultiple ? false : bulk
-
     // Prepare
     schemes = await Promise.all(schemes.map(scheme => {
       return this.prepareAndCheckSchemeForAction(scheme, "create")
