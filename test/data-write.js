@@ -60,6 +60,9 @@ describe("/voc write access", () => {
         // Should have no concepts or top concepts
         assert.deepEqual(res.body.concepts, [])
         assert.deepEqual(res.body.topConcepts, [])
+        // Should have created and modified properties
+        assert.ok(!!res.body.created)
+        assert.ok(!!res.body.modified)
         done()
       })
   })
@@ -239,20 +242,33 @@ describe("/voc write access", () => {
       })
   })
 
-  it("should PUT a scheme", done => {
+  it("should PUT a scheme (created should be removed, modified should be updated)", async () => {
     const patch = {
       notation: ["A"],
+      created: "2012",
     }
-    chai.request(server.app)
-      .put("/voc")
-      .send(Object.assign({}, schemes[0], patch))
-      .end((error, res) => {
-        assert.equal(error, null)
-        res.should.have.status(200)
-        res.body.should.be.an("object")
-        assert.deepEqual(res.body.notation, patch.notation)
-        done()
+    let scheme = schemes[0], res
+    // 1. Get current scheme from database
+    res = await chai.request(server.app)
+      .get("/voc")
+      .query({
+        uri: scheme.uri,
       })
+    assert.strictEqual(res.status, 200)
+    scheme = res.body[0]
+    assert.ok(!!scheme)
+    // 2. Make PUT request
+    res = await chai.request(server.app)
+      .put("/voc")
+      .send(Object.assign({}, scheme, patch))
+    res.should.have.status(200)
+    res.body.should.be.an("object")
+    assert.deepStrictEqual(res.body.notation, patch.notation)
+    // Make sure created was NOT updated even though it was set on patch
+    assert.strictEqual(res.body.created, scheme.created)
+    assert.notStrictEqual(res.body.created, patch.created)
+    // Make sure modified was updated
+    assert.notStrictEqual(res.body.modified, scheme.modified)
   })
 
   it("should not PUT an invalid scheme", done => {
