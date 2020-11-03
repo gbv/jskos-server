@@ -82,21 +82,18 @@ module.exports = class MappingService {
       while (count > 0) {
         let side = fromTo(part)
         for (let searchString of { from, to }[part].split("|")) {
-          if (searchString.startsWith("http")) {
-            or.push({
-              [`${side}.memberSet.uri`]: regex(searchString),
-            })
-            or.push({
-              [`${side}.memberChoice.uri`]: regex(searchString),
-            })
-          } else {
-            or.push({
-              [`${side}.memberSet.notation`]: regex(searchString),
-            })
-            or.push({
-              [`${side}.memberChoice.notation`]: regex(searchString),
-            })
-          }
+          or.push({
+            [`${side}.memberSet.uri`]: regex(searchString),
+          })
+          or.push({
+            [`${side}.memberChoice.uri`]: regex(searchString),
+          })
+          or.push({
+            [`${side}.memberSet.notation`]: regex(searchString),
+          })
+          or.push({
+            [`${side}.memberChoice.notation`]: regex(searchString),
+          })
         }
       }
       return { $or: or }
@@ -143,13 +140,8 @@ module.exports = class MappingService {
       while (count > 0) {
         let fromToPart = fromTo(part)
         for (let uri of fromToScheme[part + "Scheme"]) {
-          let scheme = {}
-          if (uri.startsWith("http")) {
-            scheme[`${fromToPart}Scheme.uri`] = uri
-          } else {
-            scheme[`${fromToPart}Scheme.notation`] = uri
-          }
-          or.push(scheme)
+          or.push({ [`${fromToPart}Scheme.uri`]: uri })
+          or.push({ [`${fromToPart}Scheme.notation`]: uri })
         }
       }
       return { $or: or }
