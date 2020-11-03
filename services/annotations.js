@@ -203,9 +203,8 @@ module.exports = class MappingService {
     }
     // Always preserve certain existing properties
     annotation.creator = existingAnnotation.creator
-    if (!annotation.created) {
-      annotation.created = existingAnnotation.created
-    }
+    annotation.created = existingAnnotation.created
+
     // Override _id and id properties
     annotation.id = existingAnnotation.id
     annotation._id = existingAnnotation._id
@@ -225,9 +224,9 @@ module.exports = class MappingService {
     }
     // Add modified date.
     annotation.modified = (new Date()).toISOString()
-    // Remove creator
+    // Remove creator, type, created
     _.unset(annotation, "creator")
-    // Remove type property
+    _.unset(annotation, "created")
     _.unset(annotation, "type")
 
     // Adjust current annotation in database
