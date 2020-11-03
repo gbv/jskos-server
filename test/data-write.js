@@ -726,4 +726,52 @@ describe("/data write access", () => {
       })
   })
 
+  it("should POST a concept, update its scheme's properties, then DELETE the concept", async () => {
+    const uri = concepts[0].topConceptOf[0].uri
+    const concept = {
+      uri: "test:concept",
+      topConceptOf: [{ uri }],
+    }
+    const getScheme = async () => {
+      const res = await chai.request(server.app)
+        .get("/voc")
+        .query({
+          uri,
+        })
+      assert.strictEqual(res.status, 200)
+      assert.strictEqual(res.body.length, 1)
+      return res
+    }
+    let res, scheme
+    // Get scheme before POSTing
+    res = await getScheme()
+    scheme = res.body[0]
+    assert.strictEqual(scheme.uri, uri)
+    // POST concept
+    res = await chai.request(server.app)
+      .post("/data")
+      .send(concept)
+    assert.strictEqual(res.status, 201)
+    // Check scheme after POSTing
+    res = await getScheme()
+    // Check concepts, topConcepts, and modified properties
+    assert.notDeepStrictEqual(res.body.concepts, scheme.concepts)
+    assert.notDeepStrictEqual(res.body.topConcepts, scheme.topConcepts)
+    assert.notStrictEqual(res.body.modified, scheme.modified)
+    scheme = res.body[0]
+    // DELETE concept
+    res = await chai.request(server.app)
+      .delete("/data")
+      .query({
+        uri: concept.uri,
+      })
+    assert.strictEqual(res.status, 204)
+    // Check scheme after DELETE
+    res = await getScheme()
+    // Check concepts, topConcepts, and modified properties
+    assert.notDeepStrictEqual(res.body.concepts, scheme.concepts)
+    assert.notDeepStrictEqual(res.body.topConcepts, scheme.topConcepts)
+    assert.notStrictEqual(res.body.modified, scheme.modified)
+  })
+
 })
