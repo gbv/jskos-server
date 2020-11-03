@@ -21,6 +21,9 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
       - [JWT Example](#jwt-example)
       - [Login Server Example](#login-server-example)
     - [Data Import](#data-import)
+      - [Import Notes](#import-notes)
+      - [Import Script](#import-script)
+      - [Reset Script](#reset-script)
   - [Usage](#usage)
     - [Run Server](#run-server)
     - [Run Tests](#run-tests)
@@ -420,7 +423,8 @@ Note about previous additional options for `auth`:
 ### Data Import
 JSKOS Server provides scripts to import JSKOS data into the database or delete data from the database. Right now, mappings, terminologies (concept schemes), concepts, concordances, and annotations, in JSON (object or array of objects) or [NDJSON](http://ndjson.org) format are supported.
 
-**Note about hierarchies within concepts:** Hierarchies are supported. However, only the `broader` field will be used during import. Both `ancestors` and `narrower` will be removed and the respective endpoints ([GET /ancestors](#get-ancestors) and [GET /narrower](#get-narrower)) will dynamically rebuild these properties. That means that when converting your data, please normalize it so that the hierarchy is expressed via the `broader` field in JSKOS.
+#### Import Notes
+**About hierarchies within concepts:** Hierarchies are supported. However, only the `broader` field will be used during import. Both `ancestors` and `narrower` will be removed and the respective endpoints ([GET /ancestors](#get-ancestors) and [GET /narrower](#get-narrower)) will dynamically rebuild these properties. That means that when converting your data, please normalize it so that the hierarchy is expressed via the `broader` field in JSKOS.
 
 Example scheme (as JSON object) with concepts in a hierarchy (as NDJSON):
 ```json
@@ -444,6 +448,9 @@ Example scheme (as JSON object) with concepts in a hierarchy (as NDJSON):
 
 (Note that a notation for the concepts can be omitted because we have defined `uriPattern` on the concept scheme. Also, we don't need to define `inScheme` for concepts with `topConceptOf`.)
 
+**About the `created` property for concept schemes:** The import script uses the bulk write endpoints to import data. For concept schemes, this means that any existing data for imported schemes will be **overwritten** and replaced with the new data. This includes especially the `created` property which might not exist in your source data and will be set on import if necessary. If you need a consistent `created` date, make sure that your source data already includes this field.
+
+#### Import Script
 Examples of using the import script:
 ```bash
 
@@ -464,10 +471,9 @@ npm run import-batch -- mappings files.txt
 
 **Note: If you have concepts in your database, make sure to run `npm run import -- --indexes` at least once. This will make sure all necessary indexes are created. Without this step, the `/suggest` and `/search` endpoints will not work.**
 
-Note about hierarchy for concepts: jskos-server solely uses the `broader` field on concepts to determine the hierarchy. The `narrower` field will be dynamically filled for every request, and `ancestors` are determined via requests to [`GET /ancestors`](#get-ancestors) or via `properties=ancestors`. If there is data already inside the `narrower` or `ancestors` fields, it will currently be ignored.
-
 For more information about the import script, run `npm run import -- --help`.
 
+#### Reset Script
 It is also possible to delete entities from the server via the command line. Running the command will first determine what exactly will be deleted and ask you for confirmation:
 ```bash
 # Will delete everything from database
@@ -984,12 +990,16 @@ Overwrites a mapping in the database.
 
   JSKOS Mapping object as it was saved in the database.
 
+Note that any changes to the `created` property will be ignored.
+
 ### PATCH /mappings/:_id
 Adjusts a mapping in the database.
 
 * **Success Reponse**
 
   JSKOS Mapping object as it was saved in the database.
+
+Note that any changes to the `created` property will be ignored.
 
 ### DELETE /mappings/:_id
 Deletes a mapping from the database.
@@ -1086,6 +1096,8 @@ Overwrites a concept scheme in the database. Is identified via its `uri` field.
 * **Success Reponse**
 
   JSKOS Concept Scheme object as it was saved in the database.
+
+Note that any changes to the `created` property will be ignored.
 
 ### DELETE /voc
 Deletes a concept scheme from the database.
@@ -1639,12 +1651,16 @@ Overwrites an annotation in the database.
 
   Annotation object as it was saved in the database in [Web Annotation Data Model] format.
 
+Note that any changes to the `created` property will be ignored.
+
 ### PATCH /annotations/:_id
 Adjusts an annotation in the database.
 
 * **Success Reponse**
 
   Annotation object as it was saved in the database in [Web Annotation Data Model] format.
+
+Note that any changes to the `created` property will be ignored.
 
 ### DELETE /annotations/:_id
 Deletes an annotation from the database.
