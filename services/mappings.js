@@ -423,9 +423,10 @@ module.exports = class MappingService {
     if (!utils.matchesCreator(user, existingMapping, "mappings", "update")) {
       throw new CreatorDoesNotMatchError()
     }
-    // Override _id and uri properties
+    // Override _id, uri, and created properties
     mapping._id = existingMapping._id
     mapping.uri = existingMapping.uri
+    mapping.created = existingMapping.created
 
     const result = await Mapping.replaceOne({ _id: existingMapping._id }, mapping)
     if (result.n && result.ok) {
@@ -453,6 +454,7 @@ module.exports = class MappingService {
 
     _.unset(mapping, "_id")
     _.unset(mapping, "uri")
+    _.unset(mapping, "created")
     // Use lodash merge to merge mappings
     _.merge(existingMapping, mapping)
 
