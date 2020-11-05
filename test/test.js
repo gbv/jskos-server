@@ -16,6 +16,13 @@ const { assertMongoDB, dropDatabaseBeforeAndAfter } = require("./test-utils")
 // Prepare jwt
 const jwt = require("jsonwebtoken")
 
+// Prepare JSON Schemas
+const ajv = new require("ajv")({ allErrors: true })
+const configSchema = JSON.parse(require("fs").readFileSync(__dirname + "/../config/config.schema.json"))
+ajv.addSchema(configSchema)
+const statusSchema = JSON.parse(require("fs").readFileSync(__dirname + "/../status.schema.json"))
+ajv.addSchema(statusSchema)
+
 const user = {
   uri: "http://test.user",
   name: "Test User",
@@ -99,6 +106,34 @@ let mapping = {
   ],
 }
 
+describe("Configuration", () => {
+
+  for (let file of [
+    "config/config.default.json",
+    "config/config.test.json",
+  ]) {
+    it(`should validate ${file}`, async () => {
+      const data = require(`../${file}`)
+      const valid = ajv.validate(configSchema, data)
+      let notValidMessage = ""
+      if (!valid) {
+        for (let error of ajv.errors || []) {
+          switch (error.keyword) {
+            case "additionalProperties":
+              notValidMessage += `${error.dataPath} ${error.message} (${error.params.additionalProperty})`
+              break
+            default:
+              notValidMessage += `${error.dataPath} ${error.message} (${error.schemaPath})`
+          }
+          notValidMessage += "\n      "
+        }
+      }
+      assert.ok(valid, notValidMessage)
+    })
+  }
+
+})
+
 assertMongoDB()
 
 describe("Express Server", () => {
@@ -125,10 +160,7 @@ describe("Express Server", () => {
         .end((err, res) => {
           res.should.have.status(200)
           res.body.should.be.a("object")
-          const ajv = new require("ajv")({ allErrors: true })
-          const schema = JSON.parse(require("fs").readFileSync(__dirname + "/../status.schema.json"))
-          ajv.addSchema(schema)
-          const valid = ajv.validate(schema, res.body)
+          const valid = ajv.validate(statusSchema, res.body)
           let notValidMessage = ""
           if (!valid) {
             for (let error of ajv.errors || []) {

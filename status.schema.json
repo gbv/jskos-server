@@ -7,281 +7,36 @@
   "type": "object",
   "definitions": {
     "config": {
-      "type": "object",
-      "required": ["baseUrl", "version", "env"],
-      "additionalProperties": false,
-      "properties": {
-        "baseUrl": {
-          "description": "The baseUrl of the API",
-          "type": "string",
-          "format": "uri"
+      "allOf": [
+        {
+          "$ref": "https://gbv.github.io/jskos-server/config.schema.json"
         },
-        "title": {
-          "description": "A custom title of the JSKOS API instance",
-          "type": "string"
-        },
-        "version": {
-          "description": "The version of the JSKOS API specification that is used",
-          "type": "string",
-          "pattern": "^\\d+\\.\\d+(\\.\\d+)?$"
-        },
-        "env": {
-          "description": "The environment the server is run in",
-          "type": "string",
-          "enum": ["production", "development", "test"]
-        },
-        "auth": {
-          "description": "Describes authentication capabilities",
+        {
           "type": "object",
-          "additionalProperties": false,
+          "required": [
+            "baseUrl",
+            "version",
+            "env"
+          ],
           "properties": {
-            "algorithm": {
-              "description": "The encryption algorithm used by the login-server that provides the JWTs that are used for authenticaton",
+            "version": {
+              "description": "The version of the JSKOS API specification that is used",
               "type": "string"
             },
-            "key": {
-              "description": "The public key of the login-server that is used for authentication",
-              "type": "string"
-            }
-          }
-        },
-        "identityProviders": {
-          "$ref": "#/definitions/identityProviders"
-        },
-        "identities": {
-          "$ref": "#/definitions/identities"
-        },
-        "schemes": {
-          "allOf": [
-            {
-              "$ref": "#/definitions/capability"
+            "baseUrl": {
+              "description": "The baseUrl of the API",
+              "type": "string",
+              "format": "uri"
             },
-            {
-              "$ref": "#/definitions/forbidMappingOnlyProperties"
-            }
-          ]
-        },
-        "concepts": {
-          "allOf": [
-            {
-              "$ref": "#/definitions/capability"
-            },
-            {
-              "$ref": "#/definitions/forbidMappingOnlyProperties"
-            }
-          ]
-        },
-        "concordances": {
-          "allOf": [
-            {
-              "$ref": "#/definitions/capability"
-            },
-            {
-              "$ref": "#/definitions/forbidMappingOnlyProperties"
-            }
-          ]
-        },
-        "mappings": {
-          "$ref": "#/definitions/capability"
-        },
-        "annotations": {
-          "allOf": [
-            {
-              "$ref": "#/definitions/capability"
-            },
-            {
-              "$ref": "#/definitions/forbidMappingOnlyProperties"
-            }
-          ]
-        }
-      }
-    },
-    "capability": {
-      "description": "Describes capabilities for a certain item type.",
-      "additionalProperties": false,
-      "type": "object",
-      "definitions": {
-        "auth": {
-          "description": "Indicates whether a certain action requires authentication.",
-          "type": "boolean"
-        },
-        "crossUser": {
-          "description": "Indicates whether a certain action can be performed on items that were created by a different user.",
-          "type": "boolean"
-        }
-      },
-      "properties": {
-        "read": {
-          "type": "object",
-          "auth": {
-            "$ref": "$/definitions/capability/definitions/auth"
-          },
-          "identityProviders": {
-            "$ref": "#/definitions/identityProviders"
-          },
-          "identities": {
-            "$ref": "#/definitions/identities"
-          }
-        },
-        "create": {
-          "type": "object",
-          "auth": {
-            "$ref": "$/definitions/capability/definitions/auth"
-          },
-          "identityProviders": {
-            "$ref": "#/definitions/identityProviders"
-          },
-          "identities": {
-            "$ref": "#/definitions/identities"
-          }
-        },
-        "update": {
-          "type": "object",
-          "auth": {
-            "$ref": "$/definitions/capability/definitions/auth"
-          },
-          "crossUser": {
-            "$ref": "$/definitions/capability/definitions/crossUser"
-          },
-          "identityProviders": {
-            "$ref": "#/definitions/identityProviders"
-          },
-          "identities": {
-            "$ref": "#/definitions/identities"
-          }
-        },
-        "delete": {
-          "type": "object",
-          "auth": {
-            "$ref": "$/definitions/capability/definitions/auth"
-          },
-          "crossUser": {
-            "$ref": "$/definitions/capability/definitions/crossUser"
-          },
-          "identityProviders": {
-            "$ref": "#/definitions/identityProviders"
-          },
-          "identities": {
-            "$ref": "#/definitions/identities"
-          }
-        },
-        "identityProviders": {
-          "$ref": "#/definitions/identityProviders"
-        },
-        "identities": {
-          "$ref": "#/definitions/identities"
-        },
-        "moderatingIdentities": {
-          "$ref": "#/definitions/identities"
-        },
-        "anonymous": {
-          "type": "boolean"
-        },
-        "cardinality": {
-          "type": "string",
-          "enum": ["1-to-1", "1-to-n"]
-        },
-        "fromSchemeWhitelist": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "array",
-              "items": {
-                "required": ["uri"],
-                "properties": {
-                  "uri": {
-                    "type": "string",
-                    "format": "uri"
-                  },
-                  "identifier": {
-                    "type": "array",
-                    "items": {
-                      "type": "string",
-                      "format": "uri"
-                    }
-                  }
-                }
-              }
-            }
-          ]
-        },
-        "toSchemeWhitelist": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "array",
-              "items": {
-                "required": ["uri"],
-                "properties": {
-                  "uri": {
-                    "type": "string",
-                    "format": "uri"
-                  },
-                  "identifier": {
-                    "type": "array",
-                    "items": {
-                      "type": "string",
-                      "format": "uri"
-                    }
-                  }
-                }
-              }
-            }
-          ]
-        }
-      }
-    },
-    "identityProviders": {
-      "description": "A list of identity providers, one of which is required to perform a certain action. `null` if not applicable.",
-      "anyOf": [
-        {
-          "type": "null"
-        },
-        {
-          "type": "array",
-          "items": {
-            "type": "string"
+            "mongo": false,
+            "verbosity": false,
+            "port": false,
+            "namespace": false,
+            "proxies": false,
+            "ips": false
           }
         }
       ]
-    },
-    "identities": {
-      "description": "A list of identity URIs that are allowed to perform a certain action. `null` if not applicable.",
-      "anyOf": [
-        {
-          "type": "null"
-        },
-        {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "format": "uri"
-          }
-        }
-      ]
-    },
-    "forbidMappingOnlyProperties": {
-      "$comment": "Use in non-mapping definitions. Needed to ensure that no additional properties are allowed.",
-      "not": {
-        "anyOf": [
-          {
-            "required": ["anonymous"]
-          },
-          {
-            "required": ["cardinality"]
-          },
-          {
-            "required": ["fromSchemeWhitelist"]
-          },
-          {
-            "required": ["toSchemeWhitelist"]
-          }
-        ]
-      }
     }
   },
   "properties": {

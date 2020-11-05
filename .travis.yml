@@ -9,6 +9,7 @@ script:
   - npm test
   - mkdir gh-pages
   - cp status.schema.json gh-pages/status.schema.json
+  - cp config/config.schema.json gh-pages/config.schema.json
   - cp README.md gh-pages/index.md
 deploy:
   provider: pages
