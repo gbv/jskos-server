@@ -190,69 +190,81 @@
       "properties": {
         "read": {
           "type": "object",
-          "auth": {
-            "$ref": "$/definitions/capability/definitions/auth"
+          "properties": {
+            "auth": {
+              "$ref": "#/definitions/capability/definitions/auth"
+            },
+            "identityProviders": {
+              "$ref": "#/definitions/identityProviders"
+            },
+            "identities": {
+              "$ref": "#/definitions/identities"
+            },
+            "ips": {
+              "$ref": "#/definitions/ips"
+            }
           },
-          "identityProviders": {
-            "$ref": "#/definitions/identityProviders"
-          },
-          "identities": {
-            "$ref": "#/definitions/identities"
-          },
-          "ips": {
-            "$ref": "#/definitions/ips"
-          }
+          "additionalProperties": false
         },
         "create": {
           "type": "object",
-          "auth": {
-            "$ref": "$/definitions/capability/definitions/auth"
+          "properties": {
+            "auth": {
+              "$ref": "#/definitions/capability/definitions/auth"
+            },
+            "identityProviders": {
+              "$ref": "#/definitions/identityProviders"
+            },
+            "identities": {
+              "$ref": "#/definitions/identities"
+            },
+            "ips": {
+              "$ref": "#/definitions/ips"
+            }
           },
-          "identityProviders": {
-            "$ref": "#/definitions/identityProviders"
-          },
-          "identities": {
-            "$ref": "#/definitions/identities"
-          },
-          "ips": {
-            "$ref": "#/definitions/ips"
-          }
+          "additionalProperties": false
         },
         "update": {
           "type": "object",
-          "auth": {
-            "$ref": "$/definitions/capability/definitions/auth"
+          "properties": {
+            "auth": {
+              "$ref": "#/definitions/capability/definitions/auth"
+            },
+            "crossUser": {
+              "$ref": "#/definitions/capability/definitions/crossUser"
+            },
+            "identityProviders": {
+              "$ref": "#/definitions/identityProviders"
+            },
+            "identities": {
+              "$ref": "#/definitions/identities"
+            },
+            "ips": {
+              "$ref": "#/definitions/ips"
+            }
           },
-          "crossUser": {
-            "$ref": "$/definitions/capability/definitions/crossUser"
-          },
-          "identityProviders": {
-            "$ref": "#/definitions/identityProviders"
-          },
-          "identities": {
-            "$ref": "#/definitions/identities"
-          },
-          "ips": {
-            "$ref": "#/definitions/ips"
-          }
+          "additionalProperties": false
         },
         "delete": {
           "type": "object",
-          "auth": {
-            "$ref": "$/definitions/capability/definitions/auth"
+          "properties": {
+            "auth": {
+              "$ref": "#/definitions/capability/definitions/auth"
+            },
+            "crossUser": {
+              "$ref": "#/definitions/capability/definitions/crossUser"
+            },
+            "identityProviders": {
+              "$ref": "#/definitions/identityProviders"
+            },
+            "identities": {
+              "$ref": "#/definitions/identities"
+            },
+            "ips": {
+              "$ref": "#/definitions/ips"
+            }
           },
-          "crossUser": {
-            "$ref": "$/definitions/capability/definitions/crossUser"
-          },
-          "identityProviders": {
-            "$ref": "#/definitions/identityProviders"
-          },
-          "identities": {
-            "$ref": "#/definitions/identities"
-          },
-          "ips": {
-            "$ref": "#/definitions/ips"
-          }
+          "additionalProperties": false
         },
         "identityProviders": {
           "$ref": "#/definitions/identityProviders"
