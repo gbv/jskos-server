@@ -16,12 +16,14 @@ const { assertMongoDB, dropDatabaseBeforeAndAfter } = require("./test-utils")
 // Prepare jwt
 const jwt = require("jsonwebtoken")
 
+const fs = require("fs")
+
 // Prepare JSON Schemas
 const ajvErrorsToString = require("../utils/ajvErrorsToString")
 const ajv = new require("ajv")({ allErrors: true })
-const configSchema = JSON.parse(require("fs").readFileSync(__dirname + "/../config/config.schema.json"))
+const configSchema = JSON.parse(fs.readFileSync(__dirname + "/../config/config.schema.json"))
 ajv.addSchema(configSchema)
-const statusSchema = JSON.parse(require("fs").readFileSync(__dirname + "/../status.schema.json"))
+const statusSchema = JSON.parse(fs.readFileSync(__dirname + "/../status.schema.json"))
 ajv.addSchema(statusSchema)
 
 const user = {
@@ -112,12 +114,22 @@ describe("Configuration", () => {
   for (let file of [
     "config/config.default.json",
     "config/config.test.json",
-  ]) {
-    it(`should validate ${file}`, async () => {
-      const data = require(`../${file}`)
-      const valid = ajv.validate(configSchema, data)
-      const notValidMessage = ajvErrorsToString(ajv.errors || [])
-      assert.ok(valid, notValidMessage)
+  ].concat(fs.readdirSync("./test/configs").map(f => `test/configs/${f}`))) {
+    const shouldFail = file.includes("fail-")
+    it(`should ${shouldFail ? "not " : ""}validate ${file}`, async () => {
+      let valid = false
+      try {
+        const data = require(`../${file}`)
+        valid = ajv.validate(configSchema, data)
+      } catch (error) {
+        // Ignore error
+      }
+      if (shouldFail) {
+        assert.ok(!valid, "File passed validation even though it shouldn't.")
+      } else {
+        const notValidMessage = ajvErrorsToString(ajv.errors || [])
+        assert.ok(valid, notValidMessage)
+      }
     })
   }
 

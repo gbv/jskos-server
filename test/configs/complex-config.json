@@ -1,0 +1,90 @@
+{
+  "verbosity": "log",
+  "baseUrl": "https://example.com/",
+  "title": "JSKOS Server Complex Example Config",
+  "port": 12345,
+  "proxies": [
+    "127.0.0.1/8"
+  ],
+  "mongo": {
+    "user": "a",
+    "pass": "b",
+    "host": "localhost",
+    "port": 27018,
+    "db": "jskos-server-db"
+  },
+  "auth": {
+    "algorithm": "RS256",
+    "key": "public key here"
+  },
+  "schemes": true,
+  "concepts": {
+    "read": {
+      "auth": false
+    },
+    "create": {
+      "auth": true,
+      "ips": [
+        "5.6.7.8"
+      ]
+    },
+    "update": {
+      "identityProviders": [
+        "github"
+      ]
+    },
+    "delete": {
+      "auth": false,
+      "identities": [
+        "http://some.uri"
+      ]
+    }
+  },
+  "mappings": {
+    "read": {
+      "auth": false
+    },
+    "create": {
+      "auth": true
+    },
+    "update": {
+      "auth": true,
+      "crossUser": true
+    },
+    "delete": {
+      "auth": true,
+      "crossUser": false
+    },
+    "fromSchemeWhitelist": [
+      {
+        "uri": "some:scheme"
+      }
+    ],
+    "anonymous": true,
+    "cardinality": "1-to-1"
+  },
+  "concordances": false,
+  "annotations": {
+    "read": {
+      "auth": false
+    },
+    "create": {
+      "auth": true,
+      "identities": [
+        "http://some.uri"
+      ]
+    },
+    "update": {
+      "auth": true,
+      "crossUser": false
+    },
+    "delete": {
+      "auth": true,
+      "crossUser": false,
+      "ips": [
+        "134.5.6.7/24"
+      ]
+    },
+    "moderatingIdentities": []
+  }
+}
