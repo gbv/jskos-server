@@ -179,7 +179,7 @@ All missing keys will be defaulted from `config/config.default.json`:
 }
 ```
 
-With the keys `schemes`, `concepts`, `mappings`, and `annotations`, you can configure whether endpoints related to the specific functionality should be available. A minimal configuration file to just server read-only vocabulary and concept information could look like this:
+With the keys `schemes`, `concepts`, `mappings`, `concordances`, and `annotations`, you can configure whether endpoints related to the specific functionality should be available. A minimal configuration file to just server read-only vocabulary and concept information could look like this:
 
 ```json
 {

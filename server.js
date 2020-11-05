@@ -112,10 +112,10 @@ if (config.schemes) {
 }
 // Mapping related endpoints
 if (config.mappings) {
-  if (config.concordances) {
-    app.use("/concordances", require("./routes/concordances"))
-  }
   app.use("/mappings", require("./routes/mappings"))
+}
+if (config.concordances) {
+  app.use("/concordances", require("./routes/concordances"))
 }
 // Annotation related endpoints
 if (config.annotations) {
