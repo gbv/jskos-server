@@ -164,6 +164,24 @@ if (["HS256", "HS384", "HS512"].includes(_.get(status, "config.auth.algorithm"))
   delete status.config.auth.key
 }
 status.config.baseUrl = baseUrl
+// Set all available endpoints to `null` first
+for (let type of [
+  "schemes",
+  "top",
+  "voc-search",
+  "voc-suggest",
+  "concepts",
+  "data",
+  "narrower",
+  "ancestors",
+  "suggest",
+  "search",
+  "mappings",
+  "concordances",
+  "annotations",
+]) {
+  status[type] = null
+}
 if (status.config.schemes) {
   // Add endpoints related to schemes
   status.schemes = `${baseUrl}voc`
