@@ -179,6 +179,8 @@ All missing keys will be defaulted from `config/config.default.json`:
 }
 ```
 
+The provided configuration files (user config and environment config) will be validated with the provided [JSON Schema](https://json-schema.org) file under `config/config.schema.json` (public URI: https://gbv.github.io/jskos-server/status.schema.json). If validation fails, **JSON Server will refuse to start!** Please check whether your configuration is correct after each change. If there is something wrong, the console output will try to provide you with enough detail to fix the issue.
+
 With the keys `schemes`, `concepts`, `mappings`, `concordances`, and `annotations`, you can configure whether endpoints related to the specific functionality should be available. A minimal configuration file to just server read-only vocabulary and concept information could look like this:
 
 ```json
