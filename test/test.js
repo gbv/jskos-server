@@ -17,6 +17,7 @@ const { assertMongoDB, dropDatabaseBeforeAndAfter } = require("./test-utils")
 const jwt = require("jsonwebtoken")
 
 // Prepare JSON Schemas
+const ajvErrorsToString = require("../utils/ajvErrorsToString")
 const ajv = new require("ajv")({ allErrors: true })
 const configSchema = JSON.parse(require("fs").readFileSync(__dirname + "/../config/config.schema.json"))
 ajv.addSchema(configSchema)
@@ -115,19 +116,7 @@ describe("Configuration", () => {
     it(`should validate ${file}`, async () => {
       const data = require(`../${file}`)
       const valid = ajv.validate(configSchema, data)
-      let notValidMessage = ""
-      if (!valid) {
-        for (let error of ajv.errors || []) {
-          switch (error.keyword) {
-            case "additionalProperties":
-              notValidMessage += `${error.dataPath} ${error.message} (${error.params.additionalProperty})`
-              break
-            default:
-              notValidMessage += `${error.dataPath} ${error.message} (${error.schemaPath})`
-          }
-          notValidMessage += "\n      "
-        }
-      }
+      const notValidMessage = ajvErrorsToString(ajv.errors || [])
       assert.ok(valid, notValidMessage)
     })
   }
@@ -161,19 +150,7 @@ describe("Express Server", () => {
           res.should.have.status(200)
           res.body.should.be.a("object")
           const valid = ajv.validate(statusSchema, res.body)
-          let notValidMessage = ""
-          if (!valid) {
-            for (let error of ajv.errors || []) {
-              switch (error.keyword) {
-                case "additionalProperties":
-                  notValidMessage += `${error.dataPath} ${error.message} (${error.params.additionalProperty})`
-                  break
-                default:
-                  notValidMessage += `${error.schemaPath} ${error.message}`
-              }
-              notValidMessage += "\n      "
-            }
-          }
+          const notValidMessage = ajvErrorsToString(ajv.errors || [])
           valid.should.be.eql(true, notValidMessage)
           done()
         })
