@@ -1,4 +1,5 @@
 const _ = require("lodash")
+const ajvErrorsToString = require("../utils/ajvErrorsToString")
 
 // Prepare environment
 require("dotenv").config()
@@ -23,6 +24,19 @@ if (env != "test") {
   } catch(error) {
     console.warn(`Warning: Could not load configuration file from ${configFile}. The application might not behave as expected.`)
   }
+}
+
+// Validate environemnt and user config
+const ajv = new require("ajv")({ allErrors: true })
+const schema = require("./config.schema.json")
+ajv.addSchema(schema)
+if (!ajv.validate(schema, configEnv)) {
+  console.error(`Could not validate environemnt configuration: ${ajvErrorsToString(ajv.errors)}`)
+  process.exit(1)
+}
+if (!ajv.validate(schema, configUser)) {
+  console.error(`Could not validate user configuration: ${ajvErrorsToString(ajv.errors)}`)
+  process.exit(1)
 }
 
 // Before merging, check whether `namespace` exists in the user config and if not, generate a namespace and save it to user config
