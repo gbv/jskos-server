@@ -71,10 +71,7 @@
     },
     "proxies": {
       "description": "A list of proxy IP addresses or ranges",
-      "items": {
-        "type": "string",
-        "format": "ipv4"
-      }
+      "$ref": "#/definitions/ips"
     },
     "mongo": {
       "description": "MongDB Configuration",
@@ -385,7 +382,7 @@
           "type": "array",
           "items": {
             "type": "string",
-            "format": "ipv4"
+            "pattern": "^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(?:\/(?:3[0-2]|[0-2]?[0-9]))?$"
           }
         }
       ]
