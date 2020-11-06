@@ -447,6 +447,24 @@ const handleDownload = (filename) => (req, res) => {
     .pipe(res)
 }
 
+const anystream = require("json-anystream")
+const bodyParser = (req, res, next) => {
+  const adjust = object => {
+    // TODO: Add creator/contributor logic here (see https://github.com/gbv/jskos-server/issues/122)
+    return object
+  }
+  if (req.method == "POST") {
+    // For POST requests, parse body with json-anystream middleware
+    anystream.addStream(adjust)(req, res, next)
+  } else {
+    // For all other requests, parse as JSON
+    require("express").json()(req, res, (...params) => {
+      req.body = adjust(req.body)
+      next(...params)
+    })
+  }
+}
+
 module.exports = {
   wrappers,
   cleanJSON,
@@ -460,5 +478,6 @@ module.exports = {
   addPaginationHeaders,
   returnJSON,
   handleDownload,
+  bodyParser,
   searchHelper: require("./searchHelper"),
 }

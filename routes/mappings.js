@@ -56,6 +56,7 @@ if (config.mappings.create) {
   router.post(
     "/",
     config.mappings.create.auth ? auth.default : auth.optional,
+    utils.bodyParser,
     utils.wrappers.async(async (req) => {
       return await mappingService.postMapping({
         bodyStream: req.anystream,
@@ -72,6 +73,7 @@ if (config.mappings.update) {
   router.put(
     "/:_id",
     config.mappings.update.auth ? auth.default : auth.optional,
+    utils.bodyParser,
     utils.wrappers.async(async (req) => {
       return await mappingService.putMapping({
         _id: req.params._id,
@@ -86,6 +88,7 @@ if (config.mappings.update) {
   router.patch(
     "/:_id",
     config.mappings.update.auth ? auth.default : auth.optional,
+    utils.bodyParser,
     utils.wrappers.async(async (req) => {
       return await mappingService.patchMapping({
         _id: req.params._id,
@@ -102,6 +105,7 @@ if (config.mappings.delete) {
   router.delete(
     "/:_id",
     config.mappings.delete.auth ? auth.default : auth.optional,
+    utils.bodyParser,
     utils.wrappers.async(async (req) => {
       return await mappingService.deleteMapping({
         uri: req.params._id,

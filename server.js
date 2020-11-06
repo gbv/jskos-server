@@ -59,19 +59,7 @@ app.use(nocache())
 
 // Disable ETags
 app.set("etag", false)
-
-// Add body-parser middleware
-const anystream = require("json-anystream")
 app.use(express.urlencoded({ extended: false }))
-app.use((req, res, next) => {
-  if (req.method == "POST") {
-    // For POST requests, parse body with json-anystream middleware
-    anystream.addStream(req, res, next)
-  } else {
-    // For all other requests, parse as JSON
-    express.json()(req, res, next)
-  }
-})
 
 // Set some properties on req that will be used by other middleware
 app.use(utils.addMiddlewareProperties)

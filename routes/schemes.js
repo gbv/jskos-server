@@ -23,6 +23,7 @@ if (config.schemes.create) {
   router.post(
     "/",
     config.schemes.create.auth ? auth.default : auth.optional,
+    utils.bodyParser,
     utils.wrappers.async(async (req) => {
       return await schemeService.postScheme({
         bodyStream: req.anystream,
@@ -38,6 +39,7 @@ if (config.schemes.update) {
   router.put(
     "/",
     config.schemes.update.auth ? auth.default : auth.optional,
+    utils.bodyParser,
     utils.wrappers.async(async (req) => {
       return await schemeService.putScheme({
         body: req.body,
@@ -52,6 +54,7 @@ if (config.schemes.delete) {
   router.delete(
     "/",
     config.schemes.delete.auth ? auth.default : auth.optional,
+    utils.bodyParser,
     utils.wrappers.async(async (req) => {
       return await schemeService.deleteScheme({
         uri: req.query.uri,
@@ -91,6 +94,7 @@ if (config.concepts) {
     router.delete(
       "/concepts",
       config.concepts.delete.auth ? auth.default : auth.optional,
+      utils.bodyParser,
       utils.wrappers.async(async (req) => {
         return await conceptService.deleteConceptsFromScheme({
           uri: req.query.uri,

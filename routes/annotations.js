@@ -34,6 +34,7 @@ if (config.annotations.create) {
   router.post(
     "/",
     config.annotations.create.auth ? auth.default : auth.optional,
+    utils.bodyParser,
     utils.wrappers.async(async (req) => {
       return await annotationService.postAnnotation({
         bodyStream: req.anystream,
@@ -50,6 +51,7 @@ if (config.annotations.update) {
   router.put(
     "/:_id",
     config.annotations.update.auth ? auth.default : auth.optional,
+    utils.bodyParser,
     utils.wrappers.async(async (req) => {
       return await annotationService.putAnnotation({
         _id: req.params._id,
@@ -64,6 +66,7 @@ if (config.annotations.update) {
   router.patch(
     "/:_id",
     config.annotations.update.auth ? auth.default : auth.optional,
+    utils.bodyParser,
     utils.wrappers.async(async (req) => {
       return await annotationService.patchAnnotation({
         _id: req.params._id,
@@ -80,6 +83,7 @@ if (config.annotations.delete) {
   router.delete(
     "/:_id",
     config.annotations.delete.auth ? auth.default : auth.optional,
+    utils.bodyParser,
     utils.wrappers.async(async (req) => {
       return await annotationService.deleteAnnotation({
         uri: req.params._id,

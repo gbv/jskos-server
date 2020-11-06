@@ -22,6 +22,7 @@ if (config.concepts.create) {
   router.post(
     "/data",
     config.concepts.create.auth ? auth.default : auth.optional,
+    utils.bodyParser,
     utils.wrappers.async(async (req) => {
       return await conceptService.postConcept({
         bodyStream: req.anystream,
@@ -38,6 +39,7 @@ if (config.concepts.update) {
   router.put(
     "/data",
     config.concepts.update.auth ? auth.default : auth.optional,
+    utils.bodyParser,
     utils.wrappers.async(async (req) => {
       return await conceptService.putConcept({
         body: req.body,
@@ -52,6 +54,7 @@ if (config.concepts.delete) {
   router.delete(
     "/data",
     config.concepts.delete.auth ? auth.default : auth.optional,
+    utils.bodyParser,
     utils.wrappers.async(async (req) => {
       return await conceptService.deleteConcept({
         uri: req.query.uri,
