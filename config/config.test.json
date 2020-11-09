@@ -12,10 +12,12 @@
       "auth": false
     },
     "update": {
-      "auth": false
+      "auth": false,
+      "crossUser": true
     },
     "delete": {
-      "auth": false
+      "auth": false,
+      "crossUser": true
     }
   },
   "concepts": {
@@ -26,10 +28,12 @@
       "auth": false
     },
     "update": {
-      "auth": false
+      "auth": false,
+      "crossUser": true
     },
     "delete": {
-      "auth": false
+      "auth": false,
+      "crossUser": true
     }
   },
   "mappings": {

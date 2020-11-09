@@ -512,7 +512,7 @@ describe("Express Server", () => {
             res.should.have.status(200)
             res.body.should.be.a("object")
             // Due to chai, the URL will be different, so we will remove it from the objects
-            _.isEqual(_.omit(res.body, ["uri", "identifier", "created", "modified", "@context"]), mapping).should.be.eql(true)
+            _.isEqual(_.omit(res.body, ["uri", "identifier", "creator", "created", "modified", "@context"]), _.omit(mapping, ["creator"])).should.be.eql(true)
             chai.request(server.app).delete(`/mappings/${_id}`).set("Authorization", `Bearer ${token}`).end((err, res) => {
               res.should.have.status(204)
               done()
@@ -1475,6 +1475,49 @@ describe("Express Server", () => {
           res.body.id.should.be.eql(annotation.id)
           res.body["@context"].should.be.eql("http://www.w3.org/ns/anno.jsonld")
           res.body.type.should.be.eql("Annotation")
+          done()
+        })
+    })
+
+    it("should not PATCH an annoation unauthorized (1)", done => {
+      let _id = annotation.id.substring(annotation.id.lastIndexOf("/") + 1)
+      let patch = {
+        bodyValue: "-1",
+      }
+      chai.request(server.app)
+        .patch("/annotations/" + _id)
+        .send(patch)
+        .end((err, res) => {
+          res.should.have.status(403)
+          done()
+        })
+    })
+
+    it("should not PATCH an annoation unauthorized (2)", done => {
+      let _id = annotation.id.substring(annotation.id.lastIndexOf("/") + 1)
+      let patch = {
+        bodyValue: "-1",
+      }
+      chai.request(server.app)
+        .patch("/annotations/" + _id)
+        .set("Authorization", `Bearer ${tokenWithModerating}`)
+        .send(patch)
+        .end((err, res) => {
+          res.should.have.status(403)
+          done()
+        })
+    })
+
+    it("should not PATCH an annoation that doesn't exist", done => {
+      let patch = {
+        bodyValue: "-1",
+      }
+      chai.request(server.app)
+        .patch("/annotations/abcdef")
+        .set("Authorization", `Bearer ${token}`)
+        .send(patch)
+        .end((err, res) => {
+          res.should.have.status(404)
           done()
         })
     })
