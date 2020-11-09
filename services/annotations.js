@@ -4,7 +4,7 @@ const _ = require("lodash")
 const validate = require("jskos-validate")
 
 const Annotation = require("../models/annotations")
-const { EntityNotFoundError, CreatorDoesNotMatchError, DatabaseAccessError, InvalidBodyError, MalformedBodyError, MalformedRequestError, ForbiddenAccessError } = require("../errors")
+const { EntityNotFoundError, DatabaseAccessError, InvalidBodyError, MalformedBodyError, MalformedRequestError, ForbiddenAccessError } = require("../errors")
 
 module.exports = class MappingService {
 
@@ -186,7 +186,7 @@ module.exports = class MappingService {
     return isMultiple ? response : response[0]
   }
 
-  async putAnnotation({ _id, body, user }) {
+  async putAnnotation({ body, existing }) {
     let annotation = body
     if (!annotation) {
       throw new InvalidBodyError()
@@ -200,20 +200,15 @@ module.exports = class MappingService {
       throw new InvalidBodyError()
     }
 
-    const existingAnnotation = await this.getAnnotation(_id)
-
-    if (!utils.matchesCreator(user, existingAnnotation, "annotations", "update")) {
-      throw new CreatorDoesNotMatchError()
-    }
     // Always preserve certain existing properties
-    annotation.creator = existingAnnotation.creator
-    annotation.created = existingAnnotation.created
+    annotation.creator = existing.creator
+    annotation.created = existing.created
 
     // Override _id and id properties
-    annotation.id = existingAnnotation.id
-    annotation._id = existingAnnotation._id
+    annotation.id = existing.id
+    annotation._id = existing._id
 
-    const result = await Annotation.replaceOne({ _id: existingAnnotation._id }, annotation)
+    const result = await Annotation.replaceOne({ _id: existing._id }, annotation)
     if (result.n && result.ok) {
       return annotation
     } else {
@@ -221,7 +216,7 @@ module.exports = class MappingService {
     }
   }
 
-  async patchAnnotation({ _id, body, user }) {
+  async patchAnnotation({ body, existing }) {
     let annotation = body
     if (!annotation) {
       throw new InvalidBodyError()
@@ -232,38 +227,25 @@ module.exports = class MappingService {
     _.unset(annotation, "creator")
     _.unset(annotation, "created")
     _.unset(annotation, "type")
-
-    // Adjust current annotation in database
-    const existingAnnotation = await this.getAnnotation(_id)
-
-    if (!utils.matchesCreator(user, existingAnnotation, "annotations", "update")) {
-      throw new CreatorDoesNotMatchError()
-    }
     _.unset(annotation, "_id")
     _.unset(annotation, "id")
     // Use lodash merge to merge annotations
-    _.merge(existingAnnotation, annotation)
+    _.merge(existing, annotation)
     // Validate mapping
     if (!validate.annotation(annotation)) {
       throw new InvalidBodyError()
     }
 
-    const result = await Annotation.replaceOne({ _id: existingAnnotation._id }, existingAnnotation)
+    const result = await Annotation.replaceOne({ _id: existing._id }, existing)
     if (result.ok) {
-      return existingAnnotation
+      return existing
     } else {
       throw new DatabaseAccessError()
     }
   }
 
-  async deleteAnnotation({ uri, user }) {
-    const existingAnnotation = await this.getAnnotation(uri)
-
-    if (!utils.matchesCreator(user, existingAnnotation, "annotations", "delete")) {
-      throw new CreatorDoesNotMatchError()
-    }
-
-    const result = await Annotation.deleteOne({ _id: existingAnnotation._id })
+  async deleteAnnotation({ existing }) {
+    const result = await Annotation.deleteOne({ _id: existing._id })
     if (result.n && result.ok && result.deletedCount) {
       return
     } else {

@@ -57,6 +57,7 @@ if (config.annotations.update) {
         _id: req.params._id,
         body: req.body,
         user: req.user,
+        existing: req.existing,
       })
     }),
     utils.adjust,
@@ -72,6 +73,7 @@ if (config.annotations.update) {
         _id: req.params._id,
         body: req.body,
         user: req.user,
+        existing: req.existing,
       })
     }),
     utils.adjust,
@@ -88,6 +90,7 @@ if (config.annotations.delete) {
       return await annotationService.deleteAnnotation({
         uri: req.params._id,
         user: req.user,
+        existing: req.existing,
       })
     }),
     (req, res) => res.sendStatus(204),
