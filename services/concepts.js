@@ -46,6 +46,10 @@ module.exports = class ConceptService {
     this.schemeService = container.get(require("../services/schemes"))
   }
 
+  async get(uri) {
+    return (await this.getDetails({ uri, limit: 1, offset: 0 }))[0]
+  }
+
   /**
    * Return a Promise with an array of concept data.
    */

@@ -283,6 +283,10 @@ module.exports = class MappingService {
     }
   }
 
+  async get(_id) {
+    return this.getMapping(_id)
+  }
+
   /**
    * Returns a promise with a single mapping with ObjectId in req.params._id.
    */

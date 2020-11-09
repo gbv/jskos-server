@@ -6,6 +6,10 @@ module.exports = class ConcordanceService {
     this.schemeService = container.get(require("./schemes"))
   }
 
+  async get(uri) {
+    return (await this.getConcordances({ uri, limit: 1, offset: 0 }))[0]
+  }
+
   /**
    * Return a Promise with an array of concordances.
    */

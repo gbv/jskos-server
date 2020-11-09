@@ -65,6 +65,10 @@ module.exports = class MappingService {
 
   }
 
+  async get(_id) {
+    return this.getAnnotation(_id)
+  }
+
   /**
    * Returns a promise with a single annotation with id in req.params._id.
    */

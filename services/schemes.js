@@ -57,6 +57,10 @@ module.exports = class SchemeService {
     return schemes
   }
 
+  async get(uri) {
+    return this.getScheme(uri)
+  }
+
   async getScheme(identifierOrNotation) {
     return await Scheme.findOne({ $or: [{ uri: identifierOrNotation }, { identifier: identifierOrNotation }, { notation: new RegExp(`^${identifierOrNotation}$`, "i") }]}).lean().exec()
   }

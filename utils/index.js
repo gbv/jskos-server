@@ -1,7 +1,18 @@
 const config = require("../config")
 const _ = require("lodash")
 const jskos = require("jskos-tools")
-const { DuplicateEntityError } = require("../errors")
+const { DuplicateEntityError, EntityNotFoundError, CreatorDoesNotMatchError } = require("../errors")
+
+// Container needed to load services that load properties
+const Container = require("typedi").Container// Services, keys are according to req.type
+const services = {}
+for (let type of ["schemes", "concepts", "concordances", "mappings", "annotations"]) {
+  Object.defineProperty(services, type, {
+    get() {
+      return Container.get(require("../services/" + type))
+    },
+  })
+}
 
 /**
  * These are wrappers for Express middleware which receive a middleware function as a first parameter,
@@ -63,9 +74,6 @@ const cleanJSON = (json) => {
   }
 }
 
-// Container needed to load services that load properties
-const Container = require("typedi").Container
-
 // Adjust data in req.data based on req.type (which is set by `addMiddlewareProperties`)
 const adjust = async (req, res, next) => {
   /**
@@ -107,13 +115,11 @@ adjust.concept = async (concept, properties = []) => {
     concept.type = concept.type || ["http://www.w3.org/2004/02/skos/core#Concept"]
     // Add properties (narrower, ancestors)
     for (let property of ["narrower", "ancestors"].filter(p => properties.includes(p))) {
-      const conceptService = Container.get(require("../services/concepts"))
-      concept[property] = await Promise.all((await conceptService[`get${property.charAt(0).toUpperCase() + property.slice(1)}`]({ uri: concept.uri })).map(concept => adjust.concept(concept)))
+      concept[property] = await Promise.all((await services.concepts[`get${property.charAt(0).toUpperCase() + property.slice(1)}`]({ uri: concept.uri })).map(concept => adjust.concept(concept)))
     }
     // Add properties (annotations)
     if (properties.includes("annotations") && concept.uri) {
-      const annotationService = Container.get(require("../services/annotations"))
-      concept.annotations = (await annotationService.getAnnotations({ target: concept.uri })).map(annotation => adjust.annotation(annotation))
+      concept.annotations = (await services.annotations.getAnnotations({ target: concept.uri })).map(annotation => adjust.annotation(annotation))
     }
   }
   return concept
@@ -139,8 +145,7 @@ adjust.mapping = async (mapping, properties = []) => {
     mapping["@context"] = "https://gbv.github.io/jskos/context.json"
     // Add properties (annotations)
     if (properties.includes("annotations") && mapping.uri) {
-      const annotationService = Container.get(require("../services/annotations"))
-      mapping.annotations = (await annotationService.getAnnotations({ target: mapping.uri })).map(annotation => adjust.annotation(annotation))
+      mapping.annotations = (await services.annotations.getAnnotations({ target: mapping.uri })).map(annotation => adjust.annotation(annotation))
     }
   }
   return mapping
@@ -449,18 +454,116 @@ const handleDownload = (filename) => (req, res) => {
 
 const anystream = require("json-anystream")
 const bodyParser = (req, res, next) => {
-  const adjust = object => {
-    // TODO: Add creator/contributor logic here (see https://github.com/gbv/jskos-server/issues/122)
+
+  // Assemble creator once
+  let creator = {}
+  const creatorUriPath = req.type === "annotations" ? "id" : "uri"
+  const creatorNamePath = req.type === "annotations" ? "name" : "prefLabel.en"
+  const userUris = [(req.user || {}).uri].concat(Object.values((req.user || {}).identities || {}).map(identity => identity.uri)).filter(uri => uri != null)
+  if (req.user && !userUris.includes(req.query.identity)) {
+    _.set(creator, creatorUriPath, req.user.uri)
+  } else if (req.query.identity) {
+    _.set(creator, creatorUriPath, req.query.identity)
+    // Add identity to URI list for later checks
+    userUris.push(req.query.identity)
+  }
+  if (req.query.identityName) {
+    _.set(creator, creatorNamePath, req.query.identityName)
+  } else if (req.query.identityName !== "") {
+    const name = _.get(Object.values(_.get(req, "user.identities", [])).find(i => i.uri === _.get(creator, creatorUriPath)) || req.user, "name")
+    if (name) {
+      _.set(creator, creatorNamePath, name)
+    }
+  }
+  if (!_.get(creator, creatorUriPath) && !_.get(creator, creatorNamePath)) {
+    creator = null
+  }
+  if (creator && req.type !== "annotations") {
+    creator = [creator]
+  }
+
+  const adjust = (object, existing) => {
+    if (!object) {
+      return object
+    }
+    // Remove `creator` and `contributor` from object
+    delete object.creator
+    delete object.contributor
+
+    if (req.method === "POST") {
+      if (creator) {
+        object.creator = creator
+      }
+    } else if (req.method === "PUT" || req.method === "PATCH") {
+      if (creator) {
+        if (req.type === "annotations") {
+          // No contributor for annotations
+          object.creator = creator
+        } else {
+          // First, take existing creator and contributor
+          object.creator = (existing && existing.creator) || []
+          object.contributor = (existing && existing.contributor) || []
+          // Look if current user is somewhere in either creator or contributor
+          const creatorIndex = object.creator.findIndex(c => jskos.compare(c, { identifier: userUris }))
+          const contributorIndex = object.contributor.findIndex(c => jskos.compare(c, { identifier: userUris }))
+          if (creatorIndex === -1 && contributorIndex === -1) {
+            // If the user is in neither, add as contributor and set creator if necessary
+            if (object.creator.length == 0) {
+              object.creator = creator
+            }
+            object.contributor.push(creator[0])
+          } else {
+            // Adjust creator if necessary
+            if (creatorIndex !== -1) {
+              object.creator[creatorIndex] = creator[0]
+            }
+            // Add user as contributor (to the end of array)
+            if (contributorIndex !== -1) {
+              object.contributor.splice(contributorIndex, 1)
+              object.contributor.push(creator[0])
+            } else {
+              object.contributor.push(creator[0])
+            }
+          }
+        }
+      } else if (existing) {
+        // If no creator is set, keep existing creator and contributor
+        if (existing.creator) {
+          object.creator = existing.creator
+        }
+        if (existing.contributor) {
+          object.contributor = existing.contributor
+        }
+      }
+    }
+
     return object
   }
+
   if (req.method == "POST") {
     // For POST requests, parse body with json-anystream middleware
     anystream.addStream(adjust)(req, res, next)
   } else {
     // For all other requests, parse as JSON
     require("express").json()(req, res, (...params) => {
-      req.body = adjust(req.body)
-      next(...params)
+      // Get existing
+      const uri = req.params._id || (req.body || {}).uri || req.query.uri
+      services[req.type].get(uri)
+        .catch(() => null)
+        .then(existing => {
+          if (!existing) {
+            next(new EntityNotFoundError(null, uri))
+          } else {
+            const action = req.methd === "DELETE" ? "delete" : "update"
+            if (!matchesCreator(req.user, existing, req.type, action)) {
+              next(new CreatorDoesNotMatchError())
+            } else {
+              req.existing = existing
+              req.body = adjust(req.body, existing)
+              next(...params)
+            }
+          }
+        })
     })
   }
 }
