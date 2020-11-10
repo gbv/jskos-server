@@ -222,6 +222,8 @@ if (status.config.annotations) {
   // Add endpoints related to annotations
   status.annotations = `${baseUrl}annotations`
 }
+// Explicitly disable types (not yet supported in jskos-server)
+status.types = null
 config.status = status
 
 module.exports = config
