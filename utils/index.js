@@ -305,7 +305,7 @@ const supportDownloadFormats = (formats) => (req, res, next) => {
 const addPaginationHeaders = (req, res, next) => {
   const limit = req.query.limit
   const offset = req.query.offset
-  const total = (req.data && req.data.totalCount) || (req.data && req.data.length)
+  const total = _.get(req, "data.totalCount", req.data && req.data.length)
   if (req == null || res == null || limit == null || offset == null || total == null) {
     return
   }
