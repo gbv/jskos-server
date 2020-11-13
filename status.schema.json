@@ -37,6 +37,28 @@
           }
         }
       ]
+    },
+    "uriOrNull": {
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "uri"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "stringOrNull": {
+      "$comment": "format: uri is not used here because something like ?search={searchTerms} will not pass validation.",
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   },
   "properties": {
@@ -52,68 +74,59 @@
     },
     "schemes": {
       "description": "API URL for concept schemes",
-      "type": "string",
-      "format": "uri"
+      "$ref": "#/definitions/uriOrNull"
     },
     "top": {
       "description": "API URL for top concepts",
-      "type": "string",
-      "format": "uri"
+      "$ref": "#/definitions/uriOrNull"
     },
     "concepts": {
       "description": "API URL for concepts",
-      "type": "string",
-      "format": "uri"
+      "$ref": "#/definitions/uriOrNull"
     },
     "voc-suggest": {
       "description": "API URL for vocabulary suggest",
-      "$comment": "format: uri is not used here because something like ?search={searchTerms} will not pass validation.",
-      "type": "string"
+      "$ref": "#/definitions/stringOrNull"
     },
     "voc-search": {
       "description": "API URL for vocabulary search",
-      "$comment": "format: uri is not used here because something like ?search={searchTerms} will not pass validation.",
-      "type": "string"
+      "$ref": "#/definitions/stringOrNull"
     },
     "data": {
       "description": "API URL for data",
-      "type": "string",
-      "format": "uri"
+      "$ref": "#/definitions/uriOrNull"
     },
     "narrower": {
       "description": "API URL for narrower concepts",
-      "type": "string",
-      "format": "uri"
+      "$ref": "#/definitions/uriOrNull"
     },
     "ancestors": {
       "description": "API URL for concept ancestors",
-      "type": "string",
-      "format": "uri"
+      "$ref": "#/definitions/uriOrNull"
     },
     "suggest": {
       "description": "API URL for concept suggest",
-      "$comment": "format: uri is not used here because something like ?search={searchTerms} will not pass validation.",
-      "type": "string"
+      "$ref": "#/definitions/stringOrNull"
     },
     "search": {
       "description": "API URL for concept search",
-      "$comment": "format: uri is not used here because something like ?search={searchTerms} will not pass validation.",
-      "type": "string"
+      "$ref": "#/definitions/stringOrNull"
     },
     "concordances": {
       "description": "API URL for concordances",
-      "type": "string",
-      "format": "uri"
+      "$ref": "#/definitions/uriOrNull"
     },
     "mappings": {
       "description": "API URL for mappings",
-      "type": "string",
-      "format": "uri"
+      "$ref": "#/definitions/uriOrNull"
     },
     "annotations": {
       "description": "API URL for annotations",
-      "type": "string",
-      "format": "uri"
+      "$ref": "#/definitions/uriOrNull"
+    },
+    "types": {
+      "description": "API URL for types",
+      "$ref": "#/definitions/uriOrNull"
     }
   },
   "additionalProperties": false
