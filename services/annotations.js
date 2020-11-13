@@ -122,13 +122,6 @@ module.exports = class MappingService {
             throw new ForbiddenAccessError("Access forbidden, user is not allowed to create annotations of type \"moderating\".")
           }
         }
-        if (user) {
-          // Set creator
-          annotation.creator = {
-            id: user.uri,
-            name: user.name,
-          }
-        }
         // Add created and modified dates.
         let date = (new Date()).toISOString()
         if (!annotation.created) {
