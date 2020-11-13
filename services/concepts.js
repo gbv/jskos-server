@@ -288,7 +288,7 @@ module.exports = class ConceptService {
     return isMultiple ? response : response[0]
   }
 
-  async putConcept({ body }) {
+  async putConcept({ body, existing }) {
     if (!body) {
       throw new MalformedBodyError()
     }
@@ -307,8 +307,13 @@ module.exports = class ConceptService {
     }
     concept = preparation.concepts[0]
 
+    // Override _id, uri, and created properties
+    concept._id = existing._id
+    concept.uri = existing.uri
+    concept.created = existing.created
+
     // Write concept to database
-    const result = await Concept.replaceOne({ _id: concept.uri }, concept)
+    const result = await Concept.replaceOne({ _id: existing._id }, concept)
     if (!result.ok) {
       throw new DatabaseAccessError()
     }
@@ -322,17 +327,12 @@ module.exports = class ConceptService {
     return concept
   }
 
-  async deleteConcept({ uri }) {
+  async deleteConcept({ uri, existing }) {
     if (!uri) {
       throw new MalformedRequestError()
     }
-    const concept = await Concept.findById(uri).lean()
 
-    if (!concept) {
-      throw new EntityNotFoundError()
-    }
-
-    const result = await Concept.deleteOne({ _id: concept._id })
+    const result = await Concept.deleteOne({ _id: existing._id })
     if (!result.ok) {
       throw new DatabaseAccessError()
     }
@@ -342,7 +342,7 @@ module.exports = class ConceptService {
 
     await this.postAdjustmentsForConcepts({
       // Adjust scheme in case it was its last concept
-      schemeUrisToAdjust: [_.get(concept, "inScheme[0].uri")],
+      schemeUrisToAdjust: [_.get(existing, "inScheme[0].uri")],
       conceptUrisWithNarrower: [],
     })
   }

@@ -43,6 +43,7 @@ if (config.concepts.update) {
     utils.wrappers.async(async (req) => {
       return await conceptService.putConcept({
         body: req.body,
+        existing: req.existing,
       })
     }),
     utils.adjust,
@@ -58,6 +59,7 @@ if (config.concepts.delete) {
     utils.wrappers.async(async (req) => {
       return await conceptService.deleteConcept({
         uri: req.query.uri,
+        existing: req.existing,
       })
     }),
     (req, res) => res.sendStatus(204),
