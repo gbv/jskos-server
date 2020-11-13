@@ -167,9 +167,10 @@ module.exports = class SchemeService {
     // Prepare
     scheme = await this.prepareAndCheckSchemeForAction(scheme, "update")
 
-    if (existing.created) {
-      scheme.created = existing.created
-    }
+    // Override _id, uri, and created properties
+    scheme._id = existing._id
+    scheme.uri = existing.uri
+    scheme.created = existing.created
 
     // Write scheme to database
     const result = await Scheme.replaceOne({ _id: scheme.uri }, scheme)
