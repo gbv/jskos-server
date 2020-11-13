@@ -7,7 +7,7 @@ const escapeStringRegexp = require("escape-string-regexp")
 
 const Mapping = require("../models/mappings")
 const Annotation = require("../models/annotations")
-const { MalformedBodyError, MalformedRequestError, EntityNotFoundError, InvalidBodyError, DatabaseAccessError, CreatorDoesNotMatchError } = require("../errors")
+const { MalformedBodyError, MalformedRequestError, EntityNotFoundError, InvalidBodyError, DatabaseAccessError } = require("../errors")
 
 module.exports = class MappingService {
 
@@ -401,7 +401,7 @@ module.exports = class MappingService {
     return isMultiple ? response : response[0]
   }
 
-  async putMapping({ _id, body, user }) {
+  async putMapping({ body, existing }) {
     let mapping = body
     if (!mapping) {
       throw new InvalidBodyError()
@@ -420,19 +420,12 @@ module.exports = class MappingService {
     }
     this.checkWhitelists(mapping)
 
-    // Replace current mapping in database
-    const existingMapping = await this.getMapping(_id)
-
-    // Check if authorized user matches creator
-    if (!utils.matchesCreator(user, existingMapping, "mappings", "update")) {
-      throw new CreatorDoesNotMatchError()
-    }
     // Override _id, uri, and created properties
-    mapping._id = existingMapping._id
-    mapping.uri = existingMapping.uri
-    mapping.created = existingMapping.created
+    mapping._id = existing._id
+    mapping.uri = existing.uri
+    mapping.created = existing.created
 
-    const result = await Mapping.replaceOne({ _id: existingMapping._id }, mapping)
+    const result = await Mapping.replaceOne({ _id: existing._id }, mapping)
     if (result.n && result.ok) {
       return mapping
     } else {
@@ -440,7 +433,7 @@ module.exports = class MappingService {
     }
   }
 
-  async patchMapping({ _id, body, user }) {
+  async patchMapping({ body, existing }) {
     let mapping = body
     if (!mapping) {
       throw new InvalidBodyError()
@@ -448,22 +441,14 @@ module.exports = class MappingService {
     // Add modified date.
     mapping.modified = (new Date()).toISOString()
 
-    // Adjust current mapping in database
-    const existingMapping = await this.getMapping(_id)
-
-    // Check if authorized user matches creator
-    if (!utils.matchesCreator(user, existingMapping, "mappings", "update")) {
-      throw new CreatorDoesNotMatchError()
-    }
-
     _.unset(mapping, "_id")
     _.unset(mapping, "uri")
     _.unset(mapping, "created")
     // Use lodash merge to merge mappings
-    _.merge(existingMapping, mapping)
+    _.merge(existing, mapping)
 
     // Validate mapping after merge
-    if (!validate.mapping(existingMapping)) {
+    if (!validate.mapping(existing)) {
       throw new InvalidBodyError()
     }
     if (mapping.partOf) {
@@ -474,22 +459,16 @@ module.exports = class MappingService {
     }
     this.checkWhitelists(mapping)
 
-    const result = await Mapping.replaceOne({ _id: existingMapping._id }, existingMapping)
+    const result = await Mapping.replaceOne({ _id: existing._id }, existing)
     if (result.ok) {
-      return existingMapping
+      return existing
     } else {
       throw new DatabaseAccessError()
     }
   }
 
-  async deleteMapping({ uri, user }) {
-    const existingMapping = await this.getMapping(uri)
-
-    if (!utils.matchesCreator(user, existingMapping, "mappings", "delete")) {
-      throw new CreatorDoesNotMatchError()
-    }
-
-    const result = await Mapping.deleteOne({ _id: existingMapping._id })
+  async deleteMapping({ existing }) {
+    const result = await Mapping.deleteOne({ _id: existing._id })
     if (result.n && result.ok && result.deletedCount) {
       return
     } else {

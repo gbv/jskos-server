@@ -79,6 +79,7 @@ if (config.mappings.update) {
         _id: req.params._id,
         body: req.body,
         user: req.user,
+        existing: req.existing,
       })
     }),
     utils.adjust,
@@ -94,6 +95,7 @@ if (config.mappings.update) {
         _id: req.params._id,
         body: req.body,
         user: req.user,
+        existing: req.existing,
       })
     }),
     utils.adjust,
@@ -108,8 +110,9 @@ if (config.mappings.delete) {
     utils.bodyParser,
     utils.wrappers.async(async (req) => {
       return await mappingService.deleteMapping({
-        uri: req.params._id,
+        _id: req.params._id,
         user: req.user,
+        existing: req.existing,
       })
     }),
     (req, res) => res.sendStatus(204),
