@@ -43,6 +43,7 @@ if (config.schemes.update) {
     utils.wrappers.async(async (req) => {
       return await schemeService.putScheme({
         body: req.body,
+        existing: req.existing,
       })
     }),
     utils.adjust,
@@ -58,6 +59,7 @@ if (config.schemes.delete) {
     utils.wrappers.async(async (req) => {
       return await schemeService.deleteScheme({
         uri: req.query.uri,
+        existing: req.existing,
       })
     }),
     (req, res) => res.sendStatus(204),

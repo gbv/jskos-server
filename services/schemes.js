@@ -161,18 +161,14 @@ module.exports = class SchemeService {
     return isMultiple ? response : response[0]
   }
 
-  async putScheme({ body }) {
+  async putScheme({ body, existing }) {
     let scheme = body
 
     // Prepare
     scheme = await this.prepareAndCheckSchemeForAction(scheme, "update")
 
-    const existingScheme = await Scheme.findById(scheme.uri).lean()
-    if (!existingScheme) {
-      throw new EntityNotFoundError()
-    }
-    if (existingScheme.created) {
-      scheme.created = existingScheme.created
+    if (existing.created) {
+      scheme.created = existing.created
     }
 
     // Write scheme to database
@@ -189,12 +185,16 @@ module.exports = class SchemeService {
     return scheme
   }
 
-  async deleteScheme({ uri }) {
+  async deleteScheme({ uri, existing }) {
     if (!uri) {
       throw new MalformedRequestError()
     }
-    const scheme = await this.prepareAndCheckSchemeForAction({ uri }, "delete")
-    const result = await Scheme.deleteOne({ _id: scheme._id })
+    if (existing.concepts.length) {
+      // Disallow deletion
+      // ? Which error type?
+      throw new MalformedRequestError(`Concept scheme ${uri} still has concepts in the database and therefore can't be deleted.`)
+    }
+    const result = await Scheme.deleteOne({ _id: existing._id })
     if (!result.ok) {
       throw new DatabaseAccessError()
     }
@@ -230,20 +230,6 @@ module.exports = class SchemeService {
       // Remove created for update action
       if (action === "update") {
         delete scheme.created
-      }
-    }
-    if (action == "delete") {
-      // Replace scheme with scheme from databas
-      const uri = scheme.uri
-      scheme = await Scheme.findById(uri).lean()
-      if (!scheme) {
-        throw new EntityNotFoundError(null, uri)
-      }
-      // Check if concepts exists
-      if (scheme.concepts.length) {
-        // Disallow deletion
-        // ? Which error type?
-        throw new MalformedRequestError(`Concept scheme ${uri} still has concepts in the database and therefore can't be deleted.`)
       }
     }
 
