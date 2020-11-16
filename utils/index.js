@@ -318,7 +318,7 @@ const addPaginationHeaders = (req, res, next) => {
   const url = (query, rel) => {
     let url = baseUrl
     let index = 0
-    _.forOwn(query, (value, key) => {
+    _.forOwn(_.omit(query, ["bulk"]), (value, key) => {
       url += `${(index == 0 ? "?" : "&")}${key}=${encodeURIComponent(value)}`
       index += 1
     })
