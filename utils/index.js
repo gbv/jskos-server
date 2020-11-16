@@ -181,6 +181,13 @@ const isValidUuid = (uuid) => {
   return uuid.match(uuidRegex) != null
 }
 
+const getUrisForUser = (user) => {
+  if (!user) {
+    return []
+  }
+  return [user.uri].concat(Object.values(user.identities || {}).map(identity => identity.uri)).filter(uri => uri != null)
+}
+
 /**
  * Returns `true` if the creator of `object` matches `user`, `false` if not.
  * `object.creator` can be
@@ -209,7 +216,7 @@ const matchesCreator = (user, object, type, action) => {
     return false
   }
   // If not, check URIs
-  const userUris = [user.uri].concat(Object.values(user.identities || {}).map(identity => identity.uri)).filter(uri => uri != null)
+  const userUris = getUrisForUser(user)
   // Support arrays, objects, and strings as creators
   let creators = _.isArray(object.creator) ? object.creator : (_.isObject(object.creator) ? [object.creator] : [{ uri: object.creator }])
   for (let creator of creators) {
@@ -452,14 +459,16 @@ const handleDownload = (filename) => (req, res) => {
     .pipe(res)
 }
 
-const anystream = require("json-anystream")
-const bodyParser = (req, res, next) => {
-
-  // Assemble creator once
+/**
+ * Extracts a creator objects from a request.
+ *
+ * @param {*} req request object
+ */
+const getCreator = (req) => {
   let creator = {}
   const creatorUriPath = req.type === "annotations" ? "id" : "uri"
   const creatorNamePath = req.type === "annotations" ? "name" : "prefLabel.en"
-  const userUris = [(req.user || {}).uri].concat(Object.values((req.user || {}).identities || {}).map(identity => identity.uri)).filter(uri => uri != null)
+  const userUris = getUrisForUser(req.user)
   if (req.user && !userUris.includes(req.query.identity)) {
     _.set(creator, creatorUriPath, req.user.uri)
   } else if (req.query.identity) {
@@ -481,63 +490,83 @@ const bodyParser = (req, res, next) => {
   if (creator && req.type !== "annotations") {
     creator = [creator]
   }
+  return creator
+}
 
-  const adjust = (object, existing) => {
-    if (!object) {
-      return object
+const handleCreatorForObject = ({ object, existing, creator, req }) => {
+  if (!object) {
+    return object
+  }
+  // Remove `creator` and `contributor` from object
+  delete object.creator
+  delete object.contributor
+
+  const userUris = getUrisForUser(req.user)
+
+  if (req.method === "POST") {
+    if (creator) {
+      object.creator = creator
     }
-    // Remove `creator` and `contributor` from object
-    delete object.creator
-    delete object.contributor
-
-    if (req.method === "POST") {
-      if (creator) {
+  } else if (req.method === "PUT" || req.method === "PATCH") {
+    if (creator) {
+      if (req.type === "annotations") {
+        // No contributor for annotations
         object.creator = creator
-      }
-    } else if (req.method === "PUT" || req.method === "PATCH") {
-      if (creator) {
-        if (req.type === "annotations") {
-          // No contributor for annotations
-          object.creator = creator
+      } else {
+        // First, take existing creator and contributor
+        object.creator = (existing && existing.creator) || []
+        object.contributor = (existing && existing.contributor) || []
+        // Look if current user is somewhere in either creator or contributor
+        const creatorIndex = object.creator.findIndex(c => jskos.compare(c, { identifier: userUris }))
+        const contributorIndex = object.contributor.findIndex(c => jskos.compare(c, { identifier: userUris }))
+        if (creatorIndex === -1 && contributorIndex === -1) {
+          // If the user is in neither, add as contributor and set creator if necessary
+          if (object.creator.length == 0) {
+            object.creator = creator
+          }
+          object.contributor.push(creator[0])
         } else {
-          // First, take existing creator and contributor
-          object.creator = (existing && existing.creator) || []
-          object.contributor = (existing && existing.contributor) || []
-          // Look if current user is somewhere in either creator or contributor
-          const creatorIndex = object.creator.findIndex(c => jskos.compare(c, { identifier: userUris }))
-          const contributorIndex = object.contributor.findIndex(c => jskos.compare(c, { identifier: userUris }))
-          if (creatorIndex === -1 && contributorIndex === -1) {
-            // If the user is in neither, add as contributor and set creator if necessary
-            if (object.creator.length == 0) {
-              object.creator = creator
-            }
+          // Adjust creator if necessary
+          if (creatorIndex !== -1) {
+            object.creator[creatorIndex] = creator[0]
+          }
+          // Add user as contributor (to the end of array)
+          if (contributorIndex !== -1) {
+            object.contributor.splice(contributorIndex, 1)
             object.contributor.push(creator[0])
           } else {
-            // Adjust creator if necessary
-            if (creatorIndex !== -1) {
-              object.creator[creatorIndex] = creator[0]
-            }
-            // Add user as contributor (to the end of array)
-            if (contributorIndex !== -1) {
-              object.contributor.splice(contributorIndex, 1)
-              object.contributor.push(creator[0])
-            } else {
-              object.contributor.push(creator[0])
-            }
+            object.contributor.push(creator[0])
           }
         }
-      } else if (existing) {
-        // If no creator is set, keep existing creator and contributor
-        if (existing.creator) {
-          object.creator = existing.creator
-        }
-        if (existing.contributor) {
-          object.contributor = existing.contributor
-        }
+      }
+    } else if (existing) {
+      // If no creator is set, keep existing creator and contributor
+      if (existing.creator) {
+        object.creator = existing.creator
+      }
+      if (existing.contributor) {
+        object.contributor = existing.contributor
       }
     }
+  }
 
-    return object
+  return object
+}
+
+const anystream = require("json-anystream")
+const bodyParser = (req, res, next) => {
+
+  // Assemble creator once
+  const creator = getCreator(req)
+
+  // Wrap handleCreatorForObject method
+  const adjust = (object, existing) => {
+    return handleCreatorForObject({
+      object,
+      existing,
+      creator,
+      req,
+    })
   }
 
   if (req.method == "POST") {
