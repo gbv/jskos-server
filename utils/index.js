@@ -473,8 +473,6 @@ const getCreator = (req) => {
     _.set(creator, creatorUriPath, req.user.uri)
   } else if (req.query.identity) {
     _.set(creator, creatorUriPath, req.query.identity)
-    // Add identity to URI list for later checks
-    userUris.push(req.query.identity)
   }
   if (req.query.identityName) {
     _.set(creator, creatorNamePath, req.query.identityName)
@@ -487,9 +485,6 @@ const getCreator = (req) => {
   if (!_.get(creator, creatorUriPath) && !_.get(creator, creatorNamePath)) {
     creator = null
   }
-  if (creator && req.type !== "annotations") {
-    creator = [creator]
-  }
   return creator
 }
 
@@ -500,6 +495,11 @@ const handleCreatorForObject = ({ object, existing, creator, req }) => {
   // Remove `creator` and `contributor` from object
   delete object.creator
   delete object.contributor
+
+  // JSKOS creator has to be an array
+  if (creator && req.type !== "annotations") {
+    creator = [creator]
+  }
 
   const userUris = getUrisForUser(req.user)
 
@@ -612,4 +612,6 @@ module.exports = {
   handleDownload,
   bodyParser,
   searchHelper: require("./searchHelper"),
+  getCreator,
+  handleCreatorForObject,
 }
