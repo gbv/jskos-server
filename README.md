@@ -507,6 +507,7 @@ Unless otherwise specified:
   - mutlipart/form-data with the file in `data`
   - a URL with JSON data as `url` in the request params
   - Note: The `type` request param might be required (either `json`, `ndjson`, or `multipart`)
+- `POST`/`PUT`/`PATCH` endpoints will override `creator` and `contributor` of submitted objects (see [this comment](https://github.com/gbv/jskos-server/issues/122#issuecomment-723029967) for more details)
 - `POST`/`PUT`/`PATCH`/`DELETE` requests require authentication via a JWT from [login-server](https://github.com/gbv/login-server) in the header. Exception: Authentication for certain actions on certain endpoints can be disabled (see [configuration](#configuration)).
 - `PUT`/`PATCH`/`DELETE` requests are required to come from the owner of the entity that is being modified.
 - All URL parameters are optional.
