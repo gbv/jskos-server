@@ -194,7 +194,6 @@ module.exports = class MappingService {
     }
 
     // Always preserve certain existing properties
-    annotation.creator = existing.creator
     annotation.created = existing.created
 
     // Override _id and id properties
