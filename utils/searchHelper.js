@@ -30,6 +30,11 @@ function makePrefixes(values) {
   return results
 }
 
+/**
+ * Adds necessary properties required by indexes for search.
+ *
+ * @param {Object} item JSKOS item (scheme or concept)
+ */
 function addKeywords(item) {
   item._keywordsNotation = makePrefixes(item.notation || [])
   // Do not write text index keywords for synthetic concepts
@@ -50,6 +55,14 @@ function addKeywords(item) {
   }
 }
 
+/**
+ * Helper method used by search/suggest endpoints for schemes and concepts.
+ *
+ * @param {string} options.search search string
+ * @param {string} options.voc optional vocabulary URI
+ * @param {SchemeService} options.schemeService scheme service reference for getting vocabulary details
+ * @param {Function} options.queryFunction async function that takes a query object and returns results as an array
+ */
 async function searchItem({ search, voc, schemeService, queryFunction }) {
   // Don't try to search for an empty query
   if (!search.length) {
@@ -167,6 +180,12 @@ async function searchItem({ search, voc, schemeService, queryFunction }) {
   return results
 }
 
+/**
+ * Converts search results to Open Search Suggest Format for /suggest endpoints.
+ *
+ * @param {Object} options.query query object for request
+ * @param {Array} options.results results as JSKOS array
+ */
 function toOpenSearchSuggestFormat({ query, results }) {
   // Transform to OpenSearch Suggest Format
   let labels = []

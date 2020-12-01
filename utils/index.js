@@ -488,6 +488,13 @@ const getCreator = (req) => {
   return creator
 }
 
+/**
+ *
+ * @param {Object} options.object JSKOS object
+ * @param {Object} [options.existing] existing object from database for PUT/PATCH
+ * @param {Object|Array} [options.creator] creator object or array, usually extracted via `getCreator` above
+ * @param {Object} options.req request object (necessary for `type`, `user`, and `method`)
+ */
 const handleCreatorForObject = ({ object, existing, creator, req }) => {
   if (!object) {
     return object
@@ -554,6 +561,15 @@ const handleCreatorForObject = ({ object, existing, creator, req }) => {
 }
 
 const anystream = require("json-anystream")
+/**
+ * Custom body parser middleware.
+ * - For POSTs, adds body stream via json-anystream and adjusts objects via handleCreatorForObject.
+ * - For PUT/PATCH/DELETE, parses JSON body, queries the existing entity which is saved in req.existing, checks creator, and adjusts object via handleCreatorForObject.
+ *
+ * @param {*} req
+ * @param {*} res
+ * @param {*} next
+ */
 const bodyParser = (req, res, next) => {
 
   // Assemble creator once

@@ -303,8 +303,6 @@ module.exports = class MappingService {
 
   /**
    * Save a single mapping or multiple mappings in the database. Adds created date, validates the mapping, and adds identifiers.
-   *
-   * TODO: Make sure user matches?
    */
   async postMapping({ bodyStream, bulk = false }) {
     if (!bodyStream) {
