@@ -64,47 +64,47 @@ process.on("unhandledRejection", () => {})
 
 // Mapping for POST/PUT/PATCH/DELETE
 let mapping = {
-  "from": {
-    "memberSet": [
+  from: {
+    memberSet: [
       {
-        "uri": "http://dewey.info/class/612.112/e23/",
-        "notation": [
+        uri: "http://dewey.info/class/612.112/e23/",
+        notation: [
           "612.112",
         ],
       },
     ],
   },
-  "to": {
-    "memberSet": [
+  to: {
+    memberSet: [
       {
-        "uri": "http://www.wikidata.org/entity/Q42395",
-        "notation": [
+        uri: "http://www.wikidata.org/entity/Q42395",
+        notation: [
           "Q42395",
         ],
       },
     ],
   },
-  "fromScheme": {
-    "uri": "http://dewey.info/scheme/edition/e23/",
-    "notation": [
+  fromScheme: {
+    uri: "http://dewey.info/scheme/edition/e23/",
+    notation: [
       "DDC",
     ],
   },
-  "toScheme": {
-    "uri": "http://bartoc.org/en/node/1940",
-    "notation": [
+  toScheme: {
+    uri: "http://bartoc.org/en/node/1940",
+    notation: [
       "WD",
     ],
   },
-  "creator": [
+  creator: [
     {
-      "prefLabel": {
-        "de": "Stefan Peters (VZG)",
+      prefLabel: {
+        de: "Stefan Peters (VZG)",
       },
-      "uri": user.uri,
+      uri: user.uri,
     },
   ],
-  "type": [
+  type: [
     "http://www.w3.org/2004/02/skos/core#relatedMatch",
   ],
 }

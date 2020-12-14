@@ -19,10 +19,10 @@ module.exports = class MappingService {
       criteria.push({
         $or: [
           {
-            "_id": query.id,
+            _id: query.id,
           },
           {
-            "id": query.id,
+            id: query.id,
           },
         ],
       })
@@ -247,9 +247,9 @@ module.exports = class MappingService {
 
   async createIndexes() {
     const indexes = [
-      [{ "id": 1 }, {}],
-      [{ "target": 1 }, {}],
-      [{ "creator": 1 }, {}],
+      [{ id: 1 }, {}],
+      [{ target: 1 }, {}],
+      [{ creator: 1 }, {}],
       [{ "creator.id": 1 }, {}],
       [{ "creator.name": 1 }, {}],
     ]

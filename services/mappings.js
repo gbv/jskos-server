@@ -517,7 +517,7 @@ module.exports = class MappingService {
         {
           $group: {
             _id: "$fromScheme",
-            "count": { "$sum": 1 },
+            count: { $sum: 1 },
           },
         },
       ]).exec(),
@@ -526,7 +526,7 @@ module.exports = class MappingService {
         {
           $group: {
             _id: "$toScheme",
-            "count": { "$sum": 1 },
+            count: { $sum: 1 },
           },
         },
       ]).exec(),
@@ -633,11 +633,11 @@ module.exports = class MappingService {
       "fromScheme.uri": 1,
       "toScheme.uri": 1,
     }, {}])
-    indexes.push([{ "uri": 1 }, {}])
-    indexes.push([{ "identifier": 1 }, {}])
-    indexes.push([{ "type": 1 }, {}])
-    indexes.push([{ "created": 1 }, {}])
-    indexes.push([{ "modified": 1 }, {}])
+    indexes.push([{ uri: 1 }, {}])
+    indexes.push([{ identifier: 1 }, {}])
+    indexes.push([{ type: 1 }, {}])
+    indexes.push([{ created: 1 }, {}])
+    indexes.push([{ modified: 1 }, {}])
     indexes.push([{ "partOf.uri": 1 }, {}])
     indexes.push([{ "creator.uri": 1 }, {}])
     indexes.push([{ "creator.prefLabel.de": 1 }, {}])

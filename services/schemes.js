@@ -266,7 +266,7 @@ module.exports = class SchemeService {
       const hasTopConcepts = !!(await Concept.findOne({ $or: [scheme.uri].concat(scheme.identifier || []).map(uri => ({ "topConceptOf.uri": uri })) }))
       const hasConcepts = hasTopConcepts || !!(await Concept.findOne({ $or: [scheme.uri].concat(scheme.identifier || []).map(uri => ({ "inScheme.uri": uri })) }))
       await Scheme.updateOne({ _id: scheme.uri }, {
-        "$set": {
+        $set: {
           concepts: hasConcepts ? [null] : [],
           topConcepts: hasTopConcepts ? [null] : [],
           modified: (new Date()).toISOString(),
@@ -279,29 +279,29 @@ module.exports = class SchemeService {
 
   async createIndexes() {
     const indexes = []
-    indexes.push([{ "uri": 1 }, {}])
-    indexes.push([{ "identifier": 1 }, {}])
-    indexes.push([{ "notation": 1 }, {}])
-    indexes.push([{ "created": 1 }, {}])
-    indexes.push([{ "modified": 1 }, {}])
+    indexes.push([{ uri: 1 }, {}])
+    indexes.push([{ identifier: 1 }, {}])
+    indexes.push([{ notation: 1 }, {}])
+    indexes.push([{ created: 1 }, {}])
+    indexes.push([{ modified: 1 }, {}])
     indexes.push([{ "subject.uri": 1 }, {}])
     indexes.push([{ "license.uri": 1 }, {}])
-    indexes.push([{ "_keywordsLabels": 1 }, {}])
+    indexes.push([{ _keywordsLabels: 1 }, {}])
     // Add additional index for first entry which is used for sorting
     indexes.push([{ "_keywordsLabels.0": 1 }, {}])
     indexes.push([
       {
-        "_keywordsNotation": "text",
-        "_keywordsLabels": "text",
-        "_keywordsOther": "text",
+        _keywordsNotation: "text",
+        _keywordsLabels: "text",
+        _keywordsOther: "text",
       },
       {
         name: "text",
         default_language: "german",
         weights: {
-          "_keywordsNotation": 10,
-          "_keywordsLabels": 6,
-          "_keywordsOther": 3,
+          _keywordsNotation: 10,
+          _keywordsLabels: 6,
+          _keywordsOther: 3,
         },
       },
     ])

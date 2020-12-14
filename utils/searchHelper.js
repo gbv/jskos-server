@@ -91,7 +91,7 @@ async function searchItem({ search, voc, schemeService, queryFunction }) {
   if (search.length > 1) {
     // Search _keywordsLabels
     // TODO: Rethink this approach.
-    queryOr.push({ "_keywordsLabels": { $regex: "^" + search.toUpperCase() } })
+    queryOr.push({ _keywordsLabels: { $regex: "^" + search.toUpperCase() } })
   }
   // Also search for exact matches with the URI (in field _id)
   query = { $or: queryOr }

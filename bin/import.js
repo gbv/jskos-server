@@ -175,11 +175,11 @@ const mongoose = require("mongoose")
 
 const Container = require("typedi").Container
 const services = {
-  "scheme": Container.get(require("../services/schemes")),
-  "concept": Container.get(require("../services/concepts")),
-  "concordance": Container.get(require("../services/concordances")),
-  "mapping": Container.get(require("../services/mappings")),
-  "annotation": Container.get(require("../services/annotations")),
+  scheme: Container.get(require("../services/schemes")),
+  concept: Container.get(require("../services/concepts")),
+  concordance: Container.get(require("../services/concordances")),
+  mapping: Container.get(require("../services/mappings")),
+  annotation: Container.get(require("../services/annotations")),
 }
 // Also import models for Mapping and Concordance
 // TODO: This won't be needed if these are imported through the service as well.
@@ -341,13 +341,13 @@ async function doImport({ input, format, type, concordance }) {
           extent: `${count}`,
           distribution: [
             {
-              "download": `${config.baseUrl}mappings?partOf=${encodeURIComponent(uri)}&download=ndjson`,
-              "format": "http://format.gbv.de/jskos",
-              "mimetype": "application/x-ndjson; charset=utf-8",
+              download: `${config.baseUrl}mappings?partOf=${encodeURIComponent(uri)}&download=ndjson`,
+              format: "http://format.gbv.de/jskos",
+              mimetype: "application/x-ndjson; charset=utf-8",
             },
             {
-              "download": `${config.baseUrl}mappings?partOf=${encodeURIComponent(uri)}&download=csv`,
-              "mimetype": "text/csv; charset=utf-8",
+              download: `${config.baseUrl}mappings?partOf=${encodeURIComponent(uri)}&download=csv`,
+              mimetype: "text/csv; charset=utf-8",
             },
           ],
         },

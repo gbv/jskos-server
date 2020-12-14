@@ -482,22 +482,22 @@ module.exports = class ConceptService {
     indexes.push([{ "broader.uri": 1 }, {}])
     indexes.push([{ "topConceptOf.uri": 1 }, {}])
     indexes.push([{ "inScheme.uri": 1 }, {}])
-    indexes.push([{ "uri": 1 }, {}])
-    indexes.push([{ "notation": 1 }, {}])
-    indexes.push([{ "_keywordsLabels": 1 }, {}])
+    indexes.push([{ uri: 1 }, {}])
+    indexes.push([{ notation: 1 }, {}])
+    indexes.push([{ _keywordsLabels: 1 }, {}])
     indexes.push([
       {
-        "_keywordsNotation": "text",
-        "_keywordsLabels": "text",
-        "_keywordsOther": "text",
+        _keywordsNotation: "text",
+        _keywordsLabels: "text",
+        _keywordsOther: "text",
       },
       {
         name: "text",
         default_language: "german",
         weights: {
-          "_keywordsNotation": 10,
-          "_keywordsLabels": 6,
-          "_keywordsOther": 3,
+          _keywordsNotation: 10,
+          _keywordsLabels: 6,
+          _keywordsOther: 3,
         },
       },
     ])

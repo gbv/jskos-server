@@ -114,18 +114,18 @@ if (cli.flags.scheme && cli.flags.concordance) {
 }
 
 const services = {
-  "scheme": Container.get(require("../services/schemes")),
-  "concept": Container.get(require("../services/concepts")),
-  "concordance": Container.get(require("../services/concordances")),
-  "mapping": Container.get(require("../services/mappings")),
-  "annotation": Container.get(require("../services/annotations")),
+  scheme: Container.get(require("../services/schemes")),
+  concept: Container.get(require("../services/concepts")),
+  concordance: Container.get(require("../services/concordances")),
+  mapping: Container.get(require("../services/mappings")),
+  annotation: Container.get(require("../services/annotations")),
 }
 const models = {
-  "scheme": require("../models/schemes"),
-  "concept": require("../models/concepts"),
-  "concordance": require("../models/concordances"),
-  "mapping": require("../models/mappings"),
-  "annotation": require("../models/annotations"),
+  scheme: require("../models/schemes"),
+  concept: require("../models/concepts"),
+  concordance: require("../models/concordances"),
+  mapping: require("../models/mappings"),
+  annotation: require("../models/annotations"),
 }
 const allTypes = Object.keys(services)
 

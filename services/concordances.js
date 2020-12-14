@@ -17,7 +17,7 @@ module.exports = class ConcordanceService {
     let conditions = []
     // Search by URI
     if (query.uri) {
-      conditions.push({ $or: query.uri.split("|").map(uri => ({ "uri": uri })) })
+      conditions.push({ $or: query.uri.split("|").map(uri => ({ uri: uri })) })
     }
     // Search by fromScheme/toScheme (URI or notation)
     for (let part of ["fromScheme", "toScheme"]) {
@@ -67,9 +67,9 @@ module.exports = class ConcordanceService {
 
   async createIndexes() {
     const indexes = []
-    indexes.push([{ "uri": 1 }, {}])
-    indexes.push([{ "identifier": 1 }, {}])
-    indexes.push([{ "notation": 1 }, {}])
+    indexes.push([{ uri: 1 }, {}])
+    indexes.push([{ identifier: 1 }, {}])
+    indexes.push([{ notation: 1 }, {}])
     indexes.push([{ "fromScheme.uri": 1 }, {}])
     indexes.push([{ "toScheme.uri": 1 }, {}])
     // Create collection if necessary
