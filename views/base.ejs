@@ -60,12 +60,12 @@
     <ul>
       <li>GET <a href="voc">/voc</a> - Returns a list of vocabularies (concept schemes) (<a href="https://github.com/gbv/jskos-server#get-voc" target="_blank">documentation</a>)</li>
       <li>GET <a href="voc/top">/voc/top</a> - Lists top concepts for a concept scheme (<a href="https://github.com/gbv/jskos-server#get-voctop" target="_blank">documentation</a>)</li>
-      <li>GET <a href="voc/concepts">/voc/concepts</a> - Lists concepts for a concept scheme (<a href="https://github.com/gbv/jskos-server#get-vocconcepts" target="_blank">documentation</a>)</li>
-      <!-- TODO: Change to master docs -->
+      <li>GET <a href="voc/concepts">/voc/concepts</a> - Lists concepts for a concept scheme
+        (<a href="https://github.com/gbv/jskos-server#get-vocconcepts" target="_blank">documentation</a>)</li>
       <li>GET <a href="voc/suggest">/voc/suggest</a> - Returns concept scheme suggestions in OpenSearch Suggest Format
-        (<a href="https://github.com/gbv/jskos-server/tree/dev#get-vocsuggest" target="_blank">documentation</a>)</li>
+        (<a href="https://github.com/gbv/jskos-server#get-vocsuggest" target="_blank">documentation</a>)</li>
       <li>GET <a href="voc/search">/voc/search</a> - Concept scheme search
-        (<a href="https://github.com/gbv/jskos-server/tree/dev#get-vocsearch" target="_blank">documentation</a>)</li>
+        (<a href="https://github.com/gbv/jskos-server#get-vocsearch" target="_blank">documentation</a>)</li>
 
       <% if (config.schemes.create) { %>
       <li>POST /voc - Saves a concept scheme or multiple concept schemes in the database (<% if (config.schemes.create.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#post-voc" target="_blank">documentation</a>)</li>
