@@ -5,6 +5,8 @@ const mongoose = require("mongoose")
 const yesno = require("yesno")
 const jskos = require("jskos-tools")
 const Container = require("typedi").Container
+const _ = require("lodash")
+
 
 const meow = require("meow")
 const cli = meow(`
@@ -197,6 +199,9 @@ const allTypes = Object.keys(services)
       exit: true,
     })
   }
+  if (totalCount > 50000) {
+    question += "This will take a while.\n"
+  }
   question += "Is that okay?"
   const ok = await yesno({
     question,
@@ -215,19 +220,21 @@ const allTypes = Object.keys(services)
       continue
     }
     log(`Dealing with ${type}s...`)
-    const query = { _id: { $in: toBeDeleted[type] } }
-    // For concepts, get all schemes to be adjusted later
-    let schemeUrisToAdjust = []
-    if (type == "concept") {
-      schemeUrisToAdjust = await models.concept.distinct("inScheme.uri", query).lean()
-    }
-    // Delete entities...
-    const result = await models[type].deleteMany(query)
-    log(`- ${result.deletedCount} ${type}s deleted.`)
-    // Adjust schemes
-    if (schemeUrisToAdjust.length) {
-      log(`Adjusting ${schemeUrisToAdjust.length} schemes...`)
-      await services.scheme.postAdjustmentsForScheme(schemeUrisToAdjust.map(uri => ({ uri })))
+    for (let chunk of _.chunk(toBeDeleted[type], 50000)) {
+      const query = { _id: { $in: chunk } }
+      // For concepts, get all schemes to be adjusted later
+      let schemeUrisToAdjust = []
+      if (type == "concept") {
+        schemeUrisToAdjust = await models.concept.distinct("inScheme.uri", query).lean()
+      }
+      // Delete entities...
+      const result = await models[type].deleteMany(query)
+      log(`- ${result.deletedCount} ${type}s deleted.`)
+      // Adjust schemes
+      if (schemeUrisToAdjust.length) {
+        log(`- adjusting ${schemeUrisToAdjust.length} schemes...`)
+        await services.scheme.postAdjustmentsForScheme(schemeUrisToAdjust.map(uri => ({ uri })))
+      }
     }
     log()
   }
