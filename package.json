@@ -15,7 +15,8 @@
     "lint-staged": "lint-staged",
     "import": "./bin/import.js",
     "import-batch": "func() { tr '\\n' '\\0' < \"$2\"  | xargs -0 -n1 ./bin/import.js $1; }; func",
-    "reset": "./bin/reset.js"
+    "reset": "./bin/reset.js",
+    "upgrade": "./bin/upgrade.js"
   },
   "lint-staged": {
     "**/*.js": [
