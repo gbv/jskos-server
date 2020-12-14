@@ -17,13 +17,13 @@ try {
 }
 // Load user config
 let configUser = {}
-// Don't load user config for test environment
-if (env != "test") {
-  try {
-    configUser = require(configFile)
-  } catch(error) {
-    console.warn(`Warning: Could not load configuration file from ${configFile}. The application might not behave as expected.`)
-  }
+try {
+  configUser = require(configFile)
+} catch(error) {
+  console.warn(`Warning: Could not load configuration file from ${configFile}. The application might not behave as expected.`)
+}
+if (env == "test") {
+  configUser = _.pick(configUser, ["mongo"])
 }
 
 // Validate environemnt and user config
