@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
-const config = require("../config")
-const mongoose = require("mongoose")
+const db = require("../utils/db")
 const yesno = require("yesno")
 const jskos = require("jskos-tools")
 const Container = require("typedi").Container
@@ -62,7 +61,7 @@ const logError = ({ message, showHelp = false, exit = false }) => {
     cli.showHelp()
   }
   if (exit) {
-    mongoose.disconnect()
+    db.disconnect()
     process.exit(1)
   }
 }
@@ -133,7 +132,7 @@ const allTypes = Object.keys(services)
 (async () => {
   // 1. Connect to database.
   try {
-    await mongoose.connect(`${config.mongo.url}/${config.mongo.db}`, config.mongo.options)
+    await db.connect()
   } catch (error) {
     logError({
       message: error,
@@ -239,6 +238,6 @@ const allTypes = Object.keys(services)
     log()
   }
 
-  mongoose.disconnect()
+  db.disconnect()
   log(`End of import script: ${new Date()}`)
 })()

@@ -171,7 +171,7 @@ const { v5: uuidv5 } = require("uuid")
 const path = require("path")
 const anystream = require("json-anystream")
 const _ = require("lodash")
-const mongoose = require("mongoose")
+const db = require("../utils/db")
 
 const Container = require("typedi").Container
 const services = {
@@ -190,7 +190,7 @@ const allTypes = Object.keys(services)
   ;
 (async () => {
   try {
-    await mongoose.connect(`${config.mongo.url}/${config.mongo.db}`, config.mongo.options)
+    await db.connect()
   } catch (error) {
     logError({
       message: error,
@@ -229,7 +229,7 @@ const allTypes = Object.keys(services)
     }
   }
 
-  mongoose.disconnect()
+  db.disconnect()
   log()
   log(`End of import script: ${new Date()}`)
 })()

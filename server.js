@@ -20,18 +20,17 @@ app.set("views", __dirname + "/views")
 app.set("view engine", "ejs")
 
 // Database connection
-const mongoose = require("mongoose")
-const db = mongoose.connection
+const db = require("./utils/db")
 const connect = async () => {
   try {
-    await mongoose.connect(`${config.mongo.url}/${config.mongo.db}`, config.mongo.options)
+    await db.connect()
     config.log("Connected to database")
-    if (config.schemes && !(await db.collection("terminologies").indexExists("text"))) {
+    if (config.schemes && !(await db.connection.collection("terminologies").indexExists("text"))) {
       config.warn("Text index on terminologies collection missing. /voc/search and /voc/suggest are disabled. Run `npm run import -- --indexes` or `npm run import -- -i schemes` to created indexes.")
       config.status["voc-search"] = null
       config.status["voc-suggest"] = null
     }
-    if (config.concepts && !(await db.collection("concepts").indexExists("text"))) {
+    if (config.concepts && !(await db.connection.collection("concepts").indexExists("text"))) {
       config.warn("Text index on concepts collection missing. /search and /suggest are disabled. Run `npm run import -- --indexes` or `npm run import -- -i concepts` to created indexes.")
       config.status.search = null
       config.status.suggest = null
@@ -43,10 +42,10 @@ const connect = async () => {
 // Connect immediately on startup
 connect()
 
-db.on("error", () => {
-  mongoose.disconnect()
+db.connection.on("error", () => {
+  db.disconnect()
 })
-db.on("disconnected", () => {
+db.connection.on("disconnected", () => {
   setTimeout(connect, 2500)
 })
 
@@ -80,7 +79,7 @@ app.use("/status", require("./routes/status"))
 // Database check middleware
 const { DatabaseAccessError } = require("./errors")
 app.use((req, res, next) => {
-  if (db.readyState === 1) {
+  if (db.connection.readyState === 1) {
     next()
   } else {
     // No connection to database, return error
@@ -143,4 +142,4 @@ const start = async () => {
 // Start express server immediately even if database is not yet connected
 start()
 
-module.exports = { db, app }
+module.exports = { db: db.connection, app }
