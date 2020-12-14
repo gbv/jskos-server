@@ -77,7 +77,7 @@ auth = [auth, (req, res, next) => {
   }
   if (req.type == "checkAuth") {
     const { type, action } = req.query || {}
-    if (type && action) {
+    if (type && action && config[type][action]) {
       whitelist = config[type][action].identities
       providers = config[type][action].identityProviders
     } else {
