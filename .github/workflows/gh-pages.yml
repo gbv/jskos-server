@@ -1,0 +1,23 @@
+name: GitHub Pages
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - run: mkdir gh-pages
+    - run: cp status.schema.json gh-pages/status.schema.json
+    - run: cp config/config.schema.json gh-pages/config.schema.json
+    - run: cp README.md gh-pages/index.md
+    - name: Deploy
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./gh-pages
+        allow_empty_commit: true
+        keep_files: true
