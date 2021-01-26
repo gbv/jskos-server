@@ -25,6 +25,7 @@ const connect = async () => {
   try {
     await db.connect()
     config.log("Connected to database")
+    // TODO: `indexExists` causes a deprecation warning. Find a different solution.
     if (config.schemes && !(await db.connection.collection("terminologies").indexExists("text"))) {
       config.warn("Text index on terminologies collection missing. /voc/search and /voc/suggest are disabled. Run `npm run import -- --indexes` or `npm run import -- -i schemes` to created indexes.")
       config.status["voc-search"] = null
