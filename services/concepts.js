@@ -102,7 +102,7 @@ module.exports = class ConceptService {
       criteria = { "topConceptOf.uri": { $type: 2 } }
     }
     const concepts = await conceptFind(criteria, query.offset, query.limit)
-    concepts.totalCount = await Concept.find(criteria).countDocuments()
+    concepts.totalCount = await utils.count(Concept, [{ $match: criteria }])
     return concepts
   }
 
@@ -124,7 +124,7 @@ module.exports = class ConceptService {
       criteria = { $or: uris.map(uri => ({ "inScheme.uri": uri })) }
     }
     const concepts = await conceptFind(criteria, query.offset, query.limit)
-    concepts.totalCount = await Concept.find(criteria).countDocuments()
+    concepts.totalCount = await utils.count(Concept, [{ $match: criteria }])
     return concepts
   }
 

@@ -60,7 +60,7 @@ module.exports = class MappingService {
 
     const mongoQuery = criteria.length ? { $and: criteria } : {}
     const annotations = await Annotation.find(mongoQuery).lean().skip(query.offset).limit(query.limit).exec()
-    annotations.totalCount = await Annotation.find(mongoQuery).countDocuments()
+    annotations.totalCount = await utils.count(Annotation, [{ $match: mongoQuery }])
     return annotations
 
   }

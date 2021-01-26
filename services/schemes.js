@@ -53,7 +53,7 @@ module.exports = class SchemeService {
     }
 
     const schemes = await Scheme.find(mongoQuery).sort(sort).lean().skip(query.offset).limit(query.limit).exec()
-    schemes.totalCount = await Scheme.find(mongoQuery).countDocuments()
+    schemes.totalCount = await utils.count(Scheme, [{ $match: mongoQuery }])
     return schemes
   }
 

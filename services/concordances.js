@@ -1,4 +1,5 @@
 const Concordance = require("../models/concordances")
+const utils = require("../utils")
 
 module.exports = class ConcordanceService {
 
@@ -60,7 +61,7 @@ module.exports = class ConcordanceService {
     } else {
       // Otherwise, return results
       const concordances = await Concordance.find(mongoQuery).lean().skip(query.offset).limit(query.limit).exec()
-      concordances.totalCount = await Concordance.find(mongoQuery).countDocuments()
+      concordances.totalCount = await utils.count(Concordance, [{ $match: mongoQuery }])
       return concordances
     }
   }
