@@ -278,7 +278,7 @@ module.exports = class MappingService {
     } else {
       // Otherwise, return results
       const mappings = await model.aggregate(pipeline).sort(sorting).skip(offset).limit(limit).exec()
-      mappings.totalCount = _.get(await model.aggregate(pipeline).count("count").exec(), "[0].count", 0)
+      mappings.totalCount = await utils.count(model, pipeline)
       return mappings
     }
   }
