@@ -613,6 +613,44 @@ const bodyParser = (req, res, next) => {
   }
 }
 
+/**
+ * Determines whether a query is actually empty (i.e. returns all documents).
+ *
+ * @param {*} query
+ */
+const isQueryEmpty = (query) => {
+  const allowedProps = ["$and", "$or"]
+  let result = true
+  _.forOwn(query, (value, key) => {
+    if (!allowedProps.includes(key)) {
+      result = false
+    } else {
+      // for $and and $or, value is an array
+      _.forEach(value, (element) => {
+        result = result && isQueryEmpty(element)
+      })
+    }
+  })
+  return result
+}
+
+/**
+ * Returns the document count for a certain aggregation pipeline.
+ * Uses estimatedDocumentCount() if possible (i.e. if the query is empty).
+ *
+ * @param {*} model a mongoose model
+ * @param {*} pipeline an aggregation pipeline
+ */
+const count = async (model, pipeline) => {
+  if (pipeline.length === 1 && pipeline[0].$match && isQueryEmpty(pipeline[0].$match)) {
+    // It's an empty query, i.e. we can use estimatedDocumentCount()
+    return await model.estimatedDocumentCount()
+  } else {
+    // Use aggregation instead
+    return _.get(await model.aggregate(pipeline).count("count").exec(), "[0].count", 0)
+  }
+}
+
 module.exports = {
   wrappers,
   cleanJSON,
@@ -630,4 +668,6 @@ module.exports = {
   searchHelper: require("./searchHelper"),
   getCreator,
   handleCreatorForObject,
+  isQueryEmpty,
+  count,
 }
