@@ -36,19 +36,21 @@ module.exports = class SchemeService {
         $in: query.license.split("|"),
       }
     }
+    // Sort order (default: asc = 1)
+    const order = query.order === "desc" ? -1 : 1
     const sort = {}
     switch (query.sort) {
       case "label":
-        sort["_keywordsLabels.0"] = 1
+        sort["_keywordsLabels.0"] = order
         break
       case "notation":
-        sort["notation"] = 1
+        sort["notation"] = order
         break
       case "created":
-        sort["created"] = 1
+        sort["created"] = order
         break
       case "modified":
-        sort["modified"] = 1
+        sort["modified"] = order
         break
     }
 
