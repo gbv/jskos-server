@@ -348,7 +348,7 @@ Simple config, restricting the `/mappings` endpoint with authentication:
 ```json
 {
   "auth": {
-    "algorith": "HS256",
+    "algorithm": "HS256",
     "key": "yoursecret"
   },
   "mappings": {
