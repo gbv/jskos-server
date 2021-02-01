@@ -64,6 +64,7 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
 - [Related works](#related-works)
 - [Maintainers](#maintainers)
 - [Contribute](#contribute)
+  - [Publish](#publish)
 - [License](#license)
 
 ## Install
@@ -1798,9 +1799,18 @@ See [cocoda-sdk](https://github.com/gbv/cocoda-sdk) for efforts to provide unifo
 
 ## Contribute
 
-PRs accepted.
+PRs accepted against the `dev` branch.
 
 Small note: If editing the README, please conform to the [standard-readme](https://github.com/RichardLitt/standard-readme) specification.
+
+### Publish
+**For maintainers only**
+
+Never work on the master branch directly. Always make changes on `dev` and then run the release script:
+
+```bash
+npm run release:patch # or minor or major
+```
 
 ## License
 
