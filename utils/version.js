@@ -66,6 +66,19 @@ const upgrades = {
     await schemeService.createIndexes()
     console.log("... done.")
   },
+  async "1.2.2"() {
+    // Update text search fields for schemes (full-text search)
+    console.log("Updating text search fields for schemes...")
+    const Scheme = require("../models/schemes")
+    const schemes = await Scheme.find().lean()
+    for (let scheme of schemes) {
+      utils.searchHelper.addKeywords(scheme)
+      // Also add modified if it doesn't exist
+      scheme.modified = scheme.modified || scheme.created
+      await Scheme.findByIdAndUpdate(scheme._id, scheme)
+    }
+    console.log("... done.")
+  },
 }
 
 /**
