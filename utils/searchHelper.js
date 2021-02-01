@@ -6,9 +6,10 @@ const config = require("../config")
 function makeSuffixes(values) {
   var results = []
   values.forEach(function (val) {
+    val = val.toUpperCase().trim()
     var tmp, hasSuffix
     for (var i = 0; i < val.length - 1; i++) {
-      tmp = val.substr(i).toUpperCase()
+      tmp = val.substr(i)
       hasSuffix = results.includes(tmp)
       if (!hasSuffix) results.push(tmp)
     }
@@ -19,15 +20,43 @@ function makeSuffixes(values) {
 function makePrefixes(values) {
   var results = []
   values.forEach(function (val) {
+    val = val.toUpperCase().trim()
     var tmp, hasPrefix
     results.push(val)
     for (var i = 2; i < val.length; i++) {
-      tmp = val.substr(0, i).toUpperCase()
+      tmp = val.substr(0, i)
       hasPrefix = results.includes(tmp)
       if (!hasPrefix) results.push(tmp)
     }
   })
   return results
+}
+
+/**
+ * Enumerates and sorts all labels (prefLabel and altLabel) in an item.
+ *
+ * Sorting:
+ * - prefLabel over altLabel
+ * - provided language over other languages
+ * - other languages by the order of the `languages` property of the item if available
+ *
+ * @param {Object} item JSKOS item (scheme or concept)
+ */
+function getAllLabelsSorted(item, language = "en") {
+  function extractAndSortLabels(labels, languages) {
+    return _.toPairs(labels).sort((a, b) => {
+      const bIndex = languages.indexOf(b[0]), aIndex = languages.indexOf(a[0])
+      if (bIndex === -1) {
+        return -1
+      }
+      if (aIndex === -1) {
+        return 1
+      }
+      return aIndex - bIndex
+    }).map(v => v[1])
+  }
+  const languages = [language].concat(item.languages || [])
+  return _.flattenDeep(extractAndSortLabels(item.prefLabel || {}, languages).concat(extractAndSortLabels(item.altLabel || {}, languages)))
 }
 
 /**
@@ -41,7 +70,7 @@ function addKeywords(item) {
   if (!item.type || !item.type.includes("http://rdf-vocabulary.ddialliance.org/xkos#CombinedConcept")) {
     // Labels
     // Assemble all labels
-    let labels = _.flattenDeep(Object.values(item.prefLabel || {}).concat(Object.values(item.altLabel || {})))
+    let labels = getAllLabelsSorted(item)
     // Split labels by space and dash
     item._keywordsLabels = makeSuffixes(labels)
     // Other properties
