@@ -44,7 +44,7 @@ module.exports = class SchemeService {
         sort["_keywordsLabels.0"] = order
         break
       case "notation":
-        sort["notation"] = order
+        sort["_keywordsNotation.0"] = order
         break
       case "created":
         sort["created"] = order
