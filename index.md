@@ -64,6 +64,7 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
 - [Related works](#related-works)
 - [Maintainers](#maintainers)
 - [Contribute](#contribute)
+  - [Publish](#publish)
 - [License](#license)
 
 ## Install
@@ -348,7 +349,7 @@ Simple config, restricting the `/mappings` endpoint with authentication:
 ```json
 {
   "auth": {
-    "algorith": "HS256",
+    "algorithm": "HS256",
     "key": "yoursecret"
   },
   "mappings": {
@@ -1017,7 +1018,9 @@ Lists supported terminologies (concept schemes).
 
   `license=URIs` license URI(s) to filter schemes, separated by `|`
 
-  `sort=property` sort the results by a certain property. Possible values: `label`, `notation`, `created`, `modified`
+  `sort=[property]` sort the results by a certain property. Possible values: `label`, `notation`, `created`, `modified`
+
+  `order=[order]` order to use for sorting. Available are `asc` (default) and `desc`.
 
 * **Success Response**
 
@@ -1796,9 +1799,18 @@ See [cocoda-sdk](https://github.com/gbv/cocoda-sdk) for efforts to provide unifo
 
 ## Contribute
 
-PRs accepted.
+PRs accepted against the `dev` branch.
 
 Small note: If editing the README, please conform to the [standard-readme](https://github.com/RichardLitt/standard-readme) specification.
+
+### Publish
+**For maintainers only**
+
+Never work on the master branch directly. Always make changes on `dev` and then run the release script:
+
+```bash
+npm run release:patch # or minor or major
+```
 
 ## License
 
