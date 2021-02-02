@@ -79,6 +79,17 @@ const upgrades = {
     }
     console.log("... done.")
   },
+  async "1.2.3"() {
+    // Update text search fields for schemes (full-text search)
+    console.log("Updating text search fields for schemes...")
+    const Scheme = require("../models/schemes")
+    const schemes = await Scheme.find().lean()
+    for (let scheme of schemes) {
+      utils.searchHelper.addKeywords(scheme)
+      await Scheme.findByIdAndUpdate(scheme._id, scheme)
+    }
+    console.log("... done.")
+  },
 }
 
 /**

@@ -80,6 +80,14 @@ function addKeywords(item) {
         item._keywordsOther = item._keywordsOther.concat(Object.values(map))
       }
     }
+    // Make sure to flatten both arrays and objects
+    item._keywordsOther = _.flattenDeep(item._keywordsOther)
+    item._keywordsOther = item._keywordsOther.map(v => {
+      if (_.isObject(v)) {
+        return Object.values(v)
+      }
+      return v
+    })
     item._keywordsOther = _.flattenDeep(item._keywordsOther)
   }
 }
