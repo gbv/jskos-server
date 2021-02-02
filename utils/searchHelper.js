@@ -97,6 +97,8 @@ async function searchItem({ search, voc, schemeService, queryFunction }) {
   if (!search.length) {
     return []
   }
+  // Escape search query for use in regex
+  search = _.escapeRegExp(search)
   let query, queryOr = [{ _id: search }]
   // let projectAndSort = {}
   if (search.length > 2) {
