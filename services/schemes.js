@@ -153,11 +153,11 @@ module.exports = class SchemeService {
           upsert: true,
         },
       })))
-      schemes = await this.postAdjustmentsForScheme(schemes)
+      schemes = await this.postAdjustmentsForScheme(schemes, bulk)
       response = schemes.map(s => ({ uri: s.uri }))
     } else {
       schemes = await Scheme.insertMany(schemes, { lean: true })
-      response = await this.postAdjustmentsForScheme(schemes)
+      response = await this.postAdjustmentsForScheme(schemes, bulk)
     }
 
     return isMultiple ? response : response[0]
@@ -246,9 +246,10 @@ module.exports = class SchemeService {
    * - get updated concept scheme from database
    *
    * @param {[Object]} schemes array of concept schemes to be adjusted
+   * @param {Boolean} bulk indicates whether the adjustments are performaned as part of a bulk operation
    * @returns {[Object]} array of adjusted concept schemes
    */
-  async postAdjustmentsForScheme(schemes) {
+  async postAdjustmentsForScheme(schemes, bulk = false) {
     // First, set created field if necessary
     await Scheme.updateMany(
       {
@@ -267,13 +268,17 @@ module.exports = class SchemeService {
     for (let scheme of schemes) {
       const hasTopConcepts = !!(await Concept.findOne({ $or: [scheme.uri].concat(scheme.identifier || []).map(uri => ({ "topConceptOf.uri": uri })) }))
       const hasConcepts = hasTopConcepts || !!(await Concept.findOne({ $or: [scheme.uri].concat(scheme.identifier || []).map(uri => ({ "inScheme.uri": uri })) }))
-      await Scheme.updateOne({ _id: scheme.uri }, {
+      const update = {
         $set: {
           concepts: hasConcepts ? [null] : [],
           topConcepts: hasTopConcepts ? [null] : [],
           modified: (new Date()).toISOString(),
         },
-      })
+      }
+      if (bulk) {
+        delete update.$set.modified
+      }
+      await Scheme.updateOne({ _id: scheme.uri }, update)
       result.push(await Scheme.findById(scheme.uri))
     }
     return result
