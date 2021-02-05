@@ -633,6 +633,26 @@ module.exports = class MappingService {
       "fromScheme.uri": 1,
       "toScheme.uri": 1,
     }, {}])
+    indexes.push([{
+      "fromScheme.uri": 1,
+      modified: -1,
+    }, {}])
+    indexes.push([{
+      "fromScheme.notation": 1,
+      modified: -1,
+    }, {}])
+    indexes.push([{
+      "toScheme.uri": 1,
+      modified: -1,
+    }, {}])
+    indexes.push([{
+      "toScheme.notation": 1,
+      modified: -1,
+    }, {}])
+    indexes.push([{
+      "partOf.uri": 1,
+      modified: -1,
+    }, {}])
     indexes.push([{ uri: 1 }, {}])
     indexes.push([{ identifier: 1 }, {}])
     indexes.push([{ type: 1 }, {}])
