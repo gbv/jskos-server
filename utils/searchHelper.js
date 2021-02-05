@@ -105,8 +105,8 @@ async function searchItem({ search, voc, schemeService, queryFunction }) {
   if (!search.length) {
     return []
   }
-  // Escape search query for use in regex
-  search = _.escapeRegExp(search)
+  // Prepare search query for use in regex
+  const searchRegExp = new RegExp(`^${_.escapeRegExp(search).toUpperCase()}`)
   let query, queryOr = [{ _id: search }]
   // let projectAndSort = {}
   if (search.length > 2) {
@@ -123,14 +123,14 @@ async function searchItem({ search, voc, schemeService, queryFunction }) {
     // Search for notations specifically for one or two characters
     queryOr.push({
       _keywordsNotation: {
-        $regex: "^" + search.toUpperCase(),
+        $regex: searchRegExp,
       },
     })
   }
   if (search.length > 1) {
     // Search _keywordsLabels
     // TODO: Rethink this approach.
-    queryOr.push({ _keywordsLabels: { $regex: "^" + search.toUpperCase() } })
+    queryOr.push({ _keywordsLabels: { $regex: searchRegExp } })
   }
   // Also search for exact matches with the URI (in field _id)
   query = { $or: queryOr }
