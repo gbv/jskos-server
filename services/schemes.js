@@ -36,6 +36,9 @@ module.exports = class SchemeService {
         $in: query.license.split("|"),
       }
     }
+    if (query.publisher) {
+      mongoQuery._keywordsPublisher = query.publisher
+    }
     // Sort order (default: asc = 1)
     const order = query.order === "desc" ? -1 : 1
     const sort = {}
@@ -294,6 +297,7 @@ module.exports = class SchemeService {
     indexes.push([{ "subject.uri": 1 }, {}])
     indexes.push([{ "license.uri": 1 }, {}])
     indexes.push([{ _keywordsLabels: 1 }, {}])
+    indexes.push([{ _keywordsPublisher: 1 }, {}])
     // Add additional index for first entry which is used for sorting
     indexes.push([{ "_keywordsLabels.0": 1 }, {}])
     indexes.push([

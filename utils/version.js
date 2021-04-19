@@ -90,6 +90,22 @@ const upgrades = {
     }
     console.log("... done.")
   },
+  async "1.2.7"() {
+    // 1. Update publisher keywords field for schemes
+    console.log("Updating publisher keywords fields for schemes...")
+    const Scheme = require("../models/schemes")
+    const schemes = await Scheme.find().lean()
+    for (let scheme of schemes) {
+      utils.searchHelper.addKeywords(scheme)
+      await Scheme.findByIdAndUpdate(scheme._id, scheme)
+    }
+    console.log("... done.")
+    // 2. Create indexes for schemes
+    console.log("Creating indexes for schemes...")
+    const schemeService = Container.get(require("../services/schemes"))
+    await schemeService.createIndexes()
+    console.log("... done.")
+  },
 }
 
 /**
