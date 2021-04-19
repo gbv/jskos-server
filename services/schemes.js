@@ -36,6 +36,11 @@ module.exports = class SchemeService {
         $in: query.license.split("|"),
       }
     }
+    if (query.partOf) {
+      mongoQuery["partOf.uri"] = {
+        $in: query.partOf.split("|"),
+      }
+    }
     if (query.publisher) {
       mongoQuery._keywordsPublisher = query.publisher
     }
@@ -296,6 +301,7 @@ module.exports = class SchemeService {
     indexes.push([{ modified: 1 }, {}])
     indexes.push([{ "subject.uri": 1 }, {}])
     indexes.push([{ "license.uri": 1 }, {}])
+    indexes.push([{ "partOf.uri": 1 }, {}])
     indexes.push([{ _keywordsLabels: 1 }, {}])
     indexes.push([{ _keywordsPublisher: 1 }, {}])
     // Add additional index for first entry which is used for sorting
