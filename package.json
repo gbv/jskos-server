@@ -59,7 +59,7 @@
     "jskos-tools": "^1.0.16",
     "jskos-validate": "^0.4.0",
     "json-anystream": "^1.1.0",
-    "lodash": "^4.17.20",
+    "lodash": "^4.17.21",
     "meow": "^8.1.2",
     "mongodb": "^3.6.4",
     "mongoose": "^5.11.17",
