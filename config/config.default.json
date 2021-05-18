@@ -13,7 +13,11 @@
     "db": "jskos-server",
     "options": {
       "useNewUrlParser": true,
-      "useUnifiedTopology": true
+      "useUnifiedTopology": true,
+      "serverSelectionTimeoutMS": 5000,
+      "socketTimeoutMS": 30000,
+      "reconnectInterval": 2500,
+      "heartbeatFrequencyMS": 5000
     }
   },
   "auth": {
