@@ -1018,6 +1018,10 @@ Lists supported terminologies (concept schemes).
 
   `license=URIs` license URI(s) to filter schemes, separated by `|`
 
+  `publisher=URI|label` publisher URI or label to filter schemes (only exact matches)
+
+  `partOf=URIs` filter by registry URI that is listed in `partOf` field of the scheme, separated by `|`
+
   `sort=[property]` sort the results by a certain property. Possible values: `label`, `notation`, `created`, `modified`
 
   `order=[order]` order to use for sorting. Available are `asc` (default) and `desc`.
