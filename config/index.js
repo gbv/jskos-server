@@ -66,17 +66,17 @@ if (![true, false, "log", "warn", "error"].includes(config.verbosity)) {
 // Logging functions
 config.log = (...args) => {
   if (env != "test" && (config.verbosity === true || config.verbosity === "log")) {
-    console.log(...args)
+    console.log(new Date(), ...args)
   }
 }
 config.warn = (...args) => {
   if (env != "test" && (config.verbosity === true || config.verbosity === "log" || config.verbosity === "warn")) {
-    console.warn(...args)
+    console.warn(new Date(), ...args)
   }
 }
 config.error = (...args) => {
   if (env != "test" && config.verbosity !== false) {
-    console.error(...args)
+    console.error(new Date(), ...args)
   }
 }
 
