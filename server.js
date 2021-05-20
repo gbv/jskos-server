@@ -23,7 +23,7 @@ app.set("view engine", "ejs")
 const db = require("./utils/db")
 const connect = async () => {
   try {
-    await db.connect()
+    await db.connect(true)
     // TODO: `indexExists` causes a deprecation warning. Find a different solution.
     if (config.schemes && !(await db.connection.collection("terminologies").indexExists("text"))) {
       config.warn("Text index on terminologies collection missing. /voc/search and /voc/suggest are disabled. Run `npm run import -- --indexes` or `npm run import -- -i schemes` to created indexes.")
@@ -41,16 +41,6 @@ const connect = async () => {
 }
 // Connect immediately on startup
 connect()
-
-db.connection.on("error", (error) => {
-  config.error("Database error", error)
-})
-db.connection.on("connected", () => {
-  config.log("Connected to database")
-})
-db.connection.on("disconnected", () => {
-  config.warn("Disconnected from database, waiting for automatic reconnect...")
-})
 
 // Add default headers
 app.use(utils.addDefaultHeaders)

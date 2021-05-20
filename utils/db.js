@@ -5,11 +5,39 @@ const mongoose = require("mongoose")
 const connection = mongoose.connection
 const Meta = require("../models/meta")
 
+connection.on("connected", () => {
+  config.log("Connected to database")
+})
+connection.on("disconnected", () => {
+  config.warn("Disconnected from database, waiting for automatic reconnect...")
+})
+
 module.exports = {
   mongoose,
   connection,
-  async connect() {
-    const result = await mongoose.connect(`${config.mongo.url}/${config.mongo.db}`, config.mongo.options)
+  async connect(retry = false) {
+    function addErrorHandler() {
+      connection.on("error", (error) => {
+        config.error("Database error", error)
+      })
+    }
+    // If retry === false, add error handler before connecting
+    !retry && addErrorHandler()
+    async function _connect() {
+      return await mongoose.connect(`${config.mongo.url}/${config.mongo.db}`, config.mongo.options)
+    }
+    let result
+    while (!result) {
+      try {
+        result = await _connect()
+      } catch (error) {
+        if (!retry) {
+          throw error
+        }
+      }
+    }
+    // If retry === true, add error handler after connecting
+    retry && addErrorHandler()
     let collections, meta
     try {
       // Check meta collection whether upgrade script is necessary.

@@ -14,7 +14,6 @@
     "options": {
       "useNewUrlParser": true,
       "useUnifiedTopology": true,
-      "serverSelectionTimeoutMS": 5000,
       "socketTimeoutMS": 30000,
       "heartbeatFrequencyMS": 5000
     }
