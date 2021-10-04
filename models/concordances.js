@@ -6,6 +6,7 @@ const concordanceSchema = new Schema({
 }, {
   versionKey: false,
   strict: false,
+  autoIndex: false,
 })
 
 const Concordance = mongoose.model("Concordance", concordanceSchema)

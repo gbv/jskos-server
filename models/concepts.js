@@ -6,6 +6,7 @@ const conceptSchema = new Schema({
 }, {
   versionKey: false,
   strict: false,
+  autoIndex: false,
 })
 
 const Concept = mongoose.model("Concept", conceptSchema)

@@ -7,6 +7,7 @@ const annotationSchema = new Schema({
 }, {
   versionKey: false,
   strict: false,
+  autoIndex: false,
 })
 
 const Annotation = mongoose.model("Annotation", annotationSchema)

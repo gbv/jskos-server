@@ -15,6 +15,7 @@ const metaSchema = new Schema({
   versionKey: false,
   strict: false,
   collection: "meta",
+  autoIndex: false,
 })
 
 const Meta = mongoose.model("meta", metaSchema)

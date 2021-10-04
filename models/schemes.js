@@ -6,6 +6,7 @@ const terminologySchema = new Schema({
 }, {
   versionKey: false,
   strict: false,
+  autoIndex: false,
 })
 
 const Terminology = mongoose.model("Terminology", terminologySchema)

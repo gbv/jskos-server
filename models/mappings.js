@@ -7,6 +7,7 @@ const mappingSchema = new Schema({
 }, {
   versionKey: false,
   strict: false,
+  autoIndex: false,
 })
 
 mappingSchema.pre("save", function(next) {
