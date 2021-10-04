@@ -424,7 +424,7 @@ module.exports = class MappingService {
     mapping.created = existing.created
 
     const result = await Mapping.replaceOne({ _id: existing._id }, mapping)
-    if (result.n && result.ok) {
+    if (result.acknowledged && result.matchedCount) {
       return mapping
     } else {
       throw new DatabaseAccessError()
@@ -458,7 +458,7 @@ module.exports = class MappingService {
     this.checkWhitelists(mapping)
 
     const result = await Mapping.replaceOne({ _id: existing._id }, existing)
-    if (result.ok) {
+    if (result.acknowledged) {
       return existing
     } else {
       throw new DatabaseAccessError()
@@ -467,9 +467,7 @@ module.exports = class MappingService {
 
   async deleteMapping({ existing }) {
     const result = await Mapping.deleteOne({ _id: existing._id })
-    if (result.n && result.ok && result.deletedCount) {
-      return
-    } else {
+    if (!result.deletedCount) {
       throw new DatabaseAccessError()
     }
   }

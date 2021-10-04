@@ -201,7 +201,7 @@ module.exports = class MappingService {
     annotation._id = existing._id
 
     const result = await Annotation.replaceOne({ _id: existing._id }, annotation)
-    if (result.n && result.ok) {
+    if (result.acknowledged && result.matchedCount) {
       return annotation
     } else {
       throw new DatabaseAccessError()
@@ -229,7 +229,7 @@ module.exports = class MappingService {
     }
 
     const result = await Annotation.replaceOne({ _id: existing._id }, existing)
-    if (result.ok) {
+    if (result.acknowledged) {
       return existing
     } else {
       throw new DatabaseAccessError()
@@ -238,9 +238,7 @@ module.exports = class MappingService {
 
   async deleteAnnotation({ existing }) {
     const result = await Annotation.deleteOne({ _id: existing._id })
-    if (result.n && result.ok && result.deletedCount) {
-      return
-    } else {
+    if (!result.deletedCount) {
       throw new DatabaseAccessError()
     }
   }

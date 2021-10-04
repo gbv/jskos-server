@@ -314,10 +314,10 @@ module.exports = class ConceptService {
 
     // Write concept to database
     const result = await Concept.replaceOne({ _id: existing._id }, concept)
-    if (!result.ok) {
+    if (!result.acknowledged) {
       throw new DatabaseAccessError()
     }
-    if (!result.n) {
+    if (!result.matchedCount) {
       throw new EntityNotFoundError()
     }
 
@@ -333,11 +333,8 @@ module.exports = class ConceptService {
     }
 
     const result = await Concept.deleteOne({ _id: existing._id })
-    if (!result.ok) {
+    if (!result.deletedCount) {
       throw new DatabaseAccessError()
-    }
-    if (!result.n) {
-      throw new EntityNotFoundError()
     }
 
     await this.postAdjustmentsForConcepts({
@@ -358,10 +355,10 @@ module.exports = class ConceptService {
     }
 
     const result = await Concept.deleteMany({ "inScheme.uri": { $in: [scheme.uri].concat(scheme.identifier || []) } })
-    if (!result.ok) {
+    if (!result) {
       throw new DatabaseAccessError()
     }
-    if (!result.n) {
+    if (!result.deletedCount) {
       throw new EntityNotFoundError("No concepts found to delete.")
     }
     await this.postAdjustmentsForConcepts({

@@ -12,10 +12,9 @@
     "port": 27017,
     "db": "jskos-server",
     "options": {
-      "useNewUrlParser": true,
-      "useUnifiedTopology": true,
-      "socketTimeoutMS": 30000,
-      "heartbeatFrequencyMS": 5000
+      "connectTimeoutMS": 120000,
+      "socketTimeoutMS": 120000,
+      "heartbeatFrequencyMS": 10000
     }
   },
   "auth": {

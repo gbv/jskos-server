@@ -184,10 +184,10 @@ module.exports = class SchemeService {
 
     // Write scheme to database
     const result = await Scheme.replaceOne({ _id: scheme.uri }, scheme)
-    if (!result.ok) {
+    if (!result.acknowledged) {
       throw new DatabaseAccessError()
     }
-    if (!result.n) {
+    if (!result.matchedCount) {
       throw new EntityNotFoundError()
     }
 
@@ -206,11 +206,8 @@ module.exports = class SchemeService {
       throw new MalformedRequestError(`Concept scheme ${uri} still has concepts in the database and therefore can't be deleted.`)
     }
     const result = await Scheme.deleteOne({ _id: existing._id })
-    if (!result.ok) {
+    if (!result.deletedCount) {
       throw new DatabaseAccessError()
-    }
-    if (!result.n) {
-      throw new EntityNotFoundError()
     }
   }
 
