@@ -1300,6 +1300,29 @@ describe("Express Server", () => {
           res.body[0].should.be.a("string")
           res.body[1].should.be.a("array")
           res.body[1].length.should.be.eql(1)
+          // By default, the English label is used
+          res.body[1][0].should.be.eql("60 Technology")
+          res.body[3].should.be.a("array")
+          res.body[3].length.should.be.eql(1)
+          res.body[3][0].should.be.eql("http://dewey.info/class/60/e23/")
+          done()
+        })
+    })
+
+    it("should GET correct results for notation with language", done => {
+      chai.request(server.app)
+        .get("/suggest")
+        .query({
+          search: "60",
+          language: "de,en",
+        })
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.body.should.be.a("array")
+          res.body.length.should.be.eql(4) // OpenSearch Suggest Format
+          res.body[0].should.be.a("string")
+          res.body[1].should.be.a("array")
+          res.body[1].length.should.be.eql(1)
           res.body[1][0].should.be.eql("60 Technik")
           res.body[3].should.be.a("array")
           res.body[3].length.should.be.eql(1)

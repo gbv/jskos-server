@@ -248,7 +248,18 @@ function toOpenSearchSuggestFormat({ query, results }) {
     if (labels.length >= query.limit) {
       break
     }
-    let prefLabel = jskos.prefLabel(result, { fallbackToUri: false })
+    // Determine prefLabel via `language` parameter
+    const language = (query.language || "").split(",").filter(lang => lang)
+    let prefLabel
+    for (const lang of language) {
+      prefLabel = _.get(result, `prefLabel.${lang}`)
+      if (prefLabel) {
+        break
+      }
+    }
+    if (!prefLabel) {
+      prefLabel = jskos.prefLabel(result, { fallbackToUri: false })
+    }
     let label = jskos.notation(result)
     if (label && prefLabel) {
       label += " "
