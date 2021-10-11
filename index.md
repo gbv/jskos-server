@@ -1165,6 +1165,8 @@ Returns concept scheme suggestions.
 
   `search=[keyword|notation]` specifies the keyword or notation (prefix) to search for
 
+  `language=[string]` comma-separated priority list of languages for labels in results
+
   `format=[string]` return format for suggestions: `jskos` or [`opensearch`]((http://www.opensearch.org/Specifications/OpenSearch/Extensions/Suggestions/1.1#Response_format)) (default)
 
 * **Success Response**
@@ -1439,6 +1441,8 @@ Returns concept suggestions.
 * **URL Params**
 
   `search=[keyword|notation]` specifies the keyword or notation (prefix) to search for
+
+  `language=[string]` comma-separated priority list of languages for labels in results
 
   `format=[string]` return format for suggestions: `jskos` or [`opensearch`]((http://www.opensearch.org/Specifications/OpenSearch/Extensions/Suggestions/1.1#Response_format)) (default)
 
