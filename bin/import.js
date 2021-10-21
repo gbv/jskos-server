@@ -314,7 +314,7 @@ async function doImport({ input, format, type, concordance }) {
       }
       // Generate an identifier and a URI if necessary
       if (!object.uri) {
-        const contentIdentifier = object.identifier.find(id => id.startsWith("urn:jskos:mapping:content:"))
+        const contentIdentifier = object.identifier.find(id => id && id.startsWith("urn:jskos:mapping:content:"))
         const concordance = _.get(object, "partOf[0].uri") || ""
         if (contentIdentifier) {
           object._id = uuidv5(contentIdentifier + concordance, config.namespace)
