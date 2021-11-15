@@ -186,82 +186,110 @@
       },
       "properties": {
         "read": {
-          "type": "object",
-          "properties": {
-            "auth": {
-              "$ref": "#/definitions/capability/definitions/auth"
+          "anyOf": [
+            {
+              "type": "boolean"
             },
-            "identityProviders": {
-              "$ref": "#/definitions/identityProviders"
-            },
-            "identities": {
-              "$ref": "#/definitions/identities"
-            },
-            "ips": {
-              "$ref": "#/definitions/ips"
+            {
+              "type": "object",
+              "properties": {
+                "auth": {
+                  "$ref": "#/definitions/capability/definitions/auth"
+                },
+                "identityProviders": {
+                  "$ref": "#/definitions/identityProviders"
+                },
+                "identities": {
+                  "$ref": "#/definitions/identities"
+                },
+                "ips": {
+                  "$ref": "#/definitions/ips"
+                }
+              },
+              "additionalProperties": false
             }
-          },
-          "additionalProperties": false
+          ]
         },
         "create": {
-          "type": "object",
-          "properties": {
-            "auth": {
-              "$ref": "#/definitions/capability/definitions/auth"
+          "anyOf": [
+            {
+              "type": "boolean"
             },
-            "identityProviders": {
-              "$ref": "#/definitions/identityProviders"
-            },
-            "identities": {
-              "$ref": "#/definitions/identities"
-            },
-            "ips": {
-              "$ref": "#/definitions/ips"
+            {
+              "type": "object",
+              "properties": {
+                "auth": {
+                  "$ref": "#/definitions/capability/definitions/auth"
+                },
+                "identityProviders": {
+                  "$ref": "#/definitions/identityProviders"
+                },
+                "identities": {
+                  "$ref": "#/definitions/identities"
+                },
+                "ips": {
+                  "$ref": "#/definitions/ips"
+                }
+              },
+              "additionalProperties": false
             }
-          },
-          "additionalProperties": false
+          ]
         },
         "update": {
-          "type": "object",
-          "properties": {
-            "auth": {
-              "$ref": "#/definitions/capability/definitions/auth"
+          "anyOf": [
+            {
+              "type": "boolean"
             },
-            "crossUser": {
-              "$ref": "#/definitions/capability/definitions/crossUser"
-            },
-            "identityProviders": {
-              "$ref": "#/definitions/identityProviders"
-            },
-            "identities": {
-              "$ref": "#/definitions/identities"
-            },
-            "ips": {
-              "$ref": "#/definitions/ips"
+            {
+              "type": "object",
+              "properties": {
+                "auth": {
+                  "$ref": "#/definitions/capability/definitions/auth"
+                },
+                "crossUser": {
+                  "$ref": "#/definitions/capability/definitions/crossUser"
+                },
+                "identityProviders": {
+                  "$ref": "#/definitions/identityProviders"
+                },
+                "identities": {
+                  "$ref": "#/definitions/identities"
+                },
+                "ips": {
+                  "$ref": "#/definitions/ips"
+                }
+              },
+              "additionalProperties": false
             }
-          },
-          "additionalProperties": false
+          ]
         },
         "delete": {
-          "type": "object",
-          "properties": {
-            "auth": {
-              "$ref": "#/definitions/capability/definitions/auth"
+          "anyOf": [
+            {
+              "type": "boolean"
             },
-            "crossUser": {
-              "$ref": "#/definitions/capability/definitions/crossUser"
-            },
-            "identityProviders": {
-              "$ref": "#/definitions/identityProviders"
-            },
-            "identities": {
-              "$ref": "#/definitions/identities"
-            },
-            "ips": {
-              "$ref": "#/definitions/ips"
+            {
+              "type": "object",
+              "properties": {
+                "auth": {
+                  "$ref": "#/definitions/capability/definitions/auth"
+                },
+                "crossUser": {
+                  "$ref": "#/definitions/capability/definitions/crossUser"
+                },
+                "identityProviders": {
+                  "$ref": "#/definitions/identityProviders"
+                },
+                "identities": {
+                  "$ref": "#/definitions/identities"
+                },
+                "ips": {
+                  "$ref": "#/definitions/ips"
+                }
+              },
+              "additionalProperties": false
             }
-          },
-          "additionalProperties": false
+          ]
         },
         "identityProviders": {
           "$ref": "#/definitions/identityProviders"
