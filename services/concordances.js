@@ -57,7 +57,7 @@ module.exports = class ConcordanceService {
 
     if (query.download) {
       // For a download, return a stream
-      return Concordance.find(mongoQuery).lean().stream()
+      return Concordance.find(mongoQuery).lean().cursor()
     } else {
       // Otherwise, return results
       const concordances = await Concordance.find(mongoQuery).lean().skip(query.offset).limit(query.limit).exec()

@@ -274,7 +274,7 @@ module.exports = class MappingService {
 
     if (download) {
       // For a download, return a stream
-      return model.aggregate(pipeline).cursor().exec()
+      return model.aggregate(pipeline).cursor()
     } else {
       // Otherwise, return results
       const mappings = await model.aggregate(pipeline).sort(sorting).skip(offset).limit(limit).exec()
