@@ -32,31 +32,35 @@ describe("Services", () => {
     describe("filter mappings by annotations", () => {
       const mappings = [
         {
-          from: { memberSet: [] },
-          to: { memberSet: [] },
           uri: "mapping:1",
         },
         {
-          from: { memberSet: [] },
-          to: { memberSet: [] },
           uri: "mapping:2",
         },
         {
-          from: { memberSet: [] },
-          to: { memberSet: [] },
           uri: "mapping:3",
         },
         {
-          from: { memberSet: [] },
           to: { memberSet: [{ uri: "test:concept" }] },
           uri: "mapping:4",
         },
         {
-          from: { memberSet: [] },
-          to: { memberSet: [] },
           uri: "mapping:5",
         },
-      ]
+      ].map(mapping => {
+        // Add fromScheme and toScheme
+        mapping.fromScheme = { uri: "test:fromScheme" }
+        mapping.toScheme = { uri: "test:toScheme" }
+        // Add from if necessary
+        if (!mapping.from) {
+          mapping.from = { memberSet: [{ uri: "test:fromConcept" }] }
+        }
+        // Add empty to if necessary
+        if (!mapping.to) {
+          mapping.to = { memberSet: [] }
+        }
+        return mapping
+      })
       const annotations = [
         {
           target: "mapping:1",

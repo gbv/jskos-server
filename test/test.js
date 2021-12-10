@@ -742,12 +742,16 @@ describe("Express Server", () => {
     })
 
     it("should bulk POST mappings properly", done => {
-      const mappingToBeUpdated = { from: { memberSet: [] }, to: { memberSet: [] } }
-      const update = { fromScheme: { uri: "test:test" } }
+      const fromScheme = { uri: "test:fromScheme" }
+      const toScheme = { uri: "test:toScheme" }
+      const from = { memberSet: [{ uri: "test:fromConcept" }] }
+      const to = { memberSet: [] }
+      const mappingToBeUpdated = { fromScheme, from, toScheme, to }
+      const update = { from: { memberSet: [{ uri: "test:fromConceptUpdate" }] } }
       const bulkMappings = [
         // Two empty mappings that are still valid
-        { from: { memberSet: [] }, to: { memberSet: [] } },
-        { from: { memberSet: [] }, to: { memberSet: [] } },
+        { fromScheme, from, toScheme, to },
+        { fromScheme, from, toScheme, to },
         // One invalid mapping that should be ignored
         {
           partOf: [{}],
@@ -787,7 +791,7 @@ describe("Express Server", () => {
                   assert.equal(error, null)
                   res.should.have.status(200)
                   res.body.should.be.an("object")
-                  assert.deepEqual(res.body.fromScheme, update.fromScheme)
+                  assert.deepEqual(res.body.from, update.from)
                   done()
                 })
             })
