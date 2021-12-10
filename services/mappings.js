@@ -9,6 +9,18 @@ const Mapping = require("../models/mappings")
 const Annotation = require("../models/annotations")
 const { MalformedBodyError, MalformedRequestError, EntityNotFoundError, InvalidBodyError, DatabaseAccessError } = require("../errors")
 
+const validateMapping = (mapping) => {
+  const valid = validate.mapping(mapping)
+  if (!valid) {
+    return false
+  }
+  // Reject mappings without concepts in `from`
+  if (jskos.conceptsOfMapping(mapping, "from").length === 0) {
+    return false
+  }
+  return true
+}
+
 module.exports = class MappingService {
 
   constructor(container) {
@@ -338,7 +350,7 @@ module.exports = class MappingService {
         }
         mapping.modified = now
         // Validate mapping
-        if (!validate.mapping(mapping)) {
+        if (!validateMapping(mapping)) {
           throw new InvalidBodyError()
         }
         if (mapping.partOf) {
@@ -407,7 +419,7 @@ module.exports = class MappingService {
     // Add modified date.
     mapping.modified = (new Date()).toISOString()
     // Validate mapping
-    if (!validate.mapping(mapping)) {
+    if (!validateMapping(mapping)) {
       throw new InvalidBodyError()
     }
     if (mapping.partOf) {
@@ -446,7 +458,7 @@ module.exports = class MappingService {
     _.merge(existing, mapping)
 
     // Validate mapping after merge
-    if (!validate.mapping(existing)) {
+    if (!validateMapping(existing)) {
       throw new InvalidBodyError()
     }
     if (mapping.partOf) {
