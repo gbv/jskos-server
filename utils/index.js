@@ -496,15 +496,18 @@ const getCreator = (req) => {
  * @param {Object} options.req request object (necessary for `type`, `user`, and `method`)
  */
 const handleCreatorForObject = ({ object, existing, creator, req }) => {
+  // TODO: Do we really need this? For things like concordances, it is important that the client can change the creator/contributor field, so this logic becomes unnecessary. Unsure how to deal with it regarding other entities.
   if (!object) {
     return object
   }
-  // Remove `creator` and `contributor` from object
+  // Remove `creator` because we'll use separate logic to set it
   delete object.creator
-  delete object.contributor
 
-  // JSKOS creator has to be an array
-  if (creator && req.type !== "annotations") {
+  if (req.type === "annotations") {
+    // No "contributor" for annotations
+    delete object.contributor
+  } else if (creator) {
+    // JSKOS creator has to be an array
     creator = [creator]
   }
 
@@ -515,6 +518,8 @@ const handleCreatorForObject = ({ object, existing, creator, req }) => {
       object.creator = creator
     }
   } else if (req.method === "PUT" || req.method === "PATCH") {
+    // For PUT/PATCH, `contributor` also gets set by separate logic
+    delete object.contributor
     if (creator) {
       if (req.type === "annotations") {
         // No contributor for annotations
