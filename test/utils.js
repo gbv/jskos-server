@@ -168,11 +168,10 @@ describe("utils", () => {
         object: {},
         expected: {},
       },
-      // Remove creator and contributor from object
+      // Remove creator from object
       {
         object: {
           creator: "value doesn't matter",
-          contributor: "value doesn't matter",
         },
         expected: {},
       },
@@ -199,7 +198,9 @@ describe("utils", () => {
       },
       // Keep existing creator and contributor
       {
-        object: {},
+        object: {
+          contributor: "other contributor",
+        },
         req: {
           method: "PATCH",
         },
