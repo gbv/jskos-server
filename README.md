@@ -209,11 +209,11 @@ Available actions for `schemes`, `concepts`, `mappings`, and `annotations` are `
 Note that any properties not mentioned here are not allowed!
 
 ### Access control
-The rights to `read`, `create`, `update` and `delete` entities via API can be controlled via several configuration settings described above ([data import](#data-import) is not limited by these restrictions). The settings can be summarized as following:
+The rights to `read`, `create`, `update` and `delete` entities via API can be controlled via several configuration settings described above ([data import](#data-import) is not limited by these restrictions):
 
 * Restricted access via `ips` is always applied *in addition* to other settings
 
-* Without [authentication](#authentication) (`auth` set to `false`) the server does not know about user accounts. In this case the `creator` and `contributor` fields of an object are ignored (default) or they can be set without limitations when `anonymous` is set to `true`.
+* Without [authentication](#authentication) (`auth` set to `false`) the server does not know about user accounts. In this case the `creator` and `contributor` fields of an object can be set without limitations (default) or they are ignored when `anonymous` is set to `true`.
 
 * When authentication is enabled (`auth` set to `true`) an action can be limited to accounts listed in `identities` (if set). Rights to `create`, `update`, and `delete` entities can further depend on two controls:
 
