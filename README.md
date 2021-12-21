@@ -215,18 +215,16 @@ The rights to `read`, `create`, `update` and `delete` entities via API can be co
 
 * Without [authentication](#authentication) (`auth` set to `false`) the server does not know about user accounts. In this case the `creator` and `contributor` fields of an object can be set without limitations (default) or they are ignored when `anonymous` is set to `true`.
 
-* When authentication is enabled (`auth` set to `true`) an action can be limited to accounts listed in `identities` (if set). Rights to `create`, `update`, and `delete` entities can further depend on two controls:
+* With authentication an action can be limited to accounts listed in `identities` (if set). Rights to `create`, `update`, and `delete` entities can further depend on two controls:
 
-  1. value of `creator` and `contributor` of a superordinated object that the edited object belongs to. Concepts belong to vocabularies mappings via `inScheme` or `topConceptOf` and mappings can belong to concordances via `partOf`
+  1. value of `creator` and `contributor` of a superordinated object. Concepts always belong to vocabularies via `inScheme` or `topConceptOf` and mappings can belong to concordances via `partOf`.
   2. settings of `crossUser` together with value of `creator` and `contributor` of the object
 
-The first control is only checked if the object belongs to another object and the superordinated object has `contributor` and/or `creator` to check against. This can only be the case for mappings and concepts. The connection to a superordinated object is checked on both the stored object and its modified value, so moving a mapping from one concordance to another is only allowed if access is granted for both concordances. The authenticated user must be listed as `creator` and/or `contributor` of the superordinated object to pass this control.
+The first control is only checked if it has a superordinated object with `contributor` and/or `creator`. This can only be the case for mappings and concepts. The connection to a superordinated object is checked on both the stored object and its modified value, so moving a mapping from one concordance to another is only allowed if access is granted for both. The authenticated user must be listed as `creator` and/or `contributor` of the superordinated object to pass this control.
 
-The second control is only checked when the first control cannot be applied and only on authenticated actions `update` or `delete` where `anonymous` is set to `false` (this is the default, so entities have `creator` and `contributor` to check against). With `crossUser` set to `false`, the authenticated user must be listed as `creator` or `contributor` of the stored object. With `crossUser` set to `false` any authenticated user (optionally limited to those listed in `identities` can `update` or `delete` the object.
+The second control is only checked when the first control cannot be applied and only on authenticated actions `update` or `delete` where `anonymous` is set to `false` (this is the default). With `crossUser` set to `false`, the authenticated user must be listed as `creator` or `contributor` of the stored object. With `crossUser` set to `true` any authenticated user (optionally limited to those listed in `identities`) can `update` or `delete` the object.
 
-For authenticated actions with `anonymous` being `false` creation of a new object will always set its initial `creator` to the autenticated user and `update` of an object will always add the user to `contributor` unless it is already included as `creator` or `contributor`.
-
-Further modification of `creator` and `contributor` (removal and addition of entries) is limited to vocabularies and concordance by authenticated users listed as `creator` of the object.
+For authenticated actions with `anonymous` being `false` creation of a new object will always set its initial `creator` to the autenticated user and `update` of an object will always add the user to `contributor` unless it is already included as `creator` or `contributor`.  Further modification of `creator` and `contributor` (removal and addition of entries) is limited to vocabularies and concordance by authenticated users listed as `creator` of the object.
 
 There is one special exception for `delete` operations: a user can always remove its account from the list of `creator` and `contributor` of an object, even if the user is not allowed to delete the object. The action will modify the object (only fields `modified`, `creator` and/or `contributor`) but result in an error.
 
