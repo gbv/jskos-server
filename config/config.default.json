@@ -21,6 +21,7 @@
     "algorithm": "RS256",
     "key": null
   },
+  "anonymous": false,
   "schemes": true,
   "concepts": true,
   "mappings": {
@@ -40,7 +41,6 @@
     },
     "fromSchemeWhitelist": null,
     "toSchemeWhitelist": null,
-    "anonymous": false,
     "cardinality": "1-to-n"
   },
   "concordances": true,
