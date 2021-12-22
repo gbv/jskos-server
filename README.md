@@ -226,8 +226,6 @@ The second control is only checked when the first control cannot be applied and 
 
 For authenticated actions with `anonymous` being `false` creation of a new object will always set its initial `creator` to the autenticated user and `update` of an object will always add the user to `contributor` unless it is already included as `creator` or `contributor`.  Further modification of `creator` and `contributor` (removal and addition of entries) is limited to vocabularies and concordance by authenticated users listed as `creator` of the object.
 
-There is one special exception for `delete` operations: a user can always remove its account from the list of `creator` and `contributor` of an object, even if the user is not allowed to delete the object. The action will modify the object (only fields `modified`, `creator` and/or `contributor`) but result in an error.
-
 Here are some helpful example presets for configuration of "mappings" or "annotations".
 
 **Read-only access (does not make sense for annotations):**
