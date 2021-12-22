@@ -343,6 +343,26 @@ If write access for concept schemes and/or concepts is necessary, it is recommen
 ```
 Note that `auth` is set to `false` because it refers to authentication via JWT. The IP filter is separate from that. An even more secure way would be to use both JWT authentication with an `identities` filter as well as an IP filter.
 
+**Only user with URI `https://coli-conc.gbv.de/login/users/c0c1914a-f9d6-4b92-a624-bf44118b6619` can create, but others can update/delete if they are creator/contributor of an entity:**
+```json
+{
+  "read": {
+    "auth": false
+  },
+  "create": {
+    "auth": true,
+    "identities": ["https://coli-conc.gbv.de/login/users/c0c1914a-f9d6-4b92-a624-bf44118b6619"]
+  },
+  "update": {
+    "auth": true
+  },
+  "delete": {
+    "auth": true
+  }
+}
+```
+A configuration like this will be used to handle concordances in Cocoda. Only selected accounts will be able to create new concordances, but they will be able to add other accounts as creator/contributor so that those accounts will be able to assign mappings to the concordance and edit mappings that belong to the concordance.
+
 ### Authentication
 It is possible to limit certain actions to authenticated users, indicated by the `auth` option (see [example configurations above](#access-control)). Authorization is performed via JWTs ([JSON Web Tokens](https://jwt.io/)). To configure authentication, you need to provide the JWT algorithm and the key/secret in the configuration file, like this:
 
