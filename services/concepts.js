@@ -167,7 +167,7 @@ module.exports = class ConceptService {
       if (root) {
         return ancestors
       } else {
-        return ancestors.concat([concept])
+        return [concept].concat(ancestors)
       }
     } else if (!root) {
       return [concept]
