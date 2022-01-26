@@ -15,15 +15,15 @@ module.exports = class ValidateService {
     // additional parameters (optional)
     type = (guessObjectType(type, true) || "").toLowerCase()
 
-    let schemes
+    const rememberSchemes = []
     if (knownSchemes) {
       // Get schemes from schemeService
-      schemes = await schemeService.getSchemes({})
+      knownSchemes = await schemeService.getSchemes({})
     }
     const validator = type ? validate[type] : validate
 
     const result = data.map(item => {
-      const result = validator(item, { unknownFields, schemes })
+      const result = validator(item, { unknownFields, knownSchemes, rememberSchemes })
       return result ? true : validator.errors
     })
 
