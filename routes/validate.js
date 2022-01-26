@@ -10,6 +10,9 @@ router.get(
   "/",
   utils.wrappers.async(async (req) => {
     const url = req.query.url
+    if (!url) {
+      throw new MalformedRequestError("Please use HTTP POST or provide an URL to load data from!")
+    }
     // Load data from url
     try {
       const data = (await axios.get(url)).data
