@@ -105,6 +105,8 @@ if (config.annotations) {
 if (config.concepts) {
   app.use(require("./routes/concepts"))
 }
+// Validate endpoint
+app.use("/validate", require("./routes/validate"))
 
 // Error handling
 const errors = require("./errors")
