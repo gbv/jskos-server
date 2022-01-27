@@ -6,9 +6,7 @@ const schemeService = Container.get(require("../services/schemes"))
 module.exports = class ValidateService {
 
   async validate(data, { unknownFields, type, knownSchemes = false } = {}) {
-    let returnArray = true
     if (!Array.isArray(data)) {
-      returnArray = false
       data = [data]
     }
 
@@ -27,7 +25,7 @@ module.exports = class ValidateService {
       return result ? true : validator.errors
     })
 
-    return returnArray ? result : result[0]
+    return result
   }
 
 }
