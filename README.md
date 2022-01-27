@@ -744,6 +744,12 @@ Same as [POST /validate](#post-validate) but JSKOS data to be validated is passe
 
   `url=[url]` URL to load JSKOS data from
 
+  `type=[type]` see [POST /validate](#post-validate)
+
+  `unknownFields=[boolean]` see [POST /validate](#post-validate)
+
+  `knownSchemes=[boolean]` see [POST /validate](#post-validate)
+
 ### GET /concordances
 Lists all concordances for mappings.
 
