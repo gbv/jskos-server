@@ -610,6 +610,8 @@ Note that certain properties from the actual configuration will not be shown in 
     "concordances": "http://localhost:3000/concordances",
     "mappings": "http://localhost:3000/mappings",
     "annotations": "http://localhost:3000/annotations",
+    "types": null,
+    "validate": "http://localhost:3000/validate",
     "ok": 1
   }
   ```

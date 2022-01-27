@@ -224,6 +224,7 @@ if (status.config.annotations) {
 }
 // Explicitly disable types (not yet supported in jskos-server)
 status.types = null
+status.validate = `${baseUrl}validate`
 config.status = status
 
 module.exports = config

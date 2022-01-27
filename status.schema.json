@@ -127,6 +127,10 @@
     "types": {
       "description": "API URL for types",
       "$ref": "#/definitions/uriOrNull"
+    },
+    "validate": {
+      "description": "API URL for types",
+      "$ref": "#/definitions/uriOrNull"
     }
   },
   "additionalProperties": false
