@@ -23,6 +23,7 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
 - [API](#api)
   - [GET /status](#get-status)
   - [GET /checkAuth](#get-checkauth)
+  - [POST /validate](#post-validate)
   - [GET /validate](#get-validate)
   - [GET /concordances](#get-concordances)
   - [GET /mappings](#get-mappings)
@@ -632,15 +633,15 @@ Endpoint to check whether a user is authorized. If `type` or `action` are not se
   `action=[action]` one of "read", "create", "update", "delete" (optional)
 
 ### GET /validate
-Endpoint to validate a JSKOS object via [jskos-validate].
+Endpoint to validate JSKOS objects via [jskos-validate].
 
 * **URL Params**
 
   `type=[type]` a [JSKOS object type](https://gbv.github.io/jskos/jskos.html#object-types) that all objects must have (optional)
 
-  `unknownFields=[boolean]` `1` or `true` allow unknown fields inside objects (by default, unknown fields do not pass validation)
+  `unknownFields=[boolean]` with `1` or `true` to allow unknown fields inside objects (by default, unknown fields do not pass validation)
 
-  `knownSchemes=[boolean]` `1` or `true` use concept scheme data available in the same jskos-server instance for validation of concepts. Implies `type=concept` and all concept must reference a known concept scheme via `inScheme`.
+  `knownSchemes=[boolean]` with `1` or `true` to use concept schemes available in this jskos-server instance for validation of concepts. Implies `type=concept` and all concept must reference a known concept scheme via `inScheme`.
 
 If neither `type` nor `knownSchemes` are specified, concept schemes in the data to be validated can be used to validate following concepts in the same request array (see last example below).
 
@@ -650,7 +651,7 @@ If neither `type` nor `knownSchemes` are specified, concept schemes in the data 
 
 * **Sample Call**
 
-  In the following example, an empty object will be validated. Since no type is specified, it is validated as a Resource which does not have required field names and therefore passes validation.
+  In the following example, an empty object is validated. Since no type is specified, it is validated as a Resource which does not have required field names and therefore passes validation.
 
   ```bash
   curl -X POST "https://coli-conc.gbv.de/dev-api/validate" -H 'Content-Type: application/json' -d '{}'
@@ -718,7 +719,7 @@ If neither `type` nor `knownSchemes` are specified, concept schemes in the data 
   ]
   ```
 
-  The first object is a concept scheme with `notationPattern`. Since the other two elements are concepts of that concept scheme (see `inScheme`), the concepts must additionally pass tests related to URI or notation patterns of the given scheme(s). Since the last concept has a notation that does not match the pattern, it fails the validation. Note that only object with appropriate `type` field are included in this validation.
+  The first object is a concept scheme with `notationPattern`. Since the other two elements are concepts of that concept scheme (see `inScheme`), the concepts must additionally pass tests related to URI or notation patterns of the given schemes. Since the last concept has a notation that does not match the pattern, it fails the validation. Note that only object with appropriate `type` field are included in this additional part of validation.
 
   ```bash
   curl -X POST "https://coli-conc.gbv.de/dev-api/validate" -H 'Content-Type: application/json' -d @example.json
@@ -735,6 +736,14 @@ If neither `type` nor `knownSchemes` are specified, concept schemes in the data 
     ]
   ]
   ```
+
+### GET /validate
+
+Same as [POST /validate](#post-validate) but JSKOS data to be validated is passed via URL.
+
+* **URL Params**
+
+  `url=[url]` URL to load JSKOS data from
 
 ### GET /concordances
 Lists all concordances for mappings.
