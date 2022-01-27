@@ -23,6 +23,7 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
 - [API](#api)
   - [GET /status](#get-status)
   - [GET /checkAuth](#get-checkauth)
+  - [GET /validate](#get-validate)
   - [GET /concordances](#get-concordances)
   - [GET /mappings](#get-mappings)
   - [GET /mappings/suggest](#get-mappingssuggest)
@@ -629,6 +630,85 @@ Endpoint to check whether a user is authorized. If `type` or `action` are not se
   `type=[type]` one of "schemes", "concepts", "mappings", "annotations" (optional)
 
   `action=[action]` one of "read", "create", "update", "delete" (optional)
+
+### GET /validate
+Endpoint to validate a JSKOS object via [jskos-validate]. The option `rememberSchemes` is used when no type is given (see last example call below).
+
+* **URL Params**
+
+  `type=[type]` any [JSKOS object type](https://gbv.github.io/jskos/jskos.html#object-types) (optional)
+
+  `unknownFields=[boolean]` `1` or `true` allow unknown fields inside objects (by default, unknown fields do not pass validation)
+
+  `knownSchemes=[boolean]` `1` or `true` enable concept scheme data that is available in the same jskos-server instance to be used for validation of concepts; note that when `knownSchemes` is enabled, the data is assumed to be concepts and the concepts need to be part of a scheme that is available in the jskos-server instance
+
+* **Success Response**
+
+  Array with the JSON response provided by [jskos-validate]. The indices of the array correspond to the order of the given data. An element is `true` when the object passed validation, or an array of errors when the object failed validation.
+
+* **Sample Call**
+
+  In the following example, an empty object will be validated. Since no type is given, it is validated as a Resource which does not have required field names and therefore passes validation.
+
+  ```bash
+  curl -X POST "https://coli-conc.gbv.de/dev-api/validate" -H 'Content-Type: application/json' -d '{}'
+  ```
+
+  ```json
+  [
+    true
+  ]
+  ```
+
+  In the following example, the same call is given, but the parameter `type` is set to `mapping`. Mappings require the fields `from` and `to`, therefore the empty object fails validation and errors are returned.
+
+  ```bash
+  curl -X POST "https://coli-conc.gbv.de/dev-api/validate?type=mapping" -H 'Content-Type: application/json' -d '{}'
+  ```
+
+  ```json
+  [
+    [
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": {
+          "missingProperty": "from"
+        },
+        "message": "must have required property 'from'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": {
+          "missingProperty": "to"
+        },
+        "message": "must have required property 'to'"
+      }
+    ]
+
+  ]
+  ```
+
+  In this example, an array of mixed typed objects is validated. The first one is a concept scheme that has a `notationPattern` associated with it. Since the other two elements are concepts of that concept scheme, the scheme will be remembered and the concepts need to additionally pass tests related to URI or notation patterns of the given scheme(s). Since the last concept has a notation that does not match the pattern, it fails the validation. Note that every object needs to have the appropriate `type` field for this to work.
+
+  ```bash
+  curl -X POST "https://coli-conc.gbv.de/dev-api/validate" -H 'Content-Type: application/json' -d '[{"type":["http://www.w3.org/2004/02/skos/core#ConceptScheme"],"uri":"http://example.org/voc","notationPattern":"[a-z]+"},{"type":["http://www.w3.org/2004/02/skos/core#Concept"],"uri":"http://example.org/1","notation":["abc"],"inScheme":[{"uri":"http://example.org/voc"}]},{"type":["http://www.w3.org/2004/02/skos/core#Concept"],"uri":"http://example.org/2","notation":["123"],"inScheme":[{"uri":"http://example.org/voc"}]}]'
+  ```
+
+  ```json
+  [
+    true,
+    true,
+    [
+      {
+        "message": "concept notation 123 does not match [a-z]+"
+      }
+    ]
+  ]
+  ```
 
 ### GET /concordances
 Lists all concordances for mappings.
@@ -1825,3 +1905,4 @@ npm run release:patch # or minor or major
 MIT © 2018 Verbundzentrale des GBV (VZG)
 
 [login-server]: https://github.com/gbv/login-server
+[jskos-validate]: https://github.com/gbv/jskos-validate
