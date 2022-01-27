@@ -15,7 +15,7 @@ module.exports = class ValidateService {
     // additional parameters (optional)
     type = (guessObjectType(type, true) || "").toLowerCase()
 
-    const rememberSchemes = []
+    const rememberSchemes = type ? null : []
     if (knownSchemes) {
       // Get schemes from schemeService
       knownSchemes = await schemeService.getSchemes({})
