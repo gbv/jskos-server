@@ -632,7 +632,7 @@ Endpoint to check whether a user is authorized. If `type` or `action` are not se
 
   `action=[action]` one of "read", "create", "update", "delete" (optional)
 
-### GET /validate
+### POST /validate
 Endpoint to validate JSKOS objects via [jskos-validate].
 
 * **URL Params**
@@ -738,7 +738,6 @@ If neither `type` nor `knownSchemes` are specified, concept schemes in the data 
   ```
 
 ### GET /validate
-
 Same as [POST /validate](#post-validate) but JSKOS data to be validated is passed via URL.
 
 * **URL Params**
