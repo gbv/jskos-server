@@ -632,23 +632,25 @@ Endpoint to check whether a user is authorized. If `type` or `action` are not se
   `action=[action]` one of "read", "create", "update", "delete" (optional)
 
 ### GET /validate
-Endpoint to validate a JSKOS object via [jskos-validate]. The option `rememberSchemes` is used when no type is given (see last example call below).
+Endpoint to validate a JSKOS object via [jskos-validate].
 
 * **URL Params**
 
-  `type=[type]` any [JSKOS object type](https://gbv.github.io/jskos/jskos.html#object-types) (optional)
+  `type=[type]` a [JSKOS object type](https://gbv.github.io/jskos/jskos.html#object-types) that all objects must have (optional)
 
   `unknownFields=[boolean]` `1` or `true` allow unknown fields inside objects (by default, unknown fields do not pass validation)
 
-  `knownSchemes=[boolean]` `1` or `true` enable concept scheme data that is available in the same jskos-server instance to be used for validation of concepts; note that when `knownSchemes` is enabled, the data is assumed to be concepts and the concepts need to be part of a scheme that is available in the jskos-server instance
+  `knownSchemes=[boolean]` `1` or `true` use concept scheme data available in the same jskos-server instance for validation of concepts. Implies `type=concept` and all concept must reference a known concept scheme via `inScheme`.
+
+If neither `type` nor `knownSchemes` are specified, concept schemes in the data to be validated can be used to validate following concepts in the same request array (see last example below).
 
 * **Success Response**
 
-  Array with the JSON response provided by [jskos-validate]. The indices of the array correspond to the order of the given data. An element is `true` when the object passed validation, or an array of errors when the object failed validation.
+  Array with the JSON response provided by [jskos-validate]. The indices of the array correspond to the order of the given data. An element is `true` when the object passed validation, or an array of errors when the object failed validation. Data format of error objects may change in future versions but there is always at least field `message`.
 
 * **Sample Call**
 
-  In the following example, an empty object will be validated. Since no type is given, it is validated as a Resource which does not have required field names and therefore passes validation.
+  In the following example, an empty object will be validated. Since no type is specified, it is validated as a Resource which does not have required field names and therefore passes validation.
 
   ```bash
   curl -X POST "https://coli-conc.gbv.de/dev-api/validate" -H 'Content-Type: application/json' -d '{}'
@@ -692,10 +694,34 @@ Endpoint to validate a JSKOS object via [jskos-validate]. The option `rememberSc
   ]
   ```
 
-  In this example, an array of mixed typed objects is validated. The first one is a concept scheme that has a `notationPattern` associated with it. Since the other two elements are concepts of that concept scheme, the scheme will be remembered and the concepts need to additionally pass tests related to URI or notation patterns of the given scheme(s). Since the last concept has a notation that does not match the pattern, it fails the validation. Note that every object needs to have the appropriate `type` field for this to work.
+  In this example, an array of mixed typed objects is validated (given in file `example.json`):
+
+  ```json
+  [
+    {
+      "type": [ "http://www.w3.org/2004/02/skos/core#ConceptScheme" ],
+      "uri": "http://example.org/voc",
+      "notationPattern": "[a-z]+"
+    },
+    {
+      "type": [ "http://www.w3.org/2004/02/skos/core#Concept" ],
+      "uri": "http://example.org/1",
+      "notation": [ "abc" ],
+      "inScheme": [ { "uri": "http://example.org/voc" } ]
+    },
+    {
+      "type": [ "http://www.w3.org/2004/02/skos/core#Concept" ],
+      "uri": "http://example.org/2",
+      "notation": [ "123" ],
+      "inScheme": [ { "uri": "http://example.org/voc" } ]
+    }
+  ]
+  ```
+
+  The first object is a concept scheme with `notationPattern`. Since the other two elements are concepts of that concept scheme (see `inScheme`), the concepts must additionally pass tests related to URI or notation patterns of the given scheme(s). Since the last concept has a notation that does not match the pattern, it fails the validation. Note that only object with appropriate `type` field are included in this validation.
 
   ```bash
-  curl -X POST "https://coli-conc.gbv.de/dev-api/validate" -H 'Content-Type: application/json' -d '[{"type":["http://www.w3.org/2004/02/skos/core#ConceptScheme"],"uri":"http://example.org/voc","notationPattern":"[a-z]+"},{"type":["http://www.w3.org/2004/02/skos/core#Concept"],"uri":"http://example.org/1","notation":["abc"],"inScheme":[{"uri":"http://example.org/voc"}]},{"type":["http://www.w3.org/2004/02/skos/core#Concept"],"uri":"http://example.org/2","notation":["123"],"inScheme":[{"uri":"http://example.org/voc"}]}]'
+  curl -X POST "https://coli-conc.gbv.de/dev-api/validate" -H 'Content-Type: application/json' -d @example.json
   ```
 
   ```json
