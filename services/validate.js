@@ -17,6 +17,7 @@ module.exports = class ValidateService {
     if (knownSchemes) {
       // Get schemes from schemeService
       knownSchemes = await schemeService.getSchemes({})
+      type = "concept"
     }
     const validator = type ? validate[type] : validate
 
