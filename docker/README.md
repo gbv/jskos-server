@@ -34,7 +34,7 @@ services:
     #   - NODE_ENV=production # note that this requires the server to be run behind a HTTPS proxy
     ports:
       - 3000:3000
-    restart: always
+    restart: unless-stopped
 
   mongo:
     image: mongo:4
@@ -42,7 +42,7 @@ services:
     user: 1000:1000
     volumes:
       - ./data/db:/data/db
-    restart: always
+    restart: unless-stopped
 ```
 
 2. Create data folders:
