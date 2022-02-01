@@ -7,6 +7,9 @@
     "url": "https://github.com/gbv/jskos-server.git"
   },
   "main": "server.js",
+  "engines": {
+    "node": ">=12"
+  },
   "scripts": {
     "test": "NODE_ENV=test mocha --exit --timeout 10000 --slow 2000",
     "start": "nodemon server.js",
