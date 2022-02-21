@@ -3,6 +3,7 @@
   "baseUrl": null,
   "title": "JSKOS Server",
   "version": null,
+  "closedWorldAssumption": true,
   "port": 3000,
   "proxies": [],
   "mongo": {

@@ -57,18 +57,28 @@ const wrappers = {
 
 }
 
-// Recursively remove all fields starting with _ from response
-// Gets called in `returnJSON` and `handleDownload`. Shouldn't be used anywhere else.
-const cleanJSON = (json) => {
+/**
+ * Recursively remove certain fields from response
+ *
+ * Gets called in `returnJSON` and `handleDownload`. Shouldn't be used anywhere else.
+ *
+ * @param {(Object|Object[])} json JSON object or array of objects
+ * @param {number} [depth=0] Should not be set when called from outside
+ */
+const cleanJSON = (json, depth = 0) => {
   if (_.isArray(json)) {
-    json.forEach(cleanJSON)
+    json.forEach(value => cleanJSON(value, depth))
   } else if (_.isObject(json)) {
     _.forOwn(json, (value, key) => {
-      if (key.startsWith("_")) {
-        // remove from object
+      if (
+        // Remove top level empty arrays/objects if closedWorldAssumption is set to false
+        (depth === 0 && !config.closedWorldAssumption && (_.isEqual(value, {}) || _.isEqual(value, [])) )
+        // Remove all fields started with _
+        || key.startsWith("_")
+      ) {
         _.unset(json, key)
       } else {
-        cleanJSON(value)
+        cleanJSON(value, depth + 1)
       }
     })
   }
