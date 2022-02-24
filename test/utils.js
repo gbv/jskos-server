@@ -2,6 +2,7 @@
 
 const assert = require("assert")
 const utils = require("../utils")
+const config = require("../config")
 
 describe("utils", () => {
 
@@ -364,6 +365,80 @@ describe("utils", () => {
       })
       index += 1
     }
+  })
+
+  describe("cleanJSON", () => {
+    const prevClosedWorldAssumption = config.closedWorldAssumption
+
+    const tests = [
+      {
+        closedWorldAssumption: false,
+        input: {
+          _a: 1,
+          b: {},
+          c: [],
+          d: 2,
+        },
+        output: {
+          d: 2,
+        },
+      },
+      {
+        closedWorldAssumption: true,
+        input: {
+          b: {},
+          c: [],
+        },
+        output: {
+          b: {},
+          c: [],
+        },
+      },
+      {
+        closedWorldAssumption: false,
+        input: [
+          {
+            _a: 1,
+            b: {},
+            c: [],
+            d: null,
+          },
+        ],
+        output: [
+          {
+            d: null,
+          },
+        ],
+      },
+      // Currently, only top-level properties are affected by closedWorldAssumption = false.
+      // See: https://github.com/gbv/jskos-server/commit/123dc9da09f1e41f2263ee8a0f7faeefe67fa9ed#r67204606
+      {
+        closedWorldAssumption: false,
+        input: {
+          a: {
+            b: {},
+            _b: 1,
+          },
+        },
+        output: {
+          a: {
+            b: {},
+          },
+        },
+      },
+    ]
+
+    let index = 0
+    for (let { closedWorldAssumption, input, output } of tests) {
+      it(`should pass test[${index}]`, async () => {
+        config.closedWorldAssumption = closedWorldAssumption
+        utils.cleanJSON(input)
+        assert.deepEqual(input, output)
+      })
+      index += 1
+    }
+
+    config.closedWorldAssumption = prevClosedWorldAssumption
   })
 
 })
