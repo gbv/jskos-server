@@ -1162,6 +1162,56 @@ describe("Express Server", () => {
         })
     })
 
+    it("should add properties narrower, ancestors, and annotations when using properties=*", done => {
+      chai.request(server.app)
+        .get("/data")
+        .query({
+          notation: "6",
+          properties: "*",
+        })
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.should.have.header("Link")
+          res.should.have.header("X-Total-Count")
+          assert.equal(res.headers["x-total-count"], "1")
+          assert.ok(Array.isArray(res.body))
+          assert.equal(res.body.length, 1)
+          const first = res.body[0]
+          assert.ok(_.isObject(first))
+          assert.equal(_.get(first, "prefLabel.de"), "Technik, Medizin, angewandte Wissenschaften")
+          // Check for properties
+          assert.ok(Array.isArray(first.narrower))
+          assert.ok(Array.isArray(first.ancestors))
+          assert.ok(Array.isArray(first.annotations))
+          assert.equal(first.narrower.length, 3)
+          assert.equal(first.ancestors.length, 0)
+          assert.equal(first.annotations.length, 0)
+          done()
+        })
+    })
+
+    it("should remove properties when prefixed with -", done => {
+      chai.request(server.app)
+        .get("/data")
+        .query({
+          notation: "61",
+          properties: "-prefLabel",
+        })
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.should.have.header("Link")
+          res.should.have.header("X-Total-Count")
+          assert.equal(res.headers["x-total-count"], "1")
+          assert.ok(Array.isArray(res.body))
+          assert.equal(res.body.length, 1)
+          const first = res.body[0]
+          assert.ok(_.isObject(first))
+          assert.ok(!first.prefLabel)
+          assert.equal(first.uri, "http://dewey.info/class/61/e23/")
+          done()
+        })
+    })
+
     it("should GET multiple concepts", done => {
       chai.request(server.app)
         .get("/data")
@@ -1593,12 +1643,12 @@ describe("Express Server", () => {
         })
     })
 
-    it("should GET the annotated concept including annotations", done => {
+    it("should GET the annotated concept including annotations with prefix syntax", done => {
       chai.request(server.app)
         .get("/data")
         .query({
           uri: annotation.target,
-          properties: "annotations",
+          properties: "+annotations",
         })
         .end((err, res) => {
           res.should.have.status(200)

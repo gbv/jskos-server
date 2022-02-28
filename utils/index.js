@@ -101,7 +101,33 @@ const adjust = async (req, res, next) => {
     type = type.substring(0, type.length - 1)
   }
   if (adjust[type]) {
-    req.data = await adjust[type](req.data, (_.get(req, "query.properties", "").split(",")))
+    let properties = _.get(req, "query.properties", "")
+    let addProperties = [], removeProperties = []
+    if (properties.startsWith("*")) {
+      // If there's a star, add all available properties and ignore the rest of the string
+      addProperties = ["narrower", "ancestors", "annotations"]
+      properties = ""
+    } else if (properties.startsWith("-")) {
+      // Prefixed - means all listed properties will be removed
+      properties = properties.slice(1)
+      removeProperties = properties.split(",").filter(Boolean)
+      properties = ""
+    } else {
+      // Prefixed + will be removed and ignored
+      if (properties.startsWith("+")) {
+        properties = properties.slice(1)
+      }
+      addProperties = properties.split(",").filter(Boolean)
+    }
+    // Adjust data with properties
+    req.data = await adjust[type](req.data, addProperties)
+    // Remove properties if necessary
+    const dataToAdjust = Array.isArray(req.data) ? req.data : [req.data]
+    removeProperties.forEach(property => {
+      dataToAdjust.filter(Boolean).forEach(entity => {
+        delete entity[property]
+      })
+    })
   }
   next()
 }
