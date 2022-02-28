@@ -250,6 +250,8 @@ module.exports = class MappingService {
       [{ creator: 1 }, {}],
       [{ "creator.id": 1 }, {}],
       [{ "creator.name": 1 }, {}],
+      [{ motivation: 1 }, {}],
+      [{ bodyValue: 1 }, {}],
     ]
     // Create collection if necessary
     try {
