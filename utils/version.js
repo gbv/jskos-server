@@ -106,6 +106,12 @@ const upgrades = {
     await schemeService.createIndexes()
     console.log("... done.")
   },
+  async "1.3"() {
+    console.log("Creating indexes for annotations...")
+    const annotationService = Container.get(require("../services/annotations"))
+    await annotationService.createIndexes()
+    console.log("... done.")
+  },
 }
 
 /**
