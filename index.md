@@ -1,6 +1,6 @@
 # JSKOS Server
 
-[![Build Status](https://travis-ci.com/gbv/jskos-server.svg?branch=master)](https://travis-ci.com/gbv/jskos-server)
+[![Test](https://github.com/gbv/jskos-server/actions/workflows/test.yml/badge.svg)](https://github.com/gbv/jskos-server/actions/workflows/test.yml)
 [![GitHub package version](https://img.shields.io/github/package-json/v/gbv/jskos-server.svg?label=version)](https://github.com/gbv/jskos-server)
 [![Uptime Robot status](https://img.shields.io/uptimerobot/status/m780815088-08758d5c5193e7b25236cfd7.svg?label=%2Fapi%2F)](https://stats.uptimerobot.com/qZQx1iYZY/780815088)
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg)](https://github.com/RichardLitt/standard-readme)
@@ -23,6 +23,8 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
 - [API](#api)
   - [GET /status](#get-status)
   - [GET /checkAuth](#get-checkauth)
+  - [POST /validate](#post-validate)
+  - [GET /validate](#get-validate)
   - [GET /concordances](#get-concordances)
   - [GET /mappings](#get-mappings)
   - [GET /mappings/suggest](#get-mappingssuggest)
@@ -73,13 +75,13 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
 The easiest way to install and use JSKOS Server is with Docker and Docker Compose. Please refer to the [documentation on Docker Hub](https://hub.docker.com/r/coliconc/jskos-server) for more information and instructions.
 
 ### Dependencies
-You need to have access to a [MongoDB database](https://docs.mongodb.com/manual/installation/).
+You need Node.js 12 or later to run jskos-server (14 or 16 recommended). You need to have access to a [MongoDB database](https://docs.mongodb.com/manual/installation/).
 
 ### Clone and Install
 ```bash
 git clone https://github.com/gbv/jskos-server.git
 cd jskos-server
-npm install
+npm ci
 ```
 
 ### Configuration
@@ -608,6 +610,8 @@ Note that certain properties from the actual configuration will not be shown in 
     "concordances": "http://localhost:3000/concordances",
     "mappings": "http://localhost:3000/mappings",
     "annotations": "http://localhost:3000/annotations",
+    "types": null,
+    "validate": "http://localhost:3000/validate",
     "ok": 1
   }
   ```
@@ -629,6 +633,124 @@ Endpoint to check whether a user is authorized. If `type` or `action` are not se
   `type=[type]` one of "schemes", "concepts", "mappings", "annotations" (optional)
 
   `action=[action]` one of "read", "create", "update", "delete" (optional)
+
+### POST /validate
+Endpoint to validate JSKOS objects via [jskos-validate].
+
+* **URL Params**
+
+  `type=[type]` a [JSKOS object type](https://gbv.github.io/jskos/jskos.html#object-types) that all objects must have (optional)
+
+  `unknownFields=[boolean]` with `1` or `true` to allow unknown fields inside objects (by default, unknown fields do not pass validation)
+
+  `knownSchemes=[boolean]` with `1` or `true` to use concept schemes available in this jskos-server instance for validation of concepts. Implies `type=concept` and all concept must reference a known concept scheme via `inScheme`.
+
+If neither `type` nor `knownSchemes` are specified, concept schemes in the data to be validated can be used to validate following concepts in the same request array (see last example below).
+
+* **Success Response**
+
+  Array with the JSON response provided by [jskos-validate]. The indices of the array correspond to the order of the given data. An element is `true` when the object passed validation, or an array of errors when the object failed validation. Data format of error objects may change in future versions but there is always at least field `message`.
+
+* **Sample Call**
+
+  In the following example, an empty object is validated. Since no type is specified, it is validated as a Resource which does not have required field names and therefore passes validation.
+
+  ```bash
+  curl -X POST "https://coli-conc.gbv.de/dev-api/validate" -H 'Content-Type: application/json' -d '{}'
+  ```
+
+  ```json
+  [
+    true
+  ]
+  ```
+
+  In the following example, the same call is given, but the parameter `type` is set to `mapping`. Mappings require the fields `from` and `to`, therefore the empty object fails validation and errors are returned.
+
+  ```bash
+  curl -X POST "https://coli-conc.gbv.de/dev-api/validate?type=mapping" -H 'Content-Type: application/json' -d '{}'
+  ```
+
+  ```json
+  [
+    [
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": {
+          "missingProperty": "from"
+        },
+        "message": "must have required property 'from'"
+      },
+      {
+        "instancePath": "",
+        "schemaPath": "#/required",
+        "keyword": "required",
+        "params": {
+          "missingProperty": "to"
+        },
+        "message": "must have required property 'to'"
+      }
+    ]
+
+  ]
+  ```
+
+  In this example, an array of mixed typed objects is validated (given in file `example.json`):
+
+  ```json
+  [
+    {
+      "type": [ "http://www.w3.org/2004/02/skos/core#ConceptScheme" ],
+      "uri": "http://example.org/voc",
+      "notationPattern": "[a-z]+"
+    },
+    {
+      "type": [ "http://www.w3.org/2004/02/skos/core#Concept" ],
+      "uri": "http://example.org/1",
+      "notation": [ "abc" ],
+      "inScheme": [ { "uri": "http://example.org/voc" } ]
+    },
+    {
+      "type": [ "http://www.w3.org/2004/02/skos/core#Concept" ],
+      "uri": "http://example.org/2",
+      "notation": [ "123" ],
+      "inScheme": [ { "uri": "http://example.org/voc" } ]
+    }
+  ]
+  ```
+
+  The first object is a concept scheme with `notationPattern`. Since the other two elements are concepts of that concept scheme (see `inScheme`), the concepts must additionally pass tests related to URI or notation patterns of the given schemes. Since the last concept has a notation that does not match the pattern, it fails the validation. Note that only object with appropriate `type` field are included in this additional part of validation.
+
+  ```bash
+  curl -X POST "https://coli-conc.gbv.de/dev-api/validate" -H 'Content-Type: application/json' -d @example.json
+  ```
+
+  ```json
+  [
+    true,
+    true,
+    [
+      {
+        "message": "concept notation 123 does not match [a-z]+"
+      }
+    ]
+  ]
+  ```
+
+### GET /validate
+Same as [POST /validate](#post-validate) but JSKOS data to be validated is passed via URL.
+
+* **URL Params**
+
+  `url=[url]` URL to load JSKOS data from
+
+  `type=[type]` see [POST /validate](#post-validate)
+
+  `unknownFields=[boolean]` see [POST /validate](#post-validate)
+
+  `knownSchemes=[boolean]` see [POST /validate](#post-validate)
 
 ### GET /concordances
 Lists all concordances for mappings.
@@ -1825,3 +1947,4 @@ npm run release:patch # or minor or major
 MIT © 2018 Verbundzentrale des GBV (VZG)
 
 [login-server]: https://github.com/gbv/login-server
+[jskos-validate]: https://github.com/gbv/jskos-validate

@@ -43,6 +43,10 @@
         }
       ]
     },
+    "closedWorldAssumption": {
+      "description": "If false, empty JSKOS closed world statements (see specs) will be removed from returned entities",
+      "type": "boolean"
+    },
     "namespace": {
       "description": "A namespace string that is used for generating unique URIs.",
       "type": "string"
