@@ -90,7 +90,7 @@ module.exports = class ConceptService {
     if (query.uri) {
       let uris
       // Get scheme from database
-      let scheme = await this.schemeService.getSchemes(query)[0]
+      let scheme = await this.schemeService.getScheme(query.uri)
       if (scheme) {
         uris = [scheme.uri].concat(scheme.identifier || [])
       } else {
@@ -115,7 +115,7 @@ module.exports = class ConceptService {
     if (query.uri) {
       let uris
       // Get scheme from database
-      let scheme = await this.schemeService.getSchemes(query)[0]
+      let scheme = await this.schemeService.getScheme(query.uri)
       if (scheme) {
         uris = [scheme.uri].concat(scheme.identifier || [])
       } else {
