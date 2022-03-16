@@ -5,6 +5,10 @@ const mongoose = require("mongoose")
 const connection = mongoose.connection
 const Meta = require("../models/meta")
 
+// Set mongoose buffering options
+mongoose.set("bufferCommands", true)
+mongoose.set("bufferTimeoutMS", 30000)
+
 connection.on("connected", () => {
   config.log("Connected to database")
 })

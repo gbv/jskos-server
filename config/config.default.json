@@ -13,8 +13,8 @@
     "port": 27017,
     "db": "jskos-server",
     "options": {
-      "connectTimeoutMS": 120000,
-      "socketTimeoutMS": 120000,
+      "connectTimeoutMS": 360000,
+      "socketTimeoutMS": 360000,
       "heartbeatFrequencyMS": 10000
     }
   },
