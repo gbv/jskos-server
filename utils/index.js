@@ -640,7 +640,7 @@ const bodyParser = (req, res, next) => {
           if (!existing) {
             next(new EntityNotFoundError(null, uri))
           } else {
-            const action = req.methd === "DELETE" ? "delete" : "update"
+            const action = req.method === "DELETE" ? "delete" : "update"
             if (!matchesCreator(req.user, existing, req.type, action)) {
               next(new CreatorDoesNotMatchError())
             } else {
