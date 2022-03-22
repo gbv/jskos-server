@@ -325,6 +325,28 @@ const addMiddlewareProperties = (req, res, next) => {
     type = "concepts"
   }
   req.type = type
+
+  // Add req.action
+  const action = {
+    GET: "read",
+    POST: "create",
+    PUT: "update",
+    PATCH: "update",
+    DELETE: "delete",
+  }[req.method]
+  req.action = action
+  // Add req.anonymous, req.crossUser, and req.auth if necessary
+  if (config[type] && config[type].anonymous) {
+    req.anonymous = true
+  }
+  if (["PUT", "PATCH", "DELETE"].includes(req.method)) {
+    if (config[type] && config[type][action] && config[type][action].crossUser) {
+      req.crossUser = true
+    }
+  }
+  if (config[type] && config[type][action] && config[type][action].auth) {
+    req.auth = true
+  }
   next()
 }
 
@@ -525,14 +547,14 @@ const getCreator = (req) => {
 }
 
 /**
+ * See https://github.com/gbv/jskos-server/issues/153#issuecomment-997847433
  *
  * @param {Object} options.object JSKOS object
  * @param {Object} [options.existing] existing object from database for PUT/PATCH
- * @param {Object|Array} [options.creator] creator object or array, usually extracted via `getCreator` above
+ * @param {Object} [options.creator] creator object, usually extracted via `getCreator` above
  * @param {Object} options.req request object (necessary for `type`, `user`, and `method`)
  */
 const handleCreatorForObject = ({ object, existing, creator, req }) => {
-  // TODO: Do we really need this? For things like concordances, it is important that the client can change the creator/contributor field, so this logic becomes unnecessary. Unsure how to deal with it regarding other entities.
   if (!object) {
     return object
   }
@@ -548,56 +570,51 @@ const handleCreatorForObject = ({ object, existing, creator, req }) => {
   }
 
   const userUris = getUrisForUser(req.user)
+  const anonymous = req.anonymous
+  const auth = req.auth
 
   if (req.method === "POST") {
-    if (creator) {
-      object.creator = creator
-    }
-  } else if (req.method === "PUT" || req.method === "PATCH") {
-    // For PUT/PATCH, `contributor` also gets set by separate logic
-    delete object.contributor
-    if (creator) {
-      if (req.type === "annotations") {
-        // No contributor for annotations
+    if (anonymous) {
+      delete object.creator
+      delete object.contributor
+    } else if (auth) {
+      if (creator) {
         object.creator = creator
       } else {
-        // First, take existing creator and contributor
-        object.creator = (existing && existing.creator) || []
-        object.contributor = (existing && existing.contributor) || []
-        // Look if current user is somewhere in either creator or contributor
-        const creatorIndex = object.creator.findIndex(c => jskos.compare(c, { identifier: userUris }))
-        const contributorIndex = object.contributor.findIndex(c => jskos.compare(c, { identifier: userUris }))
-        if (creatorIndex === -1 && contributorIndex === -1) {
-          // If the user is in neither, add as contributor and set creator if necessary
-          if (object.creator.length == 0) {
-            object.creator = creator
-          }
-          object.contributor.push(creator[0])
+        delete object.creator
+      }
+    }
+  } else if (req.method === "PUT" || req.method === "PATCH") {
+    if (anonymous) {
+      delete object.creator
+      delete object.contributor
+    } else if (auth) {
+      if (existing && existing.creator) {
+        // Don't allow overriding existing creator
+        if (req.method === "PUT") {
+          object.creator = existing.creator
         } else {
-          // Adjust creator if necessary
-          if (creatorIndex !== -1) {
-            object.creator[creatorIndex] = creator[0]
-          }
-          // Add user as contributor (to the end of array)
-          if (contributorIndex !== -1) {
-            object.contributor.splice(contributorIndex, 1)
-            object.contributor.push(creator[0])
-          } else {
-            object.contributor.push(creator[0])
-          }
+          delete object.creator
         }
       }
-    } else if (existing) {
-      // If no creator is set, keep existing creator and contributor
-      if (existing.creator) {
-        object.creator = existing.creator
-      }
-      if (existing.contributor) {
-        object.contributor = existing.contributor
+      if (creator && req.type !== "annotations") {
+        // Check if current user is somewhere in either creator or contributor
+        const contributors = (
+          object.contributor === undefined
+            ? (existing && existing.contributor)
+            : object.contributor
+        ) || []
+        const creators = [].concat(
+          object.creator || (existing && existing.creator) || [],
+          contributors,
+        )
+        if (!creators.find(c => jskos.compare(c, { identifier: userUris }))) {
+          // If current user is not yet there, add it to contributor
+          object.contributor = contributors.concat(creator)
+        }
       }
     }
   }
-
   return object
 }
 
@@ -640,8 +657,7 @@ const bodyParser = (req, res, next) => {
           if (!existing) {
             next(new EntityNotFoundError(null, uri))
           } else {
-            const action = req.method === "DELETE" ? "delete" : "update"
-            if (!matchesCreator(req.user, existing, req.type, action)) {
+            if (!matchesCreator(req.user, existing, req.type, req.action)) {
               next(new CreatorDoesNotMatchError())
             } else {
               req.existing = existing
