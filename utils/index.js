@@ -584,8 +584,13 @@ const handleCreatorForObject = ({ object, existing, creator, req }) => {
     }
   } else if (req.method === "PUT" || req.method === "PATCH") {
     if (anonymous) {
-      delete object.creator
-      delete object.contributor
+      if (req.method === "PUT") {
+        object.creator = existing && existing.creator
+        object.contributor = existing && existing.contributor
+      } else {
+        delete object.creator
+        delete object.contributor
+      }
     } else if (auth) {
       if (existing && existing.creator) {
         // Don't allow overriding existing creator
