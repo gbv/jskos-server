@@ -156,31 +156,53 @@ describe("utils", () => {
   })
 
   describe("handleCreatorForObject", () => {
+    const req = {
+      anonymous: false,
+      auth: true,
+    }
+    const reqWithMethod = (method) => Object.assign({ method }, req)
     const tests = [
       // Everything undefined
-      {},
+      {
+        req,
+      },
       // For null-ish values, keep the valye
       {
         object: null,
         expected: null,
+        req,
       },
       // Everything empty
       {
         object: {},
         expected: {},
+        req,
       },
-      // Remove creator from object
+      // No modifications without method/type
       {
         object: {
           creator: "value doesn't matter",
         },
+        expected: {
+          creator: "value doesn't matter",
+        },
+        req,
+      },
+      // Always remove contributor for annotations
+      {
+        object: {
+          contributor: "value doesn't matter",
+        },
         expected: {},
+        req: Object.assign({
+          type: "annotations",
+        }, req),
       },
       // Set creator for POST
       {
         object: {},
         creator: { uri: "test" },
-        req: { method: "POST" },
+        req: reqWithMethod("POST"),
         expected: {
           creator: [{ uri: "test" }],
         },
@@ -189,52 +211,53 @@ describe("utils", () => {
       {
         object: { creator: {} },
         creator: { uri: "test" },
-        req: {
-          method: "PUT",
+        req: Object.assign({
           type: "annotations",
-        },
+        }, reqWithMethod("PUT")),
         expected: {
           creator: { uri: "test" },
         },
       },
-      // Keep existing creator and contributor
+      // Keep existing creator for PUT
       {
         object: {
-          contributor: "other contributor",
+          creator: "some creator",
         },
-        req: {
-          method: "PATCH",
-        },
+        req: reqWithMethod("PUT"),
         existing: {
           creator: "creator",
           contributor: "contributor",
         },
         expected: {
           creator: "creator",
-          contributor: "contributor",
         },
       },
-      // Set creator and contributor
+      // Remove creator for PATCH
+      {
+        object: {
+          creator: "some creator",
+        },
+        req: reqWithMethod("PATCH"),
+        existing: {
+          creator: "creator",
+        },
+        expected: {},
+      },
+      // Add to contributor for PUT/PATCH
       {
         object: {},
-        req: {
-          method: "PUT",
-        },
+        req: reqWithMethod("PATCH"),
         creator: {
           uri: "test",
         },
         existing: {},
         expected: {
-          creator: [{ uri: "test" }],
           contributor: [{ uri: "test" }],
         },
       },
-      // Set contributor
       {
         object: {},
-        req: {
-          method: "PUT",
-        },
+        req: reqWithMethod("PUT"),
         creator: {
           uri: "test",
         },
@@ -244,30 +267,12 @@ describe("utils", () => {
         expected: {
           creator: [{ uri: "other" }],
           contributor: [{ uri: "test" }],
-        },
-      },
-      // Set creator, push to contributor
-      {
-        object: {},
-        req: {
-          method: "PUT",
-        },
-        creator: {
-          uri: "test",
-        },
-        existing: {
-          contributor: [{}],
-        },
-        expected: {
-          creator: [{ uri: "test" }],
-          contributor: [{}, { uri: "test" }],
         },
       },
       // Adjust existing creator entry
       {
         object: {},
-        req: {
-          method: "PUT",
+        req: Object.assign({
           user: {
             uri: "test",
             identities: {
@@ -276,7 +281,7 @@ describe("utils", () => {
               },
             },
           },
-        },
+        }, reqWithMethod("PUT")),
         creator: {
           uri: "test",
           prefLabel: { en: "name" },
@@ -289,17 +294,12 @@ describe("utils", () => {
             uri: "test",
             prefLabel: { en: "name" },
           }],
-          contributor: [{
-            uri: "test",
-            prefLabel: { en: "name" },
-          }],
         },
       },
       // Adjust existing contributor entry, push to end
       {
         object: {},
-        req: {
-          method: "PUT",
+        req: Object.assign({
           user: {
             uri: "test",
             identities: {
@@ -308,7 +308,7 @@ describe("utils", () => {
               },
             },
           },
-        },
+        }, reqWithMethod("PUT")),
         creator: { uri: "test" },
         existing: {
           creator: [{}],
