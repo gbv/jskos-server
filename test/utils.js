@@ -319,6 +319,21 @@ describe("utils", () => {
           contributor: [{}, { uri: "test" }],
         },
       },
+      // Allow any kind of values if auth is false
+      {
+        object: { creator: [{ uri: "abc "}], contributor: [] },
+        expected: { creator: [{ uri: "abc "}], contributor: [] },
+        req: Object.assign(reqWithMethod("POST"), { auth: false }),
+        // Should be ignored
+        creator: { uri: "test" },
+      },
+      // Always remove creator/contributor from payload when anonymous is true, but don't change existing values
+      {
+        object: { creator: [{ uri: "abc "}], contributor: [] },
+        existing: { creator: [{ uri: "def" }], contributor: [{ uri: "ghj"}] },
+        expected: { creator: [{ uri: "def" }], contributor: [{ uri: "ghj"}] },
+        req: Object.assign(reqWithMethod("PUT"), { anonymous: true }),
+      },
     ]
     let index = 0
     for (let { expected, ...options } of tests) {
