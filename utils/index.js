@@ -552,14 +552,12 @@ const getCreator = (req) => {
  * @param {Object} options.object JSKOS object
  * @param {Object} [options.existing] existing object from database for PUT/PATCH
  * @param {Object} [options.creator] creator object, usually extracted via `getCreator` above
- * @param {Object} options.req request object (necessary for `type`, `user`, and `method`)
+ * @param {Object} options.req request object (necessary for `type`, `user`, `method`, `anonymous`, and `auth`)
  */
 const handleCreatorForObject = ({ object, existing, creator, req }) => {
   if (!object) {
     return object
   }
-  // Remove `creator` because we'll use separate logic to set it
-  delete object.creator
 
   if (req.type === "annotations") {
     // No "contributor" for annotations
@@ -596,21 +594,38 @@ const handleCreatorForObject = ({ object, existing, creator, req }) => {
         } else {
           delete object.creator
         }
+      } else if (object.creator && creator) {
+        // If creator is overridden, it can only be the user
+        object.creator = creator
       }
-      if (creator && req.type !== "annotations") {
-        // Check if current user is somewhere in either creator or contributor
-        const contributors = (
-          object.contributor === undefined
-            ? (existing && existing.contributor)
-            : object.contributor
-        ) || []
-        const creators = [].concat(
-          object.creator || (existing && existing.creator) || [],
-          contributors,
-        )
-        if (!creators.find(c => jskos.compare(c, { identifier: userUris }))) {
-          // If current user is not yet there, add it to contributor
-          object.contributor = contributors.concat(creator)
+      // Update creator and/or add to contributor
+      if (creator) {
+        if (req.type === "annotations") {
+          // Only update creator if it's the user
+          if (userUris.includes((object.creator || existing && existing.creator || {}).id)) {
+            object.creator = creator
+          }
+        } else {
+          const findUserPredicate = c => jskos.compare(c, { identifier: userUris })
+          const objectCreatorIndex = (object.creator || []).findIndex(findUserPredicate)
+          const existingCreatorIndex = (existing && existing.creator || []).findIndex(findUserPredicate)
+          const objectContributorIndex = (object.contributor || []).findIndex(findUserPredicate)
+          const existingContributorIndex = (existing && existing.contributor || []).findIndex(findUserPredicate)
+          if (objectCreatorIndex !== -1) {
+            object.creator[objectCreatorIndex] = creator[0]
+          } else if (objectContributorIndex !== -1) {
+            object.contributor.splice(objectContributorIndex, 1)
+            object.contributor.push(creator[0])
+          } else if (existingCreatorIndex !== -1 && !object.creator) {
+            object.creator = existing.creator
+            object.creator[existingCreatorIndex] = creator[0]
+          } else if (existingContributorIndex !== -1 && !object.contributor) {
+            object.contributor = existing.contributor
+            object.contributor.splice(existingContributorIndex, 1)
+            object.contributor.push(creator[0])
+          } else {
+            object.contributor = (object.contributor || existing.contributor || []).concat(creator)
+          }
         }
       }
     }
