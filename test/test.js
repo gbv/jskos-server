@@ -12,6 +12,7 @@ const assert = require("assert")
 const cpexec = require("child_process").exec
 const _ = require("lodash")
 const { assertMongoDB, dropDatabaseBeforeAndAfter } = require("./test-utils")
+const { isValidUuid } = require("../utils")
 
 // Prepare jwt
 const jwt = require("jsonwebtoken")
@@ -282,6 +283,97 @@ describe("Express Server", () => {
             res.body.length.should.be.eql(2)
             done()
           })
+      })
+    })
+
+  })
+
+  describe("POST /concordances", () => {
+
+    // Make sure schemes are imported
+    before(done => {
+      cpexec("NODE_ENV=test ./bin/import.js schemes ./test/terminologies/terminologies.json", (err) => {
+        if (err) {
+          done(err)
+        }
+        done()
+      })
+    })
+
+    it("should not POST a concordance without fromScheme/toScheme", done => {
+      chai.request(server.app)
+        .post("/concordances")
+        .set("Authorization", `Bearer ${token}`)
+        .send({})
+        .end((err, res) => {
+          res.should.have.status(422)
+          done()
+        })
+    })
+
+    it("should not POST a concordance with unknown fromScheme", done => {
+      chai.request(server.app)
+        .post("/concordances")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          fromScheme: { uri: "unknown:uri" },
+        })
+        .end((err, res) => {
+          res.should.have.status(422)
+          done()
+        })
+    })
+
+    it("should POST a concordance", done => {
+      const concordance = {
+        fromScheme: { uri: "http://bartoc.org/en/node/241" },
+        toScheme: { uri: "http://bartoc.org/en/node/313" },
+        notation: ["ddc_stw_test"],
+      }
+      chai.request(server.app)
+        .post("/concordances")
+        .set("Authorization", `Bearer ${token}`)
+        .send(concordance)
+        .end((err, res) => {
+          res.should.have.status(201)
+          res.body.should.be.a("object")
+          // Check URI
+          assert.ok(res.body.uri.endsWith(`/${concordance.notation[0]}`))
+          // Should update fromScheme URI
+          assert.strictEqual(res.body.fromScheme.uri, "http://dewey.info/scheme/edition/e23/", "Expected fromScheme.uri to be updated with main URI from database.")
+          done()
+        })
+    })
+
+    it("should POST a concordance and create an identifier for it", done => {
+      const concordance = {
+        fromScheme: { uri: "http://bartoc.org/en/node/241" },
+        toScheme: { uri: "http://bartoc.org/en/node/313" },
+      }
+      chai.request(server.app)
+        .post("/concordances")
+        .set("Authorization", `Bearer ${token}`)
+        .send(concordance)
+        .end((err, res) => {
+          res.should.have.status(201)
+          res.body.should.be.a("object")
+          // Check notation
+          assert.strictEqual(res.body.notation && res.body.notation.length, 1)
+          const id = res.body.notation[0]
+          assert.ok(isValidUuid(id))
+          // Check URI
+          assert.ok(res.body.uri.endsWith(`/${id}`))
+          done()
+        })
+    })
+
+    // Make sure schemes and concordances are reset afterwards
+    after(done => {
+      cpexec("yes | NODE_ENV=test ./bin/reset.js -t schemes && yes | NODE_ENV=test ./bin/reset.js -t concordances", (err) => {
+        if (err) {
+          done(err)
+        }
+        done()
       })
     })
 

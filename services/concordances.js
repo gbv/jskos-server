@@ -1,8 +1,11 @@
 const Concordance = require("../models/concordances")
 const utils = require("../utils")
 const config = require("../config")
+const validate = require("jskos-validate")
 
-const { MalformedRequestError, EntityNotFoundError } = require("../errors")
+const validateConcordance = validate.concordance
+
+const { MalformedRequestError, EntityNotFoundError, MalformedBodyError, InvalidBodyError } = require("../errors")
 
 module.exports = class ConcordanceService {
 
@@ -71,7 +74,7 @@ module.exports = class ConcordanceService {
   }
 
   /**
-   * Returns a promise with a single mapping with ObjectId in req.params._id.
+   * Returns a promise with a single concordance with ObjectId in req.params._id.
    */
   async getConcordance(uriOrId) {
     if (!uriOrId) {
@@ -89,6 +92,84 @@ module.exports = class ConcordanceService {
     if (result) return result
 
     throw new EntityNotFoundError(null, uriOrId)
+  }
+
+  /**
+   * Save a single concordance or multiple concordances in the database. Adds created date, validates the concordance, and adds identifiers.
+   */
+  async postConcordance({ bodyStream }) {
+    if (!bodyStream) {
+      throw new MalformedBodyError()
+    }
+
+    let isMultiple = true
+
+    // As a workaround, build body from bodyStream
+    let concordances = await new Promise((resolve) => {
+      const body = []
+      bodyStream.on("data", concordance => {
+        body.push(concordance)
+      })
+      bodyStream.on("isSingleObject", () => {
+        isMultiple = false
+      })
+      bodyStream.on("end", () => {
+        resolve(body)
+      })
+    })
+
+    let response
+
+    // Adjust all concordances
+    for (const concordance of concordances) {
+      // Add created and modified dates.
+      const now = (new Date()).toISOString()
+      if (!concordance.created) {
+        concordance.created = now
+      }
+      concordance.modified = now
+      // Validate concordance
+      if (!validateConcordance(concordance)) {
+        throw new InvalidBodyError()
+      }
+      // Check if schemes are available and replace them with URI/notation only
+      for (const key of ["fromScheme", "toScheme"]) {
+        if (!concordance[key] || !concordance[key].uri) {
+          throw new InvalidBodyError(`Missing ${key}`)
+        }
+        const scheme = await this.schemeService.getScheme(concordance[key].uri)
+        if (!scheme) {
+          throw new InvalidBodyError(`Scheme with URI ${concordance[key].uri} not found. Concordances can only use known schemes.`)
+        }
+        concordance[key] = {
+          uri: scheme.uri,
+          notation: scheme.notation,
+        }
+      }
+
+      // _id and URI
+      delete concordance._id
+      if (concordance.uri) {
+        let uri = concordance.uri
+        // URI already exists, use if it's valid, otherwise move to identifier
+        if (uri.startsWith(this.uriBase)) {
+          concordance._id = uri.slice(this.uriBase.length, uri.length)
+          concordance.notation = [concordance._id].concat((concordance.notation || []).slice(1))
+        } else {
+          concordance.identifier = (concordance.identifier || []).concat([uri])
+        }
+      }
+      if (!concordance._id) {
+        concordance._id = concordance.notation && concordance.notation[0] || utils.uuid()
+        concordance.uri = this.uriBase + concordance._id
+        concordance.notation = [concordance._id].concat((concordance.notation || []).slice(1))
+      }
+    }
+    concordances = concordances.filter(m => m)
+
+    response = await Concordance.insertMany(concordances, { lean: true })
+
+    return isMultiple ? response : response[0]
   }
 
   async createIndexes() {

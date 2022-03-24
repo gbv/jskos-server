@@ -31,4 +31,20 @@ if (config.concordances.read) {
   )
 }
 
+if (config.concordances.create) {
+  router.post(
+    "/",
+    config.concordances.create.auth ? auth.default : auth.optional,
+    utils.bodyParser,
+    utils.wrappers.async(async (req) => {
+      return await concordanceService.postConcordance({
+        bodyStream: req.anystream,
+        user: req.user,
+      })
+    }),
+    utils.adjust,
+    utils.returnJSON,
+  )
+}
+
 module.exports = router

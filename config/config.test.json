@@ -36,6 +36,22 @@
       "crossUser": true
     }
   },
+  "concordances": {
+    "read": {
+      "auth": false
+    },
+    "create": {
+      "auth": true
+    },
+    "update": {
+      "auth": true,
+      "crossUser": false
+    },
+    "delete": {
+      "auth": true,
+      "crossUser": false
+    }
+  },
   "mappings": {
     "read": {
       "auth": false
