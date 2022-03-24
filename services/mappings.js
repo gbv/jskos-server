@@ -25,6 +25,7 @@ module.exports = class MappingService {
 
   constructor(container) {
     this.schemeService = container.get(require("../services/schemes"))
+    this.concordanceService = container.get(require("../services/concordances"))
 
     this.loadWhitelists()
   }
@@ -182,8 +183,19 @@ module.exports = class MappingService {
     let mongoQuery4 = {}
     if (partOf) {
       let uris = partOf.split("|")
+      let allUris = []
+      for (const uri of uris) {
+        // Get concordance from database, then add all its identifiers
+        try {
+          const concordance = await this.concordanceService.get(uri)
+          allUris = allUris.concat(concordance.uri, concordance.identifier || [])
+        } catch (error) {
+          // Ignore error and push URI only
+          allUris.push(uri)
+        }
+      }
       mongoQuery4 = {
-        $or: uris.map(uri => ({ "partOf.uri": uri })),
+        $or: allUris.map(uri => ({ "partOf.uri": uri })),
       }
     }
 

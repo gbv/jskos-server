@@ -1,14 +1,14 @@
 const Concordance = require("../models/concordances")
 const utils = require("../utils")
+const config = require("../config")
+
+const { MalformedRequestError, EntityNotFoundError } = require("../errors")
 
 module.exports = class ConcordanceService {
 
   constructor(container) {
     this.schemeService = container.get(require("./schemes"))
-  }
-
-  async get(uri) {
-    return (await this.getConcordances({ uri, limit: 1, offset: 0 }))[0]
+    this.uriBase = config.baseUrl + "concordances/"
   }
 
   /**
@@ -18,12 +18,12 @@ module.exports = class ConcordanceService {
     let conditions = []
     // Search by URI
     if (query.uri) {
-      conditions.push({ $or: query.uri.split("|").map(uri => ({ uri: uri })) })
+      const uris = query.uri.split("|")
+      conditions.push({ $or: uris.map(uri => ({ uri: uri })).concat(uris.map(uri => ({ identifier: uri }))) })
     }
     // Search by fromScheme/toScheme (URI or notation)
     for (let part of ["fromScheme", "toScheme"]) {
       if (query[part]) {
-        // TODO: Use schemeService to get all URIs for scheme.
         let uris = []
         for (let uriOrNotation of query[part].split("|")) {
           let scheme = await this.schemeService.getScheme(uriOrNotation)
@@ -64,6 +64,31 @@ module.exports = class ConcordanceService {
       concordances.totalCount = await utils.count(Concordance, [{ $match: mongoQuery }])
       return concordances
     }
+  }
+
+  async get(_id) {
+    return this.getConcordance(_id)
+  }
+
+  /**
+   * Returns a promise with a single mapping with ObjectId in req.params._id.
+   */
+  async getConcordance(uriOrId) {
+    if (!uriOrId) {
+      throw new MalformedRequestError()
+    }
+    let result
+    // First look via ID
+    result = await Concordance.findById(uriOrId).lean()
+    if (result) return result
+    // Then via URI
+    result = await Concordance.findOne({ uri: uriOrId }).lean()
+    if (result) return result
+    // Then via identifier
+    result = await Concordance.findOne({ identifier: uriOrId }).lean()
+    if (result) return result
+
+    throw new EntityNotFoundError(null, uriOrId)
   }
 
   async createIndexes() {
