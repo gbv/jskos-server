@@ -192,7 +192,6 @@ module.exports = class ConcordanceService {
     if (existing.extent) {
       concordance.extent = existing.extent
     } else {
-      // TODO: Determine extent here?
       _.unset(concordance, "extent")
     }
     if (existing.distribution) {
