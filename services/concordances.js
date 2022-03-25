@@ -166,6 +166,8 @@ module.exports = class ConcordanceService {
         concordance.uri = this.uriBase + concordance._id
         concordance.notation = [concordance._id].concat((concordance.notation || []).slice(1))
       }
+      // Extent should be 0 when added; will be updated in postAdjustmentForConcordance whenever there are changes
+      concordance.extent = "0"
     }
     concordances = concordances.filter(m => m)
 
@@ -206,6 +208,7 @@ module.exports = class ConcordanceService {
 
     const result = await Concordance.replaceOne({ _id: existing._id }, concordance)
     if (result.acknowledged && result.matchedCount) {
+      await this.postAdjustmentForConcordance(existing._id)
       return concordance
     } else {
       throw new DatabaseAccessError()
@@ -235,6 +238,7 @@ module.exports = class ConcordanceService {
 
     const result = await Concordance.replaceOne({ _id: existing._id }, existing)
     if (result.acknowledged) {
+      await this.postAdjustmentForConcordance(existing._id)
       return existing
     } else {
       throw new DatabaseAccessError()
@@ -242,14 +246,31 @@ module.exports = class ConcordanceService {
   }
 
   async deleteConcordance({ existing }) {
-    const uris = [existing.uri].concat(existing.identifier || [])
-    const count = await Mapping.count({ $or: uris.map(uri => ({ "partOf.uri": uri })) })
+    const count = await this.getMappingsCountForConcordance(existing)
     if (count > 0) {
       throw new MalformedRequestError(`Can't delete a concordance that still has mappings associated with it (${count} mappings).`)
     }
     const result = await Concordance.deleteOne({ _id: existing._id })
     if (!result.deletedCount) {
       throw new DatabaseAccessError()
+    }
+  }
+
+  async getMappingsCountForConcordance(concordance) {
+    const uris = [concordance.uri].concat(concordance.identifier || [])
+    return await Mapping.count({ $or: uris.map(uri => ({ "partOf.uri": uri })) })
+  }
+
+  async postAdjustmentForConcordance(uriOrId) {
+    try {
+      const concordance = await this.get(uriOrId)
+      const count = await this.getMappingsCountForConcordance(concordance)
+      if (`${count}` !== concordance.extent) {
+        // Update extent with new count
+        await Concordance.updateOne({ _id: concordance._id }, { extent: `${count}`, modified: (new Date()).toISOString() })
+      }
+    } catch (error) {
+      // Ignore errors here
     }
   }
 
