@@ -668,24 +668,26 @@ const bodyParser = (req, res, next) => {
     anystream.addStream(adjust)(req, res, next)
   } else {
     // For all other requests, parse as JSON
-    require("express").json()(req, res, (...params) => {
+    require("express").json()(req, res, async (...params) => {
       // Get existing
       const uri = req.params._id || (req.body || {}).uri || req.query.uri
-      services[req.type].get(uri)
-        .catch(() => null)
-        .then(existing => {
-          if (!existing) {
-            next(new EntityNotFoundError(null, uri))
-          } else {
-            if (!matchesCreator({ req, object: existing })) {
-              next(new CreatorDoesNotMatchError())
-            } else {
-              req.existing = existing
-              req.body = adjust(req.body, existing)
-              next(...params)
-            }
-          }
-        })
+      let existing
+      try {
+        existing = await services[req.type].get(uri)
+      } catch (error) {
+        // Ignore
+      }
+      if (!existing) {
+        next(new EntityNotFoundError(null, uri))
+      } else {
+        if (!matchesCreator({ req, object: existing })) {
+          next(new CreatorDoesNotMatchError())
+        } else {
+          req.existing = existing
+          req.body = adjust(req.body, existing)
+          next(...params)
+        }
+      }
     })
   }
 }
