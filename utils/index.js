@@ -680,7 +680,43 @@ const bodyParser = (req, res, next) => {
       if (!existing) {
         next(new EntityNotFoundError(null, uri))
       } else {
-        if (!matchesCreator({ req, object: existing })) {
+        let superordinated = {
+          existing: null,
+          payload: null,
+        }
+        // Check for superordinated object for existing (currently only `partOf`)
+        if (existing.partOf && existing.partOf[0]) {
+          // Get concordance via service
+          try {
+            const concordance = await services.concordances.get(existing.partOf[0].uri)
+            superordinated.existing = concordance
+          } catch (error) {
+            // TODO: What should we do if the superordinated object doesn't exist?
+          }
+        }
+        // Check superordinated object for payload
+        if (req.body && req.body.partOf && req.body.partOf[0]) {
+          // Get concordance via service
+          try {
+            const concordance = await services.concordances.get(req.body.partOf[0].uri)
+            superordinated.payload = concordance
+          } catch (error) {
+            // TODO: What should we do if the superordinated object doesn't exist?
+          }
+        }
+        let creatorMatches = true
+        if (superordinated.existing) {
+          // creator or contributor must match for existing superordinated object
+          creatorMatches = creatorMatches && matchesCreator({ req, object: superordinated.existing, withContributors: true })
+        } else {
+          // creator needs to match for object that is updated
+          creatorMatches = creatorMatches && matchesCreator({ req, object: existing })
+        }
+        if (superordinated.payload) {
+          // creator or contributor must also match for the payload's superordinated object
+          creatorMatches = creatorMatches && matchesCreator({ req, object: superordinated.payload, withContributors: true })
+        }
+        if (!creatorMatches) {
           next(new CreatorDoesNotMatchError())
         } else {
           req.existing = existing
