@@ -288,7 +288,7 @@ describe("Express Server", () => {
 
   })
 
-  describe("POST /concordances", () => {
+  describe("/concordances write access", () => {
 
     // Make sure schemes are imported
     before(done => {
@@ -467,13 +467,71 @@ describe("Express Server", () => {
         })
     })
 
-    it("should DELETE a concordance without mappings", done => {
+    let mapping_id
+    it("should POST a mapping, then PATCH it with existing concordance", done => {
+      let mapping = {
+        fromScheme: createdConcordance.fromScheme,
+        toScheme: createdConcordance.toScheme,
+        from: { memberSet: [{ uri: "test:concept" }] },
+        to: { memberSet: [] },
+      }
+      chai.request(server.app)
+        .post("/mappings")
+        .set("Authorization", `Bearer ${token}`)
+        .send(mapping)
+        .end((err, res) => {
+          assert.equal(res.status, 201)
+          mapping_id = res.body.uri.substring(res.body.uri.lastIndexOf("/") + 1)
+          const modified = res.body.modified
+          chai.request(server.app)
+            .patch(`/mappings/${mapping_id}`)
+            .set("Authorization", `Bearer ${token}`)
+            .send({ partOf: [{ uri: createdConcordance.uri }] })
+            .end((err, res) => {
+              assert.equal(res.status, 200)
+              assert.equal(res.body.partOf[0].uri, createdConcordance.uri)
+              // modified should NOT change if only concordance was updated
+              assert.strictEqual(res.body.modified, modified)
+              done()
+            })
+        })
+    })
+
+    it("should have updated extent and modified of concordance", done => {
+      chai.request(server.app)
+        .get(`/concordances/${created_id}`)
+        .end((err, res) => {
+          assert.equal(res.status, 200)
+          assert.equal(res.body.uri, createdConcordance.uri)
+          assert.equal(res.body.extent, "1")
+          assert.notStrictEqual(res.body.modified, createdConcordance.modified)
+          done()
+        })
+    })
+
+    it("should not DELETE a concordance with mappings", done => {
       chai.request(server.app)
         .delete(`/concordances/${created_id}`)
         .set("Authorization", `Bearer ${token}`)
         .end((err, res) => {
-          assert.equal(res.status, 204)
+          assert.equal(res.status, 400)
           done()
+        })
+    })
+
+    it("should DELETE a mapping, then should DELETE a concordance without mappings", done => {
+      chai.request(server.app)
+        .delete(`/mappings/${mapping_id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .end((err, res) => {
+          assert.equal(res.status, 204)
+          chai.request(server.app)
+            .delete(`/concordances/${created_id}`)
+            .set("Authorization", `Bearer ${token}`)
+            .end((err, res) => {
+              assert.equal(res.status, 204)
+              done()
+            })
         })
     })
 
