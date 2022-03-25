@@ -47,4 +47,54 @@ if (config.concordances.create) {
   )
 }
 
+if (config.concordances.update) {
+  router.put(
+    "/:_id",
+    config.concordances.update.auth ? auth.default : auth.optional,
+    utils.bodyParser,
+    utils.wrappers.async(async (req) => {
+      return await concordanceService.putConcordance({
+        _id: req.params._id,
+        body: req.body,
+        user: req.user,
+        existing: req.existing,
+      })
+    }),
+    utils.adjust,
+    utils.returnJSON,
+  )
+
+  router.patch(
+    "/:_id",
+    config.concordances.update.auth ? auth.default : auth.optional,
+    utils.bodyParser,
+    utils.wrappers.async(async (req) => {
+      return await concordanceService.patchConcordance({
+        _id: req.params._id,
+        body: req.body,
+        user: req.user,
+        existing: req.existing,
+      })
+    }),
+    utils.adjust,
+    utils.returnJSON,
+  )
+}
+
+if (config.concordances.delete) {
+  router.delete(
+    "/:_id",
+    config.concordances.delete.auth ? auth.default : auth.optional,
+    utils.bodyParser,
+    utils.wrappers.async(async (req) => {
+      return await concordanceService.deleteConcordance({
+        _id: req.params._id,
+        user: req.user,
+        existing: req.existing,
+      })
+    }),
+    (req, res) => res.sendStatus(204),
+  )
+}
+
 module.exports = router

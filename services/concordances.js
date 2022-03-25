@@ -1,11 +1,13 @@
+const _ = require("lodash")
 const Concordance = require("../models/concordances")
+const Mapping = require("../models/mappings")
 const utils = require("../utils")
 const config = require("../config")
 const validate = require("jskos-validate")
 
 const validateConcordance = validate.concordance
 
-const { MalformedRequestError, EntityNotFoundError, MalformedBodyError, InvalidBodyError } = require("../errors")
+const { MalformedRequestError, EntityNotFoundError, MalformedBodyError, InvalidBodyError, DatabaseAccessError } = require("../errors")
 
 module.exports = class ConcordanceService {
 
@@ -170,6 +172,85 @@ module.exports = class ConcordanceService {
     response = await Concordance.insertMany(concordances, { lean: true })
 
     return isMultiple ? response : response[0]
+  }
+
+  async putConcordance({ body, existing }) {
+    let concordance = body
+    if (!concordance) {
+      throw new InvalidBodyError()
+    }
+
+    // Override some properties from existing that shouldn't change
+    // TODO: Should we throw errors if user tries to change these?
+    for (const prop of ["_id", "uri", "notation", "fromScheme", "toScheme", "created"]) {
+      concordance[prop] = existing[prop]
+    }
+    // Add modified date.
+    concordance.modified = (new Date()).toISOString()
+    if (existing.extent) {
+      concordance.extent = existing.extent
+    } else {
+      // TODO: Determine extent here?
+      _.unset(concordance, "extent")
+    }
+    if (existing.distribution) {
+      concordance.distribution = existing.distribution
+    } else {
+      _.unset(concordance, "distribution")
+      // TODO: `distribution` should be dynamically added if it doesn't exist! (or always?)
+    }
+    // Validate concordance
+    if (!validateConcordance(concordance)) {
+      throw new InvalidBodyError()
+    }
+
+    const result = await Concordance.replaceOne({ _id: existing._id }, concordance)
+    if (result.acknowledged && result.matchedCount) {
+      return concordance
+    } else {
+      throw new DatabaseAccessError()
+    }
+  }
+
+  async patchConcordance({ body, existing }) {
+    let concordance = body
+    if (!concordance) {
+      throw new InvalidBodyError()
+    }
+
+    // Unset certain properties that shouldn't change
+    for (const prop of ["_id", "uri", "notation", "fromScheme", "toScheme", "created", "extent", "distribution"]) {
+      _.unset(concordance, prop)
+    }
+    // Add modified date.
+    concordance.modified = (new Date()).toISOString()
+
+    // Use lodash merge to merge concordance objects
+    _.merge(existing, concordance)
+
+    // Validate concordance after merge
+    if (!validateConcordance(existing)) {
+      throw new InvalidBodyError()
+    }
+
+    const result = await Concordance.replaceOne({ _id: existing._id }, existing)
+    if (result.acknowledged) {
+      return existing
+    } else {
+      throw new DatabaseAccessError()
+    }
+  }
+
+  async deleteConcordance({ existing }) {
+    const uris = [existing.uri].concat(existing.identifier || [])
+    const count = await Mapping.count({ $or: uris.map(uri => ({ "partOf.uri": uri })) })
+    if (count > 0) {
+      throw new MalformedRequestError(`Can't delete a concordance that still has mappings associated with it (${count} mappings).`)
+    }
+    const result = await Concordance.deleteOne({ _id: existing._id })
+    if (!result.deletedCount) {
+      throw new DatabaseAccessError()
+    }
   }
 
   async createIndexes() {

@@ -345,6 +345,7 @@ describe("Express Server", () => {
         })
     })
 
+    let createdConcordance, created_id
     it("should POST a concordance and create an identifier for it", done => {
       const concordance = {
         fromScheme: { uri: "http://bartoc.org/en/node/241" },
@@ -357,12 +358,131 @@ describe("Express Server", () => {
         .end((err, res) => {
           res.should.have.status(201)
           res.body.should.be.a("object")
+          createdConcordance = res.body
+          created_id = res.body.uri.substring(res.body.uri.lastIndexOf("/") + 1)
           // Check notation
           assert.strictEqual(res.body.notation && res.body.notation.length, 1)
           const id = res.body.notation[0]
           assert.ok(isValidUuid(id))
           // Check URI
           assert.ok(res.body.uri.endsWith(`/${id}`))
+          done()
+        })
+    })
+
+    it("should PUT a concordance", done => {
+      createdConcordance.scopeNote = { en: ["Test"] }
+      chai.request(server.app)
+        .put(`/concordances/${created_id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send(createdConcordance)
+        .end((err, res) => {
+          assert.equal(res.status, 200)
+          assert.deepStrictEqual(res.body.scopeNote, createdConcordance.scopeNote)
+          // `modified` should be updated
+          assert.notStrictEqual(res.body.modified, createdConcordance.modified)
+
+          createdConcordance = res.body
+          done()
+        })
+    })
+
+    it("should PUT a concordance, but not change certain properties", done => {
+      createdConcordance.fromScheme = { uri: "test" }
+      createdConcordance.toScheme = { uri: "test" }
+      createdConcordance.extent = "5000"
+      createdConcordance._id = "abc"
+      chai.request(server.app)
+        .put(`/concordances/${created_id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send(createdConcordance)
+        .end((err, res) => {
+          assert.equal(res.status, 200)
+          // Check that properties were not taken from adjustments
+          for (const prop of ["fromScheme", "toScheme", "extent", "_id"]) {
+            assert.notStrictEqual(res.body[prop], createdConcordance[prop])
+          }
+          // `modified` should be updated
+          assert.notStrictEqual(res.body.modified, createdConcordance.modified)
+
+          createdConcordance = res.body
+          done()
+        })
+    })
+
+    it("should not PUT a concordance that doesn't validate", done => {
+      chai.request(server.app)
+        .put(`/concordances/${created_id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send(Object.assign({}, createdConcordance, { scopeNote: 0 }))
+        .end((err, res) => {
+          assert.equal(res.status, 422)
+          done()
+        })
+    })
+
+    it("should PATCH a concordance", done => {
+      const change = { scopeNote: { en: ["Test 2"] } }
+      chai.request(server.app)
+        .patch(`/concordances/${created_id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send(change)
+        .end((err, res) => {
+          assert.equal(res.status, 200)
+          assert.deepStrictEqual(res.body.scopeNote, change.scopeNote)
+          // `modified` should be updated
+          assert.notStrictEqual(res.body.modified, createdConcordance.modified)
+
+          createdConcordance = res.body
+          done()
+        })
+    })
+
+    it("should not PATCH certain properties of a concordance", done => {
+      const change = { fromScheme: { uri: "test" } }
+      chai.request(server.app)
+        .patch(`/concordances/${created_id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send(change)
+        .end((err, res) => {
+          assert.equal(res.status, 200)
+          assert.notStrictEqual(res.body.fromScheme, change.fromScheme)
+          assert.deepStrictEqual(res.body.fromScheme, createdConcordance.fromScheme)
+          // `modified` should be updated
+          assert.notStrictEqual(res.body.modified, createdConcordance.modified)
+
+          createdConcordance = res.body
+          done()
+        })
+    })
+
+    it("should not PATCH a concordance change that doesn't validate", done => {
+      chai.request(server.app)
+        .put(`/concordances/${created_id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ scopeNote: 0 })
+        .end((err, res) => {
+          assert.equal(res.status, 422)
+          done()
+        })
+    })
+
+    it("should DELETE a concordance without mappings", done => {
+      chai.request(server.app)
+        .delete(`/concordances/${created_id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .end((err, res) => {
+          assert.equal(res.status, 204)
+          done()
+        })
+    })
+
+    it("should fail to DELETE a concordance that doesn't exist", done => {
+      chai.request(server.app)
+        .delete(`/concordances/${created_id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .end((err, res) => {
+          assert.equal(res.status, 404)
           done()
         })
     })
