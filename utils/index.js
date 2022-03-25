@@ -234,28 +234,28 @@ const getUrisForUser = (user) => {
  *
  * If config.auth.allowCrossUserEditing is enabled, this returns true as long as a user and object are given.
  *
- * @param {object} user the user object (e.g. req.user)
- * @param {object} object any object that has the property `creator`
- * @param {string} type type of entity (e.g. `mappings`, `annotations`)
- * @param {string} action one of `read`/`create`/`update`/`delete`
+ * @param {object} options.req the request object (that includes req.user, req.crossUser, and req.auth)
+ * @param {object} options.object any object that has the property `creator`
+ * @param {boolean} options.withContributors allow contributors to be matched (for object with superordinated object)
  */
-const matchesCreator = (user, object, type, action) => {
-  let crossUser = false
-  if (config[type] && config[type][action]) {
-    crossUser = config[type][action].crossUser
-  }
-  // If config.auth.allowCrossUserEditing is enabled, return true
-  if (crossUser) {
+const matchesCreator = ({ req = {}, object, withContributors = false }) => {
+  const { user, crossUser, auth } = req
+  if (!auth) {
     return true
   }
   if (!object || !user) {
     return false
   }
+  if (crossUser) {
+    return true
+  }
   // If not, check URIs
   const userUris = getUrisForUser(user)
   // Support arrays, objects, and strings as creators
   let creators = _.isArray(object.creator) ? object.creator : (_.isObject(object.creator) ? [object.creator] : [{ uri: object.creator }])
-  for (let creator of creators) {
+  // Also check contributors if requested
+  let contributors = withContributors ? (object.contributor || []) : []
+  for (let creator of creators.concat(contributors)) {
     if (userUris.includes(creator.uri) || userUris.includes(creator.id)) {
       return true
     }
@@ -677,7 +677,7 @@ const bodyParser = (req, res, next) => {
           if (!existing) {
             next(new EntityNotFoundError(null, uri))
           } else {
-            if (!matchesCreator(req.user, existing, req.type, req.action)) {
+            if (!matchesCreator({ req, object: existing })) {
               next(new CreatorDoesNotMatchError())
             } else {
               req.existing = existing
