@@ -1,5 +1,8 @@
 const Container = require("typedi").Container
+const Concordance = require("../models/concordances")
 const utils = require("./")
+const config = require("../config")
+const yesno = require("yesno")
 
 class Version {
 
@@ -111,6 +114,69 @@ const upgrades = {
     const annotationService = Container.get(require("../services/annotations"))
     await annotationService.createIndexes()
     console.log("... done.")
+  },
+  async "1.4"() {
+    console.log("Concordances will be upgraded:")
+    console.log("- _id will be changed to notation (if available) or a new UUID")
+    console.log(`- URI will be adjusted to start with ${config.baseUrl}`)
+    console.log("- Previous URI(s) will be moved to identifier")
+    console.log("- Distribtions which are served from this instance are removed (will be added dynamically)")
+    const ok = await yesno({
+      question: "Is that okay?",
+      defaultValue: false,
+    })
+    if (!ok) {
+      throw new Error("Aborted due to missing user confirmation.")
+    }
+
+    let adjusted = 0
+    let failed = 0
+    let skipped = 0
+    const concordances = await Concordance.find().lean()
+    for (const concordance of concordances) {
+      const previous_id = concordance._id
+      if (!previous_id.startsWith("http")) {
+        skipped += 1
+        continue
+      }
+      let _id = concordance.notation[0]
+      if (!_id) {
+        _id = utils.uuid()
+        concordance.notation = [_id].concat((concordance.notation || []).slice(1))
+      }
+      const identifier = []
+      // Add previous _id to identifier
+      identifier.push(previous_id)
+      // Add previous URI if necessary
+      if (previous_id != concordance.uri) {
+        identifier.push(concordance.uri)
+      }
+      // Set new _id and URI, add previous to identifier
+      concordance._id = _id
+      concordance.uri = `${config.baseUrl}concordances/${_id}`
+      console.log(`- Updating concordance ${previous_id} to _id ${_id} (${concordance.uri})`)
+      concordance.identifier = (concordance.identifier || []).concat(identifier)
+      // Remove distributions that are served by jskos-server and instead add them dynamically
+      concordance.distribution = (concordance.distribution || []).filter(dist => !dist.download || !dist.download.startsWith(config.baseUrl))
+      if (!concordance.distribution.length) {
+        delete concordance.distribution
+      }
+      // Save concordance
+      try {
+        await Concordance.insertMany([concordance])
+        await Concordance.deleteOne({ _id: previous_id })
+        adjusted += 1
+      } catch (error) {
+        console.error(error)
+        failed += 1
+      }
+    }
+
+    console.log(`- Adjusted: ${adjusted}, skipped: ${skipped}, failed: ${failed}.`)
+    console.log("... done")
+    if (failed > 0) {
+      throw new Error("Not all concordances could be adjusted. Please check the errors and try again.")
+    }
   },
 }
 
