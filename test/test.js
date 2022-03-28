@@ -503,6 +503,17 @@ describe("Express Server", () => {
         })
     })
 
+    it("should return an error on PATCH mapping if the target concordance does not exist", done => {
+      chai.request(server.app)
+        .patch(`/mappings/${mapping_id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ partOf: [{ uri: "abcdef" }] })
+        .end((err, res) => {
+          assert.equal(res.status, 422)
+          done()
+        })
+    })
+
     it("should not DELETE a concordance with mappings", done => {
       chai.request(server.app)
         .delete(`/concordances/${created_id}`)

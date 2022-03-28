@@ -1,7 +1,7 @@
 const config = require("../config")
 const _ = require("lodash")
 const jskos = require("jskos-tools")
-const { DuplicateEntityError, EntityNotFoundError, CreatorDoesNotMatchError, DatabaseInconsistencyError } = require("../errors")
+const { DuplicateEntityError, EntityNotFoundError, CreatorDoesNotMatchError, DatabaseInconsistencyError, InvalidBodyError } = require("../errors")
 
 // Container needed to load services that load properties
 const Container = require("typedi").Container// Services, keys are according to req.type
@@ -715,7 +715,7 @@ const bodyParser = (req, res, next) => {
             const concordance = await services.concordances.get(req.body.partOf[0].uri)
             superordinated.payload = concordance
           } catch (error) {
-            // TODO: What should we do if the superordinated object doesn't exist?
+            next(new InvalidBodyError(`Concordance with URI ${req.body.partOf[0].uri} could not be found.`))
           }
         }
         let creatorMatches = true
