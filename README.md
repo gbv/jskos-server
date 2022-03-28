@@ -1828,6 +1828,9 @@ Status code 403. Will be returned by `PUT`/`PATCH`/`DELETE` endpoints if the aut
 #### DatabaseAccessError
 Status code 500. Will be returned if the database is not available or if the current database request failed with an unknown error.
 
+#### DatabaseInconsistencyError
+Status code 500. Will be returned if there is an inconsistency issue with our database. Please [contact us](https://coli-conc.gbv.de/contact/) with the full error message if this occurs!
+
 #### ConfigurationError
 Status code 500. Will be returned if there is an error in the configuration that prevents the application from working correctly.
 

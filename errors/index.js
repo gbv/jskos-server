@@ -60,6 +60,18 @@ class DatabaseAccessError extends Error {
   }
 }
 
+class DatabaseInconsistencyError extends Error {
+  constructor(message) {
+    if (message) {
+      message += " Please contact us with this error message at coli-conc@gbv.de or open an issue on GitHub. Thanks!"
+    } else {
+      message = "There was an inconsistency error with the database. Please try again later."
+    }
+    super(message)
+    this.statusCode = 500
+  }
+}
+
 class ConfigurationError extends Error {
   constructor(message) {
     message = message || "There was an error with the server configuration. Please contact the server administrator and try again later."
@@ -84,6 +96,7 @@ module.exports = {
   InvalidBodyError,
   CreatorDoesNotMatchError,
   DatabaseAccessError,
+  DatabaseInconsistencyError,
   ConfigurationError,
   ForbiddenAccessError,
 }
