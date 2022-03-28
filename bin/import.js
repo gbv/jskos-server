@@ -339,17 +339,6 @@ async function doImport({ input, format, type, concordance }) {
         $set:
         {
           extent: `${count}`,
-          distribution: [
-            {
-              download: `${config.baseUrl}mappings?partOf=${encodeURIComponent(uri)}&download=ndjson`,
-              format: "http://format.gbv.de/jskos",
-              mimetype: "application/x-ndjson; charset=utf-8",
-            },
-            {
-              download: `${config.baseUrl}mappings?partOf=${encodeURIComponent(uri)}&download=csv`,
-              mimetype: "text/csv; charset=utf-8",
-            },
-          ],
         },
       })
     }
@@ -359,10 +348,17 @@ async function doImport({ input, format, type, concordance }) {
     let total = 0
     for await (let concordance of stream) {
       total += 1
-      // TODO: For testing, uncomment this, otherwise it'll fail validation (`distribution` was mistakenly called `distributions`):
+      // Rewrite "distributions" to "distribution" if necessary
       if (concordance.distributions) {
         concordance.distribution = concordance.distributions
         delete concordance.distributions
+      }
+      // Remove distributions with same baseUrl since they will be added dynamically
+      if (concordance.distribution) {
+        concordance.distribution = concordance.distribution.filter(dist => !dist.download || !dist.download.startsWith(config.baseUrl))
+        if (!concordance.distribution.length) {
+          delete concordance.distribution
+        }
       }
       // Validation
       if (!validate[type] || !validate[type](concordance)) {
