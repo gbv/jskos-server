@@ -699,7 +699,7 @@ const bodyParser = (req, res, next) => {
           payload: null,
         }
         // Check for superordinated object for existing (currently only `partOf`)
-        if (existing.partOf && existing.partOf[0]) {
+        if (req.type === "mappings" && existing.partOf && existing.partOf[0]) {
           // Get concordance via service
           try {
             const concordance = await services.concordances.get(existing.partOf[0].uri)
@@ -711,7 +711,7 @@ const bodyParser = (req, res, next) => {
           }
         }
         // Check superordinated object for payload
-        if (req.body && req.body.partOf && req.body.partOf[0]) {
+        if (req.type === "mappings" && req.body && req.body.partOf && req.body.partOf[0]) {
           // Get concordance via service
           try {
             const concordance = await services.concordances.get(req.body.partOf[0].uri)
