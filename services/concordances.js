@@ -215,15 +215,23 @@ module.exports = class ConcordanceService {
   }
 
   async patchConcordance({ body, existing }) {
-    let concordance = body
-    if (!concordance) {
+    if (!body) {
       throw new InvalidBodyError()
     }
 
-    // Unset certain properties that shouldn't change
+    // Certain properties that shouldn't change
+    let errorMessage = ""
     for (const prop of ["_id", "uri", "notation", "fromScheme", "toScheme", "created", "extent", "distribution"]) {
-      _.unset(concordance, prop)
+      if (body[prop]) {
+        errorMessage += `Field \`${prop}\` can't be changed via PATCH. `
+      }
     }
+    if (errorMessage) {
+      throw new InvalidBodyError(errorMessage)
+    }
+
+    let concordance = body
+
     // Add modified date.
     concordance.modified = (new Date()).toISOString()
 

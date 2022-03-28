@@ -445,13 +445,7 @@ describe("Express Server", () => {
         .set("Authorization", `Bearer ${token}`)
         .send(change)
         .end((err, res) => {
-          assert.equal(res.status, 200)
-          assert.notStrictEqual(res.body.fromScheme, change.fromScheme)
-          assert.deepStrictEqual(res.body.fromScheme, createdConcordance.fromScheme)
-          // `modified` should be updated
-          assert.notStrictEqual(res.body.modified, createdConcordance.modified)
-
-          createdConcordance = res.body
+          assert.equal(res.status, 422)
           done()
         })
     })
