@@ -41,7 +41,6 @@
     },
     "fromSchemeWhitelist": null,
     "toSchemeWhitelist": null,
-    "anonymous": false,
     "cardinality": "1-to-n"
   },
   "concordances": true,
@@ -62,6 +61,7 @@
     },
     "moderatingIdentities": []
   },
+  "anonymous": false,
   "identityProviders": null,
   "identities": null,
   "ips": null

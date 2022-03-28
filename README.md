@@ -15,6 +15,7 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [Dependencies](#dependencies)
   - [Clone and Install](#clone-and-install)
   - [Configuration](#configuration)
+  - [Access control](#access-control)
   - [Authentication](#authentication)
   - [Data Import](#data-import)
 - [Usage](#usage)
@@ -121,6 +122,7 @@ All missing keys will be defaulted from `config/config.default.json`:
     "algorithm": "RS256",
     "key": null
   },
+  "anonymous": false,
   "schemes": true,
   "concepts": true,
   "mappings": {
@@ -140,7 +142,6 @@ All missing keys will be defaulted from `config/config.default.json`:
     },
     "fromSchemeWhitelist": null,
     "toSchemeWhitelist": null,
-    "anonymous": false,
     "cardinality": "1-to-n"
   },
   "concordances": true,
@@ -168,6 +169,15 @@ All missing keys will be defaulted from `config/config.default.json`:
 
 The provided configuration files (user config and environment config) will be validated with the provided [JSON Schema](https://json-schema.org) file under `config/config.schema.json` (public URI: https://gbv.github.io/jskos-server/status.schema.json). If validation fails, **JSON Server will refuse to start!** Please check whether your configuration is correct after each change. If there is something wrong, the console output will try to provide you with enough detail to fix the issue.
 
+If you are [running jskos-server behind a reverse proxy](#running-behind-a-reverse-proxy), it is necessary to provide the `baseUrl` key as well as the `proxies` key in your configuration (example for our production API):**
+See also:
+```json
+{
+  "baseUrl": "https://coli-conc.gbv.de/api/",
+  "proxies": ["123.456.789.101", "234.567.891.011"]
+}
+```
+
 With the keys `schemes`, `concepts`, `mappings`, `concordances`, and `annotations`, you can configure whether endpoints related to the specific functionality should be available. A minimal configuration file to just server read-only vocabulary and concept information could look like this:
 
 ```json
@@ -182,13 +192,13 @@ Available actions for `schemes`, `concepts`, `mappings`, and `annotations` are `
 
 - **`auth`**: Boolean. Can be defined only on actions. Defines whether access will require [authentication via JWT](#authentication). By default `false` for `read`, and `true` for all other actions.
 
-- **`crossUser`**: Boolean. Can be defined only on `update` and `delete` actions. Defines whether it is possible to edit an entity from a different user than the authenticated one. `false` by default.
+- **`crossUser`**: Boolean. Can be defined only on `update` and `delete` actions when `auth` is `true`. Defines whether it is possible to edit an entity from a different user than the authenticated one. `false` by default.
 
-- **`anonymous`**: Boolean. Can be defined only on type `mappings`. If `true`, the creator for mappings will not be saved. Also, `crossUser` will be implied to `true` as well. `false` by default.
+- **`anonymous`**: Boolean. Can be defined on any level (deeper levels will take the values from higher levels if necessary\*). If set, no creator and contributor is saved. `false` by default.
 
 - **`cardinality`**: String. Can be defined only on type `mappings`. Currently possible values: `1-to-n` (default), `1-to-1`. If `1-to-1` is configured, mappings with multiple concepts in `to` will be rejected.
 
-- **`identities`**: List of URI strings. Can be defined on any level (deeper levels will take the values from higher levels if necessary\*). If set, an action can only be used by users with an URI given in the list. `null` by default (no restrictions).
+- **`identities`**: List of URI strings. Can be defined on any level (deeper levels will take the values from higher levels if necessary\*). If set, an action with `auth` set to `true` can only be used by users with an URI given in the list. `null` by default (no restrictions).
 
 - **`identityProviders`**: List of strings. Can be defined on any level (deeper levels will take the values from higher levels if necessary\*). If set, an action can only be used by users who have that identity associated with them. `null` by default (no restrictions).
 
@@ -200,7 +210,25 @@ Available actions for `schemes`, `concepts`, `mappings`, and `annotations` are `
 
 Note that any properties not mentioned here are not allowed!
 
-Here are some helpful example presets for "mappings" or "annotations".
+### Access control
+The rights to `read`, `create`, `update` and `delete` entities via API can be controlled via several configuration settings described above ([data import](#data-import) is not limited by these restrictions):
+
+* Restricted access via `ips` is always applied *in addition* to other settings
+
+* Without [authentication](#authentication) (`auth` set to `false`) the server does not know about user accounts. In this case the `creator` and `contributor` fields of an object can be set without limitations (default) or they are ignored when `anonymous` is set to `true`.
+
+* With authentication an action can be limited to accounts listed in `identities` (if set). Rights to `create`, `update`, and `delete` entities can further depend on two controls:
+
+  1. value of `creator` and `contributor` of a superordinated object. Concepts always belong to vocabularies via `inScheme` or `topConceptOf` and mappings can belong to concordances via `partOf`.
+  2. settings of `crossUser` together with value of `creator` and `contributor` of the object
+
+The first control is only checked if it has a superordinated object with `contributor` and/or `creator`. This can only be the case for mappings and concepts. The connection to a superordinated object is checked on both the stored object and its modified value, so moving a mapping from one concordance to another is only allowed if access is granted for both. The authenticated user must be listed as `creator` or `contributor` of the superordinated object to pass this control.
+
+The second control is only checked when the first control cannot be applied and only on authenticated actions `update` or `delete` where `anonymous` is set to `false` (this is the default). With `crossUser` set to `false`, the authenticated user must be listed as `creator` of the stored object. With `crossUser` set to `true` any authenticated user (optionally limited to those listed in `identities`) can `update` or `delete` the object.
+
+For authenticated actions with `anonymous` being `false` creation of a new object will always set its initial `creator` to the autenticated user and `update` of an object will always add the user to `contributor` unless it is already included as `creator` or `contributor`. Further modification of `creator` and `contributor` (removal and addition of entries) is limited to vocabularies and concordance by authenticated users listed as `creator` of the object.
+
+Here are some helpful example presets for configuration of "mappings" or "annotations".
 
 **Read-only access (does not make sense for annotations):**
 ```json
@@ -273,7 +301,6 @@ Here are some helpful example presets for "mappings" or "annotations".
 
 If write access for concept schemes and/or concepts is necessary, it is recommended that they are secured by only allowing certain users (via `identities`) or only allowing certain IP addresses (via `ips`):
 
-
 **Only user with URI `https://coli-conc.gbv.de/login/users/c0c1914a-f9d6-4b92-a624-bf44118b6619` can write:**
 ```json
 {
@@ -318,20 +345,28 @@ If write access for concept schemes and/or concepts is necessary, it is recommen
 ```
 Note that `auth` is set to `false` because it refers to authentication via JWT. The IP filter is separate from that. An even more secure way would be to use both JWT authentication with an `identities` filter as well as an IP filter.
 
----
-
-**If you are using jskos-server behind a proxy, it is necessary to provide the `baseUrl` key as well as the `proxies` key in your configuration (example for our production API):**
+**Only user with URI `https://coli-conc.gbv.de/login/users/c0c1914a-f9d6-4b92-a624-bf44118b6619` can create, but others can update/delete if they are creator/contributor of an entity:**
 ```json
 {
-  "baseUrl": "https://coli-conc.gbv.de/api/",
-  "proxies": ["123.456.789.101", "234.567.891.011"]
+  "read": {
+    "auth": false
+  },
+  "create": {
+    "auth": true,
+    "identities": ["https://coli-conc.gbv.de/login/users/c0c1914a-f9d6-4b92-a624-bf44118b6619"]
+  },
+  "update": {
+    "auth": true
+  },
+  "delete": {
+    "auth": true
+  }
 }
 ```
-
-See also: [Running Behind a Reverse Proxy](#running-behind-a-reverse-proxy)
+A configuration like this will be used to handle concordances in Cocoda. Only selected accounts will be able to create new concordances, but they will be able to add other accounts as creator/contributor so that those accounts will be able to assign mappings to the concordance and edit mappings that belong to the concordance.
 
 ### Authentication
-It is possible to limit certain actions to authenticated users, indicated by the `auth` option (see example configurations above). Authorization is performed via JWTs ([JSON Web Tokens](https://jwt.io/)). To configure authentication, you need to provide the JWT algorithm and the key/secret in the configuration file, like this:
+It is possible to limit certain actions to authenticated users, indicated by the `auth` option (see [example configurations above](#access-control)). Authorization is performed via JWTs ([JSON Web Tokens](https://jwt.io/)). To configure authentication, you need to provide the JWT algorithm and the key/secret in the configuration file, like this:
 
 ```json
 "auth": {
