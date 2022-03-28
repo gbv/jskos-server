@@ -705,7 +705,9 @@ const bodyParser = (req, res, next) => {
             const concordance = await services.concordances.get(existing.partOf[0].uri)
             superordinated.existing = concordance
           } catch (error) {
-            next(new DatabaseInconsistencyError(`Existing concordance with URI ${existing.partOf[0].uri} could not be found in database.`))
+            const message = `Existing concordance with URI ${existing.partOf[0].uri} could not be found in database.`
+            config.error(message)
+            next(new DatabaseInconsistencyError(message))
           }
         }
         // Check superordinated object for payload
