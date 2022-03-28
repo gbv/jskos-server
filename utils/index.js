@@ -1,7 +1,7 @@
 const config = require("../config")
 const _ = require("lodash")
 const jskos = require("jskos-tools")
-const { DuplicateEntityError, EntityNotFoundError, CreatorDoesNotMatchError } = require("../errors")
+const { DuplicateEntityError, EntityNotFoundError, CreatorDoesNotMatchError, DatabaseInconsistencyError, InvalidBodyError } = require("../errors")
 
 // Container needed to load services that load properties
 const Container = require("typedi").Container// Services, keys are according to req.type
@@ -168,6 +168,20 @@ adjust.concepts = async (concepts, properties) => {
 adjust.concordance = (concordance) => {
   if (concordance) {
     concordance["@context"] = "https://gbv.github.io/jskos/context.json"
+    // Remove existing "distribution" array (except for external URLs)
+    concordance.distribution = (concordance.distribution || []).filter(dist => !dist.download || !dist.download.startsWith(config.baseUrl))
+    // Add distributions for JSKOS and CSV
+    concordance.distribution = [
+      {
+        download: `${config.baseUrl}mappings?partOf=${encodeURIComponent(concordance.uri)}&download=ndjson`,
+        format: "http://format.gbv.de/jskos",
+        mimetype: "application/x-ndjson; charset=utf-8",
+      },
+      {
+        download: `${config.baseUrl}mappings?partOf=${encodeURIComponent(concordance.uri)}&download=csv`,
+        mimetype: "text/csv; charset=utf-8",
+      },
+    ].concat(concordance.distribution)
   }
   return concordance
 }
@@ -234,28 +248,28 @@ const getUrisForUser = (user) => {
  *
  * If config.auth.allowCrossUserEditing is enabled, this returns true as long as a user and object are given.
  *
- * @param {object} user the user object (e.g. req.user)
- * @param {object} object any object that has the property `creator`
- * @param {string} type type of entity (e.g. `mappings`, `annotations`)
- * @param {string} action one of `read`/`create`/`update`/`delete`
+ * @param {object} options.req the request object (that includes req.user, req.crossUser, and req.auth)
+ * @param {object} options.object any object that has the property `creator`
+ * @param {boolean} options.withContributors allow contributors to be matched (for object with superordinated object)
  */
-const matchesCreator = (user, object, type, action) => {
-  let crossUser = false
-  if (config[type] && config[type][action]) {
-    crossUser = config[type][action].crossUser
-  }
-  // If config.auth.allowCrossUserEditing is enabled, return true
-  if (crossUser) {
+const matchesCreator = ({ req = {}, object, withContributors = false }) => {
+  const { user, crossUser, auth } = req
+  if (!auth) {
     return true
   }
   if (!object || !user) {
     return false
   }
+  if (crossUser) {
+    return true
+  }
   // If not, check URIs
   const userUris = getUrisForUser(user)
   // Support arrays, objects, and strings as creators
   let creators = _.isArray(object.creator) ? object.creator : (_.isObject(object.creator) ? [object.creator] : [{ uri: object.creator }])
-  for (let creator of creators) {
+  // Also check contributors if requested
+  let contributors = withContributors ? (object.contributor || []) : []
+  for (let creator of creators.concat(contributors)) {
     if (userUris.includes(creator.uri) || userUris.includes(creator.id)) {
       return true
     }
@@ -668,24 +682,64 @@ const bodyParser = (req, res, next) => {
     anystream.addStream(adjust)(req, res, next)
   } else {
     // For all other requests, parse as JSON
-    require("express").json()(req, res, (...params) => {
+    require("express").json()(req, res, async (...params) => {
       // Get existing
       const uri = req.params._id || (req.body || {}).uri || req.query.uri
-      services[req.type].get(uri)
-        .catch(() => null)
-        .then(existing => {
-          if (!existing) {
-            next(new EntityNotFoundError(null, uri))
-          } else {
-            if (!matchesCreator(req.user, existing, req.type, req.action)) {
-              next(new CreatorDoesNotMatchError())
-            } else {
-              req.existing = existing
-              req.body = adjust(req.body, existing)
-              next(...params)
-            }
+      let existing
+      try {
+        existing = await services[req.type].get(uri)
+      } catch (error) {
+        // Ignore
+      }
+      if (!existing) {
+        next(new EntityNotFoundError(null, uri))
+      } else {
+        let superordinated = {
+          existing: null,
+          payload: null,
+        }
+        // Check for superordinated object for existing (currently only `partOf`)
+        if (existing.partOf && existing.partOf[0]) {
+          // Get concordance via service
+          try {
+            const concordance = await services.concordances.get(existing.partOf[0].uri)
+            superordinated.existing = concordance
+          } catch (error) {
+            const message = `Existing concordance with URI ${existing.partOf[0].uri} could not be found in database.`
+            config.error(message)
+            next(new DatabaseInconsistencyError(message))
           }
-        })
+        }
+        // Check superordinated object for payload
+        if (req.body && req.body.partOf && req.body.partOf[0]) {
+          // Get concordance via service
+          try {
+            const concordance = await services.concordances.get(req.body.partOf[0].uri)
+            superordinated.payload = concordance
+          } catch (error) {
+            next(new InvalidBodyError(`Concordance with URI ${req.body.partOf[0].uri} could not be found.`))
+          }
+        }
+        let creatorMatches = true
+        if (superordinated.existing) {
+          // creator or contributor must match for existing superordinated object
+          creatorMatches = creatorMatches && matchesCreator({ req, object: superordinated.existing, withContributors: true })
+        } else {
+          // creator needs to match for object that is updated
+          creatorMatches = creatorMatches && matchesCreator({ req, object: existing })
+        }
+        if (superordinated.payload) {
+          // creator or contributor must also match for the payload's superordinated object
+          creatorMatches = creatorMatches && matchesCreator({ req, object: superordinated.payload, withContributors: true })
+        }
+        if (!creatorMatches) {
+          next(new CreatorDoesNotMatchError())
+        } else {
+          req.existing = existing
+          req.body = adjust(req.body, existing)
+          next(...params)
+        }
+      }
     })
   }
 }

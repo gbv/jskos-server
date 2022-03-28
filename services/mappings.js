@@ -25,6 +25,7 @@ module.exports = class MappingService {
 
   constructor(container) {
     this.schemeService = container.get(require("../services/schemes"))
+    this.concordanceService = container.get(require("../services/concordances"))
 
     this.loadWhitelists()
   }
@@ -182,8 +183,19 @@ module.exports = class MappingService {
     let mongoQuery4 = {}
     if (partOf) {
       let uris = partOf.split("|")
+      let allUris = []
+      for (const uri of uris) {
+        // Get concordance from database, then add all its identifiers
+        try {
+          const concordance = await this.concordanceService.get(uri)
+          allUris = allUris.concat(concordance.uri, concordance.identifier || [])
+        } catch (error) {
+          // Ignore error and push URI only
+          allUris.push(uri)
+        }
+      }
       mongoQuery4 = {
-        $or: uris.map(uri => ({ "partOf.uri": uri })),
+        $or: allUris.map(uri => ({ "partOf.uri": uri })),
       }
     }
 
@@ -422,9 +434,6 @@ module.exports = class MappingService {
     if (!validateMapping(mapping)) {
       throw new InvalidBodyError()
     }
-    if (mapping.partOf) {
-      throw new InvalidBodyError("Property `partOf` is currently not allow.")
-    }
     if (config.mappings.cardinality == "1-to-1" && jskos.conceptsOfMapping(mapping, "to").length > 1) {
       throw new InvalidBodyError("Only 1-to-1 mappings are supported.")
     }
@@ -437,6 +446,13 @@ module.exports = class MappingService {
 
     const result = await Mapping.replaceOne({ _id: existing._id }, mapping)
     if (result.acknowledged && result.matchedCount) {
+      // Update concordances if necessary
+      if (existing.partOf && existing.partOf[0]) {
+        await this.concordanceService.postAdjustmentForConcordance(existing.partOf[0].uri)
+      }
+      if (body.partOf && body.partOf[0]) {
+        await this.concordanceService.postAdjustmentForConcordance(body.partOf[0].uri)
+      }
       return mapping
     } else {
       throw new DatabaseAccessError()
@@ -448,21 +464,31 @@ module.exports = class MappingService {
     if (!mapping) {
       throw new InvalidBodyError()
     }
-    // Add modified date.
-    mapping.modified = (new Date()).toISOString()
 
     _.unset(mapping, "_id")
     _.unset(mapping, "uri")
     _.unset(mapping, "created")
+    // Remove creator/contributor if there are no changes
+    // TODO: Possibly check this is utils.handleCreatorForObject
+    if (body.creator && _.isEqual(body.creator, existing.creator)) {
+      _.unset(mapping, "creator")
+    }
+    if (body.contributor && _.isEqual(body.contributor, existing.contributor)) {
+      _.unset(mapping, "contributor")
+    }
+    // Add modified date, except if only updating `partOf`
+    const keys = Object.keys(body)
+    if (keys.length === 1 && keys[0] === "partOf") {
+      _.unset(mapping, "modified")
+    } else {
+      mapping.modified = (new Date()).toISOString()
+    }
     // Use lodash merge to merge mappings
     _.merge(existing, mapping)
 
     // Validate mapping after merge
     if (!validateMapping(existing)) {
       throw new InvalidBodyError()
-    }
-    if (mapping.partOf) {
-      throw new InvalidBodyError("Property `partOf` is currently not allow.")
     }
     if (config.mappings.cardinality == "1-to-1" && jskos.conceptsOfMapping(mapping, "to").length > 1) {
       throw new InvalidBodyError("Only 1-to-1 mappings are supported.")
@@ -471,6 +497,13 @@ module.exports = class MappingService {
 
     const result = await Mapping.replaceOne({ _id: existing._id }, existing)
     if (result.acknowledged) {
+      // Update concordances if necessary
+      if (existing.partOf && existing.partOf[0]) {
+        await this.concordanceService.postAdjustmentForConcordance(existing.partOf[0].uri)
+      }
+      if (body.partOf && body.partOf[0]) {
+        await this.concordanceService.postAdjustmentForConcordance(body.partOf[0].uri)
+      }
       return existing
     } else {
       throw new DatabaseAccessError()

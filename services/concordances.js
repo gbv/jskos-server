@@ -1,14 +1,19 @@
+const _ = require("lodash")
 const Concordance = require("../models/concordances")
+const Mapping = require("../models/mappings")
 const utils = require("../utils")
+const config = require("../config")
+const validate = require("jskos-validate")
+
+const validateConcordance = validate.concordance
+
+const { MalformedRequestError, EntityNotFoundError, MalformedBodyError, InvalidBodyError, DatabaseAccessError } = require("../errors")
 
 module.exports = class ConcordanceService {
 
   constructor(container) {
     this.schemeService = container.get(require("./schemes"))
-  }
-
-  async get(uri) {
-    return (await this.getConcordances({ uri, limit: 1, offset: 0 }))[0]
+    this.uriBase = config.baseUrl + "concordances/"
   }
 
   /**
@@ -18,12 +23,12 @@ module.exports = class ConcordanceService {
     let conditions = []
     // Search by URI
     if (query.uri) {
-      conditions.push({ $or: query.uri.split("|").map(uri => ({ uri: uri })) })
+      const uris = query.uri.split("|")
+      conditions.push({ $or: uris.map(uri => ({ uri: uri })).concat(uris.map(uri => ({ identifier: uri }))) })
     }
     // Search by fromScheme/toScheme (URI or notation)
     for (let part of ["fromScheme", "toScheme"]) {
       if (query[part]) {
-        // TODO: Use schemeService to get all URIs for scheme.
         let uris = []
         for (let uriOrNotation of query[part].split("|")) {
           let scheme = await this.schemeService.getScheme(uriOrNotation)
@@ -63,6 +68,216 @@ module.exports = class ConcordanceService {
       const concordances = await Concordance.find(mongoQuery).lean().skip(query.offset).limit(query.limit).exec()
       concordances.totalCount = await utils.count(Concordance, [{ $match: mongoQuery }])
       return concordances
+    }
+  }
+
+  async get(_id) {
+    return this.getConcordance(_id)
+  }
+
+  /**
+   * Returns a promise with a single concordance with ObjectId in req.params._id.
+   */
+  async getConcordance(uriOrId) {
+    if (!uriOrId) {
+      throw new MalformedRequestError()
+    }
+    let result
+    // First look via ID
+    result = await Concordance.findById(uriOrId).lean()
+    if (result) return result
+    // Then via URI
+    result = await Concordance.findOne({ uri: uriOrId }).lean()
+    if (result) return result
+    // Then via identifier
+    result = await Concordance.findOne({ identifier: uriOrId }).lean()
+    if (result) return result
+
+    throw new EntityNotFoundError(null, uriOrId)
+  }
+
+  /**
+   * Save a single concordance or multiple concordances in the database. Adds created date, validates the concordance, and adds identifiers.
+   */
+  async postConcordance({ bodyStream }) {
+    if (!bodyStream) {
+      throw new MalformedBodyError()
+    }
+
+    let isMultiple = true
+
+    // As a workaround, build body from bodyStream
+    let concordances = await new Promise((resolve) => {
+      const body = []
+      bodyStream.on("data", concordance => {
+        body.push(concordance)
+      })
+      bodyStream.on("isSingleObject", () => {
+        isMultiple = false
+      })
+      bodyStream.on("end", () => {
+        resolve(body)
+      })
+    })
+
+    let response
+
+    // Adjust all concordances
+    for (const concordance of concordances) {
+      // Add created and modified dates.
+      const now = (new Date()).toISOString()
+      if (!concordance.created) {
+        concordance.created = now
+      }
+      concordance.modified = now
+      // Validate concordance
+      if (!validateConcordance(concordance)) {
+        throw new InvalidBodyError()
+      }
+      // Check if schemes are available and replace them with URI/notation only
+      for (const key of ["fromScheme", "toScheme"]) {
+        if (!concordance[key] || !concordance[key].uri) {
+          throw new InvalidBodyError(`Missing ${key}`)
+        }
+        const scheme = await this.schemeService.getScheme(concordance[key].uri)
+        if (!scheme) {
+          throw new InvalidBodyError(`Scheme with URI ${concordance[key].uri} not found. Concordances can only use known schemes.`)
+        }
+        concordance[key] = {
+          uri: scheme.uri,
+          notation: scheme.notation,
+        }
+      }
+
+      // _id and URI
+      delete concordance._id
+      if (concordance.uri) {
+        let uri = concordance.uri
+        // URI already exists, use if it's valid, otherwise move to identifier
+        if (uri.startsWith(this.uriBase)) {
+          concordance._id = uri.slice(this.uriBase.length, uri.length)
+          concordance.notation = [concordance._id].concat((concordance.notation || []).slice(1))
+        } else {
+          concordance.identifier = (concordance.identifier || []).concat([uri])
+        }
+      }
+      if (!concordance._id) {
+        concordance._id = concordance.notation && concordance.notation[0] || utils.uuid()
+        concordance.uri = this.uriBase + concordance._id
+        concordance.notation = [concordance._id].concat((concordance.notation || []).slice(1))
+      }
+      // Extent should be 0 when added; will be updated in postAdjustmentForConcordance whenever there are changes
+      concordance.extent = "0"
+    }
+    concordances = concordances.filter(m => m)
+
+    response = await Concordance.insertMany(concordances, { lean: true })
+
+    return isMultiple ? response : response[0]
+  }
+
+  async putConcordance({ body, existing }) {
+    let concordance = body
+    if (!concordance) {
+      throw new InvalidBodyError()
+    }
+
+    // Override some properties from existing that shouldn't change
+    // TODO: Should we throw errors if user tries to change these?
+    for (const prop of ["_id", "uri", "notation", "fromScheme", "toScheme", "created"]) {
+      concordance[prop] = existing[prop]
+    }
+    // Add modified date.
+    concordance.modified = (new Date()).toISOString()
+    if (existing.extent) {
+      concordance.extent = existing.extent
+    } else {
+      _.unset(concordance, "extent")
+    }
+    if (existing.distribution) {
+      concordance.distribution = existing.distribution
+    } else {
+      _.unset(concordance, "distribution")
+      // TODO: `distribution` should be dynamically added if it doesn't exist! (or always?)
+    }
+    // Validate concordance
+    if (!validateConcordance(concordance)) {
+      throw new InvalidBodyError()
+    }
+
+    const result = await Concordance.replaceOne({ _id: existing._id }, concordance)
+    if (result.acknowledged && result.matchedCount) {
+      await this.postAdjustmentForConcordance(existing._id)
+      return concordance
+    } else {
+      throw new DatabaseAccessError()
+    }
+  }
+
+  async patchConcordance({ body, existing }) {
+    if (!body) {
+      throw new InvalidBodyError()
+    }
+
+    // Certain properties that shouldn't change
+    let errorMessage = ""
+    for (const prop of ["_id", "uri", "notation", "fromScheme", "toScheme", "created", "extent", "distribution"]) {
+      if (body[prop]) {
+        errorMessage += `Field \`${prop}\` can't be changed via PATCH. `
+      }
+    }
+    if (errorMessage) {
+      throw new InvalidBodyError(errorMessage)
+    }
+
+    let concordance = body
+
+    // Add modified date.
+    concordance.modified = (new Date()).toISOString()
+
+    // Use lodash merge to merge concordance objects
+    _.merge(existing, concordance)
+
+    // Validate concordance after merge
+    if (!validateConcordance(existing)) {
+      throw new InvalidBodyError()
+    }
+
+    const result = await Concordance.replaceOne({ _id: existing._id }, existing)
+    if (result.acknowledged) {
+      await this.postAdjustmentForConcordance(existing._id)
+      return existing
+    } else {
+      throw new DatabaseAccessError()
+    }
+  }
+
+  async deleteConcordance({ existing }) {
+    const count = await this.getMappingsCountForConcordance(existing)
+    if (count > 0) {
+      throw new MalformedRequestError(`Can't delete a concordance that still has mappings associated with it (${count} mappings).`)
+    }
+    const result = await Concordance.deleteOne({ _id: existing._id })
+    if (!result.deletedCount) {
+      throw new DatabaseAccessError()
+    }
+  }
+
+  async getMappingsCountForConcordance(concordance) {
+    const uris = [concordance.uri].concat(concordance.identifier || [])
+    return await Mapping.count({ $or: uris.map(uri => ({ "partOf.uri": uri })) })
+  }
+
+  async postAdjustmentForConcordance(uriOrId) {
+    try {
+      const concordance = await this.get(uriOrId)
+      const count = await this.getMappingsCountForConcordance(concordance)
+      if (`${count}` !== concordance.extent) {
+        // Update extent with new count
+        await Concordance.updateOne({ _id: concordance._id }, { extent: `${count}`, modified: (new Date()).toISOString() })
+      }
+    } catch (error) {
+      // Ignore errors here
     }
   }
 
