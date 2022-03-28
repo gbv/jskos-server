@@ -11,7 +11,7 @@ const Meta = require("../models/meta")
 (async () => {
   await db.connect()
   const meta = await Meta.findOne()
-  const list = getUpgrades(meta.version)
+  const list = getUpgrades(meta.version, { forceLatest: process.argv.includes("-f") || process.argv.includes("--force-latest") })
   console.log()
   for (const version of list) {
     console.log(`Performing necessary upgrades for version ${version}...`)

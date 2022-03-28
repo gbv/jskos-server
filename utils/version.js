@@ -119,11 +119,11 @@ const upgrades = {
  *
  * @param {string} fromVersion version string
  */
-const getUpgrades = (fromVersion) => {
+const getUpgrades = (fromVersion, { forceLatest = false }) => {
   const list = []
   fromVersion = Version.from(fromVersion)
   for (let version of Object.keys(upgrades)) {
-    if (fromVersion.lt(version)) {
+    if (fromVersion.lt(version) || forceLatest && fromVersion.eq(version)) {
       list.push(version)
     }
   }
