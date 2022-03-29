@@ -63,7 +63,20 @@ module.exports = class SchemeService {
         break
     }
 
-    const schemes = await Scheme.find(mongoQuery).sort(sort).lean().skip(query.offset).limit(query.limit).exec()
+    // Build aggregation pipeline
+    const pipeline = [
+      { $match: mongoQuery },
+    ]
+    if (Object.keys(sort).length > 0) {
+      pipeline.push({ $sort: sort })
+    }
+    if (_.isNumber(query.offset)) {
+      pipeline.push({ $skip: query.offset })
+    }
+    if (_.isNumber(query.limit)) {
+      pipeline.push({ $limit: query.limit })
+    }
+    const schemes = await Scheme.aggregate(pipeline)
     schemes.totalCount = await utils.count(Scheme, [{ $match: mongoQuery }])
     return schemes
   }
