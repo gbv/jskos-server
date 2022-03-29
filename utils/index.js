@@ -782,6 +782,20 @@ const count = async (model, pipeline) => {
   }
 }
 
+const bulkOperationForEntities = ({ entities, replace = true }) => {
+  return entities.map(e => (replace ? {
+    replaceOne: {
+      filter: { _id: e._id },
+      replacement: e,
+      upsert: true,
+    },
+  } : {
+    insertOne: {
+      document: e,
+    },
+  }))
+}
+
 module.exports = {
   wrappers,
   cleanJSON,
@@ -801,4 +815,5 @@ module.exports = {
   handleCreatorForObject,
   isQueryEmpty,
   count,
+  bulkOperationForEntities,
 }

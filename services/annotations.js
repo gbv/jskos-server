@@ -5,6 +5,7 @@ const validate = require("jskos-validate")
 
 const Annotation = require("../models/annotations")
 const { EntityNotFoundError, DatabaseAccessError, InvalidBodyError, MalformedBodyError, MalformedRequestError, ForbiddenAccessError } = require("../errors")
+const { bulkOperationForEntities } = require("../utils")
 
 module.exports = class MappingService {
 
@@ -86,7 +87,7 @@ module.exports = class MappingService {
   /**
    * Save a new annotation or multiple annotations in the database. Adds created date if necessary.
    */
-  async postAnnotation({ bodyStream, user, bulk = false, admin = false }) {
+  async postAnnotation({ bodyStream, user, bulk = false, bulkReplace = true, admin = false }) {
     if (!bodyStream) {
       throw new MalformedBodyError()
     }
@@ -164,13 +165,7 @@ module.exports = class MappingService {
 
     if (bulk) {
       // Use bulkWrite for most efficiency
-      annotations.length && await Annotation.bulkWrite(annotations.map(a => ({
-        replaceOne: {
-          filter: { _id: a._id },
-          replacement: a,
-          upsert: true,
-        },
-      })))
+      annotations.length && await Annotation.bulkWrite(bulkOperationForEntities({ entities: annotations, replace: bulkReplace }))
       response = annotations.map(a => ({ id: a.id }))
     } else {
       response = await Annotation.insertMany(annotations, { lean: true })

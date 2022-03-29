@@ -5,6 +5,7 @@ const utils = require("../utils")
 const { MalformedBodyError, MalformedRequestError, EntityNotFoundError, DatabaseAccessError, InvalidBodyError } = require("../errors")
 const Scheme = require("../models/schemes")
 const Concept = require("../models/concepts")
+const { bulkOperationForEntities } = require("../utils")
 
 module.exports = class SchemeService {
 
@@ -114,7 +115,7 @@ module.exports = class SchemeService {
 
   // Write endpoints start here
 
-  async postScheme({ bodyStream, bulk = false }) {
+  async postScheme({ bodyStream, bulk = false, bulkReplace = true }) {
     if (!bodyStream) {
       throw new MalformedBodyError()
     }
@@ -154,13 +155,7 @@ module.exports = class SchemeService {
 
     if (bulk) {
       // Use bulkWrite for most efficiency
-      schemes.length && await Scheme.bulkWrite(schemes.map(s => ({
-        replaceOne: {
-          filter: { _id: s._id },
-          replacement: s,
-          upsert: true,
-        },
-      })))
+      schemes.length && await Scheme.bulkWrite(bulkOperationForEntities({ entities: schemes, replace: bulkReplace }))
       schemes = await this.postAdjustmentsForScheme(schemes, bulk)
       response = schemes.map(s => ({ uri: s.uri }))
     } else {

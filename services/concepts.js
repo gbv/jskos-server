@@ -5,6 +5,7 @@ const validate = require("jskos-validate")
 const Concept = require("../models/concepts")
 const { MalformedBodyError, MalformedRequestError, EntityNotFoundError, InvalidBodyError, DatabaseAccessError } = require("../errors")
 const utils = require("../utils")
+const { bulkOperationForEntities } = require("../utils")
 
 function conceptFind(query, $skip, $limit) {
   const pipeline = [
@@ -215,7 +216,7 @@ module.exports = class ConceptService {
 
   // Write endpoints start here
 
-  async postConcept({ bodyStream, bulk = false, scheme }) {
+  async postConcept({ bodyStream, bulk = false, bulkReplace = true, scheme }) {
     if (!bodyStream) {
       throw new MalformedBodyError()
     }
@@ -236,13 +237,7 @@ module.exports = class ConceptService {
         let current = []
         const saveObjects = async (objects) => {
           const { concepts, schemeUrisToAdjust } = await this.prepareAndCheckConcepts(objects, { scheme })
-          concepts.length && await Concept.bulkWrite(concepts.map(c => ({
-            replaceOne: {
-              filter: { _id: c._id },
-              replacement: c,
-              upsert: true,
-            },
-          })))
+          concepts.length && await Concept.bulkWrite(bulkOperationForEntities({ entities: concepts, replace: bulkReplace }))
           preparation.concepts = preparation.concepts.concat(concepts.map(c => ({ uri: c.uri })))
           preparation.schemeUrisToAdjust = _.uniq(preparation.schemeUrisToAdjust.concat(schemeUrisToAdjust))
         }

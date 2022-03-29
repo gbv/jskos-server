@@ -8,6 +8,7 @@ const escapeStringRegexp = require("escape-string-regexp")
 const Mapping = require("../models/mappings")
 const Annotation = require("../models/annotations")
 const { MalformedBodyError, MalformedRequestError, EntityNotFoundError, InvalidBodyError, DatabaseAccessError } = require("../errors")
+const { bulkOperationForEntities } = require("../utils")
 
 const validateMapping = (mapping) => {
   const valid = validate.mapping(mapping)
@@ -328,7 +329,7 @@ module.exports = class MappingService {
   /**
    * Save a single mapping or multiple mappings in the database. Adds created date, validates the mapping, and adds identifiers.
    */
-  async postMapping({ bodyStream, bulk = false }) {
+  async postMapping({ bodyStream, bulk = false, bulkReplace = true }) {
     if (!bodyStream) {
       throw new MalformedBodyError()
     }
@@ -408,13 +409,7 @@ module.exports = class MappingService {
 
     if (bulk) {
       // Use bulkWrite for most efficiency
-      mappings.length && await Mapping.bulkWrite(mappings.map(m => ({
-        replaceOne: {
-          filter: { _id: m._id },
-          replacement: m,
-          upsert: true,
-        },
-      })))
+      mappings.length && await Mapping.bulkWrite(bulkOperationForEntities({ entities: mappings, replace: bulkReplace }))
       response = mappings.map(c => ({ uri: c.uri }))
     } else {
       response = await Mapping.insertMany(mappings, { lean: true })

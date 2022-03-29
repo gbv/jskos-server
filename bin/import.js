@@ -21,6 +21,9 @@ Options
                                       The scheme must already exist. (topConceptOf still needs to be set if applicable.)
   --concordance           -c          Only for mappings. Adds imported mappings into a concordance for specified URI.
                                       The concordance must already exist.
+  --noreplace             -n          EXPERIMENTAL. When given, bulk writing will use insertOne instead of replaceOne,
+                                      meaning that existing entities will not be overridden.
+                                      Note that an error will be thrown when even one of the entities already exist.
 
 Examples
   $ npm run import -- --indexes
@@ -57,6 +60,11 @@ Examples
       type: "string",
       alias: "c",
       default: "",
+    },
+    noreplace: {
+      type: "boolean",
+      alias: "n",
+      default: false,
     },
     help: {
       type: "boolean",
@@ -185,6 +193,7 @@ const services = {
 // TODO: This won't be needed if these are imported through the service as well.
 const Mapping = require("../models/mappings")
 const Concordance = require("../models/concordances")
+const { bulkOperationForEntities } = require("../utils")
 const allTypes = Object.keys(services)
 
   ;
@@ -242,6 +251,7 @@ async function doImport({ input, format, type, concordance }) {
     const result = await services.scheme.postScheme({
       bodyStream: stream,
       bulk: true,
+      bulkReplace: !cli.flags.noreplace,
     })
     log(`... done: ${_.isArray(result) ? result.length : 1} schemes imported.`)
   } else if (type == "concept") {
@@ -250,6 +260,7 @@ async function doImport({ input, format, type, concordance }) {
     const result = await services.concept.postConcept({
       bodyStream: stream,
       bulk: true,
+      bulkReplace: !cli.flags.noreplace,
       scheme: cli.flags.scheme,
     })
     log(`... done: ${_.isArray(result) ? result.length : 1} concepts imported.`)
@@ -259,14 +270,8 @@ async function doImport({ input, format, type, concordance }) {
     let imported = 0
     let total = 0
     const saveMappings = async (mappings) => {
-      const result = await Mapping.bulkWrite(mappings.map(m => ({
-        replaceOne: {
-          filter: { _id: m._id },
-          replacement: m,
-          upsert: true,
-        },
-      })))
-      imported += result.upsertedCount + result.modifiedCount
+      const result = await Mapping.bulkWrite(bulkOperationForEntities({ entities: mappings, replace: !cli.flags.noreplace }))
+      imported += result.nInserted + result.nUpserted + result.nModified
       console.log(`... ${imported} done ...`)
     }
     for await (let object of stream) {
@@ -367,8 +372,8 @@ async function doImport({ input, format, type, concordance }) {
       }
       const uri = concordance.uri
       concordance._id = uri
-      const result = await Concordance.replaceOne({ _id: concordance._id }, concordance, { upsert: true })
-      if (result.nModified + (result.upserted || []).length == 1) {
+      const result = await Concordance.bulkWrite(bulkOperationForEntities({ entities: [concordance], replace: !cli.flags.noreplace }))
+      if (result.nInserted + result.nModified + result.nUpserted === 1) {
         imported += 1
         log(`... imported concordance ${uri}, now importing its mappings...`)
         // TODO: Should concordance be dropped?
@@ -395,6 +400,7 @@ async function doImport({ input, format, type, concordance }) {
     const result = await services.annotation.postAnnotation({
       bodyStream: stream,
       bulk: true,
+      bulkReplace: !cli.flags.noreplace,
       admin: true,
     })
     log(`... done: ${_.isArray(result) ? result.length : 1} annotations imported.`)
