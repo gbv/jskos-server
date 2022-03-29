@@ -61,12 +61,31 @@ module.exports = class SchemeService {
       case "modified":
         sort["modified"] = order
         break
+      case "counter":
+        sort["_uriSuffixNumber"] = order
+        break
     }
 
     // Build aggregation pipeline
     const pipeline = [
       { $match: mongoQuery },
     ]
+    if (query.sort === "counter") {
+      // Add an additional aggregation step to add _uriSuffixNumber property
+      pipeline.push({
+        $set: {
+          _uriSuffixNumber: {
+            $function: {
+              body: function(uri) {
+                return parseInt(uri.substring(uri.lastIndexOf("/") + 1))
+              },
+              args: [ "$uri" ],
+              lang: "js",
+            },
+          },
+        },
+      })
+    }
     if (Object.keys(sort).length > 0) {
       pipeline.push({ $sort: sort })
     }

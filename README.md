@@ -1179,7 +1179,7 @@ Lists supported terminologies (concept schemes).
 
   `partOf=URIs` filter by registry URI that is listed in `partOf` field of the scheme, separated by `|`
 
-  `sort=[property]` sort the results by a certain property. Possible values: `label`, `notation`, `created`, `modified`
+  `sort=[property]` sort the results by a certain property. Possible values: `label`, `notation`, `created`, `modified`, `counter`
 
   `order=[order]` order to use for sorting. Available are `asc` (default) and `desc`.
 
