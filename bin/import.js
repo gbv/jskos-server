@@ -353,16 +353,16 @@ async function doImport({ input, format, type, concordance }) {
     let total = 0
     for await (let concordance of stream) {
       total += 1
-      // Rewrite "distributions" to "distribution" if necessary
-      if (concordance.distributions) {
-        concordance.distribution = concordance.distributions
-        delete concordance.distributions
+      // Rewrite "distribution" to "distributions" if necessary
+      if (concordance.distribution) {
+        concordance.distributions = concordance.distribution
+        delete concordance.distribution
       }
       // Remove distributions with same baseUrl since they will be added dynamically
-      if (concordance.distribution) {
-        concordance.distribution = concordance.distribution.filter(dist => !dist.download || !dist.download.startsWith(config.baseUrl))
-        if (!concordance.distribution.length) {
-          delete concordance.distribution
+      if (concordance.distributions) {
+        concordance.distributions = concordance.distributions.filter(dist => !dist.download || !dist.download.startsWith(config.baseUrl))
+        if (!concordance.distributions.length) {
+          delete concordance.distributions
         }
       }
       // Validation
@@ -377,7 +377,7 @@ async function doImport({ input, format, type, concordance }) {
         imported += 1
         log(`... imported concordance ${uri}, now importing its mappings...`)
         // TODO: Should concordance be dropped?
-        let distribution = (concordance.distribution || []).find(element => element.mimetype.includes("json"))
+        let distribution = (concordance.distributions || []).find(element => element.mimetype.includes("json"))
         if (distribution) {
           // Build file URL
           let url = ""

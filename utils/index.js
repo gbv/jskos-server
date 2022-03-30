@@ -168,10 +168,10 @@ adjust.concepts = async (concepts, properties) => {
 adjust.concordance = (concordance) => {
   if (concordance) {
     concordance["@context"] = "https://gbv.github.io/jskos/context.json"
-    // Remove existing "distribution" array (except for external URLs)
-    concordance.distribution = (concordance.distribution || []).filter(dist => !dist.download || !dist.download.startsWith(config.baseUrl))
+    // Remove existing "distributions" array (except for external URLs)
+    concordance.distributions = (concordance.distributions || []).filter(dist => !dist.download || !dist.download.startsWith(config.baseUrl))
     // Add distributions for JSKOS and CSV
-    concordance.distribution = [
+    concordance.distributions = [
       {
         download: `${config.baseUrl}mappings?partOf=${encodeURIComponent(concordance.uri)}&download=ndjson`,
         format: "http://format.gbv.de/jskos",
@@ -181,7 +181,7 @@ adjust.concordance = (concordance) => {
         download: `${config.baseUrl}mappings?partOf=${encodeURIComponent(concordance.uri)}&download=csv`,
         mimetype: "text/csv; charset=utf-8",
       },
-    ].concat(concordance.distribution)
+    ].concat(concordance.distributions)
   }
   return concordance
 }

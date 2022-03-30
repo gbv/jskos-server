@@ -14,7 +14,7 @@ const fs = require("fs")
 
 const assert = require("assert")
 
-let types = ["resource", "item", "concept", "scheme", "mapping", "concordance", "registry", "distribution", "occurrence", "bundle", "annotation"]
+let types = ["resource", "item", "concept", "scheme", "mapping", "concordance", "registry", "distributions", "occurrence", "bundle", "annotation"]
 let examples = {}
 
 // Import local examples

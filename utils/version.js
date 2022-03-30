@@ -157,9 +157,9 @@ const upgrades = {
       console.log(`- Updating concordance ${previous_id} to _id ${_id} (${concordance.uri})`)
       concordance.identifier = (concordance.identifier || []).concat(identifier)
       // Remove distributions that are served by jskos-server and instead add them dynamically
-      concordance.distribution = (concordance.distribution || []).filter(dist => !dist.download || !dist.download.startsWith(config.baseUrl))
-      if (!concordance.distribution.length) {
-        delete concordance.distribution
+      concordance.distributions = (concordance.distributions || []).filter(dist => !dist.download || !dist.download.startsWith(config.baseUrl))
+      if (!concordance.distributions.length) {
+        delete concordance.distributions
       }
       // Save concordance
       try {

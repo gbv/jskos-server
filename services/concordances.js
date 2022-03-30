@@ -194,11 +194,10 @@ module.exports = class ConcordanceService {
     } else {
       _.unset(concordance, "extent")
     }
-    if (existing.distribution) {
-      concordance.distribution = existing.distribution
+    if (existing.distributions) {
+      concordance.distributions = existing.distributions
     } else {
-      _.unset(concordance, "distribution")
-      // TODO: `distribution` should be dynamically added if it doesn't exist! (or always?)
+      _.unset(concordance, "distributions")
     }
     // Validate concordance
     if (!validateConcordance(concordance)) {
@@ -221,7 +220,7 @@ module.exports = class ConcordanceService {
 
     // Certain properties that shouldn't change
     let errorMessage = ""
-    for (const prop of ["_id", "uri", "notation", "fromScheme", "toScheme", "created", "extent", "distribution"]) {
+    for (const prop of ["_id", "uri", "notation", "fromScheme", "toScheme", "created", "extent", "distributions"]) {
       if (body[prop]) {
         errorMessage += `Field \`${prop}\` can't be changed via PATCH. `
       }
