@@ -36,7 +36,8 @@ const wrappers = {
       }).catch(error => {
         // Catch and change certain errors
         if (error.code === 11000) {
-          error = new DuplicateEntityError(null, _.get(error, "keyValue._id"))
+          const _id = _.get(error, "keyValue._id") || _.get(error, "writeErrors[0].err.op._id")
+          error = new DuplicateEntityError(null, `${_id} (${req.type})`)
         }
         // Pass error to the next error middleware.
         next(error)
