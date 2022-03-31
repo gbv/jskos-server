@@ -438,6 +438,8 @@ module.exports = class MappingService {
     mapping._id = existing._id
     mapping.uri = existing.uri
     mapping.created = existing.created
+    // Set mapping identifier
+    mapping.identifier = jskos.addMappingIdentifiers(mapping).identifier
 
     const result = await Mapping.replaceOne({ _id: existing._id }, mapping)
     if (result.acknowledged && result.matchedCount) {
@@ -480,6 +482,8 @@ module.exports = class MappingService {
     }
     // Merge mappings
     const newMapping = Object.assign({}, existing, mapping)
+    // Set mapping identifier
+    newMapping.identifier = jskos.addMappingIdentifiers(newMapping).identifier
 
     // Validate mapping after merge
     if (!validateMapping(newMapping)) {
