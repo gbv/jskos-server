@@ -478,11 +478,11 @@ module.exports = class MappingService {
     } else {
       mapping.modified = (new Date()).toISOString()
     }
-    // Use lodash merge to merge mappings
-    _.merge(existing, mapping)
+    // Merge mappings
+    const newMapping = Object.assign({}, existing, mapping)
 
     // Validate mapping after merge
-    if (!validateMapping(existing)) {
+    if (!validateMapping(newMapping)) {
       throw new InvalidBodyError()
     }
     if (config.mappings.cardinality == "1-to-1" && jskos.conceptsOfMapping(mapping, "to").length > 1) {
@@ -490,7 +490,7 @@ module.exports = class MappingService {
     }
     this.checkWhitelists(mapping)
 
-    const result = await Mapping.replaceOne({ _id: existing._id }, existing)
+    const result = await Mapping.replaceOne({ _id: newMapping._id }, newMapping)
     if (result.acknowledged) {
       // Update concordances if necessary
       if (existing.partOf && existing.partOf[0]) {
@@ -499,7 +499,7 @@ module.exports = class MappingService {
       if (body.partOf && body.partOf[0]) {
         await this.concordanceService.postAdjustmentForConcordance(body.partOf[0].uri)
       }
-      return existing
+      return newMapping
     } else {
       throw new DatabaseAccessError()
     }
