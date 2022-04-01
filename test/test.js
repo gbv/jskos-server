@@ -462,6 +462,7 @@ describe("Express Server", () => {
     })
 
     let mapping_id
+    let createdMapping
     it("should POST a mapping, then PATCH it with existing concordance", done => {
       let mapping = {
         fromScheme: createdConcordance.fromScheme,
@@ -486,6 +487,7 @@ describe("Express Server", () => {
               assert.equal(res.body.partOf[0].uri, createdConcordance.uri)
               // modified should NOT change if only concordance was updated
               assert.strictEqual(res.body.modified, modified)
+              createdMapping = res.body
               done()
             })
         })
@@ -508,6 +510,28 @@ describe("Express Server", () => {
         .patch(`/mappings/${mapping_id}`)
         .set("Authorization", `Bearer ${token}`)
         .send({ partOf: [{ uri: "abcdef" }] })
+        .end((err, res) => {
+          assert.equal(res.status, 422)
+          done()
+        })
+    })
+
+    it("should not allow PATCHing a mapping with new fromScheme if it belongs to a concordance (1/2)", done => {
+      chai.request(server.app)
+        .patch(`/mappings/${mapping_id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ fromScheme: { uri: "http://bartoc.org/en/node/313" } })
+        .end((err, res) => {
+          assert.equal(res.status, 422)
+          done()
+        })
+    })
+
+    it("should not allow PUTing a mapping with new toScheme if it belongs to a concordance (2/2)", done => {
+      chai.request(server.app)
+        .put(`/mappings/${mapping_id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send(Object.assign({}, createdMapping, { toScheme: { uri: "http://bartoc.org/en/node/241" } }))
         .end((err, res) => {
           assert.equal(res.status, 422)
           done()

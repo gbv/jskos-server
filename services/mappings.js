@@ -432,6 +432,12 @@ module.exports = class MappingService {
     if (config.mappings.cardinality == "1-to-1" && jskos.conceptsOfMapping(mapping, "to").length > 1) {
       throw new InvalidBodyError("Only 1-to-1 mappings are supported.")
     }
+    // If it's part of a concordance, don't allow changing fromScheme/toScheme
+    if (existing.partOf && existing.partOf.length) {
+      if (!jskos.compare(existing.fromScheme, mapping.fromScheme) || !jskos.compare(existing.toScheme, mapping.toScheme)) {
+        throw new InvalidBodyError("Can't change fromScheme/toScheme on a mapping that belongs to a concordance.")
+      }
+    }
     this.checkWhitelists(mapping)
 
     // Override _id, uri, and created properties
@@ -479,6 +485,12 @@ module.exports = class MappingService {
       _.unset(mapping, "modified")
     } else {
       mapping.modified = (new Date()).toISOString()
+    }
+    // If it's part of a concordance, don't allow changing fromScheme/toScheme
+    if (existing.partOf && existing.partOf.length) {
+      if (mapping.fromScheme && !jskos.compare(existing.fromScheme, mapping.fromScheme) || mapping.toScheme && !jskos.compare(existing.toScheme, mapping.toScheme)) {
+        throw new InvalidBodyError("Can't change fromScheme/toScheme on a mapping that belongs to a concordance.")
+      }
     }
     // Merge mappings
     const newMapping = Object.assign({}, existing, mapping)
