@@ -526,6 +526,10 @@ module.exports = class MappingService {
     if (!result.deletedCount) {
       throw new DatabaseAccessError()
     }
+    // Update concordance if necessary
+    if (existing.partOf && existing.partOf[0]) {
+      await this.concordanceService.postAdjustmentForConcordance(existing.partOf[0].uri)
+    }
   }
 
   /**

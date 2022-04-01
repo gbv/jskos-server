@@ -548,18 +548,24 @@ describe("Express Server", () => {
         })
     })
 
-    it("should DELETE a mapping, then should DELETE a concordance without mappings", done => {
+    it("should DELETE a mapping, then have extent of 0, then should DELETE a concordance without mappings", done => {
       chai.request(server.app)
         .delete(`/mappings/${mapping_id}`)
         .set("Authorization", `Bearer ${token}`)
         .end((err, res) => {
           assert.equal(res.status, 204)
           chai.request(server.app)
-            .delete(`/concordances/${created_id}`)
-            .set("Authorization", `Bearer ${token}`)
+            .get(`/concordances/${created_id}`)
             .end((err, res) => {
-              assert.equal(res.status, 204)
-              done()
+              assert.equal(res.status, 200)
+              assert.equal(res.body && res.body.extent, "0")
+              chai.request(server.app)
+                .delete(`/concordances/${created_id}`)
+                .set("Authorization", `Bearer ${token}`)
+                .end((err, res) => {
+                  assert.equal(res.status, 204)
+                  done()
+                })
             })
         })
     })
