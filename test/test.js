@@ -505,6 +505,48 @@ describe("Express Server", () => {
         })
     })
 
+    it("should return mapping when requesting mappings with partOf parameter", done => {
+      chai.request(server.app)
+        .get("/mappings")
+        .query({
+          partOf: createdConcordance.uri,
+        })
+        .end((err, res) => {
+          assert.equal(res.status, 200)
+          assert.ok(Array.isArray(res.body))
+          assert.equal(res.body.length, 1)
+          done()
+        })
+    })
+
+    it("should return mapping when requesting mappings with partOf=any", done => {
+      chai.request(server.app)
+        .get("/mappings")
+        .query({
+          partOf: "any",
+        })
+        .end((err, res) => {
+          assert.equal(res.status, 200)
+          assert.ok(Array.isArray(res.body))
+          assert.equal(res.body.length, 1)
+          done()
+        })
+    })
+
+    it("should return no mappings when requesting mappings with partOf=none", done => {
+      chai.request(server.app)
+        .get("/mappings")
+        .query({
+          partOf: "none",
+        })
+        .end((err, res) => {
+          assert.equal(res.status, 200)
+          assert.ok(Array.isArray(res.body))
+          assert.equal(res.body.length, 0)
+          done()
+        })
+    })
+
     it("should return an error on PATCH mapping if the target concordance does not exist", done => {
       chai.request(server.app)
         .patch(`/mappings/${mapping_id}`)

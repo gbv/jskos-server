@@ -183,20 +183,28 @@ module.exports = class MappingService {
     // Concordances
     let mongoQuery4 = {}
     if (partOf) {
-      let uris = partOf.split("|")
-      let allUris = []
-      for (const uri of uris) {
-        // Get concordance from database, then add all its identifiers
-        try {
-          const concordance = await this.concordanceService.get(uri)
-          allUris = allUris.concat(concordance.uri, concordance.identifier || [])
-        } catch (error) {
-          // Ignore error and push URI only
-          allUris.push(uri)
+      if (partOf === "any") {
+        // Mapping is part of any concordance
+        mongoQuery4 = { "partOf.0": { $exists: true } }
+      } else if (partOf === "none") {
+        // Mapping is part of no concordance
+        mongoQuery4 = { "partOf.0": { $exists: false } }
+      } else {
+        let uris = partOf.split("|")
+        let allUris = []
+        for (const uri of uris) {
+          // Get concordance from database, then add all its identifiers
+          try {
+            const concordance = await this.concordanceService.get(uri)
+            allUris = allUris.concat(concordance.uri, concordance.identifier || [])
+          } catch (error) {
+            // Ignore error and push URI only
+            allUris.push(uri)
+          }
         }
-      }
-      mongoQuery4 = {
-        $or: allUris.map(uri => ({ "partOf.uri": uri })),
+        mongoQuery4 = {
+          $or: allUris.map(uri => ({ "partOf.uri": uri })),
+        }
       }
     }
 

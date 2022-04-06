@@ -882,7 +882,7 @@ Returns an array of mappings. Each mapping has a property `uri` under which the 
 
   `type=[uri1|uri2|...]` only show mappings that conform to a certain type or types (see [JSKOS Concept Mappings]) (URIs separated by `|`)
 
-  `partOf=[uri1|uri2|...]` only show mappings that are part of certain concordances (URIs separated by `|`)
+  `partOf=[uri1|uri2|...]` only show mappings that are part of certain concordances (URIs separated by `|`); value `none` returns mappings that are not part of a concordance, value `any` returns mappings that are part of any concordance
 
   `creator=[string1|string2|...]` only show mappings that have a certain creator (separated by `|`)
 
