@@ -362,7 +362,7 @@ module.exports = class MappingService {
     let response
 
     // Adjust all mappings
-    mappings = mappings.map(mapping => {
+    mappings = await Promise.all(mappings.map(async mapping => {
       try {
         // Add created and modified dates.
         const now = (new Date()).toISOString()
@@ -381,6 +381,9 @@ module.exports = class MappingService {
         if (config.mappings.cardinality == "1-to-1" && jskos.conceptsOfMapping(mapping, "to").length > 1) {
           throw new InvalidBodyError("Only 1-to-1 mappings are supported.")
         }
+        // Check if schemes are available and replace them with URI/notation only
+        // TODO: Should we only support mappings for known schemes?
+        await this.schemeService.replaceSchemeProperties(mapping, ["fromScheme", "toScheme"])
         this.checkWhitelists(mapping)
         // _id and URI
         delete mapping._id
@@ -412,7 +415,7 @@ module.exports = class MappingService {
         }
         throw error
       }
-    })
+    }))
     mappings = mappings.filter(m => m)
 
     if (bulk) {

@@ -695,6 +695,11 @@ const bodyParser = (req, res, next) => {
       if (!existing) {
         next(new EntityNotFoundError(null, uri))
       } else {
+        // Override certain properties with entities from database
+        // Note: For POST request, this needs to be done individually in the services/{entity}.js file.
+        if (["mappings", "annotations"].includes(req.type)) {
+          await services.schemes.replaceSchemeProperties(req.body, ["fromScheme", "toScheme"])
+        }
         let superordinated = {
           existing: null,
           payload: null,

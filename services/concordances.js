@@ -135,19 +135,7 @@ module.exports = class ConcordanceService {
         throw new InvalidBodyError()
       }
       // Check if schemes are available and replace them with URI/notation only
-      for (const key of ["fromScheme", "toScheme"]) {
-        if (!concordance[key] || !concordance[key].uri) {
-          throw new InvalidBodyError(`Missing ${key}`)
-        }
-        const scheme = await this.schemeService.getScheme(concordance[key].uri)
-        if (!scheme) {
-          throw new InvalidBodyError(`Scheme with URI ${concordance[key].uri} not found. Concordances can only use known schemes.`)
-        }
-        concordance[key] = {
-          uri: scheme.uri,
-          notation: scheme.notation,
-        }
-      }
+      await this.schemeService.replaceSchemeProperties(concordance, ["fromScheme", "toScheme"], false)
 
       // _id and URI
       delete concordance._id

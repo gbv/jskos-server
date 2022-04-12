@@ -105,7 +105,28 @@ module.exports = class SchemeService {
   }
 
   async getScheme(identifierOrNotation) {
+    // TODO: Should we just throw an error 404 here?
+    if (!identifierOrNotation) return null
     return await Scheme.findOne({ $or: [{ uri: identifierOrNotation }, { identifier: identifierOrNotation }, { notation: new RegExp(`^${identifierOrNotation}$`, "i") }]}).lean().exec()
+  }
+
+  async replaceSchemeProperties(entity, propertyPaths, ignoreError = true) {
+    await Promise.all(propertyPaths.map(async path => {
+      const uri = _.get(entity, `${path}.uri`)
+      let scheme
+      try {
+        scheme = await this.getScheme(uri)
+      } catch (error) {
+        if (!ignoreError) {
+          throw new InvalidBodyError(`Scheme with URI ${uri} not found. Only known schemes can be used.`)
+        }
+      }
+      if (scheme) {
+        _.set(entity, path, _.pick(scheme, ["uri", "notation"]))
+      } else if (!ignoreError) {
+        throw new InvalidBodyError(`Scheme with URI ${uri} not found. Only known schemes can be used.`)
+      }
+    }))
   }
 
   /**
