@@ -699,6 +699,7 @@ const bodyParser = (req, res, next) => {
         // Note: For POST request, this needs to be done individually in the services/{entity}.js file.
         if (["mappings", "annotations"].includes(req.type)) {
           await services.schemes.replaceSchemeProperties(req.body, ["fromScheme", "toScheme"])
+          await services.schemes.replaceSchemeProperties(existing, ["fromScheme", "toScheme"])
         }
         let superordinated = {
           existing: null,
