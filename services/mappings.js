@@ -213,7 +213,7 @@ module.exports = class MappingService {
     if (creator) {
       let creators = creator.split("|")
       mongoQuery4 = {
-        $or: _.flatten(creators.map(creator => [{ "creator.prefLabel.de": creator }, { "creator.prefLabel.en": creator }, { "creator.uri": creator }])),
+        $or: _.flatten(creators.map(creator => [{ "creator.prefLabel.de": new RegExp(escapeStringRegexp(creator), "i") }, { "creator.prefLabel.en": new RegExp(escapeStringRegexp(creator), "i") }, { "creator.uri": creator }])),
       }
     }
 
