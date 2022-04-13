@@ -65,7 +65,7 @@ module.exports = class MappingService {
     }
   }
 
-  async getMappings({ uri, identifier, from, to, fromScheme, toScheme, mode, direction, type, partOf, creator, sort, order, limit, offset, download, annotatedWith, annotatedFor, annotatedBy }) {
+  async getMappings({ uri, identifier, from, to, fromScheme, toScheme, mode, direction, type, partOf, creator, sort, order, limit, offset, download, annotatedWith, annotatedFor, annotatedBy, cardinality }) {
     direction = direction || "forward"
 
     let count = 0
@@ -217,7 +217,13 @@ module.exports = class MappingService {
       }
     }
 
-    const query = { $and: [mongoQuery1, mongoQuery2, mongoQuery3, mongoQuery4, mongoQuery5] }
+    // Cardinality
+    let mongoQuery6 = {}
+    if (cardinality === "1-to-1") {
+      mongoQuery6 = { "to.memberSet.1": { $exists: false } }
+    }
+
+    const query = { $and: [mongoQuery1, mongoQuery2, mongoQuery3, mongoQuery4, mongoQuery5, mongoQuery6] }
 
     // Sorting (default: modified descending)
     sort = ["created", "modified"].includes(sort) ? sort : "modified"

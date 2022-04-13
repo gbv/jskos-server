@@ -900,6 +900,8 @@ Returns an array of mappings. Each mapping has a property `uri` under which the 
 
   `order=[order]` order to use for sorting. Available are `asc` and `desc` (default).
 
+  `cardinality=[cardinality]` cardinality of the mapping. Available are `1-to-n` (default) and `1-to-1`.
+
 * **Success Response**
 
   JSON array of [JSKOS Concept Mappings]
