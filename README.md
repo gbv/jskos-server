@@ -27,6 +27,11 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [POST /validate](#post-validate)
   - [GET /validate](#get-validate)
   - [GET /concordances](#get-concordances)
+  - [GET /concordances/:_id](#get-concordances_id)
+  - [POST /concordances](#post-concordances)
+  - [PUT /concordances/:_id](#put-concordances_id)
+  - [PATCH /concordances/:_id](#patch-concordances_id)
+  - [DELETE /concordances/:_id](#delete-concordances_id)
   - [GET /mappings](#get-mappings)
   - [GET /mappings/suggest](#get-mappingssuggest)
   - [GET /mappings/voc](#get-mappingsvoc)
@@ -228,7 +233,7 @@ The second control is only checked when the first control cannot be applied and 
 
 For authenticated actions with `anonymous` being `false` creation of a new object will always set its initial `creator` to the autenticated user and `update` of an object will always add the user to `contributor` unless it is already included as `creator` or `contributor`. Further modification of `creator` and `contributor` (removal and addition of entries) is limited to vocabularies and concordance by authenticated users listed as `creator` of the object.
 
-Here are some helpful example presets for configuration of "mappings" or "annotations".
+Here are some helpful example presets for configuration of "concordances, "mappings", or "annotations".
 
 **Read-only access (does not make sense for annotations):**
 ```json
@@ -861,6 +866,63 @@ Lists all concordances for mappings.
   ]
   ```
 
+### GET /concordances/:_id
+Returns a specific concordance.
+
+* **URL Params**
+
+  None
+
+* **Success Response**
+
+  JSKOS object for concordance.
+
+* **Error Response**
+
+  If no concordance with `_id` could be found, it will return a 404 not found error.
+
+### POST /concordances
+Saves one or more concordances in the database. Note that `fromScheme` and `toScheme` must be supported by the jskos-server instance.
+
+* **URL Params**
+
+  None
+
+* **Success Reponse**
+
+  JSKOS Concordance object(s) as were saved in the database.
+
+* **Error Response**
+
+  When a single concordance is provided, an error can be returned if there's something wrong with it (see [errors](#errors)). When multiple concordances are provided, the first error will be returned.
+
+### PUT /concordances/:_id
+Overwrites a concordance in the database.
+
+* **Success Reponse**
+
+  JSKOS Concordance object as it was saved in the database.
+
+Note that any changes to the `uri`, `notation`, `fromScheme`, `toScheme`, `extent`, `distributions`, and `created` properties will be ignored. (No error will be thrown in this case.)
+
+### PATCH /concordances/:_id
+Adjusts a concordance in the database.
+
+* **Success Reponse**
+
+  JSKOS Concordance object as it was saved in the database.
+
+Note that changes to the properties `uri`, `notation`, `fromScheme`, `toScheme`, `created`, `extent`, and `distributions` are currently not allowed and will result in an [InvalidBodyError](#InvalidBodyError).
+
+### DELETE /concordances/:_id
+Deletes a concordance from the database.
+
+* **Success Reponse**
+
+  Status 204, no content.
+
+**Note that only concordances which have no mappings associated can be deleted.**
+
 ### GET /mappings
 Returns an array of mappings. Each mapping has a property `uri` under which the specific mapping can be accessed.
 
@@ -1135,6 +1197,8 @@ Saves a mapping or multiple mappings in the database.
 
   When a single mapping is provided, an error can be returned if there's something wrong with it (see [errors](#errors)). When multiple mappings are provided, the first error will be returned, except if bulk mode is enabled in which errors for individual mappings are ignored.
 
+Note that the `partOf` property is currently not allowed. Associating a mapping with a concordances has to be done in a separate [PUT]((#put-mappings_id) or [PATCH]((#patch-mappings_id) request.
+
 ### PUT /mappings/:_id
 Overwrites a mapping in the database.
 
@@ -1142,7 +1206,7 @@ Overwrites a mapping in the database.
 
   JSKOS Mapping object as it was saved in the database.
 
-Note that any changes to the `created` property will be ignored.
+Note that any changes to the `created` property will be ignored. Note that changes to `partOf` (i.e. association with a concordance) are only possible if 1) `fromScheme` and `toScheme` are equal between the mapping and the concordance, 2) the authenticated user is creator of the mapping OR if the mapping is already part of a concordance, the user is creator/contributor of that concordance, and 3) the user is creator/contributor of the target concordance (if given).
 
 ### PATCH /mappings/:_id
 Adjusts a mapping in the database.
@@ -1151,7 +1215,7 @@ Adjusts a mapping in the database.
 
   JSKOS Mapping object as it was saved in the database.
 
-Note that any changes to the `created` property will be ignored.
+Note that any changes to the `created` property will be ignored. Note that changes to `partOf` (i.e. association with a concordance) are only possible if 1) `fromScheme` and `toScheme` are equal between the mapping and the concordance, 2) the authenticated user is creator of the mapping OR if the mapping is already part of a concordance, the user is creator/contributor of that concordance, and 3) the user is creator/contributor of the target concordance (if given).
 
 ### DELETE /mappings/:_id
 Deletes a mapping from the database.
