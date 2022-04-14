@@ -33,6 +33,17 @@
     <h3>Concordances</h3>
     <ul>
       <li>GET <a href="concordances">/concordances</a> - Returns a list of concordances for mappings (<a href="https://github.com/gbv/jskos-server#get-concordances" target="_blank">documentation</a>)</li>
+      <li>GET /concordances/:_id - Returns a specific concordance (<a href="https://github.com/gbv/jskos-server#get-concordances_id" target="_blank">documentation</a>)</li>
+      <% if (config.concordances.create) { %>
+      <li>POST /concordances - Saves a concordance in the database (<% if (config.concordances.create.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#post-concordances" target="_blank">documentation</a>)</li>
+      <% } %>
+      <% if (config.concordances.update) { %>
+      <li>PUT /concordances/:_id - Overwrites a concordance in the database (<% if (config.concordances.update.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#put-concordances_id" target="_blank">documentation</a>)</li>
+      <li>PATCH /concordances/:_id - Adjusts a mapping in the database (<% if (config.concordances.update.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#patch-concordances_id" target="_blank">documentation</a>)</li>
+      <% } %>
+      <% if (config.concordances.delete) { %>
+      <li>DELETE /concordances/:_id - Deletes a mapping from the database (<% if (config.concordances.delete.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#delete-concordances_id" target="_blank">documentation</a>)</li>
+      <% } %>
     </ul>
     <% } %>
     <% if (config.mappings) { %>
