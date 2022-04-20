@@ -372,7 +372,7 @@ module.exports = class MappingService {
       try {
         // Add created and modified dates.
         const now = (new Date()).toISOString()
-        if (!mapping.created) {
+        if (!bulk || !mapping.created) {
           mapping.created = now
         }
         mapping.modified = now

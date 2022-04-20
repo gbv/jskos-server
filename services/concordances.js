@@ -98,8 +98,10 @@ module.exports = class ConcordanceService {
 
   /**
    * Save a single concordance or multiple concordances in the database. Adds created date, validates the concordance, and adds identifiers.
+   *
+   * TODO: Implement bulk and bulkReplace, equivalent to postMapping
    */
-  async postConcordance({ bodyStream }) {
+  async postConcordance({ bodyStream, bulk = false }) {
     if (!bodyStream) {
       throw new MalformedBodyError()
     }
@@ -126,7 +128,7 @@ module.exports = class ConcordanceService {
     for (const concordance of concordances) {
       // Add created and modified dates.
       const now = (new Date()).toISOString()
-      if (!concordance.created) {
+      if (!bulk || !concordance.created) {
         concordance.created = now
       }
       concordance.modified = now

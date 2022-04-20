@@ -125,7 +125,7 @@ module.exports = class MappingService {
         }
         // Add created and modified dates.
         let date = (new Date()).toISOString()
-        if (!annotation.created) {
+        if (!bulk || !annotation.created) {
           annotation.created = date
         }
         // Remove type property
