@@ -15,6 +15,7 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [Dependencies](#dependencies)
   - [Clone and Install](#clone-and-install)
   - [Configuration](#configuration)
+  - [Access control](#access-control)
   - [Authentication](#authentication)
   - [Data Import](#data-import)
 - [Usage](#usage)
@@ -26,6 +27,11 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [POST /validate](#post-validate)
   - [GET /validate](#get-validate)
   - [GET /concordances](#get-concordances)
+  - [GET /concordances/:_id](#get-concordances_id)
+  - [POST /concordances](#post-concordances)
+  - [PUT /concordances/:_id](#put-concordances_id)
+  - [PATCH /concordances/:_id](#patch-concordances_id)
+  - [DELETE /concordances/:_id](#delete-concordances_id)
   - [GET /mappings](#get-mappings)
   - [GET /mappings/suggest](#get-mappingssuggest)
   - [GET /mappings/voc](#get-mappingsvoc)
@@ -121,6 +127,7 @@ All missing keys will be defaulted from `config/config.default.json`:
     "algorithm": "RS256",
     "key": null
   },
+  "anonymous": false,
   "schemes": true,
   "concepts": true,
   "mappings": {
@@ -140,7 +147,6 @@ All missing keys will be defaulted from `config/config.default.json`:
     },
     "fromSchemeWhitelist": null,
     "toSchemeWhitelist": null,
-    "anonymous": false,
     "cardinality": "1-to-n"
   },
   "concordances": true,
@@ -168,6 +174,15 @@ All missing keys will be defaulted from `config/config.default.json`:
 
 The provided configuration files (user config and environment config) will be validated with the provided [JSON Schema](https://json-schema.org) file under `config/config.schema.json` (public URI: https://gbv.github.io/jskos-server/status.schema.json). If validation fails, **JSON Server will refuse to start!** Please check whether your configuration is correct after each change. If there is something wrong, the console output will try to provide you with enough detail to fix the issue.
 
+If you are [running jskos-server behind a reverse proxy](#running-behind-a-reverse-proxy), it is necessary to provide the `baseUrl` key as well as the `proxies` key in your configuration (example for our production API):**
+See also:
+```json
+{
+  "baseUrl": "https://coli-conc.gbv.de/api/",
+  "proxies": ["123.456.789.101", "234.567.891.011"]
+}
+```
+
 With the keys `schemes`, `concepts`, `mappings`, `concordances`, and `annotations`, you can configure whether endpoints related to the specific functionality should be available. A minimal configuration file to just server read-only vocabulary and concept information could look like this:
 
 ```json
@@ -182,13 +197,13 @@ Available actions for `schemes`, `concepts`, `mappings`, and `annotations` are `
 
 - **`auth`**: Boolean. Can be defined only on actions. Defines whether access will require [authentication via JWT](#authentication). By default `false` for `read`, and `true` for all other actions.
 
-- **`crossUser`**: Boolean. Can be defined only on `update` and `delete` actions. Defines whether it is possible to edit an entity from a different user than the authenticated one. `false` by default.
+- **`crossUser`**: Boolean. Can be defined only on `update` and `delete` actions when `auth` is `true`. Defines whether it is possible to edit an entity from a different user than the authenticated one. `false` by default.
 
-- **`anonymous`**: Boolean. Can be defined only on type `mappings`. If `true`, the creator for mappings will not be saved. Also, `crossUser` will be implied to `true` as well. `false` by default.
+- **`anonymous`**: Boolean. Can be defined on any level (deeper levels will take the values from higher levels if necessary\*). If set, no creator and contributor is saved. `false` by default.
 
 - **`cardinality`**: String. Can be defined only on type `mappings`. Currently possible values: `1-to-n` (default), `1-to-1`. If `1-to-1` is configured, mappings with multiple concepts in `to` will be rejected.
 
-- **`identities`**: List of URI strings. Can be defined on any level (deeper levels will take the values from higher levels if necessary\*). If set, an action can only be used by users with an URI given in the list. `null` by default (no restrictions).
+- **`identities`**: List of URI strings. Can be defined on any level (deeper levels will take the values from higher levels if necessary\*). If set, an action with `auth` set to `true` can only be used by users with an URI given in the list. `null` by default (no restrictions).
 
 - **`identityProviders`**: List of strings. Can be defined on any level (deeper levels will take the values from higher levels if necessary\*). If set, an action can only be used by users who have that identity associated with them. `null` by default (no restrictions).
 
@@ -200,7 +215,25 @@ Available actions for `schemes`, `concepts`, `mappings`, and `annotations` are `
 
 Note that any properties not mentioned here are not allowed!
 
-Here are some helpful example presets for "mappings" or "annotations".
+### Access control
+The rights to `read`, `create`, `update` and `delete` entities via API can be controlled via several configuration settings described above ([data import](#data-import) is not limited by these restrictions):
+
+* Restricted access via `ips` is always applied *in addition* to other settings
+
+* Without [authentication](#authentication) (`auth` set to `false`) the server does not know about user accounts. In this case the `creator` and `contributor` fields of an object can be set without limitations (default) or they are ignored when `anonymous` is set to `true`.
+
+* With authentication an action can be limited to accounts listed in `identities` (if set). Rights to `create`, `update`, and `delete` entities can further depend on two controls:
+
+  1. value of `creator` and `contributor` of a superordinated object. Concepts always belong to vocabularies via `inScheme` or `topConceptOf` and mappings can belong to concordances via `partOf`.
+  2. settings of `crossUser` together with value of `creator` and `contributor` of the object
+
+The first control is only checked if it has a superordinated object with `contributor` and/or `creator`. This can only be the case for mappings and concepts. The connection to a superordinated object is checked on both the stored object and its modified value, so moving a mapping from one concordance to another is only allowed if access is granted for both. The authenticated user must be listed as `creator` or `contributor` of the superordinated object to pass this control.
+
+The second control is only checked when the first control cannot be applied and only on authenticated actions `update` or `delete` where `anonymous` is set to `false` (this is the default). With `crossUser` set to `false`, the authenticated user must be listed as `creator` of the stored object. With `crossUser` set to `true` any authenticated user (optionally limited to those listed in `identities`) can `update` or `delete` the object.
+
+For authenticated actions with `anonymous` being `false` creation of a new object will always set its initial `creator` to the autenticated user and `update` of an object will always add the user to `contributor` unless it is already included as `creator` or `contributor`. Further modification of `creator` and `contributor` (removal and addition of entries) is limited to vocabularies and concordance by authenticated users listed as `creator` of the object.
+
+Here are some helpful example presets for configuration of "concordances, "mappings", or "annotations".
 
 **Read-only access (does not make sense for annotations):**
 ```json
@@ -273,7 +306,6 @@ Here are some helpful example presets for "mappings" or "annotations".
 
 If write access for concept schemes and/or concepts is necessary, it is recommended that they are secured by only allowing certain users (via `identities`) or only allowing certain IP addresses (via `ips`):
 
-
 **Only user with URI `https://coli-conc.gbv.de/login/users/c0c1914a-f9d6-4b92-a624-bf44118b6619` can write:**
 ```json
 {
@@ -318,20 +350,28 @@ If write access for concept schemes and/or concepts is necessary, it is recommen
 ```
 Note that `auth` is set to `false` because it refers to authentication via JWT. The IP filter is separate from that. An even more secure way would be to use both JWT authentication with an `identities` filter as well as an IP filter.
 
----
-
-**If you are using jskos-server behind a proxy, it is necessary to provide the `baseUrl` key as well as the `proxies` key in your configuration (example for our production API):**
+**Only user with URI `https://coli-conc.gbv.de/login/users/c0c1914a-f9d6-4b92-a624-bf44118b6619` can create, but others can update/delete if they are creator/contributor of an entity:**
 ```json
 {
-  "baseUrl": "https://coli-conc.gbv.de/api/",
-  "proxies": ["123.456.789.101", "234.567.891.011"]
+  "read": {
+    "auth": false
+  },
+  "create": {
+    "auth": true,
+    "identities": ["https://coli-conc.gbv.de/login/users/c0c1914a-f9d6-4b92-a624-bf44118b6619"]
+  },
+  "update": {
+    "auth": true
+  },
+  "delete": {
+    "auth": true
+  }
 }
 ```
-
-See also: [Running Behind a Reverse Proxy](#running-behind-a-reverse-proxy)
+A configuration like this will be used to handle concordances in Cocoda. Only selected accounts will be able to create new concordances, but they will be able to add other accounts as creator/contributor so that those accounts will be able to assign mappings to the concordance and edit mappings that belong to the concordance.
 
 ### Authentication
-It is possible to limit certain actions to authenticated users, indicated by the `auth` option (see example configurations above). Authorization is performed via JWTs ([JSON Web Tokens](https://jwt.io/)). To configure authentication, you need to provide the JWT algorithm and the key/secret in the configuration file, like this:
+It is possible to limit certain actions to authenticated users, indicated by the `auth` option (see [example configurations above](#access-control)). Authorization is performed via JWTs ([JSON Web Tokens](https://jwt.io/)). To configure authentication, you need to provide the JWT algorithm and the key/secret in the configuration file, like this:
 
 ```json
 "auth": {
@@ -826,6 +866,63 @@ Lists all concordances for mappings.
   ]
   ```
 
+### GET /concordances/:_id
+Returns a specific concordance.
+
+* **URL Params**
+
+  None
+
+* **Success Response**
+
+  JSKOS object for concordance.
+
+* **Error Response**
+
+  If no concordance with `_id` could be found, it will return a 404 not found error.
+
+### POST /concordances
+Saves one or more concordances in the database. Note that `fromScheme` and `toScheme` must be supported by the jskos-server instance.
+
+* **URL Params**
+
+  None
+
+* **Success Reponse**
+
+  JSKOS Concordance object(s) as were saved in the database.
+
+* **Error Response**
+
+  When a single concordance is provided, an error can be returned if there's something wrong with it (see [errors](#errors)). When multiple concordances are provided, the first error will be returned.
+
+### PUT /concordances/:_id
+Overwrites a concordance in the database.
+
+* **Success Reponse**
+
+  JSKOS Concordance object as it was saved in the database.
+
+Note that any changes to the `uri`, `notation`, `fromScheme`, `toScheme`, `extent`, `distributions`, and `created` properties will be ignored. (No error will be thrown in this case.)
+
+### PATCH /concordances/:_id
+Adjusts a concordance in the database.
+
+* **Success Reponse**
+
+  JSKOS Concordance object as it was saved in the database.
+
+Note that changes to the properties `uri`, `notation`, `fromScheme`, `toScheme`, `created`, `extent`, and `distributions` are currently not allowed and will result in an [InvalidBodyError](#InvalidBodyError).
+
+### DELETE /concordances/:_id
+Deletes a concordance from the database.
+
+* **Success Reponse**
+
+  Status 204, no content.
+
+**Note that only concordances which have no mappings associated can be deleted.**
+
 ### GET /mappings
 Returns an array of mappings. Each mapping has a property `uri` under which the specific mapping can be accessed.
 
@@ -847,7 +944,7 @@ Returns an array of mappings. Each mapping has a property `uri` under which the 
 
   `type=[uri1|uri2|...]` only show mappings that conform to a certain type or types (see [JSKOS Concept Mappings]) (URIs separated by `|`)
 
-  `partOf=[uri1|uri2|...]` only show mappings that are part of certain concordances (URIs separated by `|`)
+  `partOf=[uri1|uri2|...]` only show mappings that are part of certain concordances (URIs separated by `|`); value `none` returns mappings that are not part of a concordance, value `any` returns mappings that are part of any concordance
 
   `creator=[string1|string2|...]` only show mappings that have a certain creator (separated by `|`)
 
@@ -864,6 +961,8 @@ Returns an array of mappings. Each mapping has a property `uri` under which the 
   `sort=[sort]` sorts by a specific field. Available are `created` and `modified` (default).
 
   `order=[order]` order to use for sorting. Available are `asc` and `desc` (default).
+
+  `cardinality=[cardinality]` cardinality of the mapping. Available are `1-to-n` (default) and `1-to-1`.
 
 * **Success Response**
 
@@ -1098,6 +1197,8 @@ Saves a mapping or multiple mappings in the database.
 
   When a single mapping is provided, an error can be returned if there's something wrong with it (see [errors](#errors)). When multiple mappings are provided, the first error will be returned, except if bulk mode is enabled in which errors for individual mappings are ignored.
 
+Note that the `partOf` property is currently not allowed. Associating a mapping with a concordances has to be done in a separate [PUT]((#put-mappings_id) or [PATCH]((#patch-mappings_id) request.
+
 ### PUT /mappings/:_id
 Overwrites a mapping in the database.
 
@@ -1105,7 +1206,7 @@ Overwrites a mapping in the database.
 
   JSKOS Mapping object as it was saved in the database.
 
-Note that any changes to the `created` property will be ignored.
+Note that any changes to the `created` property will be ignored. Note that changes to `partOf` (i.e. association with a concordance) are only possible if 1) `fromScheme` and `toScheme` are equal between the mapping and the concordance, 2) the authenticated user is creator of the mapping OR if the mapping is already part of a concordance, the user is creator/contributor of that concordance, and 3) the user is creator/contributor of the target concordance (if given).
 
 ### PATCH /mappings/:_id
 Adjusts a mapping in the database.
@@ -1114,7 +1215,7 @@ Adjusts a mapping in the database.
 
   JSKOS Mapping object as it was saved in the database.
 
-Note that any changes to the `created` property will be ignored.
+Note that any changes to the `created` property will be ignored. Note that changes to `partOf` (i.e. association with a concordance) are only possible if 1) `fromScheme` and `toScheme` are equal between the mapping and the concordance, 2) the authenticated user is creator of the mapping OR if the mapping is already part of a concordance, the user is creator/contributor of that concordance, and 3) the user is creator/contributor of the target concordance (if given).
 
 ### DELETE /mappings/:_id
 Deletes a mapping from the database.
@@ -1144,7 +1245,7 @@ Lists supported terminologies (concept schemes).
 
   `partOf=URIs` filter by registry URI that is listed in `partOf` field of the scheme, separated by `|`
 
-  `sort=[property]` sort the results by a certain property. Possible values: `label`, `notation`, `created`, `modified`
+  `sort=[property]` sort the results by a certain property. Possible values: `label` (preferred or alternative label in English or other languages), `notation` (string), `created` (timestamp), `modified` (timestamp), `counter` (number after last `/` in URI)
 
   `order=[order]` order to use for sorting. Available are `asc` (default) and `desc`.
 
@@ -1827,6 +1928,9 @@ Status code 403. Will be returned by `PUT`/`PATCH`/`DELETE` endpoints if the aut
 
 #### DatabaseAccessError
 Status code 500. Will be returned if the database is not available or if the current database request failed with an unknown error.
+
+#### DatabaseInconsistencyError
+Status code 500. Will be returned if there is an inconsistency issue with our database. Please [contact us](https://coli-conc.gbv.de/contact/) with the full error message if this occurs!
 
 #### ConfigurationError
 Status code 500. Will be returned if there is an error in the configuration that prevents the application from working correctly.
