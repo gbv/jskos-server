@@ -4,6 +4,7 @@ const Mapping = require("../models/mappings")
 const utils = require("../utils")
 const config = require("../config")
 const validate = require("jskos-validate")
+const escapeStringRegexp = require("escape-string-regexp")
 
 const validateConcordance = validate.concordance
 
@@ -43,14 +44,10 @@ module.exports = class ConcordanceService {
     }
     // Search by creator
     if (query.creator) {
-      let or = []
-      for (let creator of query.creator.split("|")) {
-        or.push({ "creator.prefLabel.de": creator })
-        or.push({ "creator.prefLabel.en": creator })
-      }
-      if (or.length) {
-        conditions.push({ $or: or })
-      }
+      const creators = query.creator.split("|")
+      conditions.push({
+        $or: _.flatten(creators.map(creator => [{ "creator.prefLabel.de": new RegExp(escapeStringRegexp(creator), "i") }, { "creator.prefLabel.en": new RegExp(escapeStringRegexp(creator), "i") }, { "creator.uri": creator }])),
+      })
     }
     // Set mode
     let mode = query.mode

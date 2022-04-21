@@ -2,6 +2,7 @@ const config = require("../config")
 const utils = require("../utils")
 const _ = require("lodash")
 const validate = require("jskos-validate")
+const escapeStringRegexp = require("escape-string-regexp")
 
 const Annotation = require("../models/annotations")
 const { EntityNotFoundError, DatabaseAccessError, InvalidBodyError, MalformedBodyError, MalformedRequestError, ForbiddenAccessError } = require("../errors")
@@ -29,18 +30,9 @@ module.exports = class MappingService {
       })
     }
     if (query.creator) {
+      const creators = query.creator.split("|")
       criteria.push({
-        $or: [
-          {
-            creator: query.creator,
-          },
-          {
-            "creator.id": query.creator,
-          },
-          {
-            "creator.name": query.creator,
-          },
-        ],
+        $or: _.flatten(creators.map(creator => [{ "creator.name": new RegExp(escapeStringRegexp(creator), "i") }, { "creator.id": creator }, { creator }])),
       })
     }
     if (query.target) {
