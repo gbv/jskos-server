@@ -213,7 +213,11 @@ module.exports = class MappingService {
     if (creator) {
       let creators = creator.split("|")
       mongoQuery4 = {
-        $or: _.flatten(creators.map(creator => [{ "creator.prefLabel.de": new RegExp(escapeStringRegexp(creator), "i") }, { "creator.prefLabel.en": new RegExp(escapeStringRegexp(creator), "i") }, { "creator.uri": creator }])),
+        $or: _.flatten(creators.map(creator => [
+          jskos.isValidUri(creator) ? null : { "creator.prefLabel.de": new RegExp(escapeStringRegexp(creator), "i") },
+          jskos.isValidUri(creator) ? null : { "creator.prefLabel.en": new RegExp(escapeStringRegexp(creator), "i") },
+          jskos.isValidUri(creator) ? { "creator.uri": creator } : null,
+        ].filter(Boolean))),
       }
     }
 

@@ -1,4 +1,5 @@
 const config = require("../config")
+const jskos = require("jskos-tools")
 const utils = require("../utils")
 const _ = require("lodash")
 const validate = require("jskos-validate")
@@ -32,7 +33,11 @@ module.exports = class MappingService {
     if (query.creator) {
       const creators = query.creator.split("|")
       criteria.push({
-        $or: _.flatten(creators.map(creator => [{ "creator.name": new RegExp(escapeStringRegexp(creator), "i") }, { "creator.id": creator }, { creator }])),
+        $or: _.flatten(creators.map(creator => [
+          jskos.isValidUri(creator) ? null : { "creator.name": new RegExp(escapeStringRegexp(creator), "i") },
+          jskos.isValidUri(creator) ? { "creator.id": creator } : null,
+          { creator },
+        ].filter(Boolean))),
       })
     }
     if (query.target) {

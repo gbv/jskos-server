@@ -3,6 +3,7 @@ const Concordance = require("../models/concordances")
 const Mapping = require("../models/mappings")
 const utils = require("../utils")
 const config = require("../config")
+const jskos = require("jskos-tools")
 const validate = require("jskos-validate")
 const escapeStringRegexp = require("escape-string-regexp")
 
@@ -46,7 +47,11 @@ module.exports = class ConcordanceService {
     if (query.creator) {
       const creators = query.creator.split("|")
       conditions.push({
-        $or: _.flatten(creators.map(creator => [{ "creator.prefLabel.de": new RegExp(escapeStringRegexp(creator), "i") }, { "creator.prefLabel.en": new RegExp(escapeStringRegexp(creator), "i") }, { "creator.uri": creator }])),
+        $or: _.flatten(creators.map(creator => [
+          jskos.isValidUri(creator) ? null : { "creator.prefLabel.de": new RegExp(escapeStringRegexp(creator), "i") },
+          jskos.isValidUri(creator) ? null : { "creator.prefLabel.en": new RegExp(escapeStringRegexp(creator), "i") },
+          jskos.isValidUri(creator) ? { "creator.uri": creator } : null,
+        ].filter(Boolean))),
       })
     }
     // Set mode
