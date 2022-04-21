@@ -799,11 +799,11 @@ Lists all concordances for mappings.
 
   `uri=[uri]` URIs for concordances separated by `|`
 
-  `fromScheme=[uri|notation]` only show concordances from concept scheme (URI or notation), separated by `|`
+  `fromScheme=[uri|notation]` only show concordances from concept scheme (URI or notation) (separated by `|`)
 
-  `toScheme=[uri|notation]` only show concordances to concept scheme (URI or notation), separated by `|`
+  `toScheme=[uri|notation]` only show concordances to concept scheme (URI or notation) (separated by `|`)
 
-  `creator=[creator]` only show concordances from creator, separated by `|`
+  `creator=[creator]` only show concordances from creator (separated by `|`)
 
   `mode=[mode]` specify the mode for the parameters above, one of `and` (default) and `or`
 
@@ -1789,7 +1789,7 @@ Returns an array of annotations. Each annotation has a property `id` under which
 
   `id=[id]` specify an annotation ID
 
-  `creator=[uriOrName]` only return annotations that have a certain creator (name or URI)
+  `creator=[uriOrName]` only return annotations that have a certain creator (name or URI) (separated by `|`)
 
   `target=[target]` only return annotations with a specific target URI (e.g. a mapping URI)
 
