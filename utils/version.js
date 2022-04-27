@@ -1,4 +1,5 @@
 const Container = require("typedi").Container
+const Mapping = require("../models/mappings")
 const Concordance = require("../models/concordances")
 const utils = require("./")
 const config = require("../config")
@@ -169,6 +170,67 @@ const upgrades = {
       } catch (error) {
         console.error(error)
         failed += 1
+      }
+    }
+
+    console.log(`- Adjusted: ${adjusted}, skipped: ${skipped}, failed: ${failed}.`)
+    console.log("... done")
+    if (failed > 0) {
+      throw new Error("Not all concordances could be adjusted. Please check the errors and try again.")
+    }
+  },
+  async "1.4.1"() {
+    console.log("Concordances will be upgraded:")
+    console.log("- Will replace _ (underscore) in URIs with - (hyphen)")
+    console.log("- Previous URI(s) will be moved to identifier")
+    console.log("- Concordance URIs in mappings will be updated")
+    const ok = await yesno({
+      question: "Do you want to perform these changes? (If not, we will not ask again.)",
+      defaultValue: null,
+    })
+    if (!ok) {
+      console.log("... done (no changes).")
+      return
+    }
+
+    let adjusted = 0
+    let failed = 0
+    let skipped = 0
+    const concordances = await Concordance.find().lean()
+    for (const concordance of concordances) {
+      const previousNotation = concordance.notation[0]
+      const newNotation = previousNotation.replaceAll("_", "-")
+      if (!previousNotation || previousNotation === newNotation) {
+        skipped += 1
+        continue
+      }
+      // Add previous URI to identifier
+      const previousUri = concordance.uri
+      concordance.identifier = [previousUri].concat(concordance.identifier || [])
+      // Set new _id, URI, and notation
+      concordance._id = newNotation
+      concordance.notation = [newNotation].concat(concordance.notation.slice(1))
+      concordance.uri = `${config.baseUrl}concordances/${newNotation}`
+      console.log(`- Updating concordance ${previousNotation} to _id ${newNotation} (${concordance.uri})`)
+      // Save concordance
+      try {
+        await Concordance.insertMany([concordance])
+        await Concordance.deleteOne({ _id: previousNotation })
+        adjusted += 1
+      } catch (error) {
+        console.error(error)
+        failed += 1
+        continue
+      }
+      // Update mappings that belong to this concordance
+      const result = await Mapping.updateMany(
+        { "partOf.0.uri": previousUri },
+        { $set: { "partOf.0.uri": concordance.uri } },
+      )
+      if (!result.acknowledged || result.matchedCount !== result.modifiedCount) {
+        console.log(`  - Something failed while updating mappings for concordance ${concordance.uri}. Please check manually.`)
+      } else {
+        console.log(`  - ${result.modifiedCount} mappings for concordance were updated successfully.`)
       }
     }
 
