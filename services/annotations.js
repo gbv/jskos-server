@@ -3,7 +3,6 @@ const jskos = require("jskos-tools")
 const utils = require("../utils")
 const _ = require("lodash")
 const validate = require("jskos-validate")
-const escapeStringRegexp = require("escape-string-regexp")
 
 const Annotation = require("../models/annotations")
 const { EntityNotFoundError, DatabaseAccessError, InvalidBodyError, MalformedBodyError, MalformedRequestError, ForbiddenAccessError } = require("../errors")
@@ -34,7 +33,7 @@ module.exports = class MappingService {
       const creators = query.creator.split("|")
       criteria.push({
         $or: _.flatten(creators.map(creator => [
-          jskos.isValidUri(creator) ? null : { "creator.name": new RegExp(escapeStringRegexp(creator), "i") },
+          jskos.isValidUri(creator) ? null : { "creator.name": new RegExp(_.escapeRegExp(creator), "i") },
           jskos.isValidUri(creator) ? { "creator.id": creator } : null,
           { creator },
         ].filter(Boolean))),

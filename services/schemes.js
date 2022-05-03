@@ -107,7 +107,7 @@ module.exports = class SchemeService {
   async getScheme(identifierOrNotation) {
     // TODO: Should we just throw an error 404 here?
     if (!identifierOrNotation) return null
-    return await Scheme.findOne({ $or: [{ uri: identifierOrNotation }, { identifier: identifierOrNotation }, { notation: new RegExp(`^${identifierOrNotation}$`, "i") }]}).lean().exec()
+    return await Scheme.findOne({ $or: [{ uri: identifierOrNotation }, { identifier: identifierOrNotation }, { notation: new RegExp(`^${_.escapeRegExp(identifierOrNotation)}$`, "i") }]}).lean().exec()
   }
 
   async replaceSchemeProperties(entity, propertyPaths, ignoreError = true) {

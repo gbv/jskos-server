@@ -3,7 +3,6 @@ const utils = require("../utils")
 const config = require("../config")
 const jskos = require("jskos-tools")
 const validate = require("jskos-validate")
-const escapeStringRegexp = require("escape-string-regexp")
 
 const Mapping = require("../models/mappings")
 const Annotation = require("../models/annotations")
@@ -85,7 +84,7 @@ module.exports = class MappingService {
     // Currently only supports truncated search like that, no arbitrary regex possible.
     const regex = value => {
       if (value.endsWith("*")) {
-        return { $regex: `^${escapeStringRegexp(value.substring(0, value.length - 1))}` }
+        return { $regex: `^${_.escapeRegExp(value.substring(0, value.length - 1))}` }
       } else {
         return value
       }
@@ -214,8 +213,8 @@ module.exports = class MappingService {
       let creators = creator.split("|")
       mongoQuery4 = {
         $or: _.flatten(creators.map(creator => [
-          jskos.isValidUri(creator) ? null : { "creator.prefLabel.de": new RegExp(escapeStringRegexp(creator), "i") },
-          jskos.isValidUri(creator) ? null : { "creator.prefLabel.en": new RegExp(escapeStringRegexp(creator), "i") },
+          jskos.isValidUri(creator) ? null : { "creator.prefLabel.de": new RegExp(_.escapeRegExp(creator), "i") },
+          jskos.isValidUri(creator) ? null : { "creator.prefLabel.en": new RegExp(_.escapeRegExp(creator), "i") },
           jskos.isValidUri(creator) ? { "creator.uri": creator } : null,
         ].filter(Boolean))),
       }
@@ -657,7 +656,7 @@ module.exports = class MappingService {
     // TODO: - Implement mode.
     let paths = ["from.memberSet", "to.memberSet", "to.memberList", "to.memberChoice"]
     for (let path of paths) {
-      or.push({ [path + ".notation"]: { $regex: `^${search}` } })
+      or.push({ [path + ".notation"]: { $regex: `^${_.escapeRegExp(search)}` } })
     }
     and.push({ $or: or })
     mongoQuery = { $and: and }
