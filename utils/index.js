@@ -307,11 +307,15 @@ const addMiddlewareProperties = (req, res, next) => {
     // Limit for pagination
     const defaultLimit = 100
     req.query.limit = parseInt(req.query.limit)
-    req.query.limit = req.query.limit || defaultLimit // Math.min(defaultLimit, req.query.limit || defaultLimit)
+    if (isNaN(req.query.limit) || req.query.limit < 0) {
+      req.query.limit = defaultLimit
+    }
     // Offset for pagination
     const defaultOffset = 0
     req.query.offset = parseInt(req.query.offset)
-    req.query.offset = req.query.offset || defaultOffset
+    if (isNaN(req.query.offset) || req.query.offset < 0) {
+      req.query.offset = defaultOffset
+    }
     // Bulk option for POST endpoints
     req.query.bulk = req.query.bulk === "true" || req.query.bulk === "1"
   }
