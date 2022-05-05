@@ -8,7 +8,7 @@ const Annotation = require("../models/annotations")
 const { EntityNotFoundError, DatabaseAccessError, InvalidBodyError, MalformedBodyError, MalformedRequestError, ForbiddenAccessError } = require("../errors")
 const { bulkOperationForEntities } = require("../utils")
 
-module.exports = class MappingService {
+class MappingService {
 
   /**
    * Returns a Promise with an array of annotations.
@@ -258,3 +258,5 @@ module.exports = class MappingService {
   }
 
 }
+
+module.exports = new MappingService()

@@ -7,7 +7,7 @@ const Scheme = require("../models/schemes")
 const Concept = require("../models/concepts")
 const { bulkOperationForEntities } = require("../utils")
 
-module.exports = class SchemeService {
+class SchemeService {
 
   /**
    * Return a Promise with an array of vocabularies.
@@ -381,3 +381,5 @@ module.exports = class SchemeService {
   }
 
 }
+
+module.exports = new SchemeService()

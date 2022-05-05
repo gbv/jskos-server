@@ -1,7 +1,6 @@
 const express = require("express")
 const router = express.Router()
-const Container = require("typedi").Container
-const validateService = Container.get(require("../services/validate"))
+const validateService = require("../services/validate")
 const utils = require("../utils")
 const axios = require("axios")
 const { MalformedRequestError } = require("../errors")

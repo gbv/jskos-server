@@ -181,13 +181,12 @@ const anystream = require("json-anystream")
 const _ = require("lodash")
 const db = require("../utils/db")
 
-const Container = require("typedi").Container
 const services = {
-  scheme: Container.get(require("../services/schemes")),
-  concept: Container.get(require("../services/concepts")),
-  concordance: Container.get(require("../services/concordances")),
-  mapping: Container.get(require("../services/mappings")),
-  annotation: Container.get(require("../services/annotations")),
+  scheme: require("../services/schemes"),
+  concept: require("../services/concepts"),
+  concordance: require("../services/concordances"),
+  mapping: require("../services/mappings"),
+  annotation: require("../services/annotations"),
 }
 // Also import models for Mapping and Concordance
 // TODO: This won't be needed if these are imported through the service as well.

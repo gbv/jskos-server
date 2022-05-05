@@ -10,10 +10,10 @@ const validateConcordance = validate.concordance
 
 const { MalformedRequestError, EntityNotFoundError, MalformedBodyError, InvalidBodyError, DatabaseAccessError } = require("../errors")
 
-module.exports = class ConcordanceService {
+class ConcordanceService {
 
-  constructor(container) {
-    this.schemeService = container.get(require("./schemes"))
+  constructor() {
+    this.schemeService = require("./schemes")
     this.uriBase = config.baseUrl + "concordances/"
   }
 
@@ -292,3 +292,5 @@ module.exports = class ConcordanceService {
   }
 
 }
+
+module.exports = new ConcordanceService()

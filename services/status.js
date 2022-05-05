@@ -1,6 +1,6 @@
 const status = require("../config").status
 
-module.exports = class StatusService {
+class StatusService {
 
   /**
    * Return a Promise with a status object.
@@ -12,3 +12,5 @@ module.exports = class StatusService {
   }
 
 }
+
+module.exports = new StatusService()

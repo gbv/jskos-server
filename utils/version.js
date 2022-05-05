@@ -1,4 +1,3 @@
-const Container = require("typedi").Container
 const Concordance = require("../models/concordances")
 const utils = require("./")
 const config = require("../config")
@@ -60,12 +59,12 @@ const upgrades = {
     console.log("... done.")
     // 2. Create indexes for concordances
     console.log("Creating indexes for concordances...")
-    const concordanceService = Container.get(require("../services/concordances"))
+    const concordanceService = require("../services/concordances")
     await concordanceService.createIndexes()
     console.log("... done.")
     // 3. Create indexes for schemes
     console.log("Creating indexes for schemes...")
-    const schemeService = Container.get(require("../services/schemes"))
+    const schemeService = require("../services/schemes")
     await schemeService.createIndexes()
     console.log("... done.")
   },
@@ -105,13 +104,13 @@ const upgrades = {
     console.log("... done.")
     // 2. Create indexes for schemes
     console.log("Creating indexes for schemes...")
-    const schemeService = Container.get(require("../services/schemes"))
+    const schemeService = require("../services/schemes")
     await schemeService.createIndexes()
     console.log("... done.")
   },
   async "1.3"() {
     console.log("Creating indexes for annotations...")
-    const annotationService = Container.get(require("../services/annotations"))
+    const annotationService = require("../services/annotations")
     await annotationService.createIndexes()
     console.log("... done.")
   },

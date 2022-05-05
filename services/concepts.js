@@ -41,10 +41,10 @@ function conceptFind(query, $skip, $limit) {
   return Concept.aggregate(pipeline)
 }
 
-module.exports = class ConceptService {
+class ConceptService {
 
-  constructor(container) {
-    this.schemeService = container.get(require("../services/schemes"))
+  constructor() {
+    this.schemeService = require("../services/schemes")
   }
 
   async get(uri) {
@@ -507,3 +507,5 @@ module.exports = class ConceptService {
   }
 
 }
+
+module.exports = new ConceptService()

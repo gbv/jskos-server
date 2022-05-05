@@ -21,11 +21,11 @@ const validateMapping = (mapping) => {
   return true
 }
 
-module.exports = class MappingService {
+class MappingService {
 
-  constructor(container) {
-    this.schemeService = container.get(require("../services/schemes"))
-    this.concordanceService = container.get(require("../services/concordances"))
+  constructor() {
+    this.schemeService = require("../services/schemes")
+    this.concordanceService = require("../services/concordances")
 
     this.loadWhitelists()
   }
@@ -754,3 +754,5 @@ module.exports = class MappingService {
   }
 
 }
+
+module.exports = new MappingService()

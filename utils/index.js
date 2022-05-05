@@ -3,13 +3,12 @@ const _ = require("lodash")
 const jskos = require("jskos-tools")
 const { DuplicateEntityError, EntityNotFoundError, CreatorDoesNotMatchError, DatabaseInconsistencyError, InvalidBodyError } = require("../errors")
 
-// Container needed to load services that load properties
-const Container = require("typedi").Container// Services, keys are according to req.type
+// Services, keys are according to req.type
 const services = {}
 for (let type of ["schemes", "concepts", "concordances", "mappings", "annotations"]) {
   Object.defineProperty(services, type, {
     get() {
-      return Container.get(require("../services/" + type))
+      return require("../services/" + type)
     },
   })
 }

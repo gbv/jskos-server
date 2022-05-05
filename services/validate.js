@@ -1,9 +1,11 @@
 const validate = require("jskos-validate")
 const { guessObjectType } = require("jskos-tools")
-const Container = require("typedi").Container
-const schemeService = Container.get(require("../services/schemes"))
 
-module.exports = class ValidateService {
+class ValidateService {
+
+  constructor() {
+    this.schemeService = require("../services/schemes")
+  }
 
   async validate(data, { unknownFields, type, knownSchemes = false } = {}) {
     if (!Array.isArray(data)) {
@@ -16,7 +18,7 @@ module.exports = class ValidateService {
     const rememberSchemes = type ? null : []
     if (knownSchemes) {
       // Get schemes from schemeService
-      knownSchemes = await schemeService.getSchemes({})
+      knownSchemes = await this.schemeService.getSchemes({})
       type = "concept"
     }
     const validator = type ? validate[type] : validate
@@ -30,3 +32,5 @@ module.exports = class ValidateService {
   }
 
 }
+
+module.exports = new ValidateService()
