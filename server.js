@@ -36,7 +36,7 @@ const connect = async () => {
       config.status.suggest = null
     }
   } catch(error) {
-    config.log("Error connecting to database, reconnect in a few seconds...")
+    config.warn("Error connecting to database, reconnect in a few seconds...")
   }
 }
 // Connect immediately on startup

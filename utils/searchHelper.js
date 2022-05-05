@@ -189,7 +189,7 @@ async function searchItem({ search, voc, schemeService, queryFunction }) {
         try {
           _label = label.toUpperCase()
         } catch (error) {
-          config.log(label, error)
+          config.error(label, error)
           continue
         }
         if (_search == _label) {
