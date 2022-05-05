@@ -52,7 +52,7 @@
       "type": "string"
     },
     "verbosity": {
-      "description": "Sets the verbosity level for console output",
+      "description": "Sets the verbosity level for console output (log/warn/error, default: warn)",
       "anyOf": [
         {
           "type": "boolean"

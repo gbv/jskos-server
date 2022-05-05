@@ -42,6 +42,12 @@ const connect = async () => {
 // Connect immediately on startup
 connect()
 
+// Logging for access logs
+if (config.verbosity === true || config.verbosity === "log") {
+  const morgan = require("morgan")
+  app.use(morgan(":date[iso] \":method :url HTTP/:http-version\" :status :res[content-length] \":referrer\" \":user-agent\""))
+}
+
 // Add default headers
 app.use(utils.addDefaultHeaders)
 
