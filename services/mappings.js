@@ -263,7 +263,7 @@ class MappingService {
           $lookup: {
             from: "annotations",
             localField: "uri",
-            foreignField: "target",
+            foreignField: "target.id",
             as: "annotations",
           },
         },
@@ -296,7 +296,7 @@ class MappingService {
         {
           $lookup: {
             from: "mappings",
-            localField: "target",
+            localField: "target.id",
             foreignField: "uri",
             as: "mappings",
           },

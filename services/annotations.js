@@ -152,19 +152,17 @@ class MappingService {
         if (config.env === "production") {
           annotation.id = annotation.id.replace("http:", "https:")
         }
-        // If it annotates a mapping from same instance, then add state to target
+        // Change target to object and add mapping content identifier if possible
         const target = _.get(annotation, "target.id", annotation.target)
-        if (target && target.startsWith && target.startsWith(config.baseUrl + "mappings/") && !_.get(annotation, "target.state.id")) {
+        if (!_.get(annotation, "target.state.id")) {
           const mapping = await Mapping.findOne({ uri: target })
           const contentId = mapping && (mapping.identifier || []).find(id => id.startsWith("urn:jskos:mapping:content:"))
-          if (contentId) {
-            annotation.target = {
-              id: target,
-              state: {
-                id: contentId,
-              },
-            }
-          }
+          annotation.target = contentId ? {
+            id: target,
+            state: {
+              id: contentId,
+            },
+          } : { id: target }
         }
 
         return annotation
@@ -209,6 +207,11 @@ class MappingService {
     annotation.id = existing.id
     annotation._id = existing._id
 
+    // Change target property to object if necessary
+    if (_.isString(annotation.target)) {
+      annotation.target = { id: annotation.target }
+    }
+
     const result = await Annotation.replaceOne({ _id: existing._id }, annotation)
     if (result.acknowledged && result.matchedCount) {
       return annotation
@@ -232,6 +235,10 @@ class MappingService {
     _.unset(annotation, "id")
     // Use lodash merge to merge annotations
     _.merge(existing, annotation)
+    // Change target property to object if necessary
+    if (_.isString(annotation.target)) {
+      annotation.target = { id: annotation.target }
+    }
     // Validate mapping
     if (!validate.annotation(annotation)) {
       throw new InvalidBodyError()

@@ -187,7 +187,14 @@ const upgrades = {
     await annotationService.createIndexes()
     console.log("... done.")
 
-    console.log("- Update annotations to include mapping state in target property...")
+    console.log("- Annotations will be updated to use an object for property `target` and to include mapping state if possible...")
+    const ok = await yesno({
+      question: "Is that okay?",
+      defaultValue: false,
+    })
+    if (!ok) {
+      throw new Error("Aborted due to missing user confirmation.")
+    }
     const Mapping = require("../models/mappings")
     const Annotation = require("../models/annotations")
 
@@ -195,21 +202,20 @@ const upgrades = {
     const annotations = await Annotation.find({ "target.state.id": { $exists: false } }).exec()
     for (const annotation of annotations) {
       const target = _.get(annotation, "target.id", annotation.target)
-      if (target && target.startsWith && target.startsWith(config.baseUrl + "mappings/")) {
-        const mapping = await Mapping.findOne({ uri: target })
-        const contentId = mapping && (mapping.identifier || []).find(id => id.startsWith("urn:jskos:mapping:content:"))
-        if (contentId) {
-          await Annotation.updateOne({ _id: annotation._id }, {
-            target: {
-              id: target,
-              state: {
-                id: contentId,
-              },
-            },
-          })
-          updatedCount += 1
-        }
+      const mapping = await Mapping.findOne({ uri: target })
+      const contentId = mapping && (mapping.identifier || []).find(id => id.startsWith("urn:jskos:mapping:content:"))
+      const update = contentId ? {
+        target: {
+          id: target,
+          state: {
+            id: contentId,
+          },
+        },
+      } : {
+        target: { id: target },
       }
+      await Annotation.updateOne({ _id: annotation._id }, update)
+      updatedCount += 1
     }
     console.log(`... done (${updatedCount} annotations updated).`)
 
