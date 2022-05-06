@@ -1,6 +1,6 @@
-const Concordance = require("../models/concordances")
 const utils = require("./")
 const config = require("../config")
+const _ = require("lodash")
 const yesno = require("yesno")
 
 class Version {
@@ -115,6 +115,8 @@ const upgrades = {
     console.log("... done.")
   },
   async "1.4"() {
+    const Concordance = require("../models/concordances")
+
     console.log("Concordances will be upgraded:")
     console.log("- _id will be changed to notation (if available) or a new UUID")
     console.log(`- URI will be adjusted to start with ${config.baseUrl}`)
@@ -176,6 +178,41 @@ const upgrades = {
     if (failed > 0) {
       throw new Error("Not all concordances could be adjusted. Please check the errors and try again.")
     }
+  },
+  async "1.4.5"() {
+    console.log("Upgrades to annotations (see #173):")
+
+    console.log("- Update indexes for annotations...")
+    const annotationService = require("../services/annotations")
+    await annotationService.createIndexes()
+    console.log("... done.")
+
+    console.log("- Update annotations to include mapping state in target property...")
+    const Mapping = require("../models/mappings")
+    const Annotation = require("../models/annotations")
+
+    let updatedCount = 0
+    const annotations = await Annotation.find({ "target.state.id": { $exists: false } }).exec()
+    for (const annotation of annotations) {
+      const target = _.get(annotation, "target.id", annotation.target)
+      if (target && target.startsWith && target.startsWith(config.baseUrl + "mappings/")) {
+        const mapping = await Mapping.findOne({ uri: target })
+        const contentId = mapping && (mapping.identifier || []).find(id => id.startsWith("urn:jskos:mapping:content:"))
+        if (contentId) {
+          await Annotation.updateOne({ _id: annotation._id }, {
+            target: {
+              id: target,
+              state: {
+                id: contentId,
+              },
+            },
+          })
+          updatedCount += 1
+        }
+      }
+    }
+    console.log(`... done (${updatedCount} annotations updated).`)
+
   },
 }
 
