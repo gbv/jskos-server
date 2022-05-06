@@ -41,7 +41,10 @@ class MappingService {
     }
     if (query.target) {
       criteria.push({
-        target: query.target,
+        $or: [
+          { target: query.target },
+          { "target.id": query.target },
+        ],
       })
     }
     if (query.bodyValue) {
