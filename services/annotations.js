@@ -241,6 +241,7 @@ class MappingService {
     const indexes = [
       [{ id: 1 }, {}],
       [{ target: 1 }, {}],
+      [{ "target.id": 1 }, {}],
       [{ creator: 1 }, {}],
       [{ "creator.id": 1 }, {}],
       [{ "creator.name": 1 }, {}],
