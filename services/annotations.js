@@ -5,6 +5,7 @@ const _ = require("lodash")
 const validate = require("jskos-validate")
 
 const Annotation = require("../models/annotations")
+const Mapping = require("../models/mappings")
 const { EntityNotFoundError, DatabaseAccessError, InvalidBodyError, MalformedBodyError, MalformedRequestError, ForbiddenAccessError } = require("../errors")
 const { bulkOperationForEntities } = require("../utils")
 
@@ -111,7 +112,7 @@ class MappingService {
     let response
 
     // Adjust all mappings
-    annotations = annotations.map(annotation => {
+    annotations = await Promise.all(annotations.map(async annotation => {
       try {
         // For type moderating, check if user is on the whitelist (except for admin=true).
         if (!admin && annotation.motivation == "moderating") {
@@ -151,6 +152,20 @@ class MappingService {
         if (config.env === "production") {
           annotation.id = annotation.id.replace("http:", "https:")
         }
+        // If it annotates a mapping from same instance, then add state to target
+        const target = _.get(annotation, "target.id", annotation.target)
+        if (target && target.startsWith && target.startsWith(config.baseUrl + "mappings/") && !_.get(annotation, "target.state.id")) {
+          const mapping = await Mapping.findOne({ uri: target })
+          const contentId = mapping && (mapping.identifier || []).find(id => id.startsWith("urn:jskos:mapping:content:"))
+          if (contentId) {
+            annotation.target = {
+              id: target,
+              state: {
+                id: contentId,
+              },
+            }
+          }
+        }
 
         return annotation
       } catch(error) {
@@ -159,7 +174,7 @@ class MappingService {
         }
         throw error
       }
-    })
+    }))
     annotations = annotations.filter(a => a)
 
     if (bulk) {
