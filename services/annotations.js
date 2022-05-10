@@ -5,6 +5,7 @@ const _ = require("lodash")
 const validate = require("jskos-validate")
 
 const Annotation = require("../models/annotations")
+const Mapping = require("../models/mappings")
 const { EntityNotFoundError, DatabaseAccessError, InvalidBodyError, MalformedBodyError, MalformedRequestError, ForbiddenAccessError } = require("../errors")
 const { bulkOperationForEntities } = require("../utils")
 
@@ -41,7 +42,10 @@ class MappingService {
     }
     if (query.target) {
       criteria.push({
-        target: query.target,
+        $or: [
+          { target: query.target },
+          { "target.id": query.target },
+        ],
       })
     }
     if (query.bodyValue) {
@@ -108,7 +112,7 @@ class MappingService {
     let response
 
     // Adjust all mappings
-    annotations = annotations.map(annotation => {
+    annotations = await Promise.all(annotations.map(async annotation => {
       try {
         // For type moderating, check if user is on the whitelist (except for admin=true).
         if (!admin && annotation.motivation == "moderating") {
@@ -148,6 +152,18 @@ class MappingService {
         if (config.env === "production") {
           annotation.id = annotation.id.replace("http:", "https:")
         }
+        // Change target to object and add mapping content identifier if possible
+        const target = _.get(annotation, "target.id", annotation.target)
+        if (!_.get(annotation, "target.state.id")) {
+          const mapping = await Mapping.findOne({ uri: target })
+          const contentId = mapping && (mapping.identifier || []).find(id => id.startsWith("urn:jskos:mapping:content:"))
+          annotation.target = contentId ? {
+            id: target,
+            state: {
+              id: contentId,
+            },
+          } : { id: target }
+        }
 
         return annotation
       } catch(error) {
@@ -156,7 +172,7 @@ class MappingService {
         }
         throw error
       }
-    })
+    }))
     annotations = annotations.filter(a => a)
 
     if (bulk) {
@@ -191,6 +207,11 @@ class MappingService {
     annotation.id = existing.id
     annotation._id = existing._id
 
+    // Change target property to object if necessary
+    if (_.isString(annotation.target)) {
+      annotation.target = { id: annotation.target }
+    }
+
     const result = await Annotation.replaceOne({ _id: existing._id }, annotation)
     if (result.acknowledged && result.matchedCount) {
       return annotation
@@ -214,6 +235,10 @@ class MappingService {
     _.unset(annotation, "id")
     // Use lodash merge to merge annotations
     _.merge(existing, annotation)
+    // Change target property to object if necessary
+    if (_.isString(annotation.target)) {
+      annotation.target = { id: annotation.target }
+    }
     // Validate mapping
     if (!validate.annotation(annotation)) {
       throw new InvalidBodyError()
@@ -238,6 +263,7 @@ class MappingService {
     const indexes = [
       [{ id: 1 }, {}],
       [{ target: 1 }, {}],
+      [{ "target.id": 1 }, {}],
       [{ creator: 1 }, {}],
       [{ "creator.id": 1 }, {}],
       [{ "creator.name": 1 }, {}],

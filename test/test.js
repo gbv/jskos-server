@@ -1854,7 +1854,7 @@ describe("Express Server", () => {
           // Save id for later use
           annotation.id = res.body.id
           res.body.creator.should.be.eql({ id: user.uri, name: user.name }) // Creator gets decoded from base64
-          res.body.target.should.be.eql(annotation.target)
+          _.get(res.body, "target.id", res.body.target).should.be.eql(annotation.target)
           res.body.motivation.should.be.eql(annotation.motivation)
           res.body.bodyValue.should.be.eql(annotation.bodyValue)
           done()
@@ -2105,7 +2105,7 @@ describe("Express Server", () => {
           res.body.should.be.a("object")
           res.body.id.should.be.a("string")
           res.body.creator.should.be.eql({ id: userWithModerating.uri, name: userWithModerating.name }) // Creator gets decoded from base64
-          res.body.target.should.be.eql(annotationModerating.target)
+          _.get(res.body, "target.id", res.body.target).should.be.eql(annotationModerating.target)
           res.body.motivation.should.be.eql(annotationModerating.motivation)
           done()
         })
