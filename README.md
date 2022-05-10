@@ -1810,7 +1810,9 @@ Returns an array of annotations. Each annotation has a property `id` under which
   ```json
   [
     {
-      "target": "https://coli-conc.gbv.de/api/mappings/f8eff4e2-a6df-4d2c-8382-523072c59af7",
+      "target": {
+        "id": "https://coli-conc.gbv.de/api/mappings/f8eff4e2-a6df-4d2c-8382-523072c59af7"
+      },
       "motivation": "assessing",
       "bodyValue": "+1",
       "creator": "https://orcid.org/0000-0002-4087-8227",
@@ -1841,7 +1843,9 @@ Returns a specific annotation.
 
   ```json
   {
-    "target": "https://coli-conc.gbv.de/api/mappings/f0cc5f65-5712-4820-9638-e662c0c4314e",
+    "target": {
+      "id": "https://coli-conc.gbv.de/api/mappings/f0cc5f65-5712-4820-9638-e662c0c4314e"
+    },
     "motivation": "assessing",
     "bodyValue": "+1",
     "creator": {
