@@ -38,6 +38,11 @@ module.exports = {
         if (!retry) {
           throw error
         }
+        config.error(error)
+      }
+      if (!result) {
+        config.error("Error connecting to database, trying again in 10 seconds...")
+        await new Promise(resolve => setTimeout(resolve, 10000))
       }
     }
     // If retry === true, add error handler after connecting
