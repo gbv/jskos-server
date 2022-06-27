@@ -126,6 +126,27 @@ describe("Services", () => {
         assert.deepStrictEqual(result.map(r => r.uri).sort(), expected)
       })
 
+      it("should get correct number of mappings when using annotatedFor param with value `any`", async () => {
+        const annotatedFor = "any"
+        const result = await services.mapping.getMappings({ limit: 10, offset: 0, annotatedFor })
+        const expected = _.uniq(annotations.map(a => a.target)).sort()
+        assert.deepStrictEqual(result.map(r => r.uri).sort(), expected)
+      })
+
+      it("should get correct number of mappings when using annotatedFor param with value `none`", async () => {
+        const annotatedFor = "none"
+        const result = await services.mapping.getMappings({ limit: 10, offset: 0, annotatedFor })
+        const expected = mappings.map(m => m.uri).filter(uri => !annotations.find(a => a.target === uri)).sort()
+        assert.deepStrictEqual(result.map(r => r.uri).sort(), expected)
+      })
+
+      it("should get correct number of mappings when using annotatedFor param with negative value", async () => {
+        const annotatedFor = "!assessing"
+        const result = await services.mapping.getMappings({ limit: 10, offset: 0, annotatedFor })
+        const expected = mappings.map(m => m.uri).filter(uri => !annotations.find(a => a.target === uri && a.motivation === annotatedFor.slice(1))).sort()
+        assert.deepStrictEqual(result.map(r => r.uri).sort(), expected)
+      })
+
       it("should get correct number of mappings when using annotatedBy param", async () => {
         const annotatedBy = "test:creator|other:uri"
         const result = await services.mapping.getMappings({ limit: 10, offset: 0, annotatedBy })

@@ -245,13 +245,20 @@ class MappingService {
       pipeline.push({ $match: query })
     }
     // 2. Filter by annotation, and from/to/creator is defined
-    else if (from || to || creator) {
+    else if (from || to || creator || annotatedFor === "none" || (annotatedFor || "").startsWith("!")) {
       // We'll first filter the mappings, then add annotations and filter by those
       const annotationQuery = {}
       if (annotatedWith) {
         annotationQuery["annotations.bodyValue"] = annotatedWith
       }
       if (annotatedFor) {
+        if (annotatedFor === "none") {
+          annotatedFor = { $exists: false }
+        } else if (annotatedFor === "any") {
+          annotatedFor = { $exists: true }
+        } else if (annotatedFor.startsWith("!")) {
+          annotatedFor = { $ne: annotatedFor.slice(1) }
+        }
         annotationQuery["annotations.motivation"] = annotatedFor
       }
       if (annotatedBy) {
@@ -282,6 +289,9 @@ class MappingService {
         annotationQuery["bodyValue"] = annotatedWith
       }
       if (annotatedFor) {
+        if (annotatedFor === "any") {
+          annotatedFor = { $exists: true }
+        }
         annotationQuery["motivation"] = annotatedFor
       }
       if (annotatedBy) {

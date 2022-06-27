@@ -950,7 +950,7 @@ Returns an array of mappings. Each mapping has a property `uri` under which the 
 
   `annotatedBy=[uri1|uri2|...]` has annotations by user with URI(s)
 
-  `annotatedFor=[motivation]` has annotations with a certain motivation (e.g. `assessing`)
+  `annotatedFor=[motivation]` has annotations with a certain motivation (e.g. `assessing`); value `none` returns mappings that have no annotations at all, value `any` returns mappings that have any kind of annotation, values starting with `!` (e.g. `!assessing`) filter out annotations with that motivation
 
   `annotatedWith=[body]` has annotations with a certian body value (e.g. `+1`)
 
