@@ -243,6 +243,7 @@ class MappingService {
     if (!annotatedWith && !annotatedBy && !annotatedFor) {
       // Simply match mapping query
       pipeline.push({ $match: query })
+      pipeline.push({ $sort: sorting })
     }
     // 2. Filter by annotation, and from/to/creator is defined
     else if (from || to || creator || annotatedFor === "none" || (annotatedFor || "").startsWith("!")) {
@@ -252,20 +253,22 @@ class MappingService {
         annotationQuery["annotations.bodyValue"] = annotatedWith
       }
       if (annotatedFor) {
+        let annotatedForQuery = annotatedFor
         if (annotatedFor === "none") {
-          annotatedFor = { $exists: false }
+          annotatedForQuery = { $exists: false }
         } else if (annotatedFor === "any") {
-          annotatedFor = { $exists: true }
+          annotatedForQuery = { $exists: true }
         } else if (annotatedFor.startsWith("!")) {
-          annotatedFor = { $ne: annotatedFor.slice(1) }
+          annotatedForQuery = { $ne: annotatedFor.slice(1) }
         }
-        annotationQuery["annotations.motivation"] = annotatedFor
+        annotationQuery["annotations.motivation"] = annotatedForQuery
       }
       if (annotatedBy) {
         annotationQuery["annotations.creator.id"] = { $in: annotatedBy.split("|") }
       }
       pipeline = [
         { $match: query },
+        { $sort: sorting },
         {
           $lookup: {
             from: "annotations",
@@ -289,10 +292,11 @@ class MappingService {
         annotationQuery["bodyValue"] = annotatedWith
       }
       if (annotatedFor) {
+        let annotatedForQuery = annotatedFor
         if (annotatedFor === "any") {
-          annotatedFor = { $exists: true }
+          annotatedForQuery = { $exists: true }
         }
-        annotationQuery["motivation"] = annotatedFor
+        annotationQuery["motivation"] = annotatedForQuery
       }
       if (annotatedBy) {
         annotationQuery["creator.id"] = { $in: annotatedBy.split("|") }
@@ -319,6 +323,8 @@ class MappingService {
         { $addFields: { mapping: { $arrayElemAt: ["$data", 0] } } },
         // Replace root with mapping
         { $replaceRoot: { newRoot: "$mapping" } },
+        // Sort
+        { $sort: sorting },
         // Match mappings
         { $match: query },
       ]
@@ -329,7 +335,7 @@ class MappingService {
       return model.aggregate(pipeline).cursor()
     } else {
       // Otherwise, return results
-      const mappings = await model.aggregate(pipeline).sort(sorting).skip(offset).limit(limit).exec()
+      const mappings = await model.aggregate(pipeline).skip(offset).limit(limit).exec()
       mappings.totalCount = await utils.count(model, pipeline)
       return mappings
     }
