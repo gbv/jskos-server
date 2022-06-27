@@ -336,7 +336,12 @@ class MappingService {
     } else {
       // Otherwise, return results
       const mappings = await model.aggregate(pipeline).skip(offset).limit(limit).exec()
-      mappings.totalCount = await utils.count(model, pipeline)
+      // Skip counting for certain queries
+      if (!annotatedFor || (annotatedFor !== "none" && !annotatedFor.startsWith("!"))) {
+        mappings.totalCount = await utils.count(model, pipeline)
+      } else {
+        mappings.totalCount = null
+      }
       return mappings
     }
   }

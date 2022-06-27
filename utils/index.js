@@ -394,7 +394,8 @@ const addPaginationHeaders = (req, res, next) => {
   const limit = req.query.limit
   const offset = req.query.offset
   const total = _.get(req, "data.totalCount", req.data && req.data.length)
-  if (req == null || res == null || limit == null || offset == null || total == null) {
+  if (req == null || res == null || limit == null || offset == null) {
+    next()
     return
   }
   const baseUrl = config.baseUrl.substring(0, config.baseUrl.length - 1) + req.path
@@ -408,7 +409,12 @@ const addPaginationHeaders = (req, res, next) => {
     return `<${url}>; rel="${rel}"`
   }
   // Set X-Total-Count header
-  res.set("X-Total-Count", total)
+  if (total === null) {
+    // ! This is a workaround! We don't know the total number, so we just return an unreasonably high number here. See #176.
+    res.set("X-Total-Count", 9999999)
+  } else {
+    res.set("X-Total-Count", total)
+  }
   let links = []
   let query = _.cloneDeep(req.query)
   query.limit = limit
@@ -421,17 +427,22 @@ const addPaginationHeaders = (req, res, next) => {
     links.push(url(query, "prev"))
   }
   // rel: next
-  if (limit + offset < total) {
+  if (total && limit + offset < total || req.data && req.data.length === limit) {
     query.offset = offset + limit
     links.push(url(query, "next"))
   }
   // rel: last
-  let current = 0
-  while (current + limit < total) {
-    current += limit
+  if (total !== null) {
+    let current = 0
+    while (current + limit < total) {
+      current += limit
+    }
+    query.offset = current
+    links.push(url(query, "last"))
+  } else if (req.data.length < limit) {
+    // Current page is last
+    links.push(url(query, "last"))
   }
-  query.offset = current
-  links.push(url(query, "last"))
   // Set Link header
   res.set("Link", links.join(","))
   next()
