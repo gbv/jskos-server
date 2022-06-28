@@ -234,23 +234,13 @@ class MappingService {
     // Currently default sort by modified descending
     const sorting = { [sort]: order }
 
-    let pipeline = []
-    let model = Mapping
+    // Annotation assertions need special handling (see #176)
+    const isNegativeAnnotationAssertion = (annotatedFor) => annotatedFor === "none" || (annotatedFor || "").startsWith("!")
 
-    // Filter by annotations
-    // Three different paths
-    // 1. No filter by annotations
-    if (!annotatedWith && !annotatedBy && !annotatedFor) {
-      // Simply match mapping query
-      pipeline.push({ $match: query })
-      pipeline.push({ $sort: sorting })
-    }
-    // 2. Filter by annotation, and from/to/creator is defined
-    else if (from || to || creator || annotatedFor === "none" || (annotatedFor || "").startsWith("!")) {
-      // We'll first filter the mappings, then add annotations and filter by those
+    const buildAnnotationQuery = ({ annotatedWith, annotatedFor, annotatedBy, prefix = "" }) => {
       const annotationQuery = {}
       if (annotatedWith) {
-        annotationQuery["annotations.bodyValue"] = annotatedWith
+        annotationQuery[prefix + "bodyValue"] = annotatedWith
       }
       if (annotatedFor) {
         let annotatedForQuery = annotatedFor
@@ -261,86 +251,102 @@ class MappingService {
         } else if (annotatedFor.startsWith("!")) {
           annotatedForQuery = { $ne: annotatedFor.slice(1) }
         }
-        annotationQuery["annotations.motivation"] = annotatedForQuery
+        annotationQuery[prefix + "motivation"] = annotatedForQuery
       }
       if (annotatedBy) {
-        annotationQuery["annotations.creator.id"] = { $in: annotatedBy.split("|") }
+        annotationQuery[prefix + "creator.id"] = { $in: annotatedBy.split("|") }
       }
-      pipeline = [
-        { $match: query },
-        { $sort: sorting },
-        {
-          $lookup: {
-            from: "annotations",
-            localField: "uri",
-            foreignField: "target.id",
-            as: "annotations",
-          },
-        },
-        {
-          $match: annotationQuery,
-        },
-        { $project: { annotations: 0 } },
-      ]
+      return annotationQuery
     }
-    // 3. Filter by annotation, and none of the properties is given
-    else {
-      // We'll first filter the annotations, then get the associated mappings, remove duplicates, and filter those
-      model = Annotation
-      const annotationQuery = {}
-      if (annotatedWith) {
-        annotationQuery["bodyValue"] = annotatedWith
+
+    const buildPipeline = ({ query, sorting, annotatedWith, annotatedBy, annotatedFor }) => {
+      let pipeline = []
+      const negativeAnnotationAssertion = isNegativeAnnotationAssertion(annotatedFor)
+
+      // Filter by annotations
+      // Three different paths
+      // 1. No filter by annotations
+      if (!annotatedWith && !annotatedBy && !annotatedFor) {
+        // Simply match mapping query
+        pipeline.push({ $match: query })
+        pipeline.push({ $sort: sorting })
+        pipeline.model = Mapping
       }
-      if (annotatedFor) {
-        let annotatedForQuery = annotatedFor
-        if (annotatedFor === "any") {
-          annotatedForQuery = { $exists: true }
-        }
-        annotationQuery["motivation"] = annotatedForQuery
-      }
-      if (annotatedBy) {
-        annotationQuery["creator.id"] = { $in: annotatedBy.split("|") }
-      }
-      pipeline = [
-        // First, match annotations
-        {
-          $match: annotationQuery,
-        },
-        // Get mappings for annotations
-        {
-          $lookup: {
-            from: "mappings",
-            localField: "target.id",
-            foreignField: "uri",
-            as: "mappings",
+      // 2. Filter by annotation, and from/to/creator is defined
+      else if (from || to || creator || negativeAnnotationAssertion) {
+        // We'll first filter the mappings, then add annotations and filter by those
+        const annotationQuery = buildAnnotationQuery({ annotatedWith, annotatedFor, annotatedBy, prefix: "annotations." })
+        pipeline = [
+          { $match: query },
+          { $sort: sorting },
+          {
+            $lookup: {
+              from: "annotations",
+              localField: "uri",
+              foreignField: "target.id",
+              as: "annotations",
+            },
           },
-        },
-        // Unwind and replace root
-        { $unwind: "$mappings" },
-        { $replaceRoot: { newRoot: "$mappings" } },
-        // Filter duplicates by grouping by _id and getting only the first element
-        { $group: { _id: "$_id", data: { $push: "$$ROOT" } } },
-        { $addFields: { mapping: { $arrayElemAt: ["$data", 0] } } },
-        // Replace root with mapping
-        { $replaceRoot: { newRoot: "$mapping" } },
-        // Sort
-        { $sort: sorting },
-        // Match mappings
-        { $match: query },
-      ]
+          {
+            $match: annotationQuery,
+          },
+          { $project: { annotations: 0 } },
+        ]
+        pipeline.model = Mapping
+      }
+      // 3. Filter by annotation, and none of the properties is given
+      else {
+        // We'll first filter the annotations, then get the associated mappings, remove duplicates, and filter those
+        const annotationQuery = buildAnnotationQuery({ annotatedWith, annotatedFor, annotatedBy })
+        pipeline = [
+          // First, match annotations
+          {
+            $match: annotationQuery,
+          },
+          // Get mappings for annotations
+          {
+            $lookup: {
+              from: "mappings",
+              localField: "target.id",
+              foreignField: "uri",
+              as: "mappings",
+            },
+          },
+          // Unwind and replace root
+          { $unwind: "$mappings" },
+          { $replaceRoot: { newRoot: "$mappings" } },
+          // Filter duplicates by grouping by _id and getting only the first element
+          { $group: { _id: "$_id", data: { $push: "$$ROOT" } } },
+          { $addFields: { mapping: { $arrayElemAt: ["$data", 0] } } },
+          // Replace root with mapping
+          { $replaceRoot: { newRoot: "$mapping" } },
+          // Sort
+          { $sort: sorting },
+          // Match mappings
+          { $match: query },
+        ]
+        pipeline.model = Annotation
+      }
+      return pipeline
     }
+
+    const pipeline = buildPipeline({ query, sorting, annotatedWith, annotatedBy, annotatedFor })
+    const negativeAnnotationAssertion = isNegativeAnnotationAssertion(annotatedFor)
 
     if (download) {
       // For a download, return a stream
-      return model.aggregate(pipeline).cursor()
+      return pipeline.model.aggregate(pipeline).cursor()
     } else {
       // Otherwise, return results
-      const mappings = await model.aggregate(pipeline).skip(offset).limit(limit).exec()
-      // Skip counting for certain queries
-      if (!annotatedFor || (annotatedFor !== "none" && !annotatedFor.startsWith("!"))) {
-        mappings.totalCount = await utils.count(model, pipeline)
+      const mappings = await pipeline.model.aggregate(pipeline).skip(offset).limit(limit).exec()
+      // Handle negative annotation assertions differently because counting is inefficient
+      if (negativeAnnotationAssertion) {
+        // Instead, count by building a pipeline without `annotatedFor`, then another pipeline with the opposite `annotatedFor`, count for both and calculate the difference
+        const totalCountPipeline = buildPipeline({ query, sorting, annotatedWith, annotatedBy })
+        const oppositeCountPipeline = buildPipeline({ query, sorting, annotatedWith, annotatedBy, annotatedFor: annotatedFor === "none" ? "any" : annotatedFor.slice(1) })
+        mappings.totalCount = await utils.count(totalCountPipeline.model, totalCountPipeline) - await utils.count(oppositeCountPipeline.model, oppositeCountPipeline)
       } else {
-        mappings.totalCount = null
+        mappings.totalCount = await utils.count(pipeline.model, pipeline)
       }
       return mappings
     }
