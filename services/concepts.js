@@ -7,20 +7,22 @@ const { MalformedBodyError, MalformedRequestError, EntityNotFoundError, InvalidB
 const utils = require("../utils")
 const { bulkOperationForEntities } = require("../utils")
 
-function conceptFind(query, $skip, $limit) {
+function conceptFind(query, $skip, $limit, narrower = true) {
   const pipeline = [
     {
       $match: query,
     },
-    {
+  ]
+  if (narrower) {
+    pipeline.push({
       $lookup: {
         from: Concept.collection.name,
         localField: "uri",
         foreignField: "broader.uri",
         as: "narrower",
       },
-    },
-    {
+    })
+    pipeline.push({
       $addFields: {
         narrower: {
           $reduce: {
@@ -30,8 +32,8 @@ function conceptFind(query, $skip, $limit) {
           },
         },
       },
-    },
-  ]
+    })
+  }
   if (_.isNumber($skip)) {
     pipeline.push({ $skip })
   }
@@ -123,6 +125,9 @@ class ConceptService {
         uris = [query.uri]
       }
       criteria = { $or: uris.map(uri => ({ "inScheme.uri": uri })) }
+    }
+    if (query.download) {
+      return conceptFind(criteria, null, null, false).cursor()
     }
     const concepts = await conceptFind(criteria, query.offset, query.limit)
     concepts.totalCount = await utils.count(Concept, [{ $match: criteria }])
