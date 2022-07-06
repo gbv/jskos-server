@@ -212,7 +212,7 @@ adjust.scheme = (scheme) => {
     // Remove existing "distributions" array (except for external URLs)
     scheme.distributions = (scheme.distributions || []).filter(dist => !dist.download || !dist.download.startsWith(config.baseUrl))
     // If this instance contains concepts for this scheme, add distribution for it
-    if (scheme.concepts.length) {
+    if (scheme.concepts && scheme.concepts.length) {
       scheme.distributions = [
         {
           download: `${config.baseUrl}voc/concepts?uri=${encodeURIComponent(scheme.uri)}&download=ndjson`,

@@ -97,7 +97,6 @@ router.get(
     return await conceptService.getSuggestions(req.query)
   }),
   utils.addPaginationHeaders,
-  utils.adjust,
   utils.returnJSON,
 )
 

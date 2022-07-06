@@ -116,7 +116,6 @@ router.get(
     return await schemeService.getSuggestions(req.query)
   }),
   utils.addPaginationHeaders,
-  utils.adjust,
   utils.returnJSON,
 )
 
