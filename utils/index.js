@@ -209,6 +209,37 @@ adjust.scheme = (scheme) => {
   if (scheme) {
     scheme["@context"] = "https://gbv.github.io/jskos/context.json"
     scheme.type = scheme.type || ["http://www.w3.org/2004/02/skos/core#ConceptScheme"]
+    // Remove existing "distributions" array (except for external URLs)
+    scheme.distributions = (scheme.distributions || []).filter(dist => !dist.download || !dist.download.startsWith(config.baseUrl))
+    // If this instance contains concepts for this scheme, add distribution for it
+    if (scheme.concepts.length) {
+      scheme.distributions = [
+        {
+          download: `${config.baseUrl}voc/concepts?uri=${encodeURIComponent(scheme.uri)}&download=ndjson`,
+          format: "http://format.gbv.de/jskos",
+          mimetype: "application/x-ndjson; charset=utf-8",
+        },
+        {
+          download: `${config.baseUrl}voc/concepts?uri=${encodeURIComponent(scheme.uri)}&download=json`,
+          mimetype: "application/json; charset=utf-8",
+        },
+      ].concat(scheme.distributions)
+    }
+    // Add distributions based on API field
+    (scheme.API || []).filter(api => api.type === "http://bartoc.org/api-type/jskos" && api.url !== config.baseUrl).forEach(api => {
+      scheme.distributions.push({
+        download: `${api.url}voc/concepts?uri=${encodeURIComponent(scheme.uri)}&download=ndjson`,
+        format: "http://format.gbv.de/jskos",
+        mimetype: "application/x-ndjson; charset=utf-8",
+      })
+      scheme.distributions.push({
+        download: `${api.url}voc/concepts?uri=${encodeURIComponent(scheme.uri)}&download=json`,
+        mimetype: "application/json; charset=utf-8",
+      })
+    })
+    if (!scheme.distributions.length) {
+      delete scheme.distributions
+    }
   }
   return scheme
 }
