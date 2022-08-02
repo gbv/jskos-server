@@ -950,7 +950,7 @@ Returns an array of mappings. Each mapping has a property `uri` under which the 
 
   `annotatedBy=[uri1|uri2|...]` has annotations by user with URI(s)
 
-  `annotatedFor=[motivation]` has annotations with a certain motivation (e.g. `assessing`)
+  `annotatedFor=[motivation]` has annotations with a certain motivation (e.g. `assessing`); value `none` returns mappings that have no annotations at all, value `any` returns mappings that have any kind of annotation, values starting with `!` (e.g. `!assessing`) filter out annotations with that motivation. Note that to mitigate performance issues with negative assertions (`none` or `!xyz`), jskos-server will return the number 9999999 in the `X-Total-Count` header (see [this](https://github.com/gbv/jskos-server/issues/176#issuecomment-1167188606)).
 
   `annotatedWith=[body]` has annotations with a certian body value (e.g. `+1`)
 
@@ -1358,7 +1358,9 @@ Lists concepts for a concept scheme.
 
   `uri=[uri]` URI for a concept scheme
 
-  `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting `ancestors` and `narrower`)
+  `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting `ancestors` and `narrower`); not supported for download
+
+  `download=[type]` returns the whole result as a download (available types are `json` and `ndjson`), ignores `limit` and `offset`
 
 * **Success Response**
 
