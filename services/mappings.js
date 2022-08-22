@@ -8,6 +8,7 @@ const Mapping = require("../models/mappings")
 const Annotation = require("../models/annotations")
 const { MalformedBodyError, MalformedRequestError, EntityNotFoundError, InvalidBodyError, DatabaseAccessError } = require("../errors")
 const { bulkOperationForEntities } = require("../utils")
+const { cdk } = require("cocoda-sdk")
 
 const validateMapping = (mapping) => {
   const valid = validate.mapping(mapping)
@@ -368,6 +369,95 @@ class MappingService {
       throw new EntityNotFoundError(null, _id)
     }
     return result
+  }
+
+  /**
+   * Infer mappings based on the source concept's ancestors. (see https://github.com/gbv/jskos-server/issues/177)
+   *
+   * TODOs:
+   * - Add error handling
+   * - Check if transformation is correct
+   * - Q: Should certain cases throw an error or just return an empty set?
+   * - Add tests.
+   */
+  async inferMappings({ strict, ...query }) {
+    // Remove unsupported query parameters
+    delete query.to
+    delete query.cardinality
+    query.cardinality = "1-to-1"
+    delete query.download
+
+    // Try getMappings first; return if there are results
+    let mappings = await this.getMappings(query)
+    if (mappings.length) {
+      return mappings
+    }
+
+    strict = ["true", "1"].includes(strict) ? true : false
+    let { from, fromScheme, type } = query
+
+    fromScheme = await this.schemeService.getScheme(fromScheme)
+    const registry = fromScheme && cdk.registryForScheme(fromScheme)
+    registry && await registry.init()
+    // If fromScheme is not found or has no JSKOS API, return empty result
+    if (!fromScheme || !registry || !registry.has.ancestors) {
+      return []
+    }
+    fromScheme = new jskos.ConceptScheme(fromScheme)
+
+    // Build new type set
+    type = (type || "").split("|").filter(Boolean)
+    const types = []
+    if (type.includes("http://www.w3.org/2004/02/skos/core#mappingRelation") || type.length === 0) {
+      types.push("http://www.w3.org/2004/02/skos/core#mappingRelation")
+    }
+    if (type.includes("http://www.w3.org/2004/02/skos/core#narrowMatch") || type.length === 0) {
+      types.push("http://www.w3.org/2004/02/skos/core#exactMatch")
+      types.push("http://www.w3.org/2004/02/skos/core#narrowMatch")
+      if (!strict) {
+        types.push("http://www.w3.org/2004/02/skos/core#closeMatch")
+      }
+    }
+    if (type.includes("http://www.w3.org/2004/02/skos/core#relatedMatch") || type.length === 0) {
+      types.push("http://www.w3.org/2004/02/skos/core#relatedMatch")
+    }
+
+    // If there are no types in new type set, return empty result
+    if (types.length === 0) {
+      return []
+    }
+
+    // Retrieve ancestors from API
+    const ancestors = await registry.getAncestors({ concept: { uri: from } })
+    for (const uri of ancestors.map(a => a && a.uri).filter(Boolean)) {
+      mappings = await this.getMappings(Object.assign({}, query, { from: uri, type: types.join("|") }))
+      if (mappings.length) {
+        return mappings.map(m => {
+          m.source = [{ uri: m.uri }]
+          delete m.uri
+          delete m.identifier
+          delete m.partOf
+          delete m.creator
+          delete m.created
+          delete m.modified
+          if (m.type[0] === "http://www.w3.org/2004/02/skos/core#exactMatch" || m.type[0] === "http://www.w3.org/2004/02/skos/core#closeMatch") {
+            m.type[0] = "http://www.w3.org/2004/02/skos/core#narrowMatch"
+          }
+          m.from = {
+            memberSet: [
+              {
+                uri: from,
+                notation: [fromScheme.notationFromUri(from)],
+              },
+            ],
+          }
+          return jskos.addMappingIdentifiers(m)
+        })
+      }
+    }
+
+    return []
+
   }
 
   /**

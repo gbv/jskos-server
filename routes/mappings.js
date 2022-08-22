@@ -41,6 +41,17 @@ if (config.mappings.read) {
   )
 
   router.get(
+    "/infer",
+    config.mappings.read.auth ? auth.default : auth.optional,
+    utils.wrappers.async(async (req) => {
+      return await mappingService.inferMappings(req.query)
+    }),
+    utils.addPaginationHeaders,
+    utils.adjust,
+    utils.returnJSON,
+  )
+
+  router.get(
     "/:_id",
     config.mappings.read.auth ? auth.default : auth.optional,
     utils.wrappers.async(async (req) => {
