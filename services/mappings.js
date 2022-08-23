@@ -433,25 +433,27 @@ class MappingService {
       mappings = await this.getMappings(Object.assign({}, query, { from: uri, type: types.join("|") }))
       if (mappings.length) {
         return mappings.map(m => {
-          m.source = [{ uri: m.uri }]
-          delete m.uri
-          delete m.identifier
-          delete m.partOf
-          delete m.creator
-          delete m.created
-          delete m.modified
+          const mapping = {
+            source: [{ uri: m.uri }],
+            from: {},
+            fromScheme: m.fromScheme,
+            to: m.to,
+            toScheme: m.toScheme,
+          }
+          const fromConcept = {
+            uri: from,
+          }
+          const notation = fromScheme.notationFromUri(from)
+          if (notation) {
+            fromConcept.notation = [notation]
+          }
+          mapping.from.memberSet = [fromConcept]
           if (m.type[0] === "http://www.w3.org/2004/02/skos/core#exactMatch" || m.type[0] === "http://www.w3.org/2004/02/skos/core#closeMatch") {
-            m.type[0] = "http://www.w3.org/2004/02/skos/core#narrowMatch"
+            mapping.type = ["http://www.w3.org/2004/02/skos/core#narrowMatch"]
+          } else {
+            mapping.type = m.type
           }
-          m.from = {
-            memberSet: [
-              {
-                uri: from,
-                notation: [fromScheme.notationFromUri(from)],
-              },
-            ],
-          }
-          return jskos.addMappingIdentifiers(m)
+          return jskos.addMappingIdentifiers(mapping)
         })
       }
     }
