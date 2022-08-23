@@ -1932,6 +1932,9 @@ Status code 422. Will be returned for `POST`/`PUT`/`PATCH` if the body was valid
 #### CreatorDoesNotMatchError
 Status code 403. Will be returned by `PUT`/`PATCH`/`DELETE` endpoints if the authenticated creator does not match the creator of the entity that is being edited.
 
+#### BackendError
+Status code 500. Will be returned if there's a backend error not related to the database or configuration.
+
 #### DatabaseAccessError
 Status code 500. Will be returned if the database is not available or if the current database request failed with an unknown error.
 

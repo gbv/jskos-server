@@ -52,15 +52,22 @@ class CreatorDoesNotMatchError extends Error {
   }
 }
 
-class DatabaseAccessError extends Error {
+class BackendError extends Error {
   constructor(message) {
-    message = message || "There was an error accessing the database. Please try again later."
+    message = message || "There was an error with the backend. Please try again later."
     super(message)
     this.statusCode = 500
   }
 }
 
-class DatabaseInconsistencyError extends Error {
+class DatabaseAccessError extends BackendError {
+  constructor(message) {
+    message = message || "There was an error accessing the database. Please try again later."
+    super(message)
+  }
+}
+
+class DatabaseInconsistencyError extends BackendError {
   constructor(message) {
     if (message) {
       message += " Please contact us with this error message at coli-conc@gbv.de or open an issue on GitHub. Thanks!"
@@ -68,15 +75,13 @@ class DatabaseInconsistencyError extends Error {
       message = "There was an inconsistency error with the database. Please try again later."
     }
     super(message)
-    this.statusCode = 500
   }
 }
 
-class ConfigurationError extends Error {
+class ConfigurationError extends BackendError {
   constructor(message) {
     message = message || "There was an error with the server configuration. Please contact the server administrator and try again later."
     super(message)
-    this.statusCode = 500
   }
 }
 
@@ -95,6 +100,7 @@ module.exports = {
   DuplicateEntityError,
   InvalidBodyError,
   CreatorDoesNotMatchError,
+  BackendError,
   DatabaseAccessError,
   DatabaseInconsistencyError,
   ConfigurationError,
