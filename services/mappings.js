@@ -433,7 +433,6 @@ class MappingService {
       }
 
       // Retrieve ancestors from API
-      registry._api.ancestors += "a"
       const ancestors = await registry.getAncestors({ concept: { uri: from } })
       for (const uri of ancestors.map(a => a && a.uri).filter(Boolean)) {
         mappings = await this.getMappings(Object.assign({}, query, { from: uri, type: types.join("|") }))
