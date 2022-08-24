@@ -35,6 +35,7 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [GET /mappings](#get-mappings)
   - [GET /mappings/suggest](#get-mappingssuggest)
   - [GET /mappings/voc](#get-mappingsvoc)
+  - [GET /mappings/infer](#get-mappingsinfer)
   - [GET /mappings/:_id](#get-mappings_id)
   - [POST /mappings](#post-mappings)
   - [PUT /mappings/:_id](#put-mappings_id)
@@ -1100,6 +1101,126 @@ Lists all concept schemes used in mappings.
         "RVK"
       ],
       "toCount": 2
+    }
+  ]
+  ```
+
+### GET /mappings/infer
+Infers mappings based on the source concept's ancestors. [This comment](https://github.com/gbv/jskos-server/issues/177#issuecomment-1220408369) as well as subsequent comments explain exactly how this works.
+
+Note that this is still experimental and not all source schemes are supported.
+
+* **URL Params**
+
+  This endpoint takes the same parameters as [GET /mappings](#get-mappings), except that `to`, `download`, and `cardinality` (fixed to "1-to-1") are not supported.
+
+  `strict=[boolean]` values `1` or `true` disallow mapping type "closeMatch" for inferred mappings (default `false`)
+
+* **Success Response**
+
+  JSON array of [JSKOS Concept Mappings]
+
+* **Sample Call**
+
+  ```bash
+  curl https://coli-conc.gbv.de/api/mappings/infer?from=http%3A%2F%2Frvk.uni-regensburg.de%2Fnt%2FWI%25203130&fromScheme=http%3A%2F%2Fbartoc.org%2Fen%2Fnode%2F533&toScheme=http%3A%2F%2Fbartoc.org%2Fen%2Fnode%2F18785
+  ```
+
+  ```json
+  [
+    {
+      "from": {
+        "memberSet": [
+          {
+            "uri": "http://rvk.uni-regensburg.de/nt/WI%203130",
+            "notation": [
+              "WI 3130"
+            ]
+          }
+        ]
+      },
+      "to": {
+        "memberSet": [
+          {
+            "uri": "http://uri.gbv.de/terminology/bk/42.42",
+            "notation": [
+              "42.42"
+            ]
+          }
+        ]
+      },
+      "fromScheme": {
+        "uri": "http://bartoc.org/en/node/533",
+        "notation": [
+          "RVK"
+        ]
+      },
+      "toScheme": {
+        "uri": "http://bartoc.org/en/node/18785",
+        "notation": [
+          "BK"
+        ]
+      },
+      "type": [
+        "http://www.w3.org/2004/02/skos/core#narrowMatch"
+      ],
+      "source": [
+        {
+          "uri": "https://coli-conc.gbv.de/api/mappings/ef121206-a42d-4c3c-9ef3-b597c000acb4"
+        }
+      ],
+      "identifier": [
+        "urn:jskos:mapping:content:1b0fb2343795db4de7e1f8c7207b94a789614a15",
+        "urn:jskos:mapping:members:2d22b62a0295959d587487d228d51836d05b1c50"
+      ],
+      "@context": "https://gbv.github.io/jskos/context.json"
+    },
+    {
+      "from": {
+        "memberSet": [
+          {
+            "uri": "http://rvk.uni-regensburg.de/nt/WI%203130",
+            "notation": [
+              "WI 3130"
+            ]
+          }
+        ]
+      },
+      "to": {
+        "memberSet": [
+          {
+            "uri": "http://uri.gbv.de/terminology/bk/42.44",
+            "notation": [
+              "42.44"
+            ]
+          }
+        ]
+      },
+      "fromScheme": {
+        "uri": "http://bartoc.org/en/node/533",
+        "notation": [
+          "RVK"
+        ]
+      },
+      "toScheme": {
+        "uri": "http://bartoc.org/en/node/18785",
+        "notation": [
+          "BK"
+        ]
+      },
+      "type": [
+        "http://www.w3.org/2004/02/skos/core#narrowMatch"
+      ],
+      "source": [
+        {
+          "uri": "https://coli-conc.gbv.de/api/mappings/6b920456-db5d-49b1-a197-b851df6f9dbd",
+        }
+      ],
+      "identifier": [
+        "urn:jskos:mapping:content:8bb72e1605f9c25b0c97889439e6dde952e0cbd0",
+        "urn:jskos:mapping:members:5870d87ec08c9a9a5ccba182bd96b92ad2f9d688"
+      ],
+      "@context": "https://gbv.github.io/jskos/context.json"
     }
   ]
   ```
