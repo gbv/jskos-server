@@ -439,11 +439,13 @@ class MappingService {
         if (mappings.length) {
           return mappings.map(m => {
             const mapping = {
-              source: [{ uri: m.uri }],
               from: {},
               fromScheme: m.fromScheme,
               to: m.to,
               toScheme: m.toScheme,
+            }
+            if (m.uri) {
+              mapping.source = [{ uri: m.uri }]
             }
             const fromConcept = {
               uri: from,
@@ -453,7 +455,7 @@ class MappingService {
               fromConcept.notation = [notation]
             }
             mapping.from.memberSet = [fromConcept]
-            if (m.type[0] === "http://www.w3.org/2004/02/skos/core#exactMatch" || m.type[0] === "http://www.w3.org/2004/02/skos/core#closeMatch") {
+            if (!m.type || !m.type.length || m.type[0] === "http://www.w3.org/2004/02/skos/core#exactMatch" || m.type[0] === "http://www.w3.org/2004/02/skos/core#closeMatch") {
               mapping.type = ["http://www.w3.org/2004/02/skos/core#narrowMatch"]
             } else {
               mapping.type = m.type
