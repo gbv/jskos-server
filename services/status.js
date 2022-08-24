@@ -1,4 +1,4 @@
-const status = require("../config").status
+const config = require("../config")
 
 class StatusService {
 
@@ -7,6 +7,7 @@ class StatusService {
    */
   async getStatus() {
     const { db } = require("../server")
+    const status = config.status
     status.ok = db.readyState === 1 ? 1 : 0
     return status
   }

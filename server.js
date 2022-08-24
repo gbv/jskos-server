@@ -130,14 +130,13 @@ app.use((error, req, res, next) => {
 })
 
 const start = async () => {
-  let port = config.port
   if (config.env == "test") {
     const portfinder = require("portfinder")
     portfinder.basePort = config.port
-    port = await portfinder.getPortPromise()
+    config.port = await portfinder.getPortPromise()
   }
-  app.listen(port, () => {
-    config.log(`Now listening on port ${port}`)
+  app.listen(config.port, () => {
+    config.log(`Now listening on port ${config.port}`)
   })
 }
 // Start express server immediately even if database is not yet connected
