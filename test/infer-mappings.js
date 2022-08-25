@@ -140,8 +140,128 @@ describe("/mappings/infer", () => {
             res.body.should.be.an("array")
             assert.equal(res.body.length, 1)
             assert.equal(res.body[0].source[0].uri, mappingUri)
+            // Since the mapping has no type, expect narrowMatch
+            assert.equal(res.body[0].type[0], "http://www.w3.org/2004/02/skos/core#narrowMatch")
             done()
           })
+      })
+  })
+
+  it("should add a mapping for a deeper ancestor concept and return it instead as inferred mapping; also adjust mapping type", done => {
+    const mapping = {
+      from: { memberSet: [concepts[1]] },
+      fromScheme: scheme,
+      to: { memberSet: [{ uri: `${targetScheme.uri}:6` }] },
+      toScheme: targetScheme,
+      type: ["http://www.w3.org/2004/02/skos/core#closeMatch"],
+    }
+    chai.request(server.app)
+      .post("/mappings")
+      .set("Authorization", `Bearer ${token}`)
+      .send(mapping)
+      .end((err, res) => {
+        assert.equal(res.status, 201)
+        const mappingUri = res.body.uri
+        // Request /mappings/infer again
+        chai.request(server.app)
+          .get("/mappings/infer")
+          .query({
+            from: _.last(concepts).uri,
+            fromScheme: scheme.uri,
+            toScheme: targetScheme.uri,
+          })
+          .end((error, res) => {
+            res.should.have.status(200)
+            res.body.should.be.an("array")
+            assert.equal(res.body.length, 1)
+            assert.equal(res.body[0].source[0].uri, mappingUri)
+            // Since the mapping has type closeMatch and `strict` is false by default, expect narrowMatch
+            assert.equal(res.body[0].type[0], "http://www.w3.org/2004/02/skos/core#narrowMatch")
+            done()
+          })
+      })
+  })
+
+  it("should not use mapping of type `closeMatch` for inference if parameter `strict` is set", done => {
+    chai.request(server.app)
+      .get("/mappings/infer")
+      .query({
+        from: _.last(concepts).uri,
+        fromScheme: scheme.uri,
+        toScheme: targetScheme.uri,
+        strict: "true",
+      })
+      .end((error, res) => {
+        res.should.have.status(200)
+        res.body.should.be.an("array")
+        assert.equal(res.body.length, 1)
+        assert.notEqual(res.body[0].to.memberSet[0].uri, `${targetScheme.uri}:6`)
+        assert.equal(res.body[0].to.memberSet[0].uri, `${targetScheme.uri}:5`)
+        done()
+      })
+  })
+
+  it("should add a mapping for the requested concept and return it instead", done => {
+    const mapping = {
+      from: { memberSet: [_.last(concepts)] },
+      fromScheme: scheme,
+      to: { memberSet: [{ uri: `${targetScheme.uri}:7` }] },
+      toScheme: targetScheme,
+    }
+    chai.request(server.app)
+      .post("/mappings")
+      .set("Authorization", `Bearer ${token}`)
+      .send(mapping)
+      .end((err, res) => {
+        assert.equal(res.status, 201)
+        const mappingUri = res.body.uri
+        // Request /mappings/infer again
+        chai.request(server.app)
+          .get("/mappings/infer")
+          .query({
+            from: _.last(concepts).uri,
+            fromScheme: scheme.uri,
+            toScheme: targetScheme.uri,
+          })
+          .end((error, res) => {
+            res.should.have.status(200)
+            res.body.should.be.an("array")
+            assert.equal(res.body.length, 1)
+            assert.equal(res.body[0].uri, mappingUri)
+            done()
+          })
+      })
+  })
+
+  it("should return empty result when mappings of type `broadMatch` are requested", done => {
+    chai.request(server.app)
+      .get("/mappings/infer")
+      .query({
+        from: _.last(concepts).uri,
+        fromScheme: scheme.uri,
+        toScheme: targetScheme.uri,
+        type: "http://www.w3.org/2004/02/skos/core#broadMatch",
+      })
+      .end((error, res) => {
+        res.should.have.status(200)
+        res.body.should.be.an("array")
+        assert.equal(res.body.length, 0)
+        done()
+      })
+  })
+
+  it("should throw error when parameter `to` is given", done => {
+    chai.request(server.app)
+      .get("/mappings/infer")
+      .query({
+        from: _.last(concepts).uri,
+        fromScheme: scheme.uri,
+        to: "test",
+        toScheme: targetScheme.uri,
+      })
+      .end((error, res) => {
+        res.should.have.status(400)
+        done()
       })
   })
 
