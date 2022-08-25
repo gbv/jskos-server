@@ -373,12 +373,6 @@ class MappingService {
 
   /**
    * Infer mappings based on the source concept's ancestors. (see https://github.com/gbv/jskos-server/issues/177)
-   *
-   * TODOs:
-   * - Add error handling
-   * - Check if transformation is correct
-   * - Q: Should certain cases throw an error or just return an empty set?
-   * - Add tests.
    */
   async inferMappings({ strict, ...query }) {
     if (query.to) {
