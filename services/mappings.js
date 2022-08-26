@@ -391,7 +391,7 @@ class MappingService {
     let { from, fromScheme, type } = query
 
     // Do not continue with empty `from` parameter
-    if (!from) {
+    if (!from || !fromScheme) {
       return []
     }
 
