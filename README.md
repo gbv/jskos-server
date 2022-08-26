@@ -1106,7 +1106,7 @@ Lists all concept schemes used in mappings.
   ```
 
 ### GET /mappings/infer
-Returns mappings based on stored mappings and mappings derived by inference. If a request to [GET /mappings](#get-mappings) results in stored mappings, only those are returned. If no stored mappings match the request, the following algorithm is applied to infere virtual mappings (this is experimental and not all source schemes are supported):
+Returns mappings based on stored mappings and mappings derived by inference. If a request to [GET /mappings](#get-mappings) results in stored mappings, only those are returned. If no stored mappings match the request, the following algorithm is applied to infer virtual mappings (this is experimental and not all source schemes are supported):
 
 - Ancestors of the requested concept (`from`) are traversed from narrower to broader until matching mapping(s) from one of the ancestor concepts are found.
 
@@ -1114,15 +1114,15 @@ Returns mappings based on stored mappings and mappings derived by inference. If 
 
   - `exactMatch` and `narrowMatch` result in `narrowMatch` (for instance *Optics < Sciences* when no mappings from *Optics* are stored but e.g. *Physics* is ancestor of *Optics* and mapped to *Sciences*)
 
-  - `closeMatch` results in `narrowMatch` unless query parameter `strict` is set to a true value. In this case mappings of this type are ignore (for instance *Optics* < *Alchemy* when *Physics* is ancestor of *Optics* and mapped to *Alchemy* but this may lead to doubtful mappings such as *Computational Physics* < *Alchemy*)
+  - `closeMatch` results in `narrowMatch` unless query parameter `strict` is set to a true value. In this case mappings of this type are ignored (for instance *Optics* < *Alchemy* when *Physics* is ancestor of *Optics* and mapped to *Alchemy* but this may lead to doubtful mappings such as *Computational Physics* < *Alchemy*)
 
   - `relatedMatch` and `mappingRelation` are not changed.
 
-Infered mappings don't have fields such as `uri`, `identifier`, `creator`, `created`... but `uri` of the mapping used for inference is included in `source`.
+Inferred mappings don't have fields such as `uri`, `identifier`, `creator`, `created`... but `uri` of the mapping used for inference is included in `source`.
 
 * **URL Params**
 
-  This endpoint takes the same parameters as [GET /mappings](#get-mappings), except that `to`, `download`, and `cardinality` (fixed to "1-to-1") are not supported. Parameter `direction` only supports the default value "forward". Therefore parameter `from` is mandatory to get a non-empty result.
+  This endpoint takes the same parameters as [GET /mappings](#get-mappings), except that `to`, `download`, and `cardinality` (fixed to "1-to-1") are not supported. Parameter `direction` only supports the default value "forward". Parameters `from` and `fromScheme` are mandatory to get a non-empty result.
 
   `strict=[boolean]` values `1` or `true` disallow mapping type "closeMatch" for inferred mappings (default `false`)
 
