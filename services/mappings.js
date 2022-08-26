@@ -388,6 +388,12 @@ class MappingService {
     if (query.direction && query.direction !== "forward") {
       throw new MalformedRequestError("Only direction \"forward\" is supported in /mappings/infer.")
     }
+    let { from, fromScheme, type } = query
+
+    // Do not continue with empty `from` parameter
+    if (!from) {
+      return []
+    }
 
     // Try getMappings first; return if there are results
     let mappings = await this.getMappings(query)
@@ -396,7 +402,6 @@ class MappingService {
     }
 
     strict = ["true", "1"].includes(strict) ? true : false
-    let { from, fromScheme, type } = query
 
     fromScheme = await this.schemeService.getScheme(fromScheme)
     try {
