@@ -385,6 +385,10 @@ class MappingService {
     query.cardinality = "1-to-1"
     delete query.download
 
+    if (query.direction && query.direction !== "forward") {
+      throw new MalformedRequestError("Only direction \"forward\" is supported in /mappings/infer.")
+    }
+
     // Try getMappings first; return if there are results
     let mappings = await this.getMappings(query)
     if (mappings.length) {

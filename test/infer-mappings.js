@@ -265,4 +265,19 @@ describe("/mappings/infer", () => {
       })
   })
 
+  it("should throw error when parameter `direction` is given with value `backward`", done => {
+    chai.request(server.app)
+      .get("/mappings/infer")
+      .query({
+        from: _.last(concepts).uri,
+        fromScheme: scheme.uri,
+        toScheme: targetScheme.uri,
+        direction: "backward",
+      })
+      .end((error, res) => {
+        res.should.have.status(400)
+        done()
+      })
+  })
+
 })
