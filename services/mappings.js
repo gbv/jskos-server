@@ -419,6 +419,14 @@ class MappingService {
       }
       fromScheme = new jskos.ConceptScheme(fromScheme)
 
+      // Build URI from notation if necessary
+      if (!jskos.isValidUri(from)) {
+        from = fromScheme.uriFromNotation(from)
+        if (!from) {
+          return []
+        }
+      }
+
       // Build new type set
       type = (type || "").split("|").filter(Boolean)
       const types = []

@@ -35,6 +35,8 @@ const token = jwt.sign({ user }, "test")
 const scheme = {
   uri: "test:source-scheme",
 }
+scheme.namespace = `${scheme.uri}:`
+
 const inScheme = [scheme]
 
 const targetScheme = {
@@ -144,6 +146,22 @@ describe("/mappings/infer", () => {
             assert.equal(res.body[0].type[0], "http://www.w3.org/2004/02/skos/core#mappingRelation")
             done()
           })
+      })
+  })
+
+  it("should also work with notation instead of URI", done => {
+    chai.request(server.app)
+      .get("/mappings/infer")
+      .query({
+        from: _.last(concepts).uri.replace(scheme.namespace, ""),
+        fromScheme: scheme.uri,
+        toScheme: targetScheme.uri,
+      })
+      .end((error, res) => {
+        res.should.have.status(200)
+        res.body.should.be.an("array")
+        assert.equal(res.body.length, 1)
+        done()
       })
   })
 
