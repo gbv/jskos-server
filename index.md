@@ -35,6 +35,7 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [GET /mappings](#get-mappings)
   - [GET /mappings/suggest](#get-mappingssuggest)
   - [GET /mappings/voc](#get-mappingsvoc)
+  - [GET /mappings/infer](#get-mappingsinfer)
   - [GET /mappings/:_id](#get-mappings_id)
   - [POST /mappings](#post-mappings)
   - [PUT /mappings/:_id](#put-mappings_id)
@@ -1104,6 +1105,138 @@ Lists all concept schemes used in mappings.
   ]
   ```
 
+### GET /mappings/infer
+Returns mappings based on stored mappings and mappings derived by inference. If a request to [GET /mappings](#get-mappings) results in stored mappings, only those are returned. If no stored mappings match the request, the following algorithm is applied to infer virtual mappings (this is experimental and not all source schemes are supported):
+
+- Ancestors of the requested concept (`from`) are traversed from narrower to broader until matching mapping(s) from one of the ancestor concepts are found.
+
+- The resulting mappings are filtered and transformed based on their mapping type:
+
+  - `exactMatch` and `narrowMatch` result in `narrowMatch` (for instance *Optics < Sciences* when no mappings from *Optics* are stored but e.g. *Physics* is ancestor of *Optics* and mapped to *Sciences*)
+
+  - `closeMatch` results in `narrowMatch` unless query parameter `strict` is set to a true value. In this case mappings of this type are ignored (for instance *Optics* < *Alchemy* when *Physics* is ancestor of *Optics* and mapped to *Alchemy* but this may lead to doubtful mappings such as *Computational Physics* < *Alchemy*)
+
+  - `relatedMatch` and `mappingRelation` are not changed.
+
+Inferred mappings don't have fields such as `uri`, `identifier`, `creator`, `created`... but `uri` of the mapping used for inference is included in `source`.
+
+* **URL Params**
+
+  This endpoint takes the same parameters as [GET /mappings](#get-mappings), except that `to`, `download`, and `cardinality` (fixed to "1-to-1") are not supported. Parameter `direction` only supports the default value "forward". Parameters `from` and `fromScheme` are mandatory to get a non-empty result.
+
+  `strict=[boolean]` values `1` or `true` disallow mapping type "closeMatch" for inferred mappings (default `false`)
+
+  `depth=[number]` a non-negative number of the depth used to infer mappings (not set by default); `0` means no inference, `1` means only the next ancestor concept (= broader) is used for inference, etc.
+
+* **Success Response**
+
+  JSON array of [JSKOS Concept Mappings]
+
+* **Sample Call**
+
+  ```bash
+  curl https://coli-conc.gbv.de/api/mappings/infer?from=http%3A%2F%2Frvk.uni-regensburg.de%2Fnt%2FWI%25203130&fromScheme=http%3A%2F%2Fbartoc.org%2Fen%2Fnode%2F533&toScheme=http%3A%2F%2Fbartoc.org%2Fen%2Fnode%2F18785
+  ```
+
+  ```json
+  [
+    {
+      "from": {
+        "memberSet": [
+          {
+            "uri": "http://rvk.uni-regensburg.de/nt/WI%203130",
+            "notation": [
+              "WI 3130"
+            ]
+          }
+        ]
+      },
+      "to": {
+        "memberSet": [
+          {
+            "uri": "http://uri.gbv.de/terminology/bk/42.42",
+            "notation": [
+              "42.42"
+            ]
+          }
+        ]
+      },
+      "fromScheme": {
+        "uri": "http://bartoc.org/en/node/533",
+        "notation": [
+          "RVK"
+        ]
+      },
+      "toScheme": {
+        "uri": "http://bartoc.org/en/node/18785",
+        "notation": [
+          "BK"
+        ]
+      },
+      "type": [
+        "http://www.w3.org/2004/02/skos/core#narrowMatch"
+      ],
+      "source": [
+        {
+          "uri": "https://coli-conc.gbv.de/api/mappings/ef121206-a42d-4c3c-9ef3-b597c000acb4"
+        }
+      ],
+      "identifier": [
+        "urn:jskos:mapping:content:1b0fb2343795db4de7e1f8c7207b94a789614a15",
+        "urn:jskos:mapping:members:2d22b62a0295959d587487d228d51836d05b1c50"
+      ],
+      "@context": "https://gbv.github.io/jskos/context.json"
+    },
+    {
+      "from": {
+        "memberSet": [
+          {
+            "uri": "http://rvk.uni-regensburg.de/nt/WI%203130",
+            "notation": [
+              "WI 3130"
+            ]
+          }
+        ]
+      },
+      "to": {
+        "memberSet": [
+          {
+            "uri": "http://uri.gbv.de/terminology/bk/42.44",
+            "notation": [
+              "42.44"
+            ]
+          }
+        ]
+      },
+      "fromScheme": {
+        "uri": "http://bartoc.org/en/node/533",
+        "notation": [
+          "RVK"
+        ]
+      },
+      "toScheme": {
+        "uri": "http://bartoc.org/en/node/18785",
+        "notation": [
+          "BK"
+        ]
+      },
+      "type": [
+        "http://www.w3.org/2004/02/skos/core#narrowMatch"
+      ],
+      "source": [
+        {
+          "uri": "https://coli-conc.gbv.de/api/mappings/6b920456-db5d-49b1-a197-b851df6f9dbd",
+        }
+      ],
+      "identifier": [
+        "urn:jskos:mapping:content:8bb72e1605f9c25b0c97889439e6dde952e0cbd0",
+        "urn:jskos:mapping:members:5870d87ec08c9a9a5ccba182bd96b92ad2f9d688"
+      ],
+      "@context": "https://gbv.github.io/jskos/context.json"
+    }
+  ]
+  ```
+
 ### GET /mappings/:_id
 Returns a specific mapping.
 
@@ -1931,6 +2064,9 @@ Status code 422. Will be returned for `POST`/`PUT`/`PATCH` if the body was valid
 
 #### CreatorDoesNotMatchError
 Status code 403. Will be returned by `PUT`/`PATCH`/`DELETE` endpoints if the authenticated creator does not match the creator of the entity that is being edited.
+
+#### BackendError
+Status code 500. Will be returned if there's a backend error not related to the database or configuration.
 
 #### DatabaseAccessError
 Status code 500. Will be returned if the database is not available or if the current database request failed with an unknown error.
