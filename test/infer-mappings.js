@@ -147,6 +147,23 @@ describe("/mappings/infer", () => {
       })
   })
 
+  it("should return nothing for previous request if depth is set to 1", done => {
+    chai.request(server.app)
+      .get("/mappings/infer")
+      .query({
+        from: _.last(concepts).uri,
+        fromScheme: scheme.uri,
+        toScheme: targetScheme.uri,
+        depth: 1,
+      })
+      .end((error, res) => {
+        res.should.have.status(200)
+        res.body.should.be.an("array")
+        assert.equal(res.body.length, 0)
+        done()
+      })
+  })
+
   it("should add a mapping for a deeper ancestor concept and return it instead as inferred mapping; also adjust mapping type", done => {
     const mapping = {
       from: { memberSet: [concepts[1]] },
@@ -179,6 +196,23 @@ describe("/mappings/infer", () => {
             assert.equal(res.body[0].type[0], "http://www.w3.org/2004/02/skos/core#narrowMatch")
             done()
           })
+      })
+  })
+
+  it("should return nothing for previous request if depth is set to 0", done => {
+    chai.request(server.app)
+      .get("/mappings/infer")
+      .query({
+        from: _.last(concepts).uri,
+        fromScheme: scheme.uri,
+        toScheme: targetScheme.uri,
+        depth: 0,
+      })
+      .end((error, res) => {
+        res.should.have.status(200)
+        res.body.should.be.an("array")
+        assert.equal(res.body.length, 0)
+        done()
       })
   })
 
@@ -222,6 +256,7 @@ describe("/mappings/infer", () => {
             from: _.last(concepts).uri,
             fromScheme: scheme.uri,
             toScheme: targetScheme.uri,
+            depth: 0,
           })
           .end((error, res) => {
             res.should.have.status(200)

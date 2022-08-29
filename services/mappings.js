@@ -374,7 +374,7 @@ class MappingService {
   /**
    * Infer mappings based on the source concept's ancestors. (see https://github.com/gbv/jskos-server/issues/177)
    */
-  async inferMappings({ strict, ...query }) {
+  async inferMappings({ strict, depth, ...query }) {
     if (query.to) {
       // `to` parameter not supported
       throw new MalformedRequestError("Query parameter \"to\" is not supported in /mappings/infer.")
@@ -402,6 +402,12 @@ class MappingService {
     }
 
     strict = ["true", "1"].includes(strict) ? true : false
+    depth = parseInt(depth)
+    depth = (isNaN(depth) || depth < 0) ? null : depth
+
+    if (depth === 0) {
+      return []
+    }
 
     fromScheme = await this.schemeService.getScheme(fromScheme)
     try {
@@ -436,7 +442,10 @@ class MappingService {
       }
 
       // Retrieve ancestors from API
-      const ancestors = await registry.getAncestors({ concept: { uri: from } })
+      let ancestors = await registry.getAncestors({ concept: { uri: from } })
+      if (depth !== null) {
+        ancestors = ancestors.slice(0, depth)
+      }
       for (const uri of ancestors.map(a => a && a.uri).filter(Boolean)) {
         mappings = await this.getMappings(Object.assign({}, query, { from: uri, type: types.join("|") }))
         if (mappings.length) {

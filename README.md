@@ -1126,6 +1126,8 @@ Inferred mappings don't have fields such as `uri`, `identifier`, `creator`, `cre
 
   `strict=[boolean]` values `1` or `true` disallow mapping type "closeMatch" for inferred mappings (default `false`)
 
+  `depth=[number]` a non-negative number of the depth used to infer mappings (not set by default); `0` means no inference, `1` means only the next ancestor concept (= broader) is used for inference, etc.
+
 * **Success Response**
 
   JSON array of [JSKOS Concept Mappings]
