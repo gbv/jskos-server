@@ -140,8 +140,8 @@ describe("/mappings/infer", () => {
             res.body.should.be.an("array")
             assert.equal(res.body.length, 1)
             assert.equal(res.body[0].source[0].uri, mappingUri)
-            // Since the mapping has no type, expect narrowMatch
-            assert.equal(res.body[0].type[0], "http://www.w3.org/2004/02/skos/core#narrowMatch")
+            // Since the mapping has no type, expect mappingRelation
+            assert.equal(res.body[0].type[0], "http://www.w3.org/2004/02/skos/core#mappingRelation")
             done()
           })
       })
