@@ -212,7 +212,7 @@ class MappingService {
     let mongoQuery5 = {}
     if (creator) {
       let creators = creator.split("|")
-      mongoQuery4 = {
+      mongoQuery5 = {
         $or: _.flatten(creators.map(creator => [
           jskos.isValidUri(creator) ? null : { "creator.prefLabel.de": new RegExp(_.escapeRegExp(creator), "i") },
           jskos.isValidUri(creator) ? null : { "creator.prefLabel.en": new RegExp(_.escapeRegExp(creator), "i") },
