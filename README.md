@@ -198,7 +198,7 @@ Available actions for `schemes`, `concepts`, `mappings`, and `annotations` are `
 
 - **`auth`**: Boolean. Can be defined only on actions. Defines whether access will require [authentication via JWT](#authentication). By default `false` for `read`, and `true` for all other actions.
 
-- **`crossUser`**: Boolean. Can be defined only on `update` and `delete` actions when `auth` is `true`. Defines whether it is possible to edit an entity from a different user than the authenticated one. `false` by default.
+- **`crossUser`**: Boolean or list of URI strings. Can be defined only on `update` and `delete` actions when `auth` is `true`. Defines whether it is possible to edit an entity from a different user than the authenticated one (`true` = allowed for all users, list = allowed for specified user URIs). `false` by default.
 
 - **`anonymous`**: Boolean. Can be defined on any level (deeper levels will take the values from higher levels if necessary\*). If set, no creator and contributor is saved. `false` by default.
 

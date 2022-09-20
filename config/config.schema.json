@@ -187,8 +187,19 @@
           "type": "boolean"
         },
         "crossUser": {
-          "description": "Indicates whether a certain action can be performed on items that were created by a different user.",
-          "type": "boolean"
+          "description": "Indicates whether a certain action can be performed on items that were created by a different user (boolean or list of user URIs).",
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          ]
         }
       },
       "properties": {

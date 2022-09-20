@@ -291,11 +291,10 @@ const matchesCreator = ({ req = {}, object, withContributors = false }) => {
   if (!object || !user) {
     return false
   }
-  if (crossUser) {
+  const userUris = getUrisForUser(user)
+  if (crossUser === true || _.intersection(crossUser || [], userUris).length) {
     return true
   }
-  // If not, check URIs
-  const userUris = getUrisForUser(user)
   // Support arrays, objects, and strings as creators
   let creators = _.isArray(object.creator) ? object.creator : (_.isObject(object.creator) ? [object.creator] : [{ uri: object.creator }])
   // Also check contributors if requested
@@ -390,7 +389,7 @@ const addMiddlewareProperties = (req, res, next) => {
   }
   if (["PUT", "PATCH", "DELETE"].includes(req.method)) {
     if (config[type] && config[type][action] && config[type][action].crossUser) {
-      req.crossUser = true
+      req.crossUser = config[type][action].crossUser
     }
   }
   if (config[type] && config[type][action] && config[type][action].auth) {
