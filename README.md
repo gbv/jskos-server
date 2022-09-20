@@ -408,7 +408,7 @@ Creating a JWT:
 const jwt = require("jsonwebtoken")
 // Payload is an object containing the user object with an URI:
 const data = {
-  user: { uri: "test:hallo" }
+  user: { uri: "urn:test:hallo" }
 }
 // Sign the token with our secret
 const token = jwt.sign(data, "yoursecret", {
@@ -459,21 +459,21 @@ JSKOS Server provides scripts to import JSKOS data into the database or delete d
 Example scheme (as JSON object) with concepts in a hierarchy (as NDJSON):
 ```json
 {
-  "uri": "test:scheme",
+  "uri": "urn:test:scheme",
   "notation": [
     "TEST"
   ],
-  "uriPattern": "^test:concept-(.+)$"
+  "uriPattern": "^urn:test:concept-(.+)$"
 }
 ```
 ```json
-{ "topConceptOf": [{ "uri": "test:scheme" }], "uri": "test:concept-a" }
-{ "inScheme":     [{ "uri": "test:scheme" }], "uri": "test:concept-a.1",    "broader": [{ "uri": "test:concept-a" }] }
-{ "inScheme":     [{ "uri": "test:scheme" }], "uri": "test:concept-a.2",    "broader": [{ "uri": "test:concept-a" }] }
-{ "topConceptOf": [{ "uri": "test:scheme" }], "uri": "test:concept-b" }
-{ "inScheme":     [{ "uri": "test:scheme" }], "uri": "test:concept-b.1",    "broader": [{ "uri": "test:concept-b" }] }
-{ "inScheme":     [{ "uri": "test:scheme" }], "uri": "test:concept-b.1.1",  "broader": [{ "uri": "test:concept-b.1" }] }
-{ "inScheme":     [{ "uri": "test:scheme" }], "uri": "test:concept-b.1.2",  "broader": [{ "uri": "test:concept-b.1" }] }
+{ "topConceptOf": [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-a" }
+{ "inScheme":     [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-a.1",    "broader": [{ "uri": "urn:test:concept-a" }] }
+{ "inScheme":     [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-a.2",    "broader": [{ "uri": "urn:test:concept-a" }] }
+{ "topConceptOf": [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-b" }
+{ "inScheme":     [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-b.1",    "broader": [{ "uri": "urn:test:concept-b" }] }
+{ "inScheme":     [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-b.1.1",  "broader": [{ "uri": "urn:test:concept-b.1" }] }
+{ "inScheme":     [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-b.1.2",  "broader": [{ "uri": "urn:test:concept-b.1" }] }
 ```
 
 (Note that a notation for the concepts can be omitted because we have defined `uriPattern` on the concept scheme. Also, we don't need to define `inScheme` for concepts with `topConceptOf`.)
@@ -520,7 +520,7 @@ npm run reset -- http://rvk.uni-regensburg.de/nt/A http://rvk.uni-regensburg.de/
 npm run reset -- --help
 ```
 
-For scripting, you can use the `yes` command to skip confirmation. **Make sure you know what you're doing!** Example: `yes | npm run reset -- test:uri`.
+For scripting, you can use the `yes` command to skip confirmation. **Make sure you know what you're doing!** Example: `yes | npm run reset -- urn:test:uri`.
 
 ## Usage
 

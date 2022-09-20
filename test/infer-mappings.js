@@ -33,14 +33,14 @@ const user = {
 const token = jwt.sign({ user }, "test")
 
 const scheme = {
-  uri: "test:source-scheme",
+  uri: "urn:test:source-scheme",
 }
 scheme.namespace = `${scheme.uri}:`
 
 const inScheme = [scheme]
 
 const targetScheme = {
-  uri: "test:target-scheme",
+  uri: "urn:test:target-scheme",
 }
 
 const concepts = [

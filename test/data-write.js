@@ -13,11 +13,11 @@ const { assertIndexes, assertMongoDB, dropDatabaseBeforeAndAfter } = require("./
 
 const schemes = [
   {
-    uri: "test:scheme1",
+    uri: "urn:test:scheme1",
     notation: ["scheme1"],
   },
   {
-    uri: "test:scheme2",
+    uri: "urn:test:scheme2",
     prefLabel: {
       fr: "somelabel",
     },
@@ -29,7 +29,7 @@ const schemes = [
     notation: ["scheme2"],
   },
   {
-    uri: "test:scheme3",
+    uri: "urn:test:scheme3",
     definition: {
       en: [
         "this contains somelabel but shouldn't be found when leaving off the some",
@@ -104,7 +104,7 @@ describe("/voc write access", () => {
         res.body[1][0].should.be.eql("scheme1")
         res.body[3].should.be.a("array")
         res.body[3].length.should.be.eql(schemes.length)
-        res.body[3][0].should.be.eql("test:scheme1")
+        res.body[3][0].should.be.eql("urn:test:scheme1")
         done()
       })
   })
@@ -127,7 +127,7 @@ describe("/voc write access", () => {
         res.body[1].length.should.be.eql(1)
         res.body[3].should.be.a("array")
         res.body[3].length.should.be.eql(1)
-        res.body[3][0].should.be.eql("test:scheme2")
+        res.body[3][0].should.be.eql("urn:test:scheme2")
         done()
       })
   })
@@ -150,8 +150,8 @@ describe("/voc write access", () => {
         res.body[1].length.should.be.eql(2)
         res.body[3].should.be.a("array")
         res.body[3].length.should.be.eql(2)
-        res.body[3][0].should.be.eql("test:scheme2")
-        res.body[3][1].should.be.eql("test:scheme3")
+        res.body[3][0].should.be.eql("urn:test:scheme2")
+        res.body[3][1].should.be.eql("urn:test:scheme3")
         done()
       })
   })
@@ -203,10 +203,10 @@ describe("/voc write access", () => {
   it("should bulk POST schemes and ignore errors", done => {
     const bulkSchemes = [
       {
-        uri: "test:scheme-bulk1",
+        uri: "urn:test:scheme-bulk1",
       },
       {
-        uri: "test:scheme-bulk2",
+        uri: "urn:test:scheme-bulk2",
       },
       {
         uri: "test-scheme-bulk-invalid",
@@ -291,7 +291,7 @@ describe("/voc write access", () => {
     chai.request(server.app)
       .put("/voc")
       .send({
-        uri: "test:scheme-that-does-not-exist",
+        uri: "urn:test:scheme-that-does-not-exist",
         notation: ["A"],
       })
       .end((error, res) => {
@@ -320,7 +320,7 @@ describe("/voc write access", () => {
     chai.request(server.app)
       .delete("/voc")
       .query({
-        uri: "test:scheme-that-does-not-exist",
+        uri: "urn:test:scheme-that-does-not-exist",
       })
       .end((error, res) => {
         assert.equal(error, null)
@@ -336,17 +336,17 @@ describe("/voc write access", () => {
 describe("/data write access", () => {
 
   const concept = {
-    uri: "test:concept",
+    uri: "urn:test:concept",
     inScheme: [schemes[0]],
   }
 
   const concepts = [
     {
-      uri: "test:concept2",
+      uri: "urn:test:concept2",
       topConceptOf: [schemes[1]],
     },
     {
-      uri: "test:concept3",
+      uri: "urn:test:concept3",
       inScheme: [schemes[0]],
       broader: [concept],
     },
@@ -427,7 +427,7 @@ describe("/data write access", () => {
     chai.request(server.app)
       .post("/data")
       .send({
-        uri: "test:concept-without-scheme",
+        uri: "urn:test:concept-without-scheme",
       })
       .end((error, res) => {
         res.should.have.status(400)
@@ -440,7 +440,7 @@ describe("/data write access", () => {
   it("should POST a concept without scheme when scheme param is given, then delete it", async () => {
     const scheme = schemes[0]
     const concept = {
-      uri: "test:concept-without-scheme",
+      uri: "urn:test:concept-without-scheme",
     }
     let res
     // POST concept
@@ -556,10 +556,10 @@ describe("/data write access", () => {
     chai.request(server.app)
       .post("/data")
       .send({
-        uri: "test:concept-with-missing-scheme",
+        uri: "urn:test:concept-with-missing-scheme",
         inScheme: [
           {
-            uri: "test:scheme-that-does-not-exist",
+            uri: "urn:test:scheme-that-does-not-exist",
           },
         ],
       })
@@ -591,7 +591,7 @@ describe("/data write access", () => {
     chai.request(server.app)
       .put("/data")
       .send({
-        uri: "test:concept2",
+        uri: "urn:test:concept2",
         inScheme: [schemes[1]],
         prefLabel: "should be an object",
       })
@@ -607,7 +607,7 @@ describe("/data write access", () => {
     chai.request(server.app)
       .put("/data")
       .send({
-        uri: "test:concept-that-does-not-exist",
+        uri: "urn:test:concept-that-does-not-exist",
         inScheme: [schemes[1]],
         prefLabel: { en: "should be an object" },
       })
@@ -716,7 +716,7 @@ describe("/data write access", () => {
     chai.request(server.app)
       .delete("/data")
       .query({
-        uri: "test:concept-that-does-not-exist",
+        uri: "urn:test:concept-that-does-not-exist",
       })
       .end((error, res) => {
         res.should.have.status(404)
@@ -729,7 +729,7 @@ describe("/data write access", () => {
   it("should POST a concept, update its scheme's properties, then DELETE the concept", async () => {
     const uri = concepts[0].topConceptOf[0].uri
     const concept = {
-      uri: "test:concept",
+      uri: "urn:test:concept",
       topConceptOf: [{ uri }],
     }
     const getScheme = async () => {

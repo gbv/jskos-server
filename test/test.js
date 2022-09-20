@@ -467,7 +467,7 @@ describe("Express Server", () => {
       let mapping = {
         fromScheme: createdConcordance.fromScheme,
         toScheme: createdConcordance.toScheme,
-        from: { memberSet: [{ uri: "test:concept" }] },
+        from: { memberSet: [{ uri: "urn:test:concept" }] },
         to: { memberSet: [] },
       }
       chai.request(server.app)
@@ -1089,12 +1089,12 @@ describe("Express Server", () => {
     })
 
     it("should bulk POST mappings properly", done => {
-      const fromScheme = { uri: "test:fromScheme" }
-      const toScheme = { uri: "test:toScheme" }
-      const from = { memberSet: [{ uri: "test:fromConcept" }] }
+      const fromScheme = { uri: "urn:test:fromScheme" }
+      const toScheme = { uri: "urn:test:toScheme" }
+      const from = { memberSet: [{ uri: "urn:test:fromConcept" }] }
       const to = { memberSet: [] }
       const mappingToBeUpdated = { fromScheme, from, toScheme, to }
-      const update = { from: { memberSet: [{ uri: "test:fromConceptUpdate" }] } }
+      const update = { from: { memberSet: [{ uri: "urn:test:fromConceptUpdate" }] } }
       const bulkMappings = [
         // Two empty mappings that are still valid
         { fromScheme, from, toScheme, to },
@@ -2022,7 +2022,7 @@ describe("Express Server", () => {
 
     it("should bulk POST annotations properly", done => {
       const annotationToBeUpdated = {
-        target: "test:blubb",
+        target: "urn:test:blubb",
         motivation: "assessing",
         bodyValue: "+1",
       }

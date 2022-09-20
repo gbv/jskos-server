@@ -40,7 +40,7 @@ describe("Services", () => {
           uri: "mapping:3",
         },
         {
-          to: { memberSet: [{ uri: "test:concept" }] },
+          to: { memberSet: [{ uri: "urn:test:concept" }] },
           uri: "mapping:4",
         },
         {
@@ -48,11 +48,11 @@ describe("Services", () => {
         },
       ].map(mapping => {
         // Add fromScheme and toScheme
-        mapping.fromScheme = { uri: "test:fromScheme" }
-        mapping.toScheme = { uri: "test:toScheme" }
+        mapping.fromScheme = { uri: "urn:test:fromScheme" }
+        mapping.toScheme = { uri: "urn:test:toScheme" }
         // Add from if necessary
         if (!mapping.from) {
-          mapping.from = { memberSet: [{ uri: "test:fromConcept" }] }
+          mapping.from = { memberSet: [{ uri: "urn:test:fromConcept" }] }
         }
         // Add empty to if necessary
         if (!mapping.to) {
@@ -75,7 +75,7 @@ describe("Services", () => {
           target: "mapping:2",
           motivation: "moderating",
           creator: {
-            id: "test:creator",
+            id: "urn:test:creator",
           },
         },
         {
@@ -148,7 +148,7 @@ describe("Services", () => {
       })
 
       it("should get correct number of mappings when using annotatedBy param", async () => {
-        const annotatedBy = "test:creator|other:uri"
+        const annotatedBy = "urn:test:creator|urn:other:uri"
         const result = await services.mapping.getMappings({ limit: 10, offset: 0, annotatedBy })
         const expected = _.uniq(annotations.filter(a => annotatedBy.split("|").includes(_.get(a, "creator.id"))).map(a => a.target)).sort()
         assert.deepStrictEqual(result.map(r => r.uri).sort(), expected)
@@ -162,7 +162,7 @@ describe("Services", () => {
         expected = _.uniq(annotations.filter(a => a.motivation === annotatedFor).map(a => a.target)).sort()
         assert.deepStrictEqual(result.map(r => r.uri).sort(), expected)
         // Then with annotatedBy
-        const annotatedBy = "test:creator|other:uri"
+        const annotatedBy = "urn:test:creator|urn:other:uri"
         result = await services.mapping.getMappings({ limit: 10, offset: 0, annotatedFor, annotatedBy })
         expected = _.uniq(annotations.filter(a => annotatedBy.split("|").includes(_.get(a, "creator.id")) && a.motivation === annotatedFor).map(a => a.target)).sort()
         assert.deepStrictEqual(result.map(r => r.uri).sort(), expected)
@@ -176,7 +176,7 @@ describe("Services", () => {
         expected = _.uniq(annotations.filter(a => a.bodyValue === annotatedWith).map(a => a.target)).sort()
         assert.deepStrictEqual(result.map(r => r.uri).sort(), expected)
         // Then with to
-        const to = "test:concept"
+        const to = "urn:test:concept"
         result = await services.mapping.getMappings({ limit: 10, offset: 0, to, annotatedWith })
         expected = mappings.filter(m => jskos.isContainedIn({ uri: to }, jskos.conceptsOfMapping(m, "to")) && annotations.find(a => a.target === m.uri && a.bodyValue === annotatedWith))
         assert.deepStrictEqual(result.map(r => r.uri).sort(), expected.map(r => r.uri).sort())
