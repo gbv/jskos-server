@@ -238,6 +238,28 @@ class MappingService {
     // Annotation assertions need special handling (see #176)
     const isNegativeAnnotationAssertion = (annotatedFor) => annotatedFor === "none" || (annotatedFor || "").startsWith("!")
 
+    // Handle restrictions on sum of assessment annotations in `annotatedWith`
+    let assessmentSumQuery, assessmentSumMatch
+    if (annotatedWith && (!annotatedFor || annotatedFor === "assessing") && (assessmentSumMatch = annotatedWith.match(/^([<>]?)(=?)(-?\d+)$/)) && (assessmentSumMatch[1] || assessmentSumMatch[2])) {
+
+      // Parameter `from` or `to` is required to use sum of assessment annotations
+      if (!from && !to) {
+        // Do nothing here; annotatedWith parameter will be completely ignored
+      }
+      // > or <
+      else if (assessmentSumMatch[1]) {
+        assessmentSumQuery = {
+          _assessmentSum: { [`$${{ "<": "lt", ">": "gt"}[assessmentSumMatch[1]]}${{ "=": "e", "": "" }[assessmentSumMatch[2]]}`]: parseInt(assessmentSumMatch[3]) },
+        }
+      } else {
+        assessmentSumQuery = {
+          _assessmentSum: parseInt(assessmentSumMatch[3]),
+        }
+      }
+
+      annotatedWith = null
+    }
+
     const buildAnnotationQuery = ({ annotatedWith, annotatedFor, annotatedBy, prefix = "" }) => {
       const annotationQuery = {}
       if (annotatedWith) {
@@ -267,7 +289,7 @@ class MappingService {
       // Filter by annotations
       // Three different paths
       // 1. No filter by annotations
-      if (!annotatedWith && !annotatedBy && !annotatedFor) {
+      if (!annotatedWith && !annotatedBy && !annotatedFor && !assessmentSumQuery) {
         // Simply match mapping query
         pipeline.push({ $match: query })
         pipeline.push({ $sort: sorting })
@@ -291,7 +313,32 @@ class MappingService {
           {
             $match: annotationQuery,
           },
-          { $project: { annotations: 0 } },
+          // Deal with assessmentSumQuery here
+          ...(assessmentSumQuery ? [
+            // 1. Calculate assessment sum
+            {
+              $set: {
+                _assessmentSum: {
+                  $function: {
+                    lang: "js",
+                    args: ["$annotations"],
+                    body: function (annotations) {
+                      return annotations.reduce((prev, cur) => {
+                        if (cur.motivation === "assessing") {
+                          if (cur.bodyValue === "+1") return prev + 1
+                          if (cur.bodyValue === "-1") return prev - 1
+                        }
+                        return prev
+                      }, 0)
+                    },
+                  },
+                },
+              },
+            },
+            // 2. Add query
+            { $match: assessmentSumQuery },
+          ] : []),
+          { $project: { annotations: 0, _assessmentSum: 0 } },
         ]
         pipeline.model = Mapping
       }
