@@ -959,7 +959,7 @@ Returns an array of mappings. Each mapping has a property `uri` under which the 
 
   `download=[type]` returns the whole result as a download (available types are `json`, `ndjson`, `csv`, and `tsv`), ignores `limit` and `offset`; **note**: `csv` and `tsv` are restricted (and fixed) to 5 target concepts, meaning that if the data set includes a mapping with more than 5 target concepts, only the first 5 will appear in the export
 
-  `sort=[sort]` sorts by a specific field. Available are `created` and `modified` (default).
+  `sort=[sort]` sorts by a specific field. Available are `created`, `modified`, and `mappingRelevance` (default).
 
   `order=[order]` order to use for sorting. Available are `asc` and `desc` (default).
 

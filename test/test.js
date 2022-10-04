@@ -671,6 +671,25 @@ describe("Express Server", () => {
       })
     })
 
+    it("should sort mappings by mappingRelevance ascending", done => {
+      chai.request(server.app)
+        .get("/mappings")
+        .query({
+          sort: "mappingRelevance",
+          order: "asc",
+        })
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.should.have.header("Link")
+          res.should.have.header("X-Total-Count")
+          res.headers["x-total-count"].should.be.eql("3")
+          res.body.should.be.a("array")
+          assert.ok(res.body[0].mappingRelevance <= res.body[1].mappingRelevance)
+          assert.ok(res.body[1].mappingRelevance <= res.body[2].mappingRelevance)
+          done()
+        })
+    })
+
     it("should paginate mappings properly", done => {
       chai.request(server.app)
         .get("/mappings")

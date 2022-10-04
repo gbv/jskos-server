@@ -230,7 +230,7 @@ class MappingService {
     const query = { $and: [mongoQuery1, mongoQuery2, mongoQuery3, mongoQuery4, mongoQuery5, mongoQuery6] }
 
     // Sorting (default: modified descending)
-    sort = ["created", "modified"].includes(sort) ? sort : "modified"
+    sort = ["created", "modified", "mappingRelevance"].includes(sort) ? sort : "modified"
     order = order == "asc" ? 1 : -1
     // Currently default sort by modified descending
     const sorting = { [sort]: order }
@@ -934,6 +934,7 @@ class MappingService {
     indexes.push([{ type: 1 }, {}])
     indexes.push([{ created: 1 }, {}])
     indexes.push([{ modified: 1 }, {}])
+    indexes.push([{ mappingRelevance: 1 }, {}])
     indexes.push([{ "partOf.uri": 1 }, {}])
     indexes.push([{ "creator.uri": 1 }, {}])
     indexes.push([{ "creator.prefLabel.de": 1 }, {}])

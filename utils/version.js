@@ -220,6 +220,13 @@ const upgrades = {
     console.log(`... done (${updatedCount} annotations updated).`)
 
   },
+  async "1.5.3"() {
+    // Create indexes for mappings with index for mappingRelevance
+    console.log("Creating indexes for mappings...")
+    const mappingService = require("../services/mappings")
+    await mappingService.createIndexes()
+    console.log("... done.")
+  },
 }
 
 /**

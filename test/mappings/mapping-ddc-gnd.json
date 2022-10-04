@@ -1,5 +1,6 @@
 [
   {
+    "mappingRelevance": 0.5,
     "type": [
       "http://www.w3.org/2004/02/skos/core#exactMatch"
     ],
@@ -40,7 +41,7 @@
     }
   },
   {
-    "mappingRelevance": 0.5,
+    "mappingRelevance": 0.4,
     "fromScheme": {
       "notation": [
         "DDC"
@@ -133,6 +134,7 @@
     }
   },
   {
+    "mappingRelevance": 0.9,
     "fromScheme": {
       "notation": [
         "DDC"
