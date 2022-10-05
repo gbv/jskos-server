@@ -154,7 +154,7 @@ adjust.concept = async (concept, properties = []) => {
       concept[property] = await Promise.all((await services.concepts[`get${property.charAt(0).toUpperCase() + property.slice(1)}`]({ uri: concept.uri })).map(concept => adjust.concept(concept)))
     }
     // Add properties (annotations)
-    if (properties.includes("annotations") && concept.uri) {
+    if (config.annotations && properties.includes("annotations") && concept.uri) {
       concept.annotations = (await services.annotations.getAnnotations({ target: concept.uri })).map(annotation => adjust.annotation(annotation))
     }
   }
@@ -194,7 +194,7 @@ adjust.mapping = async (mapping, properties = []) => {
   if (mapping) {
     mapping["@context"] = "https://gbv.github.io/jskos/context.json"
     // Add properties (annotations)
-    if (properties.includes("annotations") && mapping.uri) {
+    if (config.annotations && properties.includes("annotations") && mapping.uri) {
       mapping.annotations = (await services.annotations.getAnnotations({ target: mapping.uri })).map(annotation => adjust.annotation(annotation))
     }
   }
