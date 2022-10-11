@@ -119,6 +119,30 @@ describe("Services", () => {
         assert.deepStrictEqual(result.map(r => r.uri).sort(), expected)
       })
 
+      it("should get the correct mappings when using annotatedWith param with comparison operator", async () => {
+        for (let { from, to, annotatedWith } of [
+          { to: "urn:test:concept", annotatedWith: ">=1" },
+          { from: "urn:test:fromConcept", annotatedWith: "=0" },
+        ]) {
+          const result = await services.mapping.getMappings({ limit: 100, offset: 0, from, to, annotatedWith })
+          // Replace = with == for later evaluation
+          if (annotatedWith.startsWith("=")) {
+            annotatedWith = `=${annotatedWith}`
+          }
+          const expected = mappings.filter(m => {
+            if (from && from !== _.get(m, "from.memberSet[0].uri") || to && to !== _.get(m, "to.memberSet[0].uri")) {
+              return false
+            }
+            const annotationSum = annotations.filter(a => a.target === m.uri).reduce((prev, cur) => {
+              if (cur.motivation !== "assessing") return prev
+              return prev + parseInt(cur.bodyValue)
+            }, 0)
+            return Function(`"use strict";return (${annotationSum}${annotatedWith})`)()
+          })
+          assert.deepStrictEqual(result.map(r => r.uri).sort(), expected.map(e => e.uri).sort())
+        }
+      })
+
       it("should get correct number of mappings when using annotatedFor param", async () => {
         const annotatedFor = "assessing"
         const result = await services.mapping.getMappings({ limit: 10, offset: 0, annotatedFor })
