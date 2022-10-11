@@ -21,6 +21,7 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
 - [Usage](#usage)
   - [Run Server](#run-server)
   - [Run Tests](#run-tests)
+  - [Run Supplemental Scripts](#run-supplemental-scripts)
 - [API](#api)
   - [GET /status](#get-status)
   - [GET /checkAuth](#get-checkauth)
@@ -539,6 +540,11 @@ Tests will use the real MongoDB with `-test-${namespace}` appended to the databa
 ```bash
 npm test
 ```
+
+### Run Supplemental Scripts
+There are some supplemental scripts that were added to deal with specific sitatuations. These can be called with `npm run extra name-of-script`. The following scripts are available:
+
+- `supplementNotationsInMappings`: This will look for mappings where the field `notation` is missing for any of the concepts, and it will attempt to supplement those notations. This only works for vocabularies which are also imported into the same jskos-server instance and where either `uriPattern` or `namespace` are given.
 
 ## API
 Unless otherwise specified:
