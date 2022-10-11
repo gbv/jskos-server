@@ -21,6 +21,7 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
 - [Usage](#usage)
   - [Run Server](#run-server)
   - [Run Tests](#run-tests)
+  - [Run Supplemental Scripts](#run-supplemental-scripts)
 - [API](#api)
   - [GET /status](#get-status)
   - [GET /checkAuth](#get-checkauth)
@@ -198,7 +199,7 @@ Available actions for `schemes`, `concepts`, `mappings`, and `annotations` are `
 
 - **`auth`**: Boolean. Can be defined only on actions. Defines whether access will require [authentication via JWT](#authentication). By default `false` for `read`, and `true` for all other actions.
 
-- **`crossUser`**: Boolean. Can be defined only on `update` and `delete` actions when `auth` is `true`. Defines whether it is possible to edit an entity from a different user than the authenticated one. `false` by default.
+- **`crossUser`**: Boolean or list of URI strings. Can be defined only on `update` and `delete` actions when `auth` is `true`. Defines whether it is possible to edit an entity from a different user than the authenticated one (`true` = allowed for all users, list = allowed for specified user URIs). `false` by default.
 
 - **`anonymous`**: Boolean. Can be defined on any level (deeper levels will take the values from higher levels if necessary\*). If set, no creator and contributor is saved. `false` by default.
 
@@ -408,7 +409,7 @@ Creating a JWT:
 const jwt = require("jsonwebtoken")
 // Payload is an object containing the user object with an URI:
 const data = {
-  user: { uri: "test:hallo" }
+  user: { uri: "urn:test:hallo" }
 }
 // Sign the token with our secret
 const token = jwt.sign(data, "yoursecret", {
@@ -459,21 +460,21 @@ JSKOS Server provides scripts to import JSKOS data into the database or delete d
 Example scheme (as JSON object) with concepts in a hierarchy (as NDJSON):
 ```json
 {
-  "uri": "test:scheme",
+  "uri": "urn:test:scheme",
   "notation": [
     "TEST"
   ],
-  "uriPattern": "^test:concept-(.+)$"
+  "uriPattern": "^urn:test:concept-(.+)$"
 }
 ```
 ```json
-{ "topConceptOf": [{ "uri": "test:scheme" }], "uri": "test:concept-a" }
-{ "inScheme":     [{ "uri": "test:scheme" }], "uri": "test:concept-a.1",    "broader": [{ "uri": "test:concept-a" }] }
-{ "inScheme":     [{ "uri": "test:scheme" }], "uri": "test:concept-a.2",    "broader": [{ "uri": "test:concept-a" }] }
-{ "topConceptOf": [{ "uri": "test:scheme" }], "uri": "test:concept-b" }
-{ "inScheme":     [{ "uri": "test:scheme" }], "uri": "test:concept-b.1",    "broader": [{ "uri": "test:concept-b" }] }
-{ "inScheme":     [{ "uri": "test:scheme" }], "uri": "test:concept-b.1.1",  "broader": [{ "uri": "test:concept-b.1" }] }
-{ "inScheme":     [{ "uri": "test:scheme" }], "uri": "test:concept-b.1.2",  "broader": [{ "uri": "test:concept-b.1" }] }
+{ "topConceptOf": [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-a" }
+{ "inScheme":     [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-a.1",    "broader": [{ "uri": "urn:test:concept-a" }] }
+{ "inScheme":     [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-a.2",    "broader": [{ "uri": "urn:test:concept-a" }] }
+{ "topConceptOf": [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-b" }
+{ "inScheme":     [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-b.1",    "broader": [{ "uri": "urn:test:concept-b" }] }
+{ "inScheme":     [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-b.1.1",  "broader": [{ "uri": "urn:test:concept-b.1" }] }
+{ "inScheme":     [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-b.1.2",  "broader": [{ "uri": "urn:test:concept-b.1" }] }
 ```
 
 (Note that a notation for the concepts can be omitted because we have defined `uriPattern` on the concept scheme. Also, we don't need to define `inScheme` for concepts with `topConceptOf`.)
@@ -520,7 +521,7 @@ npm run reset -- http://rvk.uni-regensburg.de/nt/A http://rvk.uni-regensburg.de/
 npm run reset -- --help
 ```
 
-For scripting, you can use the `yes` command to skip confirmation. **Make sure you know what you're doing!** Example: `yes | npm run reset -- test:uri`.
+For scripting, you can use the `yes` command to skip confirmation. **Make sure you know what you're doing!** Example: `yes | npm run reset -- urn:test:uri`.
 
 ## Usage
 
@@ -539,6 +540,11 @@ Tests will use the real MongoDB with `-test-${namespace}` appended to the databa
 ```bash
 npm test
 ```
+
+### Run Supplemental Scripts
+There are some supplemental scripts that were added to deal with specific sitatuations. These can be called with `npm run extra name-of-script`. The following scripts are available:
+
+- `supplementNotationsInMappings`: This will look for mappings where the field `notation` is missing for any of the concepts, and it will attempt to supplement those notations. This only works for vocabularies which are also imported into the same jskos-server instance and where either `uriPattern` or `namespace` are given.
 
 ## API
 Unless otherwise specified:
@@ -953,13 +959,13 @@ Returns an array of mappings. Each mapping has a property `uri` under which the 
 
   `annotatedFor=[motivation]` has annotations with a certain motivation (e.g. `assessing`); value `none` returns mappings that have no annotations at all, value `any` returns mappings that have any kind of annotation, values starting with `!` (e.g. `!assessing`) filter out annotations with that motivation. Note that to mitigate performance issues with negative assertions (`none` or `!xyz`), jskos-server will return the number 9999999 in the `X-Total-Count` header (see [this](https://github.com/gbv/jskos-server/issues/176#issuecomment-1167188606)).
 
-  `annotatedWith=[body]` has annotations with a certian body value (e.g. `+1`)
+  `annotatedWith=[body]` has annotations with a certain body value (e.g. `+1`) OR has a sum of assessment annotations that conforms to the given comparison operation; for the latter, either `from` or `to` must be given, `annotatedFor` must be either not set or set to `assessing`, and the value of this parameter needs to consist of a comparison operator (`=`, `<`, `>`, `<=`, or `>=`) followed by a number. Example: `annotatedWith=>0` returns mappings with a positive assessment sum (equivalent to `annotatedWith=>=1`).
 
   `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting only `annotations` for mappings)
 
   `download=[type]` returns the whole result as a download (available types are `json`, `ndjson`, `csv`, and `tsv`), ignores `limit` and `offset`; **note**: `csv` and `tsv` are restricted (and fixed) to 5 target concepts, meaning that if the data set includes a mapping with more than 5 target concepts, only the first 5 will appear in the export
 
-  `sort=[sort]` sorts by a specific field. Available are `created` and `modified` (default).
+  `sort=[sort]` sorts by a specific field. Available are `created`, `modified`, and `mappingRelevance` (default).
 
   `order=[order]` order to use for sorting. Available are `asc` and `desc` (default).
 
