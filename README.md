@@ -959,7 +959,7 @@ Returns an array of mappings. Each mapping has a property `uri` under which the 
 
   `annotatedFor=[motivation]` has annotations with a certain motivation (e.g. `assessing`); value `none` returns mappings that have no annotations at all, value `any` returns mappings that have any kind of annotation, values starting with `!` (e.g. `!assessing`) filter out annotations with that motivation. Note that to mitigate performance issues with negative assertions (`none` or `!xyz`), jskos-server will return the number 9999999 in the `X-Total-Count` header (see [this](https://github.com/gbv/jskos-server/issues/176#issuecomment-1167188606)).
 
-  `annotatedWith=[body]` has annotations with a certian body value (e.g. `+1`)
+  `annotatedWith=[body]` has annotations with a certain body value (e.g. `+1`) OR has a sum of assessment annotations that conforms to the given comparison operation; for the latter, either `from` or `to` must be given, `annotatedFor` must be either not set or set to `assessing`, and the value of this parameter needs to consist of a comparison operator (`=`, `<`, `>`, `<=`, or `>=`) followed by a number. Example: `annotatedWith=>0` returns mappings with a positive assessment sum (equivalent to `annotatedWith=>=1`).
 
   `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting only `annotations` for mappings)
 
