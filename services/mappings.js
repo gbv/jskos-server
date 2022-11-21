@@ -614,6 +614,10 @@ class MappingService {
         }
         // Set mapping identifier
         mapping.identifier = jskos.addMappingIdentifiers(mapping).identifier
+        // Set mapping type to mappingRelation if not set
+        if (!mapping.type || !mapping.type.length) {
+          mapping.type = ["http://www.w3.org/2004/02/skos/core#mappingRelation"]
+        }
 
         return mapping
       } catch(error) {
@@ -664,6 +668,10 @@ class MappingService {
     mapping.created = existing.created
     // Set mapping identifier
     mapping.identifier = jskos.addMappingIdentifiers(mapping).identifier
+    // Set mapping type to mappingRelation if not set
+    if (!mapping.type || !mapping.type.length) {
+      mapping.type = ["http://www.w3.org/2004/02/skos/core#mappingRelation"]
+    }
 
     const result = await Mapping.replaceOne({ _id: existing._id }, mapping)
     if (result.acknowledged && result.matchedCount) {
@@ -714,6 +722,10 @@ class MappingService {
     const newMapping = Object.assign({}, existing, mapping)
     // Set mapping identifier
     newMapping.identifier = jskos.addMappingIdentifiers(newMapping).identifier
+    // Set mapping type to mappingRelation if not set
+    if (!mapping.type || !mapping.type.length) {
+      mapping.type = ["http://www.w3.org/2004/02/skos/core#mappingRelation"]
+    }
 
     // Validate mapping after merge
     if (!validateMapping(newMapping)) {
