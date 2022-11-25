@@ -22,11 +22,13 @@ if (config.concordances.read) {
   router.get(
     "/:_id",
     config.concordances.read.auth ? auth.default : auth.optional,
+    utils.supportDownloadFormats(["json", "ndjson"]),
     utils.wrappers.async(async (req) => {
       return await concordanceService.get(req.params._id)
     }),
-    utils.adjust,
-    utils.returnJSON,
+    utils.wrappers.download(utils.adjust, false),
+    utils.wrappers.download(utils.returnJSON, false),
+    utils.wrappers.download(utils.handleDownload("concordance"), true),
   )
 }
 

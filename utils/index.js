@@ -499,7 +499,7 @@ const returnJSON = (req, res) => {
   res.status(statusCode).json(data)
 }
 
-const { Transform } = require("stream")
+const { Transform, Readable } = require("stream")
 const JSONStream = require("JSONStream")
 /**
  * Middleware that handles download streaming.
@@ -508,7 +508,16 @@ const JSONStream = require("JSONStream")
  * @param {String} filename - resulting filename without extension
  */
 const handleDownload = (filename) => (req, res) => {
-  const results = req.data
+  let results = req.data, single = false
+  // Convert to stream if necessary
+  if (!(results instanceof Readable)) {
+    if (!_.isArray(results)) {
+      single = true
+    }
+    results = new Readable({ objectMode: true })
+    results.push(req.data)
+    results.push(null)
+  }
   /**
    * Transformation object to remove _id parameter from objects in a stream.
    */
@@ -521,7 +530,7 @@ const handleDownload = (filename) => (req, res) => {
     },
   })
   // Default transformation: JSON
-  let transform = JSONStream.stringify("[\n", ",\n", "\n]\n")
+  let transform = JSONStream.stringify(single ? "" : "[\n\t", ",\n\t", single ? "\n" : "\n]\n")
   let fileEnding = "json"
   let first = true, delimiter = ","
   let csv

@@ -54,11 +54,13 @@ if (config.mappings.read) {
   router.get(
     "/:_id",
     config.mappings.read.auth ? auth.default : auth.optional,
+    utils.supportDownloadFormats(["json", "ndjson", "csv", "tsv"]),
     utils.wrappers.async(async (req) => {
       return await mappingService.getMapping(req.params._id)
     }),
-    utils.adjust,
-    utils.returnJSON,
+    utils.wrappers.download(utils.adjust, false),
+    utils.wrappers.download(utils.returnJSON, false),
+    utils.wrappers.download(utils.handleDownload("mapping"), true),
   )
 }
 
