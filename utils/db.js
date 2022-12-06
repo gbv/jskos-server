@@ -12,14 +12,15 @@ mongoose.set("bufferTimeoutMS", 30000)
 connection.on("connected", () => {
   config.log("Connected to database")
 })
-connection.on("disconnected", () => {
+const onDisconnected = () => {
   config.warn("Disconnected from database, waiting for automatic reconnect...")
-})
+}
 
 module.exports = {
   mongoose,
   connection,
   async connect(retry = false) {
+    connection.on("disconnected", onDisconnected)
     function addErrorHandler() {
       connection.on("error", (error) => {
         config.error("Database error", error)
@@ -72,6 +73,8 @@ module.exports = {
     return result
   },
   disconnect() {
+    connection.removeListener("disconnected", onDisconnected)
+    config.log("Disconnected from database (on purpose)")
     return mongoose.disconnect()
   },
 }
