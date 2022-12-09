@@ -512,7 +512,14 @@ class MappingService {
               toScheme: m.toScheme,
             }
             if (m.uri) {
-              mapping.source = [{ uri: m.uri }]
+              mapping.source = [{
+                uri: m.uri,
+                creator: m.creator,
+                created: m.created,
+                modified: m.modified,
+                from: m.from,
+                type: m.type,
+              }]
             }
             const fromConcept = {
               uri: from,
