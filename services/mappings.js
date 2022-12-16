@@ -291,8 +291,10 @@ class MappingService {
       // 1. No filter by annotations
       if (!annotatedWith && !annotatedBy && !annotatedFor && !assessmentSumQuery) {
         // Simply match mapping query
-        pipeline.push({ $match: query })
-        pipeline.push({ $sort: sorting })
+        pipeline = [
+          { $match: query },
+          ...(sorting ? [{ $sort: sorting }] : []),
+        ]
         pipeline.model = Mapping
       }
       // 2. Filter by annotation, and from/to/creator is defined
@@ -301,7 +303,7 @@ class MappingService {
         const annotationQuery = buildAnnotationQuery({ annotatedWith, annotatedFor, annotatedBy, prefix: "annotations." })
         pipeline = [
           { $match: query },
-          { $sort: sorting },
+          ...(sorting ? [{ $sort: sorting }] : []),
           {
             $lookup: {
               from: "annotations",
@@ -369,7 +371,7 @@ class MappingService {
           // Replace root with mapping
           { $replaceRoot: { newRoot: "$mapping" } },
           // Sort
-          { $sort: sorting },
+          ...(sorting ? [{ $sort: sorting }] : []),
           // Match mappings
           { $match: query },
         ]
