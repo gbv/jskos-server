@@ -28,20 +28,20 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [POST /validate](#post-validate)
   - [GET /validate](#get-validate)
   - [GET /concordances](#get-concordances)
-  - [GET /concordances/:_id](#get-concordances_id)
+  - [GET /concordances/:\_id](#get-concordances_id)
   - [POST /concordances](#post-concordances)
-  - [PUT /concordances/:_id](#put-concordances_id)
-  - [PATCH /concordances/:_id](#patch-concordances_id)
-  - [DELETE /concordances/:_id](#delete-concordances_id)
+  - [PUT /concordances/:\_id](#put-concordances_id)
+  - [PATCH /concordances/:\_id](#patch-concordances_id)
+  - [DELETE /concordances/:\_id](#delete-concordances_id)
   - [GET /mappings](#get-mappings)
   - [GET /mappings/suggest](#get-mappingssuggest)
   - [GET /mappings/voc](#get-mappingsvoc)
   - [GET /mappings/infer](#get-mappingsinfer)
-  - [GET /mappings/:_id](#get-mappings_id)
+  - [GET /mappings/:\_id](#get-mappings_id)
   - [POST /mappings](#post-mappings)
-  - [PUT /mappings/:_id](#put-mappings_id)
-  - [PATCH /mappings/:_id](#patch-mappings_id)
-  - [DELETE /mappings/:_id](#delete-mappings_id)
+  - [PUT /mappings/:\_id](#put-mappings_id)
+  - [PATCH /mappings/:\_id](#patch-mappings_id)
+  - [DELETE /mappings/:\_id](#delete-mappings_id)
   - [GET /voc](#get-voc)
   - [POST /voc](#post-voc)
   - [PUT /voc](#put-voc)
@@ -60,11 +60,11 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [GET /suggest](#get-suggest)
   - [GET /search](#get-search)
   - [GET /annotations](#get-annotations)
-  - [GET /annotations/:_id](#get-annotations_id)
+  - [GET /annotations/:\_id](#get-annotations_id)
   - [POST /annotations](#post-annotations)
-  - [PUT /annotations/:_id](#put-annotations_id)
-  - [PATCH /annotations/:_id](#patch-annotations_id)
-  - [DELETE /annotations/:_id](#delete-annotations_id)
+  - [PUT /annotations/:\_id](#put-annotations_id)
+  - [PATCH /annotations/:\_id](#patch-annotations_id)
+  - [DELETE /annotations/:\_id](#delete-annotations_id)
   - [Errors](#errors)
 - [Deployment](#deployment)
   - [Notes about depolyment on Ubuntu](#notes-about-depolyment-on-ubuntu)
@@ -965,7 +965,7 @@ Returns an array of mappings. Each mapping has a property `uri` under which the 
 
   `download=[type]` returns the whole result as a download (available types are `json`, `ndjson`, `csv`, and `tsv`), ignores `limit` and `offset`; **note**: `csv` and `tsv` are restricted (and fixed) to 5 target concepts, meaning that if the data set includes a mapping with more than 5 target concepts, only the first 5 will appear in the export
 
-  `sort=[sort]` sorts by a specific field. Available are `created`, `modified`, and `mappingRelevance` (default).
+  `sort=[sort]` sorts by a specific field. Available are `created`, `modified`, and `mappingRelevance` (default). Results will always be additionally sorted by `from.memberSet.uri` and `_id` in order to create a stable and sensible sort.
 
   `order=[order]` order to use for sorting. Available are `asc` and `desc` (default).
 
