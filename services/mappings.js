@@ -233,7 +233,7 @@ class MappingService {
     sort = ["created", "modified", "mappingRelevance"].includes(sort) ? sort : "modified"
     order = order == "asc" ? 1 : -1
     // Currently default sort by modified descending
-    const sorting = { [sort]: order }
+    const sorting = { [sort]: order, "from.memberSet.uri": order, _id: order }
 
     // Annotation assertions need special handling (see #176)
     const isNegativeAnnotationAssertion = (annotatedFor) => annotatedFor === "none" || (annotatedFor || "").startsWith("!")
@@ -386,15 +386,15 @@ class MappingService {
       return pipeline.model.aggregate(pipeline).cursor()
     } else {
       // Otherwise, return results
-      const mappings = await pipeline.model.aggregate(pipeline).skip(offset).limit(limit).exec()
+      const mappings = await pipeline.model.aggregate(pipeline.concat({ $skip: offset }, { $limit: limit }), { allowDiskUse: true }).exec()
       // Handle negative annotation assertions differently because counting is inefficient
       if (negativeAnnotationAssertion) {
         // Instead, count by building a pipeline without `annotatedFor`, then another pipeline with the opposite `annotatedFor`, count for both and calculate the difference
-        const totalCountPipeline = buildPipeline({ query, sorting, annotatedWith, annotatedBy })
-        const oppositeCountPipeline = buildPipeline({ query, sorting, annotatedWith, annotatedBy, annotatedFor: annotatedFor === "none" ? "any" : annotatedFor.slice(1) })
+        const totalCountPipeline = buildPipeline({ query, annotatedWith, annotatedBy })
+        const oppositeCountPipeline = buildPipeline({ query, annotatedWith, annotatedBy, annotatedFor: annotatedFor === "none" ? "any" : annotatedFor.slice(1) })
         mappings.totalCount = await utils.count(totalCountPipeline.model, totalCountPipeline) - await utils.count(oppositeCountPipeline.model, oppositeCountPipeline)
       } else {
-        mappings.totalCount = await utils.count(pipeline.model, pipeline)
+        mappings.totalCount = await utils.count(pipeline.model, pipeline.filter(p => !p.$sort))
       }
       return mappings
     }
@@ -951,9 +951,12 @@ class MappingService {
     indexes.push([{ uri: 1 }, {}])
     indexes.push([{ identifier: 1 }, {}])
     indexes.push([{ type: 1 }, {}])
-    indexes.push([{ created: 1 }, {}])
-    indexes.push([{ modified: 1 }, {}])
-    indexes.push([{ mappingRelevance: 1 }, {}])
+    indexes.push([{ created: 1, _id: 1 }, {}])
+    indexes.push([{ modified: 1, _id: 1 }, {}])
+    indexes.push([{ mappingRelevance: 1, _id: 1 }, {}])
+    indexes.push([{ created: 1, "from.memberSet.uri": 1, _id: 1 }, {}])
+    indexes.push([{ modified: 1, "from.memberSet.uri": 1, _id: 1 }, {}])
+    indexes.push([{ mappingRelevance: 1, "from.memberSet.uri": 1, _id: 1 }, {}])
     indexes.push([{ "partOf.uri": 1 }, {}])
     indexes.push([{ "creator.uri": 1 }, {}])
     indexes.push([{ "creator.prefLabel.de": 1 }, {}])

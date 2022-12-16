@@ -227,6 +227,13 @@ const upgrades = {
     await mappingService.createIndexes()
     console.log("... done.")
   },
+  async "1.6.3"() {
+    // Create compound indexes for mappings to create a stable sorting order
+    console.log("Creating indexes for mappings...")
+    const mappingService = require("../services/mappings")
+    await mappingService.createIndexes()
+    console.log("... done.")
+  },
 }
 
 /**
