@@ -5,6 +5,8 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS](https:
 
 - See [GitHub](https://github.com/gbv/jskos-server) for more information about the tool.
 
+**Note:** The old Docker Hub image (`coliconc/jskos-server`) is deprecated as of March 2023 and will not be updated anymore. (See [this post](https://www.docker.com/blog/we-apologize-we-did-a-terrible-job-announcing-the-end-of-docker-free-teams/) for more details.) We are moving all our Docker images to GitHub's Container Registry. From now on, new Docker images will be available under `ghcr.io/gbv/jskos-server` (https://github.com/gbv/jskos-server/pkgs/container/jskos-server).
+
 ## Supported Architectures
 Currently, only `x86-64` is supported, but we are planning to add more architectures soon.
 
@@ -23,7 +25,7 @@ version: "3"
 
 services:
   jskos-server:
-    image: coliconc/jskos-server
+    image: ghcr.io/gbv/jskos-server
     # replace this with your UID/GID if necessary (id -u; id -g); remove on macOS/Windows
     user: 1000:1000
     depends_on:
