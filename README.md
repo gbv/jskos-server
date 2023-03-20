@@ -83,7 +83,7 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
 The easiest way to install and use JSKOS Server is with Docker and Docker Compose. Please refer to the [documentation on Docker Hub](https://hub.docker.com/r/coliconc/jskos-server) for more information and instructions.
 
 ### Dependencies
-You need Node.js 12 or later to run jskos-server (14 or 16 recommended). You need to have access to a [MongoDB database](https://docs.mongodb.com/manual/installation/).
+You need Node.js 14 or later to run jskos-server (16 recommended). You need to have access to a [MongoDB database](https://docs.mongodb.com/manual/installation/).
 
 ### Clone and Install
 ```bash

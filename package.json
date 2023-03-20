@@ -8,7 +8,7 @@
   },
   "main": "server.js",
   "engines": {
-    "node": ">=12"
+    "node": ">=14"
   },
   "scripts": {
     "test": "NODE_ENV=test mocha --exit --timeout 10000 --slow 2000",
