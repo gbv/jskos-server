@@ -6,20 +6,23 @@ const assert = require("assert")
  *
  * @param {Function} done callback function with error as parameter
  */
-function dropDatabase(done) {
-  let internalDone = (error) => {
-    if (error) {
-      console.error("    x Error: Dropping database failed.")
-    } else {
-      console.log("    ✓ Dropped database")
-    }
-    done(error)
+async function dropDatabase() {
+
+  if (server.db.readyState !== 1) {
+    // Wait for connection
+    await new Promise((resolve) => {
+      server.db.on("connected", () => resolve())
+    })
   }
-  if (server.db.readyState === 1) {
-    server.db.dropDatabase(internalDone)
-  } else {
-    server.db.on("connected", () => server.db.dropDatabase(internalDone))
+
+  try {
+    await server.db.dropDatabase()
+    console.log("    ✓ Dropped database")
+  } catch (error) {
+    console.error("    x Error: Dropping database failed.")
+    throw error
   }
+
 }
 
 process.on("SIGINT", () => {
