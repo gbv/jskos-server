@@ -1,10 +1,25 @@
 const _ = require("lodash")
 const ajvErrorsToString = require("../utils/ajvErrorsToString")
+const fs = require("fs")
+const path = require("path")
 
 // Prepare environment
 require("dotenv").config()
 const env = process.env.NODE_ENV || "development"
 const configFile = process.env.CONFIG_FILE || "./config.json"
+
+// Adjust path if it's relative
+let configFilePath
+if (configFile.startsWith("/")) {
+  configFilePath = configFile
+} else {
+  configFilePath = path.resolve(__dirname, configFile)
+}
+
+// If file doesn't exist, create it with an empty array
+if (!fs.existsSync(configFilePath)) {
+  fs.writeFileSync(configFilePath, "{\"mongo\":{\"host\":\"mongo\"}}")
+}
 
 // Load default config
 const configDefault = require("./config.default.json")
@@ -41,17 +56,8 @@ if (!ajv.validate(schema, configUser)) {
 
 // Before merging, check whether `namespace` exists in the user config and if not, generate a namespace and save it to user config
 if (!configUser.namespace && env != "test") {
-  const fs = require("fs")
-  const path = require("path")
   const uuid = require("uuid").v4()
   configUser.namespace = uuid
-  // Adjust path if it's relative
-  let configFilePath
-  if (configFile.startsWith("/")) {
-    configFilePath = configFile
-  } else {
-    configFilePath = path.resolve(__dirname, configFile)
-  }
   fs.writeFileSync(configFilePath, JSON.stringify(configUser, null, 2))
   console.log(`Info/Config: Created a namespace and wrote it to ${configFilePath}.`)
 }
