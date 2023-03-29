@@ -17,7 +17,7 @@ if (configFile.startsWith("/")) {
 }
 
 // If file doesn't exist, create it with an empty array
-if (!fs.existsSync(configFilePath)) {
+if (env !== "test" && !fs.existsSync(configFilePath)) {
   fs.writeFileSync(configFilePath, "{\"mongo\":{\"host\":\"mongo\"}}")
 }
 
