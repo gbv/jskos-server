@@ -1,9 +1,9 @@
 # JSKOS Server
 
 [![GitHub release](https://img.shields.io/github/release/gbv/jskos-server.svg)](https://github.com/gbv/jskos-server/releases/latest)
-[![API Status](https://coli-conc-status.fly.dev/api/badge/2/status)](https://coli-conc.gbv.de/api/)
+[![API Status](https://coli-conc-status.fly.dev/api/badge/2/status?label=API)](https://coli-conc.gbv.de/api/)
 [![License](https://img.shields.io/github/license/gbv/jskos-server.svg)](https://github.com/gbv/jskos-server/blob/master/LICENSE)
-[![Docker](https://img.shields.io/badge/Docker-ghcr.io%2Fgbv%2Fcocoda-informational)](https://github.com/gbv/cocoda/blob/dev/docker/README.md)
+[![Docker](https://img.shields.io/badge/Docker-ghcr.io%2Fgbv%2Fjskos--server-informational)](https://github.com/gbv/jskos-server/blob/master/docker/README.md)
 [![Test](https://github.com/gbv/jskos-server/actions/workflows/test.yml/badge.svg)](https://github.com/gbv/jskos-server/actions/workflows/test.yml)
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg)](https://github.com/RichardLitt/standard-readme)
 
