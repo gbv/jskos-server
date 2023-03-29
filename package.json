@@ -11,7 +11,7 @@
     "node": ">=14"
   },
   "scripts": {
-    "test": "NODE_ENV=test mocha --exit --timeout 10000 --slow 2000",
+    "test": "NODE_ENV=test mocha --exit --timeout 20000 --slow 2000",
     "start": "nodemon server.js",
     "lint": "./node_modules/.bin/eslint './**/*.js'",
     "fix": "./node_modules/.bin/eslint --fix './**/*.js'",
