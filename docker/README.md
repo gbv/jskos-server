@@ -1,5 +1,4 @@
 # [JSKOS Server](https://github.com/gbv/jskos-server)
-[![Test](https://github.com/gbv/jskos-server/actions/workflows/test.yml/badge.svg)](https://github.com/gbv/jskos-server/actions/workflows/test.yml)
 
 JSKOS Server implements the JSKOS API web service and storage for [JSKOS](https://gbv.github.io/jskos/jskos.html) data such as controlled vocabularies, concepts, and concept mappings. It is part of a larger infrastructure of [Project coli-conc](https://coli-conc.gbv.de).
 
