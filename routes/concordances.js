@@ -8,7 +8,7 @@ const auth = require("../utils/auth")
 if (config.concordances.read) {
   router.get(
     "/",
-    config.concordances.read.auth ? auth.default : auth.optional,
+    config.concordances.read.auth ? auth.main : auth.optional,
     utils.supportDownloadFormats(["json", "ndjson"]),
     utils.wrappers.async(async (req) => {
       return await concordanceService.getConcordances(req.query)
@@ -21,7 +21,7 @@ if (config.concordances.read) {
 
   router.get(
     "/:_id",
-    config.concordances.read.auth ? auth.default : auth.optional,
+    config.concordances.read.auth ? auth.main : auth.optional,
     utils.supportDownloadFormats(["json", "ndjson"]),
     utils.wrappers.async(async (req) => {
       return await concordanceService.get(req.params._id)
@@ -35,7 +35,7 @@ if (config.concordances.read) {
 if (config.concordances.create) {
   router.post(
     "/",
-    config.concordances.create.auth ? auth.default : auth.optional,
+    config.concordances.create.auth ? auth.main : auth.optional,
     utils.bodyParser,
     utils.wrappers.async(async (req) => {
       return await concordanceService.postConcordance({
@@ -51,7 +51,7 @@ if (config.concordances.create) {
 if (config.concordances.update) {
   router.put(
     "/:_id",
-    config.concordances.update.auth ? auth.default : auth.optional,
+    config.concordances.update.auth ? auth.main : auth.optional,
     utils.bodyParser,
     utils.wrappers.async(async (req) => {
       return await concordanceService.putConcordance({
@@ -67,7 +67,7 @@ if (config.concordances.update) {
 
   router.patch(
     "/:_id",
-    config.concordances.update.auth ? auth.default : auth.optional,
+    config.concordances.update.auth ? auth.main : auth.optional,
     utils.bodyParser,
     utils.wrappers.async(async (req) => {
       return await concordanceService.patchConcordance({
@@ -85,7 +85,7 @@ if (config.concordances.update) {
 if (config.concordances.delete) {
   router.delete(
     "/:_id",
-    config.concordances.delete.auth ? auth.default : auth.optional,
+    config.concordances.delete.auth ? auth.main : auth.optional,
     utils.bodyParser,
     utils.wrappers.async(async (req) => {
       return await concordanceService.deleteConcordance({

@@ -1,9 +1,9 @@
 /**
  * Module that prepares authentication middleware via Passport.
  *
- * Exports an object { default, optional } with default and optional authentication.
+ * Exports an object { main, optional } with default (main) and optional authentication.
  * Optional authentication should be used if `auth` is set to `false` for a particular endpoint.
- * For example: app.get("/mappings", config.mappings.read.auth ? auth.default : auth.optional, (req, res) => { ... })
+ * For example: app.get("/mappings", config.mappings.read.auth ? auth.main : auth.optional, (req, res) => { ... })
  * req.user will cointain the user if authorized, otherwise stays undefined.
  */
 
@@ -30,7 +30,7 @@ if (config.auth.algorithm && config.auth.key) {
     passport.use(new JwtStrategy(opts, (jwt_payload, done) => {
       done(null, jwt_payload.user)
     }))
-    // Use like this: app.get("/secureEndpoint", auth.default, (req, res) => { ... })
+    // Use like this: app.get("/secureEndpoint", auth.main, (req, res) => { ... })
     // res.user will contain the current authorized user.
     auth = (req, res, next) => {
       passport.authenticate("jwt", { session: false }, (error, user) => {
@@ -105,6 +105,6 @@ optional.push("anonymous")
 const authOptional = passport.authenticate(optional, { session: false })
 
 module.exports = {
-  default: auth,
+  main: auth,
   optional: authOptional,
 }

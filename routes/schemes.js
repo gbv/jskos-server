@@ -8,7 +8,7 @@ const auth = require("../utils/auth")
 
 router.get(
   "/",
-  config.schemes.read.auth ? auth.default : auth.optional,
+  config.schemes.read.auth ? auth.main : auth.optional,
   utils.supportDownloadFormats([]),
   utils.wrappers.async(async (req) => {
     return await schemeService.getSchemes(req.query)
@@ -21,7 +21,7 @@ router.get(
 if (config.schemes.create) {
   router.post(
     "/",
-    config.schemes.create.auth ? auth.default : auth.optional,
+    config.schemes.create.auth ? auth.main : auth.optional,
     utils.bodyParser,
     utils.wrappers.async(async (req) => {
       return await schemeService.postScheme({
@@ -37,7 +37,7 @@ if (config.schemes.create) {
 if (config.schemes.update) {
   router.put(
     "/",
-    config.schemes.update.auth ? auth.default : auth.optional,
+    config.schemes.update.auth ? auth.main : auth.optional,
     utils.bodyParser,
     utils.wrappers.async(async (req) => {
       return await schemeService.putScheme({
@@ -53,7 +53,7 @@ if (config.schemes.update) {
 if (config.schemes.delete) {
   router.delete(
     "/",
-    config.schemes.delete.auth ? auth.default : auth.optional,
+    config.schemes.delete.auth ? auth.main : auth.optional,
     utils.bodyParser,
     utils.wrappers.async(async (req) => {
       return await schemeService.deleteScheme({
@@ -69,7 +69,7 @@ if (config.concepts) {
 
   router.get(
     "/top",
-    config.concepts.read.auth ? auth.default : auth.optional,
+    config.concepts.read.auth ? auth.main : auth.optional,
     utils.supportDownloadFormats([]),
     utils.wrappers.async(async (req) => {
       return await conceptService.getTop(req.query)
@@ -81,7 +81,7 @@ if (config.concepts) {
 
   router.get(
     "/concepts",
-    config.concepts.read.auth ? auth.default : auth.optional,
+    config.concepts.read.auth ? auth.main : auth.optional,
     utils.supportDownloadFormats(["json", "ndjson"]),
     utils.wrappers.async(async (req) => {
       return await conceptService.getConcepts(req.query)
@@ -95,7 +95,7 @@ if (config.concepts) {
   if (config.concepts.delete) {
     router.delete(
       "/concepts",
-      config.concepts.delete.auth ? auth.default : auth.optional,
+      config.concepts.delete.auth ? auth.main : auth.optional,
       utils.bodyParser,
       utils.wrappers.async(async (req) => {
         return await conceptService.deleteConceptsFromScheme({
@@ -110,7 +110,7 @@ if (config.concepts) {
 
 router.get(
   "/suggest",
-  config.schemes.read.auth ? auth.default : auth.optional,
+  config.schemes.read.auth ? auth.main : auth.optional,
   utils.supportDownloadFormats([]),
   utils.wrappers.async(async (req) => {
     return await schemeService.getSuggestions(req.query)
@@ -121,7 +121,7 @@ router.get(
 
 router.get(
   "/search",
-  config.schemes.read.auth ? auth.default : auth.optional,
+  config.schemes.read.auth ? auth.main : auth.optional,
   utils.supportDownloadFormats([]),
   utils.wrappers.async(async (req) => {
     return await schemeService.search(req.query)

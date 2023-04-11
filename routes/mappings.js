@@ -8,7 +8,7 @@ const auth = require("../utils/auth")
 // /mappings/suggest and /mappings/voc need to come before /mappings/:_id!
 router.get(
   "/suggest",
-  config.concepts && config.concepts.read.auth ? auth.default : auth.optional,
+  config.concepts && config.concepts.read.auth ? auth.main : auth.optional,
   utils.wrappers.async(async (req) => {
     return await mappingService.getNotationSuggestions(req.query)
   }),
@@ -17,7 +17,7 @@ router.get(
 )
 router.get(
   "/voc",
-  config.schemes && config.schemes.read.auth ? auth.default : auth.optional,
+  config.schemes && config.schemes.read.auth ? auth.main : auth.optional,
   utils.wrappers.async(async (req) => {
     return await mappingService.getMappingSchemes(req.query)
   }),
@@ -29,7 +29,7 @@ router.get(
 if (config.mappings.read) {
   router.get(
     "/",
-    config.mappings.read.auth ? auth.default : auth.optional,
+    config.mappings.read.auth ? auth.main : auth.optional,
     utils.supportDownloadFormats(["json", "ndjson", "csv", "tsv"]),
     utils.wrappers.async(async (req) => {
       return await mappingService.getMappings(req.query)
@@ -42,7 +42,7 @@ if (config.mappings.read) {
 
   router.get(
     "/infer",
-    config.mappings.read.auth ? auth.default : auth.optional,
+    config.mappings.read.auth ? auth.main : auth.optional,
     utils.wrappers.async(async (req) => {
       return await mappingService.inferMappings(req.query)
     }),
@@ -53,7 +53,7 @@ if (config.mappings.read) {
 
   router.get(
     "/:_id",
-    config.mappings.read.auth ? auth.default : auth.optional,
+    config.mappings.read.auth ? auth.main : auth.optional,
     utils.supportDownloadFormats(["json", "ndjson", "csv", "tsv"]),
     utils.wrappers.async(async (req) => {
       return await mappingService.getMapping(req.params._id)
@@ -67,7 +67,7 @@ if (config.mappings.read) {
 if (config.mappings.create) {
   router.post(
     "/",
-    config.mappings.create.auth ? auth.default : auth.optional,
+    config.mappings.create.auth ? auth.main : auth.optional,
     utils.bodyParser,
     utils.wrappers.async(async (req) => {
       return await mappingService.postMapping({
@@ -84,7 +84,7 @@ if (config.mappings.create) {
 if (config.mappings.update) {
   router.put(
     "/:_id",
-    config.mappings.update.auth ? auth.default : auth.optional,
+    config.mappings.update.auth ? auth.main : auth.optional,
     utils.bodyParser,
     utils.wrappers.async(async (req) => {
       return await mappingService.putMapping({
@@ -100,7 +100,7 @@ if (config.mappings.update) {
 
   router.patch(
     "/:_id",
-    config.mappings.update.auth ? auth.default : auth.optional,
+    config.mappings.update.auth ? auth.main : auth.optional,
     utils.bodyParser,
     utils.wrappers.async(async (req) => {
       return await mappingService.patchMapping({
@@ -118,7 +118,7 @@ if (config.mappings.update) {
 if (config.mappings.delete) {
   router.delete(
     "/:_id",
-    config.mappings.delete.auth ? auth.default : auth.optional,
+    config.mappings.delete.auth ? auth.main : auth.optional,
     utils.bodyParser,
     utils.wrappers.async(async (req) => {
       return await mappingService.deleteMapping({

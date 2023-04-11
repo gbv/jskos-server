@@ -8,7 +8,7 @@ const auth = require("../utils/auth")
 if (config.annotations.read) {
   router.get(
     "/",
-    config.annotations.read.auth ? auth.default : auth.optional,
+    config.annotations.read.auth ? auth.main : auth.optional,
     utils.supportDownloadFormats([]),
     utils.wrappers.async(async (req) => {
       return await annotationService.getAnnotations(req.query)
@@ -20,7 +20,7 @@ if (config.annotations.read) {
 
   router.get(
     "/:_id",
-    config.annotations.read.auth ? auth.default : auth.optional,
+    config.annotations.read.auth ? auth.main : auth.optional,
     utils.wrappers.async(async (req) => {
       return await annotationService.getAnnotation(req.params._id)
     }),
@@ -32,7 +32,7 @@ if (config.annotations.read) {
 if (config.annotations.create) {
   router.post(
     "/",
-    config.annotations.create.auth ? auth.default : auth.optional,
+    config.annotations.create.auth ? auth.main : auth.optional,
     utils.bodyParser,
     utils.wrappers.async(async (req) => {
       return await annotationService.postAnnotation({
@@ -49,7 +49,7 @@ if (config.annotations.create) {
 if (config.annotations.update) {
   router.put(
     "/:_id",
-    config.annotations.update.auth ? auth.default : auth.optional,
+    config.annotations.update.auth ? auth.main : auth.optional,
     utils.bodyParser,
     utils.wrappers.async(async (req) => {
       return await annotationService.putAnnotation({
@@ -65,7 +65,7 @@ if (config.annotations.update) {
 
   router.patch(
     "/:_id",
-    config.annotations.update.auth ? auth.default : auth.optional,
+    config.annotations.update.auth ? auth.main : auth.optional,
     utils.bodyParser,
     utils.wrappers.async(async (req) => {
       return await annotationService.patchAnnotation({
@@ -83,7 +83,7 @@ if (config.annotations.update) {
 if (config.annotations.delete) {
   router.delete(
     "/:_id",
-    config.annotations.delete.auth ? auth.default : auth.optional,
+    config.annotations.delete.auth ? auth.main : auth.optional,
     utils.bodyParser,
     utils.wrappers.async(async (req) => {
       return await annotationService.deleteAnnotation({

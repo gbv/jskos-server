@@ -7,7 +7,7 @@ const auth = require("../utils/auth")
 
 router.get(
   "/data",
-  config.concepts.read.auth ? auth.default : auth.optional,
+  config.concepts.read.auth ? auth.main : auth.optional,
   utils.supportDownloadFormats([]),
   utils.wrappers.async(async (req) => {
     return await conceptService.getDetails(req.query)
@@ -20,7 +20,7 @@ router.get(
 if (config.concepts.create) {
   router.post(
     "/data",
-    config.concepts.create.auth ? auth.default : auth.optional,
+    config.concepts.create.auth ? auth.main : auth.optional,
     utils.bodyParser,
     utils.wrappers.async(async (req) => {
       return await conceptService.postConcept({
@@ -37,7 +37,7 @@ if (config.concepts.create) {
 if (config.concepts.update) {
   router.put(
     "/data",
-    config.concepts.update.auth ? auth.default : auth.optional,
+    config.concepts.update.auth ? auth.main : auth.optional,
     utils.bodyParser,
     utils.wrappers.async(async (req) => {
       return await conceptService.putConcept({
@@ -53,7 +53,7 @@ if (config.concepts.update) {
 if (config.concepts.delete) {
   router.delete(
     "/data",
-    config.concepts.delete.auth ? auth.default : auth.optional,
+    config.concepts.delete.auth ? auth.main : auth.optional,
     utils.bodyParser,
     utils.wrappers.async(async (req) => {
       return await conceptService.deleteConcept({
@@ -67,7 +67,7 @@ if (config.concepts.delete) {
 
 router.get(
   "/narrower",
-  config.concepts.read.auth ? auth.default : auth.optional,
+  config.concepts.read.auth ? auth.main : auth.optional,
   utils.supportDownloadFormats([]),
   utils.wrappers.async(async (req) => {
     return await conceptService.getNarrower(req.query)
@@ -79,7 +79,7 @@ router.get(
 
 router.get(
   "/ancestors",
-  config.concepts.read.auth ? auth.default : auth.optional,
+  config.concepts.read.auth ? auth.main : auth.optional,
   utils.supportDownloadFormats([]),
   utils.wrappers.async(async (req) => {
     return await conceptService.getAncestors(req.query)
@@ -91,7 +91,7 @@ router.get(
 
 router.get(
   "/suggest",
-  config.concepts.read.auth ? auth.default : auth.optional,
+  config.concepts.read.auth ? auth.main : auth.optional,
   utils.supportDownloadFormats([]),
   utils.wrappers.async(async (req) => {
     return await conceptService.getSuggestions(req.query)
@@ -102,7 +102,7 @@ router.get(
 
 router.get(
   "/search",
-  config.concepts.read.auth ? auth.default : auth.optional,
+  config.concepts.read.auth ? auth.main : auth.optional,
   utils.supportDownloadFormats([]),
   utils.wrappers.async(async (req) => {
     return await conceptService.search(req.query)

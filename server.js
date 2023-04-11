@@ -89,7 +89,7 @@ app.use((req, res, next) => {
 app.use(require("./utils/ipcheck"))
 // /checkAuth
 const auth = require("./utils/auth")
-app.get("/checkAuth", auth.default, (req, res) => {
+app.get("/checkAuth", auth.main, (req, res) => {
   res.sendStatus(204)
 })
 // Scheme related endpoints
