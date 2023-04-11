@@ -1,9 +1,11 @@
-const express = require("express")
+import express from "express"
+import { concordanceService } from "../services/concordances.js"
+import config from "../config/index.js"
+import * as utils from "../utils/index.js"
+import * as auth from "../utils/auth.js"
+
 const router = express.Router()
-const concordanceService = require("../services/concordances")
-const config = require("../config")
-const utils = require("../utils")
-const auth = require("../utils/auth")
+export { router as concordanceRouter }
 
 if (config.concordances.read) {
   router.get(
@@ -97,5 +99,3 @@ if (config.concordances.delete) {
     (req, res) => res.sendStatus(204),
   )
 }
-
-module.exports = router

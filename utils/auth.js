@@ -7,11 +7,14 @@
  * req.user will cointain the user if authorized, otherwise stays undefined.
  */
 
-const config = require("../config")
-const _ = require("lodash")
-const { ForbiddenAccessError } = require("../errors")
+import config from "../config/index.js"
+import _ from "lodash"
+import { ForbiddenAccessError } from "../errors/index.js"
 
-const passport = require("passport")
+import passport from "passport"
+
+import { Strategy as JwtStrategy, ExtractJwt } from "passport-jwt"
+import { Strategy as AnonymousStrategy } from "passport-anonymous"
 
 let optional = [], auth = (req, res, next) => {
   next(new ForbiddenAccessError("Access forbidden. No authentication configured."))
@@ -19,8 +22,6 @@ let optional = [], auth = (req, res, next) => {
 
 // Prepare authorization via JWT
 if (config.auth.algorithm && config.auth.key) {
-  const JwtStrategy = require("passport-jwt").Strategy,
-    ExtractJwt = require("passport-jwt").ExtractJwt
   var opts = {
     jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
     secretOrKey: config.auth.key,
@@ -99,12 +100,11 @@ auth = [auth, (req, res, next) => {
 }]
 
 // Also use anonymous strategy for endpoints that can be used authenticated or not authenticated
-const AnonymousStrategy = require("passport-anonymous").Strategy
 passport.use(new AnonymousStrategy())
 optional.push("anonymous")
 const authOptional = passport.authenticate(optional, { session: false })
 
-module.exports = {
-  main: auth,
-  optional: authOptional,
+export {
+  auth as main,
+  authOptional as optional,
 }

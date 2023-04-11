@@ -1,4 +1,4 @@
-const mongoose = require("mongoose")
+import mongoose from "mongoose"
 const Schema = mongoose.Schema
 
 const terminologySchema = new Schema({
@@ -9,6 +9,6 @@ const terminologySchema = new Schema({
   autoIndex: false,
 })
 
-const Terminology = mongoose.model("Terminology", terminologySchema)
-
-module.exports = Terminology
+// TODO: Maybe remove "Terminology"
+export const Terminology = mongoose.model("Terminology", terminologySchema)
+export const Scheme = Terminology

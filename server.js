@@ -1,5 +1,18 @@
-const config = require("./config")
-const utils = require("./utils")
+import config from "./config/index.js"
+import * as utils from "./utils/index.js"
+import express from "express"
+import * as db from "./utils/db.js"
+import morgan from "morgan"
+import nocache from "nocache"
+import * as routers from "./routes/index.js"
+import { ipcheck } from "./utils/ipcheck.js"
+import * as auth from "./utils/auth.js"
+import * as errors from "./errors/index.js"
+import portfinder from "portfinder"
+
+const __dirname = config.getDirname(import.meta.url)
+console.log(__dirname)
+const connection = db.connection
 
 config.log(`Running in ${config.env} mode.`)
 
@@ -8,7 +21,6 @@ if (!config.baseUrl) {
 }
 
 // Initialize express with settings
-const express = require("express")
 const app = express()
 app.set("json spaces", 2)
 if (config.proxies && config.proxies.length) {
@@ -20,17 +32,16 @@ app.set("views", __dirname + "/views")
 app.set("view engine", "ejs")
 
 // Database connection
-const db = require("./utils/db")
 const connect = async () => {
   try {
     await db.connect(true)
     // TODO: `indexExists` causes a deprecation warning. Find a different solution.
-    if (config.schemes && !(await db.connection.collection("terminologies").indexExists("text"))) {
+    if (config.schemes && !(await connection.collection("terminologies").indexExists("text"))) {
       config.warn("Text index on terminologies collection missing. /voc/search and /voc/suggest are disabled. Run `npm run import -- --indexes` or `npm run import -- -i schemes` to created indexes.")
       config.status["voc-search"] = null
       config.status["voc-suggest"] = null
     }
-    if (config.concepts && !(await db.connection.collection("concepts").indexExists("text"))) {
+    if (config.concepts && !(await connection.collection("concepts").indexExists("text"))) {
       config.warn("Text index on concepts collection missing. /search and /suggest are disabled. Run `npm run import -- --indexes` or `npm run import -- -i concepts` to created indexes.")
       config.status.search = null
       config.status.suggest = null
@@ -44,7 +55,6 @@ connect()
 
 // Logging for access logs
 if (config.verbosity === true || config.verbosity === "log") {
-  const morgan = require("morgan")
   app.use(morgan(":date[iso] \":method :url HTTP/:http-version\" :status :res[content-length] \":referrer\" \":user-agent\""))
 }
 
@@ -52,7 +62,6 @@ if (config.verbosity === true || config.verbosity === "log") {
 app.use(utils.addDefaultHeaders)
 
 // Disable client side caching
-const nocache = require("nocache")
 app.use(nocache())
 
 // Disable ETags
@@ -74,48 +83,45 @@ app.get("/", (req, res) => {
 // JSON Schema for /status
 app.use("/status.schema.json", express.static(__dirname + "/status.schema.json"))
 // Status page /status
-app.use("/status", require("./routes/status"))
+app.use("/status", routers.statusRouter)
 // Database check middleware
-const { DatabaseAccessError } = require("./errors")
 app.use((req, res, next) => {
-  if (db.connection.readyState === 1) {
+  if (connection.readyState === 1) {
     next()
   } else {
     // No connection to database, return error
-    next(new DatabaseAccessError())
+    next(new errors.DatabaseAccessError())
   }
 })
 // IP check middleware
-app.use(require("./utils/ipcheck"))
+app.use(ipcheck)
 // /checkAuth
-const auth = require("./utils/auth")
 app.get("/checkAuth", auth.main, (req, res) => {
   res.sendStatus(204)
 })
 // Scheme related endpoints
 if (config.schemes) {
-  app.use("/voc", require("./routes/schemes"))
+  app.use("/voc", routers.schemeRouter)
 }
 // Mapping related endpoints
 if (config.mappings) {
-  app.use("/mappings", require("./routes/mappings"))
+  app.use("/mappings", routers.mappingRouter)
 }
 if (config.concordances) {
-  app.use("/concordances", require("./routes/concordances"))
+  app.use("/concordances", routers.concordanceRouter)
 }
 // Annotation related endpoints
 if (config.annotations) {
-  app.use("/annotations", require("./routes/annotations"))
+  app.use("/annotations", routers.annotationRouter)
 }
 // Concept related endpoints
 if (config.concepts) {
-  app.use(require("./routes/concepts"))
+  app.use(routers.conceptRouter)
 }
 // Validate endpoint
-app.use("/validate", require("./routes/validate"))
+app.use("/validate", routers.validateRouter)
 
 // Error handling
-const errors = require("./errors")
 app.use((error, req, res, next) => {
   // Check if error is defined in errors
   if (Object.values(errors).includes(error.constructor)) {
@@ -131,7 +137,6 @@ app.use((error, req, res, next) => {
 
 const start = async () => {
   if (config.env == "test") {
-    const portfinder = require("portfinder")
     portfinder.basePort = config.port
     config.port = await portfinder.getPortPromise()
   }
@@ -142,4 +147,7 @@ const start = async () => {
 // Start express server immediately even if database is not yet connected
 start()
 
-module.exports = { db: db.connection, app }
+export {
+  app,
+  connection as db,
+}

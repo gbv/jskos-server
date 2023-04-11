@@ -1,4 +1,4 @@
-module.exports = function ajvErrorsToString(errors) {
+export function ajvErrorsToString(errors) {
   let message = ""
   for (let error of errors || []) {
     switch (error.keyword) {

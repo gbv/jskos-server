@@ -1,9 +1,11 @@
-const express = require("express")
+import express from "express"
+import { mappingService } from "../services/mappings.js"
+import config from "../config/index.js"
+import * as utils from "../utils/index.js"
+import * as auth from "../utils/auth.js"
+
 const router = express.Router()
-const mappingService = require("../services/mappings")
-const config = require("../config")
-const utils = require("../utils")
-const auth = require("../utils/auth")
+export { router as mappingRouter }
 
 // /mappings/suggest and /mappings/voc need to come before /mappings/:_id!
 router.get(
@@ -130,5 +132,3 @@ if (config.mappings.delete) {
     (req, res) => res.sendStatus(204),
   )
 }
-
-module.exports = router

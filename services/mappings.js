@@ -1,14 +1,15 @@
-const _ = require("lodash")
-const utils = require("../utils")
-const config = require("../config")
-const jskos = require("jskos-tools")
-const validate = require("jskos-validate")
+import _ from "lodash"
+import config from "../config/index.js"
+import * as utils from "../utils/index.js"
+import jskos from "jskos-tools"
+import validate from "jskos-validate"
+import { cdk } from "cocoda-sdk"
 
-const Mapping = require("../models/mappings")
-const Annotation = require("../models/annotations")
-const { MalformedBodyError, MalformedRequestError, EntityNotFoundError, InvalidBodyError, DatabaseAccessError, BackendError } = require("../errors")
-const { bulkOperationForEntities } = require("../utils")
-const { cdk } = require("cocoda-sdk")
+import { Mapping } from "../models/mappings.js"
+import { Annotation } from "../models/annotations.js"
+import { schemeService } from "./schemes.js"
+import { concordanceService } from "./concordances.js"
+import { MalformedBodyError, MalformedRequestError, EntityNotFoundError, InvalidBodyError, DatabaseAccessError, BackendError } from "../errors/index.js"
 
 const validateMapping = (mapping) => {
   const valid = validate.mapping(mapping)
@@ -22,11 +23,12 @@ const validateMapping = (mapping) => {
   return true
 }
 
-class MappingService {
+export class MappingService {
 
   constructor() {
-    this.schemeService = require("../services/schemes")
-    this.concordanceService = require("../services/concordances")
+    // TODOESM?
+    this.schemeService = schemeService
+    this.concordanceService = concordanceService
 
     this.loadWhitelists()
   }
@@ -640,7 +642,7 @@ class MappingService {
 
     if (bulk) {
       // Use bulkWrite for most efficiency
-      mappings.length && await Mapping.bulkWrite(bulkOperationForEntities({ entities: mappings, replace: bulkReplace }))
+      mappings.length && await Mapping.bulkWrite(utils.bulkOperationForEntities({ entities: mappings, replace: bulkReplace }))
       response = mappings.map(c => ({ uri: c.uri }))
     } else {
       response = await Mapping.insertMany(mappings, { lean: true })
@@ -978,4 +980,4 @@ class MappingService {
 
 }
 
-module.exports = new MappingService()
+export const mappingService = new MappingService()

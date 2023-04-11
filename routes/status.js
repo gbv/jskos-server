@@ -1,7 +1,9 @@
-const express = require("express")
+import express from "express"
+import { statusService } from "../services/status.js"
+import * as utils from "../utils/index.js"
+
 const router = express.Router()
-const statusService = require("../services/status")
-const utils = require("../utils")
+export { router as statusRouter }
 
 router.get(
   "/",
@@ -10,5 +12,3 @@ router.get(
   }),
   utils.wrappers.download(utils.returnJSON, false),
 )
-
-module.exports = router

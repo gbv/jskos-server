@@ -1,10 +1,13 @@
-const validate = require("jskos-validate")
-const { guessObjectType } = require("jskos-tools")
+import validate from "jskos-validate"
+import jskos from "jskos-tools"
+import { schemeService } from "./schemes.js"
+const guessObjectType = jskos.guessObjectType
 
-class ValidateService {
+export class ValidateService {
 
   constructor() {
-    this.schemeService = require("../services/schemes")
+    // TODOESM?
+    this.schemeService = schemeService
   }
 
   async validate(data, { unknownFields, type, knownSchemes = false } = {}) {
@@ -33,4 +36,4 @@ class ValidateService {
 
 }
 
-module.exports = new ValidateService()
+export const validateService = new ValidateService()

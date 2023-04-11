@@ -1,10 +1,12 @@
-const express = require("express")
+import express from "express"
+import { schemeService } from "../services/schemes.js"
+import { conceptService } from "../services/concepts.js"
+import config from "../config/index.js"
+import * as utils from "../utils/index.js"
+import * as auth from "../utils/auth.js"
+
 const router = express.Router()
-const schemeService = require("../services/schemes")
-const conceptService = require("../services/concepts")
-const config = require("../config")
-const utils = require("../utils")
-const auth = require("../utils/auth")
+export { router as schemeRouter }
 
 router.get(
   "/",
@@ -130,5 +132,3 @@ router.get(
   utils.adjust,
   utils.returnJSON,
 )
-
-module.exports = router

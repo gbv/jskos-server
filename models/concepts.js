@@ -1,4 +1,4 @@
-const mongoose = require("mongoose")
+import mongoose from "mongoose"
 const Schema = mongoose.Schema
 
 const conceptSchema = new Schema({
@@ -9,6 +9,4 @@ const conceptSchema = new Schema({
   autoIndex: false,
 })
 
-const Concept = mongoose.model("Concept", conceptSchema)
-
-module.exports = Concept
+export const Concept = mongoose.model("Concept", conceptSchema)

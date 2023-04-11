@@ -1,12 +1,12 @@
-const config = require("../config")
+import config from "../config/index.js"
+import { db } from "../server.js"
 
-class StatusService {
+export class StatusService {
 
   /**
    * Return a Promise with a status object.
    */
   async getStatus() {
-    const { db } = require("../server")
     const status = config.status
     status.ok = db.readyState === 1 ? 1 : 0
     return status
@@ -14,4 +14,4 @@ class StatusService {
 
 }
 
-module.exports = new StatusService()
+export const statusService = new StatusService()

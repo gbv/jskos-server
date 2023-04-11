@@ -1,4 +1,4 @@
-const mongoose = require("mongoose")
+import mongoose from "mongoose"
 const Schema = mongoose.Schema
 
 const annotationSchema = new Schema({
@@ -10,6 +10,4 @@ const annotationSchema = new Schema({
   autoIndex: false,
 })
 
-const Annotation = mongoose.model("Annotation", annotationSchema)
-
-module.exports = Annotation
+export const Annotation = mongoose.model("Annotation", annotationSchema)

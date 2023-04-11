@@ -1,12 +1,24 @@
-const _ = require("lodash")
-const ajvErrorsToString = require("../utils/ajvErrorsToString")
-const fs = require("fs")
-const path = require("path")
+import _ from "lodash"
+import { ajvErrorsToString } from "../utils/ajvErrorsToString.js"
+import fs from "fs"
+import path from "path"
+import { fileURLToPath } from "url"
+
+import AJV from "ajv"
+import { v4 as uuid } from "uuid"
+import info from "../package.json" assert { type: "json" }
 
 // Prepare environment
-require("dotenv").config()
+import * as dotenv from "dotenv"
+dotenv.config()
 const env = process.env.NODE_ENV || "development"
 const configFile = process.env.CONFIG_FILE || "./config.json"
+
+function getDirname(url) {
+  return path.dirname(fileURLToPath(url))
+}
+
+const __dirname = getDirname(import.meta.url)
 
 // Adjust path if it's relative
 let configFilePath
@@ -22,28 +34,28 @@ if (env !== "test" && !fs.existsSync(configFilePath)) {
 }
 
 // Load default config
-const configDefault = require("./config.default.json")
+const configDefault = JSON.parse(fs.readFileSync(path.resolve(__dirname, "./config.default.json")))
 // Load environment config
 let configEnv
 try {
-  configEnv = require(`./config.${env}.json`)
+  configEnv = JSON.parse(fs.readFileSync(path.resolve(__dirname, `./config.${env}.json`)))
 } catch(error) {
   configEnv = {}
 }
 // Load user config
 let configUser = {}
 try {
-  configUser = require(configFile)
+  configUser = JSON.parse(fs.readFileSync(configFilePath))
 } catch(error) {
-  console.warn(`Warning: Could not load configuration file from ${configFile}. The application might not behave as expected.`)
+  console.warn(`Warning: Could not load configuration file from ${configFilePath}. The application might not behave as expected.`)
 }
 if (env == "test") {
   configUser = _.pick(configUser, ["mongo"])
 }
 
 // Validate environemnt and user config
-const ajv = new require("ajv")({ allErrors: true })
-const schema = require("./config.schema.json")
+const ajv = new AJV({ allErrors: true })
+const schema = JSON.parse(fs.readFileSync(path.resolve(__dirname, "./config.schema.json")))
 ajv.addSchema(schema)
 if (!ajv.validate(schema, configEnv)) {
   console.error(`Could not validate environemnt configuration: ${ajvErrorsToString(ajv.errors)}`)
@@ -56,7 +68,6 @@ if (!ajv.validate(schema, configUser)) {
 
 // Before merging, check whether `namespace` exists in the user config and if not, generate a namespace and save it to user config
 if (!configUser.namespace && env != "test") {
-  const uuid = require("uuid").v4()
   configUser.namespace = uuid
   fs.writeFileSync(configFilePath, JSON.stringify(configUser, null, 2))
   console.log(`Info/Config: Created a namespace and wrote it to ${configFilePath}.`)
@@ -85,6 +96,7 @@ config.error = (...args) => {
     console.error(new Date(), ...args)
   }
 }
+config.getDirname = getDirname
 
 // Set composed config variables
 config.mongo.auth = config.mongo.user ? `${config.mongo.user}:${config.mongo.pass}@` : ""
@@ -104,8 +116,7 @@ if (!config.baseUrl.endsWith("/")) {
 
 // Set JSKOS API version if not set
 if (!config.version) {
-  const { version } = require("../package.json")
-  config.version = version.split(".").slice(0,2).join(".")
+  config.version = info.version.split(".").slice(0,2).join(".")
 }
 
 // Further expansion of config
@@ -235,4 +246,4 @@ Object.defineProperty(config, "status", { get: function() {
   return status
 } })
 
-module.exports = config
+export default config

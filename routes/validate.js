@@ -1,9 +1,11 @@
-const express = require("express")
+import express from "express"
+import { validateService } from "../services/validate.js"
+import * as utils from "../utils/index.js"
+import axios from "axios"
+import { MalformedRequestError } from "../errors/index.js"
+
 const router = express.Router()
-const validateService = require("../services/validate")
-const utils = require("../utils")
-const axios = require("axios")
-const { MalformedRequestError } = require("../errors")
+export { router as validateRouter }
 
 router.get(
   "/",
@@ -32,5 +34,3 @@ router.post(
   }),
   utils.returnJSON,
 )
-
-module.exports = router

@@ -1,14 +1,23 @@
-const config = require("../config")
-const _ = require("lodash")
-const jskos = require("jskos-tools")
-const { DuplicateEntityError, EntityNotFoundError, CreatorDoesNotMatchError, DatabaseInconsistencyError, InvalidBodyError } = require("../errors")
+import config from "../config/index.js"
+import _ from "lodash"
+import jskos from "jskos-tools"
+import { DuplicateEntityError, EntityNotFoundError, CreatorDoesNotMatchError, DatabaseInconsistencyError, InvalidBodyError } from "../errors/index.js"
 
+import { v4 as uuid } from "uuid"
+
+import { Transform, Readable } from "stream"
+import JSONStream from "JSONStream"
+import anystream from "json-anystream"
+import express from "express"
+import * as searchHelper from "./searchHelper.js"
+
+import * as allServices from "../services/index.js"
 // Services, keys are according to req.type
 const services = {}
-for (let type of ["schemes", "concepts", "concordances", "mappings", "annotations"]) {
-  Object.defineProperty(services, type, {
+for (let type of ["scheme", "concept", "concordance", "mapping", "annotation"]) {
+  Object.defineProperty(services, `${type}s`, {
     get() {
-      return require("../services/" + type)
+      return allServices[`${type}Service`]
     },
   })
 }
@@ -250,7 +259,6 @@ adjust.schemes = (schemes) => {
 /**
  * Returns a random v4 UUID.
  */
-const uuid = require("uuid").v4
 
 const uuidRegex = new RegExp(/^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i)
 /**
@@ -498,9 +506,6 @@ const returnJSON = (req, res) => {
   }
   res.status(statusCode).json(data)
 }
-
-const { Transform, Readable } = require("stream")
-const JSONStream = require("JSONStream")
 /**
  * Middleware that handles download streaming.
  * Requires a database cursor in req.data.
@@ -706,7 +711,6 @@ const handleCreatorForObject = ({ object, existing, creator, req }) => {
   return object
 }
 
-const anystream = require("json-anystream")
 /**
  * Custom body parser middleware.
  * - For POSTs, adds body stream via json-anystream and adjusts objects via handleCreatorForObject.
@@ -736,7 +740,7 @@ const bodyParser = (req, res, next) => {
     anystream.addStream(adjust)(req, res, next)
   } else {
     // For all other requests, parse as JSON
-    require("express").json()(req, res, async (...params) => {
+    express.json()(req, res, async (...params) => {
       // Get existing
       const uri = req.params._id || (req.body || {}).uri || req.query.uri
       let existing
@@ -856,7 +860,7 @@ const bulkOperationForEntities = ({ entities, replace = true }) => {
   }))
 }
 
-module.exports = {
+export {
   wrappers,
   cleanJSON,
   adjust,
@@ -870,7 +874,7 @@ module.exports = {
   returnJSON,
   handleDownload,
   bodyParser,
-  searchHelper: require("./searchHelper"),
+  searchHelper,
   getCreator,
   handleCreatorForObject,
   isQueryEmpty,

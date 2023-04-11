@@ -1,4 +1,4 @@
-const mongoose = require("mongoose")
+import mongoose from "mongoose"
 const Schema = mongoose.Schema
 
 const metaSchema = new Schema({
@@ -18,6 +18,4 @@ const metaSchema = new Schema({
   autoIndex: false,
 })
 
-const Meta = mongoose.model("meta", metaSchema)
-
-module.exports = Meta
+export const Meta = mongoose.model("meta", metaSchema)

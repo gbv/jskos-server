@@ -1,9 +1,12 @@
-const utils = require("./")
-const config = require("../config")
-const _ = require("lodash")
-const yesno = require("yesno")
+import * as utils from "./index.js"
+import config from "../config/index.js"
+import _ from "lodash"
+import yesno from "yesno"
 
-class Version {
+import { Scheme, Concordance, Mapping, Annotation } from "../models/index.js"
+import { schemeService, concordanceService, annotationService, mappingService } from "../services/index.js"
+
+export class Version {
 
   constructor(version) {
     this.version = version
@@ -46,11 +49,10 @@ class Version {
  * keys = versions
  * values = function that performs upgrades necessary for that version
  */
-const upgrades = {
+export const upgrades = {
   async "1.2.0"() {
     // 1. Additional fields for schemes (full-text search)
     console.log("Creating additional fields for schemes...")
-    const Scheme = require("../models/schemes")
     const schemes = await Scheme.find().lean()
     for (let scheme of schemes) {
       utils.searchHelper.addKeywords(scheme)
@@ -59,19 +61,16 @@ const upgrades = {
     console.log("... done.")
     // 2. Create indexes for concordances
     console.log("Creating indexes for concordances...")
-    const concordanceService = require("../services/concordances")
     await concordanceService.createIndexes()
     console.log("... done.")
     // 3. Create indexes for schemes
     console.log("Creating indexes for schemes...")
-    const schemeService = require("../services/schemes")
     await schemeService.createIndexes()
     console.log("... done.")
   },
   async "1.2.2"() {
     // Update text search fields for schemes (full-text search)
     console.log("Updating text search fields for schemes...")
-    const Scheme = require("../models/schemes")
     const schemes = await Scheme.find().lean()
     for (let scheme of schemes) {
       utils.searchHelper.addKeywords(scheme)
@@ -84,7 +83,6 @@ const upgrades = {
   async "1.2.3"() {
     // Update text search fields for schemes (full-text search)
     console.log("Updating text search fields for schemes...")
-    const Scheme = require("../models/schemes")
     const schemes = await Scheme.find().lean()
     for (let scheme of schemes) {
       utils.searchHelper.addKeywords(scheme)
@@ -95,7 +93,6 @@ const upgrades = {
   async "1.2.7"() {
     // 1. Update publisher keywords field for schemes
     console.log("Updating publisher keywords fields for schemes...")
-    const Scheme = require("../models/schemes")
     const schemes = await Scheme.find().lean()
     for (let scheme of schemes) {
       utils.searchHelper.addKeywords(scheme)
@@ -104,19 +101,15 @@ const upgrades = {
     console.log("... done.")
     // 2. Create indexes for schemes
     console.log("Creating indexes for schemes...")
-    const schemeService = require("../services/schemes")
     await schemeService.createIndexes()
     console.log("... done.")
   },
   async "1.3"() {
     console.log("Creating indexes for annotations...")
-    const annotationService = require("../services/annotations")
     await annotationService.createIndexes()
     console.log("... done.")
   },
   async "1.4"() {
-    const Concordance = require("../models/concordances")
-
     console.log("Concordances will be upgraded:")
     console.log("- _id will be changed to notation (if available) or a new UUID")
     console.log(`- URI will be adjusted to start with ${config.baseUrl}`)
@@ -183,7 +176,6 @@ const upgrades = {
     console.log("Upgrades to annotations (see #173):")
 
     console.log("- Update indexes for annotations...")
-    const annotationService = require("../services/annotations")
     await annotationService.createIndexes()
     console.log("... done.")
 
@@ -195,8 +187,6 @@ const upgrades = {
     if (!ok) {
       throw new Error("Aborted due to missing user confirmation.")
     }
-    const Mapping = require("../models/mappings")
-    const Annotation = require("../models/annotations")
 
     let updatedCount = 0
     const annotations = await Annotation.find({ "target.state.id": { $exists: false } }).exec()
@@ -223,14 +213,12 @@ const upgrades = {
   async "1.5.3"() {
     // Create indexes for mappings with index for mappingRelevance
     console.log("Creating indexes for mappings...")
-    const mappingService = require("../services/mappings")
     await mappingService.createIndexes()
     console.log("... done.")
   },
   async "1.6.3"() {
     // Create compound indexes for mappings to create a stable sorting order
     console.log("Creating indexes for mappings...")
-    const mappingService = require("../services/mappings")
     await mappingService.createIndexes()
     console.log("... done.")
   },
@@ -241,7 +229,7 @@ const upgrades = {
  *
  * @param {string} fromVersion version string
  */
-const getUpgrades = (fromVersion, { forceLatest = false }) => {
+export const getUpgrades = (fromVersion, { forceLatest = false }) => {
   const list = []
   fromVersion = Version.from(fromVersion)
   for (let version of Object.keys(upgrades)) {
@@ -250,10 +238,4 @@ const getUpgrades = (fromVersion, { forceLatest = false }) => {
     }
   }
   return list
-}
-
-module.exports = {
-  Version,
-  upgrades,
-  getUpgrades,
 }

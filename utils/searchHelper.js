@@ -1,9 +1,9 @@
-const _ = require("lodash")
-const jskos = require("jskos-tools")
-const config = require("../config")
+import _ from "lodash"
+import config from "../config/index.js"
+import jskos from "jskos-tools"
 
 // from https://web.archive.org/web/20170609122132/http://jam.sg/blog/efficient-partial-keyword-searches/
-function makeSuffixes(values) {
+export function makeSuffixes(values) {
   var results = []
   values.forEach(function (val) {
     val = val.toUpperCase().trim()
@@ -17,7 +17,7 @@ function makeSuffixes(values) {
   return results
 }
 // adapted from above
-function makePrefixes(values) {
+export function makePrefixes(values) {
   var results = []
   values.forEach(function (val) {
     val = val.toUpperCase().trim()
@@ -42,7 +42,7 @@ function makePrefixes(values) {
  *
  * @param {Object} item JSKOS item (scheme or concept)
  */
-function getAllLabelsSorted(item, language = "en") {
+export function getAllLabelsSorted(item, language = "en") {
   function extractAndSortLabels(labels, languages) {
     return _.toPairs(labels).sort((a, b) => {
       const bIndex = languages.indexOf(b[0]), aIndex = languages.indexOf(a[0])
@@ -64,7 +64,7 @@ function getAllLabelsSorted(item, language = "en") {
  *
  * @param {Object} item JSKOS item (scheme or concept)
  */
-function addKeywords(item) {
+export function addKeywords(item) {
   item._keywordsNotation = makePrefixes(item.notation || [])
   // Do not write text index keywords for synthetic concepts
   if (!item.type || !item.type.includes("http://rdf-vocabulary.ddialliance.org/xkos#CombinedConcept")) {
@@ -107,7 +107,7 @@ function addKeywords(item) {
  * @param {SchemeService} options.schemeService scheme service reference for getting vocabulary details
  * @param {Function} options.queryFunction async function that takes a query object and returns results as an array
  */
-async function searchItem({ search, voc, schemeService, queryFunction }) {
+export async function searchItem({ search, voc, schemeService, queryFunction }) {
   // Don't try to search for an empty query
   if (!search.length) {
     return []
@@ -232,7 +232,7 @@ async function searchItem({ search, voc, schemeService, queryFunction }) {
  * @param {Object} options.query query object for request
  * @param {Array} options.results results as JSKOS array
  */
-function toOpenSearchSuggestFormat({ query, results }) {
+export function toOpenSearchSuggestFormat({ query, results }) {
   // Transform to OpenSearch Suggest Format
   let labels = []
   let descriptions = []
@@ -274,10 +274,4 @@ function toOpenSearchSuggestFormat({ query, results }) {
   ]
   searchResults.totalCount = results.length
   return searchResults
-}
-
-module.exports = {
-  addKeywords,
-  searchItem,
-  toOpenSearchSuggestFormat,
 }

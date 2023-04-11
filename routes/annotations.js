@@ -1,9 +1,11 @@
-const express = require("express")
+import express from "express"
+import { annotationService } from "../services/annotations.js"
+import config from "../config/index.js"
+import * as utils from "../utils/index.js"
+import * as auth from "../utils/auth.js"
+
 const router = express.Router()
-const annotationService = require("../services/annotations")
-const config = require("../config")
-const utils = require("../utils")
-const auth = require("../utils/auth")
+export { router as annotationRouter }
 
 if (config.annotations.read) {
   router.get(
@@ -95,5 +97,3 @@ if (config.annotations.delete) {
     (req, res) => res.sendStatus(204),
   )
 }
-
-module.exports = router

@@ -1,15 +1,14 @@
-const config = require("../config")
-const jskos = require("jskos-tools")
-const utils = require("../utils")
-const _ = require("lodash")
-const validate = require("jskos-validate")
+import _ from "lodash"
+import config from "../config/index.js"
+import * as utils from "../utils/index.js"
+import jskos from "jskos-tools"
+import validate from "jskos-validate"
 
-const Annotation = require("../models/annotations")
-const Mapping = require("../models/mappings")
-const { EntityNotFoundError, DatabaseAccessError, InvalidBodyError, MalformedBodyError, MalformedRequestError, ForbiddenAccessError } = require("../errors")
-const { bulkOperationForEntities } = require("../utils")
+import { Annotation } from "../models/annotations.js"
+import { Mapping } from "../models/mappings.js"
+import { EntityNotFoundError, DatabaseAccessError, InvalidBodyError, MalformedBodyError, MalformedRequestError, ForbiddenAccessError } from "../errors/index.js"
 
-class MappingService {
+export class AnnotationService {
 
   /**
    * Returns a Promise with an array of annotations.
@@ -177,7 +176,7 @@ class MappingService {
 
     if (bulk) {
       // Use bulkWrite for most efficiency
-      annotations.length && await Annotation.bulkWrite(bulkOperationForEntities({ entities: annotations, replace: bulkReplace }))
+      annotations.length && await Annotation.bulkWrite(utils.bulkOperationForEntities({ entities: annotations, replace: bulkReplace }))
       response = annotations.map(a => ({ id: a.id }))
     } else {
       response = await Annotation.insertMany(annotations, { lean: true })
@@ -285,4 +284,4 @@ class MappingService {
 
 }
 
-module.exports = new MappingService()
+export const annotationService = new AnnotationService()

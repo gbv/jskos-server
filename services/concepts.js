@@ -1,11 +1,11 @@
-const _ = require("lodash")
-const jskos = require("jskos-tools")
-const validate = require("jskos-validate")
+import _ from "lodash"
+import jskos from "jskos-tools"
+import validate from "jskos-validate"
+import * as utils from "../utils/index.js"
 
-const Concept = require("../models/concepts")
-const { MalformedBodyError, MalformedRequestError, EntityNotFoundError, InvalidBodyError, DatabaseAccessError } = require("../errors")
-const utils = require("../utils")
-const { bulkOperationForEntities } = require("../utils")
+import { Concept } from "../models/concepts.js"
+import { schemeService } from "../services/schemes.js"
+import { MalformedBodyError, MalformedRequestError, EntityNotFoundError, InvalidBodyError, DatabaseAccessError } from "../errors/index.js"
 
 function conceptFind(query, $skip, $limit, narrower = true) {
   const pipeline = [
@@ -43,10 +43,11 @@ function conceptFind(query, $skip, $limit, narrower = true) {
   return Concept.aggregate(pipeline)
 }
 
-class ConceptService {
+export class ConceptService {
 
   constructor() {
-    this.schemeService = require("../services/schemes")
+    // TODOESM?
+    this.schemeService = schemeService
   }
 
   async get(uri) {
@@ -242,7 +243,7 @@ class ConceptService {
         let current = []
         const saveObjects = async (objects) => {
           const { concepts, schemeUrisToAdjust } = await this.prepareAndCheckConcepts(objects, { scheme })
-          concepts.length && await Concept.bulkWrite(bulkOperationForEntities({ entities: concepts, replace: bulkReplace }))
+          concepts.length && await Concept.bulkWrite(utils.bulkOperationForEntities({ entities: concepts, replace: bulkReplace }))
           preparation.concepts = preparation.concepts.concat(concepts.map(c => ({ uri: c.uri })))
           preparation.schemeUrisToAdjust = _.uniq(preparation.schemeUrisToAdjust.concat(schemeUrisToAdjust))
         }
@@ -513,4 +514,4 @@ class ConceptService {
 
 }
 
-module.exports = new ConceptService()
+export const conceptService = new ConceptService()

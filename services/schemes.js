@@ -1,13 +1,12 @@
-const _ = require("lodash")
-const validate = require("jskos-validate")
-const utils = require("../utils")
+import _ from "lodash"
+import * as utils from "../utils/index.js"
+import validate from "jskos-validate"
 
-const { MalformedBodyError, MalformedRequestError, EntityNotFoundError, DatabaseAccessError, InvalidBodyError } = require("../errors")
-const Scheme = require("../models/schemes")
-const Concept = require("../models/concepts")
-const { bulkOperationForEntities } = require("../utils")
+import { MalformedBodyError, MalformedRequestError, EntityNotFoundError, DatabaseAccessError, InvalidBodyError } from "../errors/index.js"
+import { Scheme } from "../models/schemes.js"
+import { Concept } from "../models/concepts.js"
 
-class SchemeService {
+export class SchemeService {
 
   /**
    * Return a Promise with an array of vocabularies.
@@ -208,7 +207,7 @@ class SchemeService {
 
     if (bulk) {
       // Use bulkWrite for most efficiency
-      schemes.length && await Scheme.bulkWrite(bulkOperationForEntities({ entities: schemes, replace: bulkReplace }))
+      schemes.length && await Scheme.bulkWrite(utils.bulkOperationForEntities({ entities: schemes, replace: bulkReplace }))
       schemes = await this.postAdjustmentsForScheme(schemes, bulk)
       response = schemes.map(s => ({ uri: s.uri }))
     } else {
@@ -382,4 +381,4 @@ class SchemeService {
 
 }
 
-module.exports = new SchemeService()
+export const schemeService = new SchemeService()

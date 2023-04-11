@@ -1,19 +1,22 @@
-const _ = require("lodash")
-const Concordance = require("../models/concordances")
-const Mapping = require("../models/mappings")
-const utils = require("../utils")
-const config = require("../config")
-const jskos = require("jskos-tools")
-const validate = require("jskos-validate")
+import _ from "lodash"
+import config from "../config/index.js"
+import * as utils from "../utils/index.js"
+import jskos from "jskos-tools"
+import validate from "jskos-validate"
+
+import { Concordance } from "../models/concordances.js"
+import { Mapping } from "../models/mappings.js"
+import { schemeService } from "./schemes.js"
 
 const validateConcordance = validate.concordance
 
-const { MalformedRequestError, EntityNotFoundError, MalformedBodyError, InvalidBodyError, DatabaseAccessError } = require("../errors")
+import { MalformedRequestError, EntityNotFoundError, MalformedBodyError, InvalidBodyError, DatabaseAccessError } from "../errors/index.js"
 
-class ConcordanceService {
+export class ConcordanceService {
 
   constructor() {
-    this.schemeService = require("./schemes")
+    // TODOESM?
+    this.schemeService = schemeService
     this.uriBase = config.baseUrl + "concordances/"
   }
 
@@ -293,4 +296,4 @@ class ConcordanceService {
 
 }
 
-module.exports = new ConcordanceService()
+export const concordanceService = new ConcordanceService()

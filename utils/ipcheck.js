@@ -1,11 +1,11 @@
-const ipaddr = require("ipaddr.js")
-const config = require("../config")
-const { ForbiddenAccessError, ConfigurationError } = require("../errors")
+import ipaddr from "ipaddr.js"
+import config from "../config/index.js"
+import { ForbiddenAccessError, ConfigurationError } from "../errors/index.js"
 
 /**
  * Middleware to check IP whitelists if configured.
  */
-module.exports = (req, res, next) => {
+export const ipcheck = (req, res, next) => {
 
   // Determine IP whitelist from config
   let ips, action

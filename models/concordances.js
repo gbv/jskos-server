@@ -1,4 +1,4 @@
-const mongoose = require("mongoose")
+import mongoose from "mongoose"
 const Schema = mongoose.Schema
 
 const concordanceSchema = new Schema({
@@ -9,6 +9,4 @@ const concordanceSchema = new Schema({
   autoIndex: false,
 })
 
-const Concordance = mongoose.model("Concordance", concordanceSchema)
-
-module.exports = Concordance
+export const Concordance = mongoose.model("Concordance", concordanceSchema)

@@ -6,7 +6,8 @@
     "type": "git",
     "url": "https://github.com/gbv/jskos-server.git"
   },
-  "main": "server.js",
+  "type": "module",
+  "exports": "./server.js",
   "engines": {
     "node": ">=14"
   },

@@ -1,6 +1,7 @@
-const mongoose = require("mongoose")
+import mongoose from "mongoose"
+import jskos from "jskos-tools"
+
 const Schema = mongoose.Schema
-const jskos = require("jskos-tools")
 
 const mappingSchema = new Schema({
   _id: String,
@@ -16,6 +17,4 @@ mappingSchema.pre("save", function(next) {
   next()
 })
 
-const Mapping = mongoose.model("Mapping", mappingSchema)
-
-module.exports = Mapping
+export const Mapping = mongoose.model("Mapping", mappingSchema)
