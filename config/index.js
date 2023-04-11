@@ -6,7 +6,6 @@ import { fileURLToPath } from "url"
 
 import AJV from "ajv"
 import { v4 as uuid } from "uuid"
-import info from "../package.json" assert { type: "json" }
 
 // Prepare environment
 import * as dotenv from "dotenv"
@@ -17,8 +16,10 @@ const configFile = process.env.CONFIG_FILE || "./config.json"
 function getDirname(url) {
   return path.dirname(fileURLToPath(url))
 }
-
 const __dirname = getDirname(import.meta.url)
+
+// Get package.json
+export const info = JSON.parse(fs.readFileSync(path.resolve(__dirname, "../package.json")))
 
 // Adjust path if it's relative
 let configFilePath

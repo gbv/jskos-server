@@ -1,7 +1,5 @@
-import config from "../config/index.js"
+import config, { info } from "../config/index.js"
 import { getUpgrades } from "../utils/version.js"
-// TODOESM
-import info from "../package.json" assert { type: "json" }
 const version = info.version
 import mongoose from "mongoose"
 const connection = mongoose.connection
