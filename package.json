@@ -9,7 +9,7 @@
   "type": "module",
   "exports": "./server.js",
   "engines": {
-    "node": ">=14"
+    "node": ">=18"
   },
   "scripts": {
     "test": "NODE_ENV=test mocha --loader=esmock --exit --timeout 20000 --slow 2000",
