@@ -5,6 +5,7 @@ import path from "path"
 import { fileURLToPath } from "url"
 
 import AJV from "ajv"
+import addAjvFormats from "ajv-formats"
 import { v4 as uuid } from "uuid"
 
 // Prepare environment
@@ -56,6 +57,7 @@ if (env == "test") {
 
 // Validate environemnt and user config
 const ajv = new AJV({ allErrors: true })
+addAjvFormats(ajv)
 const schema = JSON.parse(fs.readFileSync(path.resolve(__dirname, "./config.schema.json")))
 ajv.addSchema(schema)
 if (!ajv.validate(schema, configEnv)) {

@@ -348,6 +348,7 @@
             {
               "type": "array",
               "items": {
+                "type": "object",
                 "required": [
                   "uri"
                 ],
@@ -376,6 +377,7 @@
             {
               "type": "array",
               "items": {
+                "type": "object",
                 "required": [
                   "uri"
                 ],
@@ -451,16 +453,19 @@
       "not": {
         "anyOf": [
           {
+            "type": "object",
             "required": [
               "cardinality"
             ]
           },
           {
+            "type": "object",
             "required": [
               "fromSchemeWhitelist"
             ]
           },
           {
+            "type": "object",
             "required": [
               "toSchemeWhitelist"
             ]

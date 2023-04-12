@@ -25,7 +25,9 @@ const __dirname = config.getDirname(import.meta.url)
 // Prepare JSON Schemas
 import { ajvErrorsToString } from "../utils/ajvErrorsToString.js"
 import AJV from "ajv"
+import addAjvFormats from "ajv-formats"
 const ajv = new AJV({ allErrors: true })
+addAjvFormats(ajv)
 const configSchema = JSON.parse(fs.readFileSync(__dirname + "/../config/config.schema.json"))
 ajv.addSchema(configSchema)
 const statusSchema = JSON.parse(fs.readFileSync(__dirname + "/../status.schema.json"))
