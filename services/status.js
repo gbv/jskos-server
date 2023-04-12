@@ -1,5 +1,5 @@
 import config from "../config/index.js"
-import { db } from "../server.js"
+import { connection } from "../utils/db.js"
 
 export class StatusService {
 
@@ -8,7 +8,7 @@ export class StatusService {
    */
   async getStatus() {
     const status = config.status
-    status.ok = db.readyState === 1 ? 1 : 0
+    status.ok = connection.readyState === 1 ? 1 : 0
     return status
   }
 

@@ -11,16 +11,17 @@ import anystream from "json-anystream"
 import express from "express"
 import * as searchHelper from "./searchHelper.js"
 
-import * as allServices from "../services/index.js"
 // Services, keys are according to req.type
 const services = {}
-for (let type of ["scheme", "concept", "concordance", "mapping", "annotation"]) {
-  Object.defineProperty(services, `${type}s`, {
-    get() {
-      return allServices[`${type}Service`]
-    },
-  })
-}
+import("../services/index.js").then(allServices => {
+  for (let type of ["scheme", "concept", "concordance", "mapping", "annotation"]) {
+    Object.defineProperty(services, `${type}s`, {
+      get() {
+        return allServices[`${type}Service`]
+      },
+    })
+  }
+})
 
 /**
  * These are wrappers for Express middleware which receive a middleware function as a first parameter,
