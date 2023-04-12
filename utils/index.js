@@ -5,7 +5,7 @@ import { DuplicateEntityError, EntityNotFoundError, CreatorDoesNotMatchError, Da
 
 import { v4 as uuid } from "uuid"
 
-import { Transform, Readable } from "stream"
+import { Transform, Readable } from "node:stream"
 import JSONStream from "JSONStream"
 import anystream from "json-anystream"
 import express from "express"

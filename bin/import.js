@@ -108,7 +108,7 @@ if (cli.flags.reset) {
 }
 
 import jskos from "jskos-tools"
-import fs from "fs"
+import fs from "node:fs"
 const input = cli.input[1] || ""
 
 // Parse type
@@ -177,7 +177,7 @@ log("")
 import validate from "jskos-validate"
 import config from "../config/index.js"
 import { v5 as uuidv5 } from "uuid"
-import path from "path"
+import path from "node:path"
 import anystream from "json-anystream"
 import _ from "lodash"
 import * as db from "../utils/db.js"

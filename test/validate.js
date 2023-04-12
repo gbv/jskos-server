@@ -10,9 +10,9 @@ const should = chai.should()
 import * as server from "../server.js"
 
 import glob from "glob"
-import fs from "fs"
+import fs from "node:fs"
 
-import assert from "assert"
+import assert from "node:assert"
 
 import { dropDatabaseBeforeAndAfter } from "./test-utils.js"
 

@@ -8,8 +8,8 @@ chai.use(chaiHttp)
 // eslint-disable-next-line no-unused-vars
 const should = chai.should()
 import * as server from "../server.js"
-import assert from "assert"
-import { exec as cpexec } from "child_process"
+import assert from "node:assert"
+import { exec as cpexec } from "node:child_process"
 import _ from "lodash"
 import { assertMongoDB, dropDatabaseBeforeAndAfter } from "./test-utils.js"
 import { isValidUuid } from "../utils/index.js"
@@ -17,7 +17,7 @@ import { isValidUuid } from "../utils/index.js"
 // Prepare jwt
 import jwt from "jsonwebtoken"
 
-import fs from "fs"
+import fs from "node:fs"
 import config from "../config/index.js"
 
 const __dirname = config.getDirname(import.meta.url)

@@ -1,5 +1,5 @@
 import * as server from "../server.js"
-import assert from "assert"
+import assert from "node:assert"
 
 /**
  * Drops the current database. ONLY USE IN TEST SUITS!
@@ -65,7 +65,7 @@ export function assertIndexes() {
   })
 }
 
-import { exec as cpexec } from "child_process"
+import { exec as cpexec } from "node:child_process"
 /**
  * A wrapper around child_process' exec function for async/await.
  *
@@ -85,7 +85,7 @@ export async function exec(command, options) {
   })
 }
 
-import Stream from "stream"
+import Stream from "node:stream"
 import anystream from "json-anystream"
 
 export async function arrayToStream(array) {

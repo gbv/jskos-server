@@ -1,5 +1,5 @@
 import esmock from "esmock"
-import assert from "assert"
+import assert from "node:assert"
 import { ForbiddenAccessError } from "../errors/index.js"
 
 const baseConfig = {

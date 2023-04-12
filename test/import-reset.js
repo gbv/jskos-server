@@ -1,6 +1,6 @@
 /* eslint-env node, mocha */
 import * as server from "../server.js"
-import assert from "assert"
+import assert from "node:assert"
 
 import { assertIndexes, assertMongoDB, dropDatabaseBeforeAndAfter, exec } from "./test-utils.js"
 

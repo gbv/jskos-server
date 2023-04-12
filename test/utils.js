@@ -1,6 +1,6 @@
 // Tests for utilities
 
-import assert from "assert"
+import assert from "node:assert"
 import * as utils from "../utils/index.js"
 import config from "../config/index.js"
 

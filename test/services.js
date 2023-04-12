@@ -1,6 +1,6 @@
 import jskos from "jskos-tools"
 import _ from "lodash"
-import assert from "assert"
+import assert from "node:assert"
 
 import { assertIndexes, assertMongoDB, dropDatabaseBeforeAndAfter, arrayToStream } from "./test-utils.js"
 

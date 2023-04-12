@@ -1,8 +1,8 @@
 import _ from "lodash"
 import { ajvErrorsToString } from "../utils/ajvErrorsToString.js"
-import fs from "fs"
-import path from "path"
-import { fileURLToPath } from "url"
+import fs from "node:fs"
+import path from "node:path"
+import { fileURLToPath } from "node:url"
 
 import AJV from "ajv"
 import addAjvFormats from "ajv-formats"

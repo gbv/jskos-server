@@ -8,7 +8,7 @@ chai.use(chaiHttp)
 // eslint-disable-next-line no-unused-vars
 const should = chai.should()
 import * as server from "../server.js"
-import assert from "assert"
+import assert from "node:assert"
 import { assertIndexes, assertMongoDB, dropDatabaseBeforeAndAfter } from "./test-utils.js"
 
 import _ from "lodash"
