@@ -1,12 +1,12 @@
-const server = require("../server")
-const assert = require("assert")
+import * as server from "../server.js"
+import assert from "assert"
 
 /**
  * Drops the current database. ONLY USE IN TEST SUITS!
  *
  * @param {Function} done callback function with error as parameter
  */
-async function dropDatabase() {
+export async function dropDatabase() {
 
   if (server.db.readyState !== 1) {
     // Wait for connection
@@ -29,12 +29,12 @@ process.on("SIGINT", () => {
   dropDatabase(() => process.exit(1))
 })
 
-function dropDatabaseBeforeAndAfter() {
+export function dropDatabaseBeforeAndAfter() {
   before(dropDatabase)
   after(dropDatabase)
 }
 
-function assertMongoDB() {
+export function assertMongoDB() {
   /**
    * Database suite to make sure the following test suits have access.
    */
@@ -52,7 +52,7 @@ function assertMongoDB() {
   })
 }
 
-function assertIndexes() {
+export function assertIndexes() {
   it("should create indexes", async () => {
     // Create indexes
     await exec("NODE_ENV=test ./bin/import.js --indexes")
@@ -65,14 +65,14 @@ function assertIndexes() {
   })
 }
 
-const cpexec = require("child_process").exec
+import { exec as cpexec } from "child_process"
 /**
  * A wrapper around child_process' exec function for async/await.
  *
  * @param {*} command
  * @param {*} options
  */
-async function exec(command, options) {
+export async function exec(command, options) {
   return new Promise((resolve, reject) => {
     cpexec(command, options || {}, (error, stdout, stderr) => {
       if (error) {
@@ -85,20 +85,12 @@ async function exec(command, options) {
   })
 }
 
-const Stream = require("stream")
-const anystream = require("json-anystream")
-async function arrayToStream(array) {
+import Stream from "stream"
+import anystream from "json-anystream"
+
+export async function arrayToStream(array) {
   const readable = new Stream.Readable({ objectMode: true })
   array.forEach(item => readable.push(JSON.stringify(item) + "\n"))
   readable.push(null)
   return anystream.make(readable, "ndjson")
-}
-
-module.exports = {
-  assertIndexes,
-  assertMongoDB,
-  dropDatabase,
-  dropDatabaseBeforeAndAfter,
-  exec,
-  arrayToStream,
 }

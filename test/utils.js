@@ -1,8 +1,8 @@
 // Tests for utilities
 
-const assert = require("assert")
-const utils = require("../utils")
-const config = require("../config")
+import assert from "assert"
+import * as utils from "../utils/index.js"
+import config from "../config/index.js"
 
 describe("utils", () => {
 

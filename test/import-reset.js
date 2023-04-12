@@ -1,8 +1,8 @@
 /* eslint-env node, mocha */
-const server = require("../server")
-const assert = require("assert")
+import * as server from "../server.js"
+import assert from "assert"
 
-const { assertIndexes, assertMongoDB, dropDatabaseBeforeAndAfter, exec } = require("./test-utils")
+import { assertIndexes, assertMongoDB, dropDatabaseBeforeAndAfter, exec } from "./test-utils.js"
 
 describe("Import and Reset Script", () => {
 

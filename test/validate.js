@@ -1,18 +1,20 @@
 // Tests for /validate endpoints
 
-const chai = require("chai")
-const chaiAsPromised = require("chai-as-promised")
+import chai from "chai"
+import chaiAsPromised from "chai-as-promised"
 chai.use(chaiAsPromised)
-const chaiHttp = require("chai-http")
+import chaiHttp from "chai-http"
 chai.use(chaiHttp)
 // eslint-disable-next-line no-unused-vars
 const should = chai.should()
-const server = require("../server")
+import * as server from "../server.js"
 
-const glob = require("glob")
-const fs = require("fs")
+import glob from "glob"
+import fs from "fs"
 
-const assert = require("assert")
+import assert from "assert"
+
+import { dropDatabaseBeforeAndAfter } from "./test-utils.js"
 
 let types = ["resource", "item", "concept", "scheme", "mapping", "concordance", "registry", "distributions", "occurrence", "bundle", "annotation"]
 let examples = {}
@@ -77,6 +79,8 @@ describe("Validation endpoint: jskos-validate tests", () => {
 })
 
 describe("Validation endpoint: parameters", () => {
+
+  dropDatabaseBeforeAndAfter()
 
   it("should validate empty object without type parameter", done => {
     chai.request(server.app)

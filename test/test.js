@@ -1,27 +1,31 @@
 /* eslint-env node, mocha */
 
-const chai = require("chai")
-const chaiAsPromised = require("chai-as-promised")
+import chai from "chai"
+import chaiAsPromised from "chai-as-promised"
 chai.use(chaiAsPromised)
-const chaiHttp = require("chai-http")
+import chaiHttp from "chai-http"
 chai.use(chaiHttp)
 // eslint-disable-next-line no-unused-vars
 const should = chai.should()
-const server = require("../server")
-const assert = require("assert")
-const cpexec = require("child_process").exec
-const _ = require("lodash")
-const { assertMongoDB, dropDatabaseBeforeAndAfter } = require("./test-utils")
-const { isValidUuid } = require("../utils")
+import * as server from "../server.js"
+import assert from "assert"
+import { exec as cpexec } from "child_process"
+import _ from "lodash"
+import { assertMongoDB, dropDatabaseBeforeAndAfter } from "./test-utils.js"
+import { isValidUuid } from "../utils/index.js"
 
 // Prepare jwt
-const jwt = require("jsonwebtoken")
+import jwt from "jsonwebtoken"
 
-const fs = require("fs")
+import fs from "fs"
+import config from "../config/index.js"
+
+const __dirname = config.getDirname(import.meta.url)
 
 // Prepare JSON Schemas
-const ajvErrorsToString = require("../utils/ajvErrorsToString")
-const ajv = new require("ajv")({ allErrors: true })
+import { ajvErrorsToString } from "../utils/ajvErrorsToString.js"
+import AJV from "ajv"
+const ajv = new AJV({ allErrors: true })
 const configSchema = JSON.parse(fs.readFileSync(__dirname + "/../config/config.schema.json"))
 ajv.addSchema(configSchema)
 const statusSchema = JSON.parse(fs.readFileSync(__dirname + "/../status.schema.json"))
@@ -120,7 +124,7 @@ describe("Configuration", () => {
     it(`should ${shouldFail ? "not " : ""}validate ${file}`, async () => {
       let valid = false
       try {
-        const data = require(`../${file}`)
+        const data = JSON.parse(fs.readFileSync(file))
         valid = ajv.validate(configSchema, data)
       } catch (error) {
         // Ignore error

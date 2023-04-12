@@ -1,6 +1,6 @@
-const proxyquire =  require("proxyquire").noCallThru()
-const assert = require("assert")
-const { ForbiddenAccessError } = require("../errors")
+import esmock from "esmock"
+import assert from "assert"
+import { ForbiddenAccessError } from "../errors/index.js"
 
 const baseConfig = {
   log: () => {},
@@ -8,22 +8,21 @@ const baseConfig = {
   error: () => {},
 }
 
-function getIpCheck(config) {
-  return proxyquire("../utils/ipcheck", {
-    "../config": Object.assign({}, baseConfig, config),
-  })
+async function getIpCheck(config) {
+  return (await esmock("../utils/ipcheck.js", {
+    "../config/index.js": Object.assign({}, baseConfig, config),
+  })).ipcheck
 }
 
 describe("IP Check Middleware", () => {
 
-  it("should allow all requests if no IPs are given", (done) => {
+  it("should allow all requests if no IPs are given", async () => {
     const config = {
       mappings: {
         read: {},
       },
     }
-    const ipcheck = getIpCheck(config)
-    let count = 0
+    const ipcheck = await getIpCheck(config)
     const tests = [
       {
         req: {
@@ -33,10 +32,6 @@ describe("IP Check Middleware", () => {
         },
         next: (error) => {
           assert.equal(error, undefined)
-          count += 1
-          if (count == tests.length) {
-            done()
-          }
         },
       },
       {
@@ -47,10 +42,6 @@ describe("IP Check Middleware", () => {
         },
         next: (error) => {
           assert.equal(error, undefined)
-          count += 1
-          if (count == tests.length) {
-            done()
-          }
         },
       },
     ]
@@ -59,7 +50,7 @@ describe("IP Check Middleware", () => {
     }
   })
 
-  it("should allow a single IP address", (done) => {
+  it("should allow a single IP address", async () => {
     const config = {
       mappings: {
         read: {
@@ -67,8 +58,7 @@ describe("IP Check Middleware", () => {
         },
       },
     }
-    const ipcheck = getIpCheck(config)
-    let count = 0
+    const ipcheck = await getIpCheck(config)
     const tests = [
       {
         req: {
@@ -78,10 +68,6 @@ describe("IP Check Middleware", () => {
         },
         next: (error) => {
           assert(error instanceof ForbiddenAccessError)
-          count += 1
-          if (count == tests.length) {
-            done()
-          }
         },
       },
       {
@@ -92,10 +78,6 @@ describe("IP Check Middleware", () => {
         },
         next: (error) => {
           assert(error instanceof ForbiddenAccessError)
-          count += 1
-          if (count == tests.length) {
-            done()
-          }
         },
       },
       {
@@ -106,10 +88,6 @@ describe("IP Check Middleware", () => {
         },
         next: (error) => {
           assert.equal(error, undefined)
-          count += 1
-          if (count == tests.length) {
-            done()
-          }
         },
       },
     ]
@@ -118,7 +96,7 @@ describe("IP Check Middleware", () => {
     }
   })
 
-  it("should correctly recognize IPv6 loopback address", (done) => {
+  it("should correctly recognize IPv6 loopback address", async () => {
     const config = {
       mappings: {
         read: {
@@ -126,8 +104,7 @@ describe("IP Check Middleware", () => {
         },
       },
     }
-    const ipcheck = getIpCheck(config)
-    let count = 0
+    const ipcheck = await getIpCheck(config)
     const tests = [
       {
         req: {
@@ -137,10 +114,6 @@ describe("IP Check Middleware", () => {
         },
         next: (error) => {
           assert(error instanceof ForbiddenAccessError)
-          count += 1
-          if (count == tests.length) {
-            done()
-          }
         },
       },
       {
@@ -151,10 +124,6 @@ describe("IP Check Middleware", () => {
         },
         next: (error) => {
           assert.equal(error, undefined)
-          count += 1
-          if (count == tests.length) {
-            done()
-          }
         },
       },
       {
@@ -165,10 +134,6 @@ describe("IP Check Middleware", () => {
         },
         next: (error) => {
           assert.equal(error, undefined)
-          count += 1
-          if (count == tests.length) {
-            done()
-          }
         },
       },
     ]
@@ -177,7 +142,7 @@ describe("IP Check Middleware", () => {
     }
   })
 
-  it("should correctly handle CIDR ranges", (done) => {
+  it("should correctly handle CIDR ranges", async () => {
     const config = {
       mappings: {
         read: {
@@ -185,8 +150,7 @@ describe("IP Check Middleware", () => {
         },
       },
     }
-    const ipcheck = getIpCheck(config)
-    let count = 0
+    const ipcheck = await getIpCheck(config)
     const tests = [
       {
         req: {
@@ -196,10 +160,6 @@ describe("IP Check Middleware", () => {
         },
         next: (error) => {
           assert(error instanceof ForbiddenAccessError)
-          count += 1
-          if (count == tests.length) {
-            done()
-          }
         },
       },
       {
@@ -210,10 +170,6 @@ describe("IP Check Middleware", () => {
         },
         next: (error) => {
           assert(error instanceof ForbiddenAccessError)
-          count += 1
-          if (count == tests.length) {
-            done()
-          }
         },
       },
       {
@@ -224,10 +180,6 @@ describe("IP Check Middleware", () => {
         },
         next: (error) => {
           assert.equal(error, undefined)
-          count += 1
-          if (count == tests.length) {
-            done()
-          }
         },
       },
       {
@@ -238,10 +190,6 @@ describe("IP Check Middleware", () => {
         },
         next: (error) => {
           assert.equal(error, undefined)
-          count += 1
-          if (count == tests.length) {
-            done()
-          }
         },
       },
       {
@@ -252,10 +200,6 @@ describe("IP Check Middleware", () => {
         },
         next: (error) => {
           assert(error instanceof ForbiddenAccessError)
-          count += 1
-          if (count == tests.length) {
-            done()
-          }
         },
       },
     ]
@@ -264,7 +208,7 @@ describe("IP Check Middleware", () => {
     }
   })
 
-  it("should correctly handle multiple ranges and addresses", (done) => {
+  it("should correctly handle multiple ranges and addresses", async () => {
     const config = {
       mappings: {
         read: {
@@ -272,8 +216,7 @@ describe("IP Check Middleware", () => {
         },
       },
     }
-    const ipcheck = getIpCheck(config)
-    let count = 0
+    const ipcheck = await getIpCheck(config)
     const tests = [
       {
         req: {
@@ -283,10 +226,6 @@ describe("IP Check Middleware", () => {
         },
         next: (error) => {
           assert(error instanceof ForbiddenAccessError)
-          count += 1
-          if (count == tests.length) {
-            done()
-          }
         },
       },
       {
@@ -297,10 +236,6 @@ describe("IP Check Middleware", () => {
         },
         next: (error) => {
           assert.equal(error, undefined)
-          count += 1
-          if (count == tests.length) {
-            done()
-          }
         },
       },
       {
@@ -311,10 +246,6 @@ describe("IP Check Middleware", () => {
         },
         next: (error) => {
           assert.equal(error, undefined)
-          count += 1
-          if (count == tests.length) {
-            done()
-          }
         },
       },
       {
@@ -325,10 +256,6 @@ describe("IP Check Middleware", () => {
         },
         next: (error) => {
           assert(error instanceof ForbiddenAccessError)
-          count += 1
-          if (count == tests.length) {
-            done()
-          }
         },
       },
       {
@@ -339,10 +266,6 @@ describe("IP Check Middleware", () => {
         },
         next: (error) => {
           assert(error instanceof ForbiddenAccessError)
-          count += 1
-          if (count == tests.length) {
-            done()
-          }
         },
       },
       {
@@ -353,10 +276,6 @@ describe("IP Check Middleware", () => {
         },
         next: (error) => {
           assert.equal(error, undefined)
-          count += 1
-          if (count == tests.length) {
-            done()
-          }
         },
       },
     ]

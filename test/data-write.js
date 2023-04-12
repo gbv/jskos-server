@@ -1,15 +1,15 @@
 /* eslint-env node, mocha */
 
-const chai = require("chai")
-const chaiAsPromised = require("chai-as-promised")
+import chai from "chai"
+import chaiAsPromised from "chai-as-promised"
 chai.use(chaiAsPromised)
-const chaiHttp = require("chai-http")
+import chaiHttp from "chai-http"
 chai.use(chaiHttp)
 // eslint-disable-next-line no-unused-vars
 const should = chai.should()
-const server = require("../server")
-const assert = require("assert")
-const { assertIndexes, assertMongoDB, dropDatabaseBeforeAndAfter } = require("./test-utils")
+import * as server from "../server.js"
+import assert from "assert"
+import { assertIndexes, assertMongoDB, dropDatabaseBeforeAndAfter } from "./test-utils.js"
 
 const schemes = [
   {

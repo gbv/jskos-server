@@ -1,15 +1,16 @@
-const jskos = require("jskos-tools")
-const _ = require("lodash")
-const assert = require("assert")
+import jskos from "jskos-tools"
+import _ from "lodash"
+import assert from "assert"
 
-const { assertIndexes, assertMongoDB, dropDatabaseBeforeAndAfter, arrayToStream } = require("./test-utils")
+import { assertIndexes, assertMongoDB, dropDatabaseBeforeAndAfter, arrayToStream } from "./test-utils.js"
 
+import * as allServices from "../services/index.js"
 const services = {
-  scheme: require("../services/schemes"),
-  concept: require("../services/concepts"),
-  concordance: require("../services/concordances"),
-  mapping: require("../services/mappings"),
-  annotation: require("../services/annotations"),
+  scheme: allServices.schemeService,
+  concept: allServices.conceptService,
+  concordance: allServices.concordanceService,
+  mapping: allServices.mappingService,
+  annotation: allServices.annotationService,
 }
 
 describe("Services", () => {
