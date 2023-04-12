@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const meow = require("meow")
+import meow from "meow"
 const cli = meow(`
 Usage
   $ npm run import -- [options] [type input]
@@ -106,8 +106,8 @@ if (cli.flags.reset) {
   // TODO: Mention URL to documentation and/or script that replaces --reset.
 }
 
-const jskos = require("jskos-tools")
-const fs = require("fs")
+import jskos from "jskos-tools"
+import fs from "fs"
 const input = cli.input[1] || ""
 
 // Parse type
@@ -173,30 +173,31 @@ indexes && log("- will create indexes", type ? `for type ${type}` : "for all typ
 format && log(`- with format: ${format}`)
 log("")
 
-const validate = require("jskos-validate")
-const config = require("../config")
-const { v5: uuidv5 } = require("uuid")
-const path = require("path")
-const anystream = require("json-anystream")
-const _ = require("lodash")
-const db = require("../utils/db")
+import validate from "jskos-validate"
+import config from "../config/index.js"
+import { v5 as uuidv5 } from "uuid"
+import path from "path"
+import anystream from "json-anystream"
+import _ from "lodash"
+import * as db from "../utils/db.js"
+
+import * as allServices from "../services/index.js"
 
 const services = {
-  scheme: require("../services/schemes"),
-  concept: require("../services/concepts"),
-  concordance: require("../services/concordances"),
-  mapping: require("../services/mappings"),
-  annotation: require("../services/annotations"),
+  scheme: allServices.schemeService,
+  concept: allServices.conceptService,
+  concordance: allServices.concordanceService,
+  mapping: allServices.mappingService,
+  annotation: allServices.annotationService,
 }
+
 // Also import models for Mapping and Concordance
 // TODO: This won't be needed if these are imported through the service as well.
-const Mapping = require("../models/mappings")
-const Concordance = require("../models/concordances")
-const { bulkOperationForEntities } = require("../utils")
+import { Mapping, Concordance } from "../models/index.js"
+import { bulkOperationForEntities } from "../utils/index.js"
 const allTypes = Object.keys(services)
 
-  ;
-(async () => {
+;(async () => {
   try {
     await db.connect()
   } catch (error) {

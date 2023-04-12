@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
-const yesno = require("yesno")
-const db = require("../utils/db")
-const schemeService = require("../services/schemes")
-const jskos = require("jskos-tools")
-const Mapping = require("../models/mappings")
+import yesno from "yesno"
+import * as db from "../utils/db.js"
+import { schemeService } from "../services/schemes.js"
+import jskos from "jskos-tools"
+import { Mapping } from "../models/mappings.js"
 
 /**
  * Map of async scripts.

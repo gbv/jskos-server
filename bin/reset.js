@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
-const db = require("../utils/db")
-const yesno = require("yesno")
-const jskos = require("jskos-tools")
-const _ = require("lodash")
+import * as db from "../utils/db.js"
+import yesno from "yesno"
+import jskos from "jskos-tools"
+import _ from "lodash"
 
 
-const meow = require("meow")
+import meow from "meow"
 const cli = meow(`
 Usage
   $ npm run reset -- [options] [URIs]
@@ -111,19 +111,22 @@ if (cli.flags.scheme && cli.flags.concordance) {
   })
 }
 
+import * as allServices from "../services/index.js"
+import * as allModels from "../models/index.js"
+
 const services = {
-  scheme: require("../services/schemes"),
-  concept: require("../services/concepts"),
-  concordance: require("../services/concordances"),
-  mapping: require("../services/mappings"),
-  annotation: require("../services/annotations"),
+  scheme: allServices.schemeService,
+  concept: allServices.conceptService,
+  concordance: allServices.concordanceService,
+  mapping: allServices.mappingService,
+  annotation: allServices.annotationService,
 }
 const models = {
-  scheme: require("../models/schemes"),
-  concept: require("../models/concepts"),
-  concordance: require("../models/concordances"),
-  mapping: require("../models/mappings"),
-  annotation: require("../models/annotations"),
+  scheme: allModels.Scheme,
+  concept: allModels.Concept,
+  concordance: allModels.Concordance,
+  mapping: allModels.Mapping,
+  annotation: allModels.Annotation,
 }
 const allTypes = Object.keys(services)
 

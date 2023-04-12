@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
-const {
+import {
   upgrades,
   getUpgrades,
-} = require("../utils/version")
+} from "../utils/version.js"
 
-const db = require("../utils/db")
-const Meta = require("../models/meta")
-  ;
-(async () => {
+import * as db from "../utils/db.js"
+import { Meta } from "../models/meta.js"
+
+;(async () => {
   await db.connect()
   const meta = await Meta.findOne()
   const list = getUpgrades(meta.version, { forceLatest: process.argv.includes("-f") || process.argv.includes("--force-latest") })
