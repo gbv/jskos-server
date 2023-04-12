@@ -30,6 +30,7 @@ Examples
   $ npm run import -- schemes schemes.ndjson
   $ npm run import -- concepts concepts.ndjson
 `, {
+  importMeta: import.meta,
   flags: {
     reset: {
       type: "boolean",

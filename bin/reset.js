@@ -22,6 +22,7 @@ Options
 Examples
   $ npm run reset -- -t concepts -s http://uri.gbv.de/terminology/rvk/
 `, {
+  importMeta: import.meta,
   flags: {
     type: {
       type: "string",
