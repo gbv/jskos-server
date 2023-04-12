@@ -11,7 +11,6 @@ import * as errors from "./errors/index.js"
 import portfinder from "portfinder"
 
 const __dirname = config.getDirname(import.meta.url)
-console.log(__dirname)
 const connection = db.connection
 
 config.log(`Running in ${config.env} mode.`)
