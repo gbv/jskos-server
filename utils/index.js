@@ -344,6 +344,16 @@ const addDefaultHeaders = (req, res, next) => {
   res.setHeader("Access-Control-Allow-Methods", "GET,PUT,POST,PATCH,DELETE")
   res.setHeader("Access-Control-Expose-Headers", "X-Total-Count, Link")
   res.setHeader("Content-Type", "application/json; charset=utf-8")
+  // Deprecation headers for /narrower, /ancestors, /search, and /suggest
+  // TODO for 3.0: Remove these headers
+  if (["/narrower", "/ancestors", "/search", "/suggest"].includes(req.path)) {
+    res.setHeader("Deprecation", true)
+    const links = []
+    links.push(buildUrlForLinkHeader({ req, rel: "alternate" }))
+    links[0] = links[0].replace(req.path, `/concepts${req.path}`)
+    links.push("<https://github.com/gbv/jskos-server/releases/tag/v2.0.0>; rel=\"deprecation\"")
+    res.set("Link", links.join(","))
+  }
   next()
 }
 
