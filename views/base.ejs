@@ -95,11 +95,11 @@
     <h3>Concepts</h3>
     <ul>
       <li>GET <a href="concepts">/concepts</a> - Returns detailed data for concepts or concept schemes (<a href="https://github.com/gbv/jskos-server#get-concepts" target="_blank">documentation</a>)</li>
-      <li>GET <a href="narrower">/narrower</a> - Returns narrower concepts for a concept (<a href="https://github.com/gbv/jskos-server#get-narrower" target="_blank">documentation</a>)</li>
-      <li>GET <a href="ancestors">/ancestors</a> - Returns ancestor concepts for a concept (<a href="https://github.com/gbv/jskos-server#get-ancestors" target="_blank">documentation</a>)</li>
-      <li>GET <a href="suggest">/suggest</a> - Returns concept suggestions (<a href="https://github.com/gbv/jskos-server#get-suggest" target="_blank">documentation</a>)</li>
-      <li>GET <a href="search">/search</a> - Concept search (<a href="https://github.com/gbv/jskos-server#get-search" target="_blank">documentation</a>)</li>
-      <% if (config.concepts.create) { %>
+      <li>GET <a href="concepts/narrower">/concepts/narrower</a> - Returns narrower concepts for a concept (<a href="https://github.com/gbv/jskos-server#get-conceptsnarrower" target="_blank">documentation</a>)</li>
+      <li>GET <a href="ancestors">/concepts/ancestors</a> - Returns ancestor concepts for a concept (<a href="https://github.com/gbv/jskos-server#get-conceptsancestors" target="_blank">documentation</a>)</li>
+      <li>GET <a href="suggest">/concepts/suggest</a> - Returns concept suggestions (<a href="https://github.com/gbv/jskos-server#get-conceptssuggest" target="_blank">documentation</a>)</li>
+      <li>GET <a href="search">/concepts/search</a> - Concept search (<a href="https://github.com/gbv/jskos-server#get-conceptssearch" target="_blank">documentation</a>)</li>
+    <% if (config.concepts.create) { %>
       <li>POST /concepts - Saves a concept or multiple concepts in the database (<% if (config.schemes.create.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#post-concepts" target="_blank">documentation</a>)</li>
       <% } %>
       <% if (config.concepts.update) { %>

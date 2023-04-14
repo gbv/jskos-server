@@ -201,12 +201,12 @@ Object.defineProperty(config, "status", { get: function() {
   status.config.baseUrl = baseUrl
   // Set all available endpoints to `null` first
   for (let type of [
+    "data",
     "schemes",
     "top",
     "voc-search",
     "voc-suggest",
     "concepts",
-    "data",
     "narrower",
     "ancestors",
     "suggest",
@@ -217,6 +217,7 @@ Object.defineProperty(config, "status", { get: function() {
   ]) {
     status[type] = null
   }
+  status.data = `${baseUrl}data`
   if (status.config.schemes) {
     // Add endpoints related to schemes
     status.schemes = `${baseUrl}voc`
@@ -227,11 +228,10 @@ Object.defineProperty(config, "status", { get: function() {
   if (status.config.concepts) {
     // Add endpoints related to concepts
     status.concepts = `${baseUrl}voc/concepts`
-    status.data = `${baseUrl}data`
-    status.narrower = `${baseUrl}narrower`
-    status.ancestors = `${baseUrl}ancestors`
-    status.suggest = `${baseUrl}suggest`
-    status.search = `${baseUrl}search`
+    status.narrower = `${baseUrl}concepts/narrower`
+    status.ancestors = `${baseUrl}concepts/ancestors`
+    status.suggest = `${baseUrl}concepts/suggest`
+    status.search = `${baseUrl}concepts/search`
   }
   if (status.config.mappings) {
     status.mappings = `${baseUrl}mappings`

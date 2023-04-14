@@ -67,49 +67,57 @@ if (config.concepts.delete) {
   )
 }
 
-router.get(
-  "/narrower",
-  config.concepts.read.auth ? auth.main : auth.optional,
-  utils.supportDownloadFormats([]),
-  utils.wrappers.async(async (req) => {
-    return await conceptService.getNarrower(req.query)
-  }),
-  utils.addPaginationHeaders,
-  utils.adjust,
-  utils.returnJSON,
-)
+// Add these routes both with and without the /concepts prefix.
+// TODO for 3.0: The routes without should be deprecated in the next major release.
+// See also: https://github.com/gbv/jskos-server/issues/193#issuecomment-1508038432
 
-router.get(
-  "/ancestors",
-  config.concepts.read.auth ? auth.main : auth.optional,
-  utils.supportDownloadFormats([]),
-  utils.wrappers.async(async (req) => {
-    return await conceptService.getAncestors(req.query)
-  }),
-  utils.addPaginationHeaders,
-  utils.adjust,
-  utils.returnJSON,
-)
+for (const prefix of ["", "/concepts"]) {
 
-router.get(
-  "/suggest",
-  config.concepts.read.auth ? auth.main : auth.optional,
-  utils.supportDownloadFormats([]),
-  utils.wrappers.async(async (req) => {
-    return await conceptService.getSuggestions(req.query)
-  }),
-  utils.addPaginationHeaders,
-  utils.returnJSON,
-)
+  router.get(
+    prefix + "/narrower",
+    config.concepts.read.auth ? auth.main : auth.optional,
+    utils.supportDownloadFormats([]),
+    utils.wrappers.async(async (req) => {
+      return await conceptService.getNarrower(req.query)
+    }),
+    utils.addPaginationHeaders,
+    utils.adjust,
+    utils.returnJSON,
+  )
 
-router.get(
-  "/search",
-  config.concepts.read.auth ? auth.main : auth.optional,
-  utils.supportDownloadFormats([]),
-  utils.wrappers.async(async (req) => {
-    return await conceptService.search(req.query)
-  }),
-  utils.addPaginationHeaders,
-  utils.adjust,
-  utils.returnJSON,
-)
+  router.get(
+    prefix + "/ancestors",
+    config.concepts.read.auth ? auth.main : auth.optional,
+    utils.supportDownloadFormats([]),
+    utils.wrappers.async(async (req) => {
+      return await conceptService.getAncestors(req.query)
+    }),
+    utils.addPaginationHeaders,
+    utils.adjust,
+    utils.returnJSON,
+  )
+
+  router.get(
+    prefix + "/suggest",
+    config.concepts.read.auth ? auth.main : auth.optional,
+    utils.supportDownloadFormats([]),
+    utils.wrappers.async(async (req) => {
+      return await conceptService.getSuggestions(req.query)
+    }),
+    utils.addPaginationHeaders,
+    utils.returnJSON,
+  )
+
+  router.get(
+    prefix + "/search",
+    config.concepts.read.auth ? auth.main : auth.optional,
+    utils.supportDownloadFormats([]),
+    utils.wrappers.async(async (req) => {
+      return await conceptService.search(req.query)
+    }),
+    utils.addPaginationHeaders,
+    utils.adjust,
+    utils.returnJSON,
+  )
+
+}

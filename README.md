@@ -58,10 +58,10 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [POST /concepts](#post-concepts)
   - [PUT /concepts](#put-concepts)
   - [DELETE /concepts](#delete-concepts)
-  - [GET /narrower](#get-narrower)
-  - [GET /ancestors](#get-ancestors)
-  - [GET /suggest](#get-suggest)
-  - [GET /search](#get-search)
+  - [GET /concepts/narrower](#get-conceptsnarrower)
+  - [GET /concepts/ancestors](#get-conceptsancestors)
+  - [GET /concepts/suggest](#get-conceptssuggest)
+  - [GET /concepts/search](#get-conceptssearch)
   - [GET /annotations](#get-annotations)
   - [GET /annotations/:\_id](#get-annotations_id)
   - [POST /annotations](#post-annotations)
@@ -1546,6 +1546,8 @@ Currently the same as `/voc/suggest` with parameter `format=jskos`.
 ### GET /data
 Returns data for a certain URI or URIs. Can return concept schemes, concepts, concordances, mappings, and annotations.
 
+**Note:** As of version 2.0, this endpoint was adjusted to return all types of items that are available in the database, instead of just concepts and concept schemes. The additional parameters, apart from `uri`, were also removed. For the previous behavior (only without returning concept schemes), see [GET /concepts](#get-concepts).
+
 * **URL Params**
 
   `uri=[uri]` URIs for concepts or concept schemes separated by `|`
@@ -1555,15 +1557,15 @@ Returns data for a certain URI or URIs. Can return concept schemes, concepts, co
   JSON array of [JSKOS Items]
 
 ### GET /concepts
-Returns detailed data for concepts or concept schemes. Note that there is no certain order to the result set (but it should be consistent across requests).
+Returns detailed data for concepts. Note that there is no certain order to the result set (but it should be consistent across requests).
 
 * **URL Params**
 
-  `uri=[uri]` URIs for concepts or concept schemes separated by `|`
+  `uri=[uri]` URIs for concepts separated by `|`
 
-  `notation=[notation]` notations for concepts or concept schemes separated by `|`
+  `notation=[notation]` notations for concepts separated by `|`
 
-  `voc=[uri]` filter by concept scheme URI (note that if `voc` is given, no concept schemes will be returned)
+  `voc=[uri]` filter by concept scheme URI
 
   `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting `ancestors`, `narrower`, and `annotations`)
 
@@ -1646,8 +1648,10 @@ Deletes a concept from the database.
 
   Status 204, no content.
 
-### GET /narrower
+### GET /concepts/narrower
 Returns narrower concepts for a concept.
+
+**Note:** The old `/narrower` endpoint is deprecated as of version 2.0 and will be removed in version 3.0.
 
 * **URL Params**
 
@@ -1758,8 +1762,10 @@ Returns narrower concepts for a concept.
   ]
   ```
 
-### GET /ancestors
+### GET /concepts/ancestors
 Returns ancestor concepts for a concept.
+
+**Note:** The old `/ancestors` endpoint is deprecated as of version 2.0 and will be removed in version 3.0.
 
 * **URL Params**
 
@@ -1813,8 +1819,10 @@ Returns ancestor concepts for a concept.
   ]
   ```
 
-### GET /suggest
+### GET /concepts/suggest
 Returns concept suggestions.
+
+**Note:** The old `/suggest` endpoint is deprecated as of version 2.0 and will be removed in version 3.0.
 
 * **URL Params**
 
@@ -1934,8 +1942,10 @@ Returns concept suggestions.
   ]
   ```
 
-### GET /search
+### GET /concepts/search
 Currently the same as `/suggest` with parameter `format=jskos`. Additionally, search supports the parameter `properties=[list]` as in the other concept methods.
+
+**Note:** The old `/search` endpoint is deprecated as of version 2.0 and will be removed in version 3.0.
 
 ### GET /annotations
 Returns an array of annotations. Each annotation has a property `id` under which the specific annotation can be accessed.
