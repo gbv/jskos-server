@@ -1663,11 +1663,11 @@ describe("Express Server", () => {
 
   })
 
-  describe("GET /narrower", () => {
+  describe("GET /concepts/narrower", () => {
 
     it("should GET three children", done => {
       chai.request(server.app)
-        .get("/narrower")
+        .get("/concepts/narrower")
         .query({
           uri: "http://dewey.info/class/6/e23/",
         })
@@ -1684,11 +1684,11 @@ describe("Express Server", () => {
 
   })
 
-  describe("GET /ancestors", () => {
+  describe("GET /concepts/ancestors", () => {
 
     it("should GET correct results when using properties=narrower", done => {
       chai.request(server.app)
-        .get("/ancestors")
+        .get("/concepts/ancestors")
         .query({
           uri: "http://dewey.info/class/60/e23/",
           properties: "narrower",
@@ -1708,11 +1708,11 @@ describe("Express Server", () => {
 
   })
 
-  describe("GET /suggest", () => {
+  describe("GET /concepts/suggest", () => {
 
     it("should GET correct results for notation", done => {
       chai.request(server.app)
-        .get("/suggest")
+        .get("/concepts/suggest")
         .query({
           search: "60",
         })
@@ -1737,7 +1737,7 @@ describe("Express Server", () => {
 
     it("should GET correct results for notation with language", done => {
       chai.request(server.app)
-        .get("/suggest")
+        .get("/concepts/suggest")
         .query({
           search: "60",
           language: "de,en",
@@ -1759,7 +1759,7 @@ describe("Express Server", () => {
 
     it("should GET correct results for term", done => {
       chai.request(server.app)
-        .get("/suggest")
+        .get("/concepts/suggest")
         .query({
           search: "techn",
         })
@@ -1782,7 +1782,7 @@ describe("Express Server", () => {
 
     it("should GET correct results for term with voc parameter", done => {
       chai.request(server.app)
-        .get("/suggest")
+        .get("/concepts/suggest")
         .query({
           search: "techn",
           voc: "http://dewey.info/scheme/edition/e23/",
@@ -1805,11 +1805,11 @@ describe("Express Server", () => {
 
   })
 
-  describe("GET /search", () => {
+  describe("GET /concepts/search", () => {
 
     it("should GET correct results for notation", done => {
       chai.request(server.app)
-        .get("/search")
+        .get("/concepts/search")
         .query({
           search: "60",
         })
@@ -1828,7 +1828,7 @@ describe("Express Server", () => {
 
     it("should GET correct results for term", done => {
       chai.request(server.app)
-        .get("/search")
+        .get("/concepts/search")
         .query({
           search: "techn",
         })
