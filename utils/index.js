@@ -278,6 +278,19 @@ const getUrisForUser = (user) => {
   return [user.uri].concat(Object.values(user.identities || {}).map(identity => identity.uri)).filter(uri => uri != null)
 }
 
+const buildUrlForLinkHeader = ({ query, rel, req }) => {
+  let url = config.baseUrl.substring(0, config.baseUrl.length - 1) + req.path
+  if (!query && req) {
+    query = req.query
+  }
+  let index = 0
+  _.forOwn(_.omit(query, ["bulk"]), (value, key) => {
+    url += `${(index == 0 ? "?" : "&")}${key}=${encodeURIComponent(value)}`
+    index += 1
+  })
+  return `<${url}>; rel="${rel}"`
+}
+
 /**
  * Returns `true` if the creator of `object` matches `user`, `false` if not.
  * `object.creator` can be
@@ -441,16 +454,6 @@ const addPaginationHeaders = (req, res, next) => {
     next()
     return
   }
-  const baseUrl = config.baseUrl.substring(0, config.baseUrl.length - 1) + req.path
-  const url = (query, rel) => {
-    let url = baseUrl
-    let index = 0
-    _.forOwn(_.omit(query, ["bulk"]), (value, key) => {
-      url += `${(index == 0 ? "?" : "&")}${key}=${encodeURIComponent(value)}`
-      index += 1
-    })
-    return `<${url}>; rel="${rel}"`
-  }
   // Set X-Total-Count header
   if (total === null) {
     // ! This is a workaround! We don't know the total number, so we just return an unreasonably high number here. See #176.
@@ -463,16 +466,16 @@ const addPaginationHeaders = (req, res, next) => {
   query.limit = limit
   // rel: first
   query.offset = 0
-  links.push(url(query, "first"))
+  links.push(buildUrlForLinkHeader({ req, query, rel: "first" }))
   // rel: prev
   if (offset > 0) {
     query.offset = Math.max(offset - limit, 0)
-    links.push(url(query, "prev"))
+    links.push(buildUrlForLinkHeader({ req, query, rel: "prev" }))
   }
   // rel: next
   if (total && limit + offset < total || req.data && req.data.length === limit) {
     query.offset = offset + limit
-    links.push(url(query, "next"))
+    links.push(buildUrlForLinkHeader({ req, query, rel: "next" }))
   }
   // rel: last
   if (total !== null) {
@@ -481,11 +484,13 @@ const addPaginationHeaders = (req, res, next) => {
       current += limit
     }
     query.offset = current
-    links.push(url(query, "last"))
+    links.push(buildUrlForLinkHeader({ req, query, rel: "last" }))
   } else if (req.data.length < limit) {
     // Current page is last
-    links.push(url(query, "last"))
+    links.push(buildUrlForLinkHeader({ req, query, rel: "last" }))
   }
+  // Push existing Link header to the back
+  links.push(res.get("Link"))
   // Set Link header
   res.set("Link", links.join(","))
   next()
