@@ -11,10 +11,11 @@ jobs:
     strategy:
       matrix:
         node-version: [ 18.x ]
+        mongo-version: [4, 5, 6]
 
     services:
       mongodb:
-        image: mongo:6
+        image: mongo:${{ matrix.mongo-version }}
         ports:
           - 27017:27017
 
