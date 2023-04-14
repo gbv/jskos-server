@@ -361,7 +361,7 @@ const addMiddlewareProperties = (req, res, next) => {
   let type = req.path.substring(1)
   type = type.substring(0, type.indexOf("/") == -1 ? type.length : type.indexOf("/") )
   if (type == "voc") {
-    if (req.path.includes("/top") || req.path.includes("/concepts")) {
+    if (req.path.includes("/top") || (req.path.includes("/concepts") && req.method !== "DELETE" )) {
       type = "concepts"
     } else {
       type = "schemes"

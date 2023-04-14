@@ -345,12 +345,13 @@ export class ConceptService {
     })
   }
 
-  async deleteConceptsFromScheme({ uri }) {
-    if (!uri) {
+  async deleteConceptsFromScheme({ uri, scheme }) {
+    if (!uri && !scheme) {
       throw new MalformedRequestError()
     }
-    const scheme = await this.schemeService.getScheme(uri)
-
+    if (uri && !scheme) {
+      scheme = await this.schemeService.getScheme(uri)
+    }
     if (!scheme) {
       throw new EntityNotFoundError(`Could not find scheme with URI ${uri} to delete concepts from.`)
     }

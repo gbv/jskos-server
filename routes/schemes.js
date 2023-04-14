@@ -101,7 +101,7 @@ if (config.concepts) {
       utils.bodyParser,
       utils.wrappers.async(async (req) => {
         return await conceptService.deleteConceptsFromScheme({
-          uri: req.query.uri,
+          scheme: req.existing,
         })
       }),
       (req, res) => res.sendStatus(204),
