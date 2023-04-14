@@ -458,7 +458,7 @@ Note about previous additional options for `auth`:
 JSKOS Server provides scripts to import JSKOS data into the database or delete data from the database. Right now, mappings, terminologies (concept schemes), concepts, concordances, and annotations, in JSON (object or array of objects) or [NDJSON](http://ndjson.org) format are supported.
 
 #### Import Notes
-**About hierarchies within concepts:** Hierarchies are supported. However, only the `broader` field will be used during import. Both `ancestors` and `narrower` will be removed and the respective endpoints ([GET /ancestors](#get-ancestors) and [GET /narrower](#get-narrower)) will dynamically rebuild these properties. That means that when converting your data, please normalize it so that the hierarchy is expressed via the `broader` field in JSKOS.
+**About hierarchies within concepts:** Hierarchies are supported. However, only the `broader` field will be used during import. Both `ancestors` and `narrower` will be removed and the respective endpoints ([GET /concepts/ancestors](#get-conceptsancestors) and [GET /concepts/narrower](#get-conceptsnarrower)) will dynamically rebuild these properties. That means that when converting your data, please normalize it so that the hierarchy is expressed via the `broader` field in JSKOS.
 
 Example scheme (as JSON object) with concepts in a hierarchy (as NDJSON):
 ```json
@@ -503,7 +503,7 @@ npm run import-batch -- mappings files.txt
 # You can, for example, store these batch import files in folder `imports` which is ignored in git.
 ```
 
-**Note: If you have concepts in your database, make sure to run `npm run import -- --indexes` at least once. This will make sure all necessary indexes are created. Without this step, the `/suggest` and `/search` endpoints will not work.**
+**Note: If you have concepts in your database, make sure to run `npm run import -- --indexes` at least once. This will make sure all necessary indexes are created. Without this step, the `/concepts/suggest` and `/concepts/search` endpoints will not work.**
 
 For more information about the import script, run `npm run import -- --help`.
 
@@ -647,16 +647,16 @@ Note that certain properties from the actual configuration will not be shown in 
       "identityProviders": null,
       "identities": null
     },
+    "data": "http://localhost:3000/data",
     "schemes": "http://localhost:3000/voc",
     "top": "http://localhost:3000/voc/top",
     "concepts": "http://localhost:3000/voc/concepts",
     "voc-suggest": "http://localhost:3000/voc/suggest",
     "voc-search": "http://localhost:3000/voc/search",
-    "data": "http://localhost:3000/data",
-    "narrower": "http://localhost:3000/narrower",
-    "ancestors": "http://localhost:3000/ancestors",
-    "suggest": "http://localhost:3000/suggest",
-    "search": "http://localhost:3000/search",
+    "narrower": "http://localhost:3000/concepts/narrower",
+    "ancestors": "http://localhost:3000/concepts/ancestors",
+    "suggest": "http://localhost:3000/concepts/suggest",
+    "search": "http://localhost:3000/concepts/search",
     "concordances": "http://localhost:3000/concordances",
     "mappings": "http://localhost:3000/mappings",
     "annotations": "http://localhost:3000/annotations",
@@ -1666,7 +1666,7 @@ Returns narrower concepts for a concept.
 * **Sample Call**
 
   ```bash
-  curl https://coli-conc.gbv.de/api/narrower?uri=http://dewey.info/class/612.112/e23/
+  curl https://coli-conc.gbv.de/api/concepts/narrower?uri=http://dewey.info/class/612.112/e23/
   ```
 
   ```json
@@ -1780,7 +1780,7 @@ Returns ancestor concepts for a concept.
 * **Sample Call**
 
   ```bash
-  curl https://coli-conc.gbv.de/api/ancestors?uri=http://dewey.info/class/61/e23/
+  curl https://coli-conc.gbv.de/api/concepts/ancestors?uri=http://dewey.info/class/61/e23/
   ```
 
   ```json
@@ -1839,7 +1839,7 @@ Returns concept suggestions.
 * **Sample Calls**
 
   ```bash
-  curl https://coli-conc.gbv.de/api/suggest?search=Krebs&limit=5
+  curl https://coli-conc.gbv.de/api/concepts/suggest?search=Krebs&limit=5
   ```
 
   ```json
@@ -1870,7 +1870,7 @@ Returns concept suggestions.
   ```
 
   ```bash
-  curl https://coli-conc.gbv.de/api/suggest?search=Krebs&limit=2&format=jskos
+  curl https://coli-conc.gbv.de/api/concepts/suggest?search=Krebs&limit=2&format=jskos
   ```
 
   ```json
@@ -1943,7 +1943,7 @@ Returns concept suggestions.
   ```
 
 ### GET /concepts/search
-Currently the same as `/suggest` with parameter `format=jskos`. Additionally, search supports the parameter `properties=[list]` as in the other concept methods.
+Currently the same as `/concepts/suggest` with parameter `format=jskos`. Additionally, search supports the parameter `properties=[list]` as in the other concept methods.
 
 **Note:** The old `/search` endpoint is deprecated as of version 2.0 and will be removed in version 3.0.
 

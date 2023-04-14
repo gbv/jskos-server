@@ -41,7 +41,7 @@ const connect = async () => {
       config.status["voc-suggest"] = null
     }
     if (config.concepts && !(await connection.collection("concepts").indexExists("text"))) {
-      config.warn("Text index on concepts collection missing. /search and /suggest are disabled. Run `npm run import -- --indexes` or `npm run import -- -i concepts` to created indexes.")
+      config.warn("Text index on concepts collection missing. /concepts/search and /concepts/suggest are disabled. Run `npm run import -- --indexes` or `npm run import -- -i concepts` to created indexes.")
       config.status.search = null
       config.status.suggest = null
     }
