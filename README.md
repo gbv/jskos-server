@@ -54,9 +54,10 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [GET /voc/suggest](#get-vocsuggest)
   - [GET /voc/search](#get-vocsearch)
   - [GET /data](#get-data)
-  - [POST /data](#post-data)
-  - [PUT /data](#put-data)
-  - [DELETE /data](#delete-data)
+  - [GET /concepts](#get-concepts)
+  - [POST /concepts](#post-concepts)
+  - [PUT /concepts](#put-concepts)
+  - [DELETE /concepts](#delete-concepts)
   - [GET /narrower](#get-narrower)
   - [GET /ancestors](#get-ancestors)
   - [GET /suggest](#get-suggest)
@@ -1543,6 +1544,17 @@ Returns concept scheme suggestions.
 Currently the same as `/voc/suggest` with parameter `format=jskos`.
 
 ### GET /data
+Returns data for a certain URI or URIs. Can return concept schemes, concepts, concordances, mappings, and annotations.
+
+* **URL Params**
+
+  `uri=[uri]` URIs for concepts or concept schemes separated by `|`
+
+* **Success Response**
+
+  JSON array of [JSKOS Items]
+
+### GET /concepts
 Returns detailed data for concepts or concept schemes. Note that there is no certain order to the result set (but it should be consistent across requests).
 
 * **URL Params**
@@ -1601,7 +1613,7 @@ Returns detailed data for concepts or concept schemes. Note that there is no cer
   ]
   ```
 
-### POST /data
+### POST /concepts
 Saves a concept or multiple concepts in the database. Each concept has to have a unique `uri` as well as a concept scheme that is available on the server in the `inScheme` or `topConceptOf` field.
 
 * **URL Params**
@@ -1616,14 +1628,14 @@ Saves a concept or multiple concepts in the database. Each concept has to have a
 
   When a single concept is provided, an error can be returned if there's something wrong with it (see [errors](#errors)). When multiple concepts are provided, the first error will be returned, except if bulk mode is enabled in which errors for individual concepts are ignored.
 
-### PUT /data
+### PUT /concepts
 Overwrites a concept in the database. Is identified via its `uri` field.
 
 * **Success Reponse**
 
   JSKOS Concept object as it was saved in the database.
 
-### DELETE /data
+### DELETE /concepts
 Deletes a concept from the database.
 
 * **URL Params**
@@ -2118,6 +2130,7 @@ If you'd like to run the import script daily to refresh current mappings, you ca
 [JSKOS Concept Mappings]: https://gbv.github.io/jskos/jskos.html#concept-mappings
 [JSKOS Concept Schemes]: https://gbv.github.io/jskos/jskos.html#concept-schemes
 [JSKOS Concepts]: https://gbv.github.io/jskos/jskos.html#concept
+[JSKOS Items]: https://gbv.github.io/jskos/jskos.html#item
 [Web Annotation Data Model]: https://www.w3.org/TR/annotation-model/
 
 ### Running Behind a Reverse Proxy

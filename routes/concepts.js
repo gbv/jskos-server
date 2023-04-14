@@ -8,11 +8,11 @@ const router = express.Router()
 export { router as conceptRouter }
 
 router.get(
-  "/data",
+  "/concepts",
   config.concepts.read.auth ? auth.main : auth.optional,
   utils.supportDownloadFormats([]),
   utils.wrappers.async(async (req) => {
-    return await conceptService.getDetails(req.query)
+    return await conceptService.getDetails(Object.assign(req.query, { conceptsOnly: true }))
   }),
   utils.addPaginationHeaders,
   utils.adjust,
@@ -21,7 +21,7 @@ router.get(
 
 if (config.concepts.create) {
   router.post(
-    "/data",
+    "/concepts",
     config.concepts.create.auth ? auth.main : auth.optional,
     utils.bodyParser,
     utils.wrappers.async(async (req) => {
@@ -38,7 +38,7 @@ if (config.concepts.create) {
 
 if (config.concepts.update) {
   router.put(
-    "/data",
+    "/concepts",
     config.concepts.update.auth ? auth.main : auth.optional,
     utils.bodyParser,
     utils.wrappers.async(async (req) => {
@@ -54,7 +54,7 @@ if (config.concepts.update) {
 
 if (config.concepts.delete) {
   router.delete(
-    "/data",
+    "/concepts",
     config.concepts.delete.auth ? auth.main : auth.optional,
     utils.bodyParser,
     utils.wrappers.async(async (req) => {

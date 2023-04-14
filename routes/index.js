@@ -4,6 +4,7 @@ import { concordanceRouter } from "./concordances.js"
 import { mappingRouter } from "./mappings.js"
 import { schemeRouter } from "./schemes.js"
 import { statusRouter } from "./status.js"
+import { dataRouter } from "./data.js"
 import { validateRouter } from "./validate.js"
 
 export {
@@ -13,5 +14,6 @@ export {
   mappingRouter,
   schemeRouter,
   statusRouter,
+  dataRouter,
   validateRouter,
 }

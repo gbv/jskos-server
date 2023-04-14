@@ -51,7 +51,7 @@ export class ConceptService {
   }
 
   async get(uri) {
-    return (await this.getDetails({ uri, limit: 1, offset: 0 }))[0]
+    return (await this.getDetails({ uri, limit: 1, offset: 0, conceptsOnly: true }))[0]
   }
 
   /**
@@ -79,7 +79,7 @@ export class ConceptService {
     }
 
     // Note: If query.voc is given, no schemes are returned
-    const schemes = query.voc ? [] : (await Promise.all([].concat(uris, notations).map(uri => this.schemeService.getScheme(uri)))).filter(scheme => scheme != null)
+    const schemes = (query.voc || query.conceptsOnly) ? [] : (await Promise.all([].concat(uris, notations).map(uri => this.schemeService.getScheme(uri)))).filter(scheme => scheme != null)
     const concepts = await conceptFind(mongoQuery)
     const results = [].concat(schemes, concepts).slice(query.offset, query.offset + query.limit)
     results.totalCount = schemes.length + concepts.length

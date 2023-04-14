@@ -117,6 +117,8 @@ if (config.annotations) {
 if (config.concepts) {
   app.use(routers.conceptRouter)
 }
+// Data endpoint
+app.use(routers.dataRouter)
 // Validate endpoint
 app.use("/validate", routers.validateRouter)
 

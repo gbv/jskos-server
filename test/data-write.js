@@ -333,7 +333,7 @@ describe("/voc write access", () => {
 
 })
 
-describe("/data write access", () => {
+describe("/concepts write access", () => {
 
   const concept = {
     uri: "urn:test:concept",
@@ -354,7 +354,7 @@ describe("/data write access", () => {
 
   it("should POST a concept", done => {
     chai.request(server.app)
-      .post("/data")
+      .post("/concepts")
       .send(concept)
       .end((error, res) => {
         res.should.have.status(201)
@@ -397,7 +397,7 @@ describe("/data write access", () => {
 
   it("should POST multiple concepts", done => {
     chai.request(server.app)
-      .post("/data")
+      .post("/concepts")
       .send(concepts)
       .end((error, res) => {
         res.should.have.status(201)
@@ -425,7 +425,7 @@ describe("/data write access", () => {
 
   it("should not POST a concept without scheme", done => {
     chai.request(server.app)
-      .post("/data")
+      .post("/concepts")
       .send({
         uri: "urn:test:concept-without-scheme",
       })
@@ -445,7 +445,7 @@ describe("/data write access", () => {
     let res
     // POST concept
     res = await chai.request(server.app)
-      .post("/data")
+      .post("/concepts")
       .query({
         scheme: scheme.uri,
       })
@@ -456,14 +456,14 @@ describe("/data write access", () => {
     assert.strictEqual(res.body.inScheme[0].uri, scheme.uri)
     // DELETE concept
     res = await chai.request(server.app)
-      .delete("/data")
+      .delete("/concepts")
       .query(concept)
     res.should.have.status(204)
   })
 
   it("should not POST a concept with invalid URI", done => {
     chai.request(server.app)
-      .post("/data")
+      .post("/concepts")
       .send({
         uri: "concept-invalid-uri",
         inScheme: [schemes[1]],
@@ -478,7 +478,7 @@ describe("/data write access", () => {
 
   it("should not POST a concept with missing URI", done => {
     chai.request(server.app)
-      .post("/data")
+      .post("/concepts")
       .send({
         inScheme: [schemes[1]],
       })
@@ -492,7 +492,7 @@ describe("/data write access", () => {
 
   it("should not POST a concept that already exists", done => {
     chai.request(server.app)
-      .post("/data")
+      .post("/concepts")
       .send(concept)
       .end((error, res) => {
         assert.equal(error, null)
@@ -505,7 +505,7 @@ describe("/data write access", () => {
 
   it("should POST a single concept that already exists if bulk is set", done => {
     chai.request(server.app)
-      .post("/data")
+      .post("/concepts")
       .query({
         bulk: true,
       })
@@ -520,7 +520,7 @@ describe("/data write access", () => {
 
   it("should POST upsert multiple concepts", done => {
     chai.request(server.app)
-      .post("/data")
+      .post("/concepts")
       .query({
         bulk: true,
       })
@@ -536,7 +536,7 @@ describe("/data write access", () => {
 
   it("should ignore POST errors when bulk is set", done => {
     chai.request(server.app)
-      .post("/data")
+      .post("/concepts")
       .query({
         bulk: true,
       })
@@ -554,7 +554,7 @@ describe("/data write access", () => {
 
   it("should not POST a concept with scheme that is not in database", done => {
     chai.request(server.app)
-      .post("/data")
+      .post("/concepts")
       .send({
         uri: "urn:test:concept-with-missing-scheme",
         inScheme: [
@@ -576,7 +576,7 @@ describe("/data write access", () => {
       notation: ["A"],
     }
     chai.request(server.app)
-      .put("/data")
+      .put("/concepts")
       .send(Object.assign({}, concept, patch))
       .end((error, res) => {
         assert.equal(error, null)
@@ -589,7 +589,7 @@ describe("/data write access", () => {
 
   it("should not PUT an invalid concept", done => {
     chai.request(server.app)
-      .put("/data")
+      .put("/concepts")
       .send({
         uri: "urn:test:concept2",
         inScheme: [schemes[1]],
@@ -605,7 +605,7 @@ describe("/data write access", () => {
 
   it("should not PUT a concept that doesn't exist", done => {
     chai.request(server.app)
-      .put("/data")
+      .put("/concepts")
       .send({
         uri: "urn:test:concept-that-does-not-exist",
         inScheme: [schemes[1]],
@@ -630,7 +630,7 @@ describe("/data write access", () => {
     }
     for (let concept of concepts) {
       chai.request(server.app)
-        .delete("/data")
+        .delete("/concepts")
         .query({
           uri: concept.uri,
         })
@@ -691,7 +691,7 @@ describe("/data write access", () => {
     let res
     // Post concept
     res = await chai.request(server.app)
-      .post("/data")
+      .post("/concepts")
       .send(concepts[0])
     res.should.have.status(201)
     res.body.should.be.an("object")
@@ -714,7 +714,7 @@ describe("/data write access", () => {
 
   it("should not DELETE a concept that doesn't exist", done => {
     chai.request(server.app)
-      .delete("/data")
+      .delete("/concepts")
       .query({
         uri: "urn:test:concept-that-does-not-exist",
       })
@@ -749,7 +749,7 @@ describe("/data write access", () => {
     assert.strictEqual(scheme.uri, uri)
     // POST concept
     res = await chai.request(server.app)
-      .post("/data")
+      .post("/concepts")
       .send(concept)
     assert.strictEqual(res.status, 201)
     // Check scheme after POSTing
@@ -761,7 +761,7 @@ describe("/data write access", () => {
     scheme = res.body[0]
     // DELETE concept
     res = await chai.request(server.app)
-      .delete("/data")
+      .delete("/concepts")
       .query({
         uri: concept.uri,
       })

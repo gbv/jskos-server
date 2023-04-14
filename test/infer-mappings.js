@@ -89,7 +89,7 @@ describe("/mappings/infer", () => {
 
   it("should POST test concepts", done => {
     chai.request(server.app)
-      .post("/data")
+      .post("/concepts")
       .send(concepts)
       .end((error, res) => {
         res.should.have.status(201)
