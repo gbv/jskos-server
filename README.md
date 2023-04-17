@@ -565,6 +565,14 @@ Unless otherwise specified:
 - `PUT`/`PATCH`/`DELETE` requests are required to come from the owner of the entity that is being modified.
 - All URL parameters are optional.
 - All `GET` endpoints (except for `/status` and those with `:_id`) offer pagination via `limit=[number]` (default: 100) and `offset=[number]` (default: 0) parameters. In the response, there will be a `Link` header like described in the [GitHub API documentation](https://developer.github.com/v3/#pagination), as well as a `X-Total-Count` header containing the total number of results.
+- All `GET` endpoints returning a certain type of JSKOS data offer the `properties=[list]` parameter, with `[list]` being a comma-separated list of properties.
+  - All JSKOS types allow removing properties by prefixing the property with `-`. All following properties in the list will also be removed.
+  - For concepts and mappings, the property `annotations` can be specified to add all annotations in the database for a certain item.
+  - For concepts, the properties `narrower` and `ancestors` can be specified to add narrower/ancestor concepts to a certain concept.
+  - Specifying a `*` adds all available properties.
+  - Example: `properties=*,-narrower,notation` will add properties `annotations` and `ancestors`, and remove the `notation` property from all return items.
+  - Properties can be explicitly re-added by prefixing them with `+`, e.g. `properties=-from,to,+from` will only remove the `to` property.
+  - Note that the `+` sign has to be properly encoded as `%2B`, otherwise it will be interpreted as a space.
 - For possible errors, see [Errors](#errors).
 
 ### GET /status

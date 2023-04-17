@@ -1543,12 +1543,12 @@ describe("Express Server", () => {
         })
     })
 
-    it("should remove properties when prefixed with -", done => {
+    it("should remove properties when prefixed with -, but not when explicitly added again with +", done => {
       chai.request(server.app)
         .get("/concepts")
         .query({
           notation: "61",
-          properties: "-prefLabel",
+          properties: "-notation,prefLabel,+notation",
         })
         .end((err, res) => {
           res.should.have.status(200)
@@ -1560,6 +1560,7 @@ describe("Express Server", () => {
           const first = res.body[0]
           assert.ok(_.isObject(first))
           assert.ok(!first.prefLabel)
+          assert.ok(!!first.notation)
           assert.equal(first.uri, "http://dewey.info/class/61/e23/")
           done()
         })

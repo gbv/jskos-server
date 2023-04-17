@@ -111,24 +111,31 @@ const adjust = async (req, res, next) => {
     type = type.substring(0, type.length - 1)
   }
   if (adjust[type]) {
-    let properties = _.get(req, "query.properties", "")
-    let addProperties = [], removeProperties = []
-    if (properties.startsWith("*")) {
-      // If there's a star, add all available properties and ignore the rest of the string
-      addProperties = ["narrower", "ancestors", "annotations"]
-      properties = ""
-    } else if (properties.startsWith("-")) {
-      // Prefixed - means all listed properties will be removed
-      properties = properties.slice(1)
-      removeProperties = properties.split(",").filter(Boolean)
-      properties = ""
-    } else {
-      // Prefixed + will be removed and ignored
-      if (properties.startsWith("+")) {
-        properties = properties.slice(1)
+    let addProperties = [], removeProperties = [], mode = 0 // mode 0 = add, mode 1 = remove
+    for (let prop of _.get(req, "query.properties", "").split(",")) {
+      if (prop.startsWith("*")) {
+        addProperties.push("narrower")
+        addProperties.push("ancestors")
+        addProperties.push("annotations")
+        continue
       }
-      addProperties = properties.split(",").filter(Boolean)
+      if (prop.startsWith("-")) {
+        mode = 1
+        prop = prop.slice(1)
+      } else if (prop.startsWith("+")) {
+        mode = 0
+        prop = prop.slice(1)
+      }
+      if (mode === 1) {
+        removeProperties.push(prop)
+      } else {
+        addProperties.push(prop)
+        // If a property is explicitly added after it was removed, it should not be removed anymore
+        removeProperties = removeProperties.filter(p => p !== prop)
+      }
     }
+    addProperties = addProperties.filter(Boolean)
+    removeProperties = removeProperties.filter(Boolean)
     // Adjust data with properties
     req.data = await adjust[type](req.data, addProperties)
     // Remove properties if necessary
