@@ -3,6 +3,7 @@ import { conceptService } from "./concepts.js"
 import { concordanceService } from "./concordances.js"
 import { mappingService } from "./mappings.js"
 import { schemeService } from "./schemes.js"
+import { dataService } from "./data.js"
 import { statusService } from "./status.js"
 import { validateService } from "./validate.js"
 
@@ -12,6 +13,7 @@ export {
   concordanceService,
   mappingService,
   schemeService,
+  dataService,
   statusService,
   validateService,
 }

@@ -1,5 +1,5 @@
 import express from "express"
-import { conceptService } from "../services/concepts.js"
+import { dataService } from "../services/data.js"
 import * as utils from "../utils/index.js"
 import * as auth from "../utils/auth.js"
 
@@ -11,9 +11,7 @@ router.get(
   auth.optional,
   utils.supportDownloadFormats([]),
   utils.wrappers.async(async (req) => {
-    return await conceptService.getDetails(req.query)
+    return await dataService.getData(req)
   }),
-  utils.addPaginationHeaders,
-  utils.adjust,
   utils.returnJSON,
 )
