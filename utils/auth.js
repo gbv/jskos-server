@@ -16,6 +16,72 @@ import passport from "passport"
 import { Strategy as JwtStrategy, ExtractJwt } from "passport-jwt"
 import { Strategy as AnonymousStrategy } from "passport-anonymous"
 
+// Add some properties and methods related to authentication
+// This middleware is added to both auth.main and auth.optional
+const authPreparation = (req, res, next) => {
+  // Add req.action
+  switch (req.method) {
+    case "POST":
+      req.action = "create"
+      break
+    case "PUT":
+      req.action = "update"
+      break
+    case "PATCH":
+      req.action = "update"
+      break
+    case "DELETE":
+      req.action = "detele"
+      break
+    default:
+      req.action = "read"
+      break
+  }
+
+  // Add user URIs and providers
+  req.uris = [req.user?.uri].concat(Object.values(req.user?.identities || {}).map(id => id.uri)).filter(Boolean)
+  req.userProviders = Object.keys(req.user?.identities || {})
+
+  // Add isAuthorizedFor method
+  req.isAuthorizedFor = function ({ type, action, whitelist, providers, throwError = false } = {}) {
+    type = type ?? this.type
+    action = action ?? this.action
+
+    if (!config[type]?.[action]?.auth && type !== "checkAuth") {
+      // If action does not require auth at all, the request is authorized
+      return true
+    } else if (!this.user) {
+      // If action requires auth, but user isn't logged in, the request is not authorized
+      // For routes using the `auth.main` middleware, this is called early, but not for routes with `auth.optional`.
+      if (throwError) {
+        throw new ForbiddenAccessError("Access forbidden. Could not authenticate via JWT.")
+      }
+      return false
+    }
+
+    whitelist = whitelist ?? config[type]?.[action]?.identities
+    providers = providers ?? config[type]?.[action]?.identityProviders
+
+    if (whitelist && _.intersection(whitelist, this.uris).length == 0) {
+      if (throwError) {
+        throw new ForbiddenAccessError("Access forbidden. A whitelist is in place, but authenticated user is not on the whitelist.")
+      }
+      return false
+    }
+
+    if (providers && _.intersection(providers, this.userProviders).length == 0) {
+      if (throwError) {
+        throw new ForbiddenAccessError("Access forbidden, missing identity provider. One of the following providers is necessary: " + providers.join(", "))
+      }
+      return false
+    }
+
+    return true
+  }
+
+  next()
+}
+
 let optional = [], auth = (req, res, next) => {
   next(new ForbiddenAccessError("Access forbidden. No authentication configured."))
 }
@@ -51,33 +117,12 @@ if (config.auth.algorithm && config.auth.key) {
 }
 
 // Configure identities whitelists and identity providers
-auth = [auth, (req, res, next) => {
+auth = [auth, authPreparation, (req, res, next) => {
 
-  // Assemble user URIs
-  let uris = [req.user.uri].concat(Object.values(req.user.identities || {}).map(id => id.uri)).filter(uri => uri != null)
-  // User providers
-  let userProviders = Object.keys((req.user && req.user.identities) || {})
+  let whitelist, providers, type, action
 
-  // Find whitelist to use depending on method (req.method) and endpoint (req.type)
-  let whitelist, providers, action
-  if (req.method == "GET") {
-    action = "read"
-  }
-  if (req.method == "POST") {
-    action = "create"
-  }
-  if (req.method == "PUT" || req.method == "PATCH") {
-    action = "update"
-  }
-  if (req.method == "DELETE") {
-    action = "delete"
-  }
-  if (action && config[req.type] && config[req.type][action]) {
-    whitelist = config[req.type][action].identities
-    providers = config[req.type][action].identityProviders
-  }
   if (req.type == "checkAuth") {
-    const { type, action } = req.query || {}
+    ({ type, action } = req.query || {})
     if (type && action && config[type][action]) {
       whitelist = config[type][action].identities
       providers = config[type][action].identityProviders
@@ -87,14 +132,11 @@ auth = [auth, (req, res, next) => {
     }
   }
 
-  if (whitelist && _.intersection(whitelist, uris).length == 0) {
-    // Deny request
-    next(new ForbiddenAccessError("Access forbidden. A whitelist is in place, but authenticated user is not on the whitelist."))
-  } else if (providers && _.intersection(providers, userProviders).length == 0) {
-    // Deny request
-    next(new ForbiddenAccessError("Access forbidden, missing identity provider. One of the following providers is necessary: " + providers.join(", ")))
-  } else {
+  try {
+    req.isAuthorizedFor({ type, action, whitelist, providers, throwError: true })
     next()
+  } catch (error) {
+    next(error)
   }
 
 }]
@@ -102,7 +144,7 @@ auth = [auth, (req, res, next) => {
 // Also use anonymous strategy for endpoints that can be used authenticated or not authenticated
 passport.use(new AnonymousStrategy())
 optional.push("anonymous")
-const authOptional = passport.authenticate(optional, { session: false })
+const authOptional = [passport.authenticate(optional, { session: false }), authPreparation]
 
 export {
   auth as main,

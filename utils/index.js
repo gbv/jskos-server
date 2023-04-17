@@ -397,8 +397,7 @@ const addMiddlewareProperties = (req, res, next) => {
       type = "schemes"
     }
   }
-  // TODO: /data can return schemes as well.
-  if (["data", "concepts", "narrower", "ancestors", "search"].includes(type)) {
+  if (["concepts", "narrower", "ancestors", "search"].includes(type)) {
     if (req.path.includes("/suggest")) {
       type = "suggest"
     } else {
