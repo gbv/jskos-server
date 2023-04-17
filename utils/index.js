@@ -105,9 +105,16 @@ const adjust = async (req, res, next) => {
   if (!req.data || !req.type || req.query.bulk) {
     next()
   }
-  let type = req.type
+  req.data = await adjust.data({ req })
+  next()
+}
+
+// Wrapper around adjustments; `req` only has required property path `query.properties` if `data` and `type` are given.
+adjust.data = async ({ req, data, type }) => {
+  data = data ?? req.data
+  type = type ?? req.type
   // Remove "s" from the end of type if it's not an array
-  if (!_.isArray(req.data)) {
+  if (!_.isArray(data)) {
     type = type.substring(0, type.length - 1)
   }
   if (adjust[type]) {
@@ -137,16 +144,16 @@ const adjust = async (req, res, next) => {
     addProperties = addProperties.filter(Boolean)
     removeProperties = removeProperties.filter(Boolean)
     // Adjust data with properties
-    req.data = await adjust[type](req.data, addProperties)
+    data = await adjust[type](data, addProperties)
     // Remove properties if necessary
-    const dataToAdjust = Array.isArray(req.data) ? req.data : [req.data]
+    const dataToAdjust = Array.isArray(data) ? data : [data]
     removeProperties.forEach(property => {
       dataToAdjust.filter(Boolean).forEach(entity => {
         delete entity[property]
       })
     })
   }
-  next()
+  return data
 }
 
 // Add @context and type to annotations.
