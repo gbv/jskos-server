@@ -192,7 +192,7 @@ describe("Express Server", () => {
       chai.request(server.app)
         .get("/checkAuth")
         .set("Authorization", `Bearer ${token}`)
-        .then(res => {
+        .end((err, res) => {
           res.should.have.status(204)
           done()
         })
@@ -202,7 +202,7 @@ describe("Express Server", () => {
       chai.request(server.app)
         .get("/checkAuth")
         .set("Authorization", `Bearer ${tokenNotOnWhitelist}`)
-        .then(res => {
+        .end((err, res) => {
           res.should.have.status(403)
           res.body.should.be.an("object")
           res.body.error.should.be.eql("ForbiddenAccessError")
@@ -214,7 +214,7 @@ describe("Express Server", () => {
       chai.request(server.app)
         .get("/checkAuth")
         .set("Authorization", `Bearer ${tokenMissingIdentity}`)
-        .then(res => {
+        .end((err, res) => {
           res.should.have.status(403)
           res.body.should.be.an("object")
           res.body.error.should.be.eql("ForbiddenAccessError")
@@ -230,7 +230,7 @@ describe("Express Server", () => {
           action: "create",
         })
         .set("Authorization", `Bearer ${tokenMissingIdentity}`)
-        .then(res => {
+        .end((err, res) => {
           res.should.have.status(403)
           res.body.should.be.an("object")
           res.body.error.should.be.eql("ForbiddenAccessError")
@@ -247,7 +247,7 @@ describe("Express Server", () => {
           action: "delete",
         })
         .set("Authorization", `Bearer ${tokenMissingIdentity}`)
-        .then(res => {
+        .end((err, res) => {
           res.should.have.status(204)
           done()
         })
@@ -1461,11 +1461,11 @@ describe("Express Server", () => {
 
   })
 
-  describe("GET /data", () => {
+  describe("GET /concepts", () => {
 
     it("should GET empty list when no URL is provided", done => {
       chai.request(server.app)
-        .get("/data")
+        .get("/concepts")
         .end((err, res) => {
           res.should.have.status(200)
           res.should.have.header("Link")
@@ -1477,28 +1477,9 @@ describe("Express Server", () => {
         })
     })
 
-    it("should GET one concept scheme", done => {
-      chai.request(server.app)
-        .get("/data")
-        .query({
-          uri: "http://dewey.info/scheme/edition/e23/",
-        })
-        .end((err, res) => {
-          res.should.have.status(200)
-          res.should.have.header("Link")
-          res.should.have.header("X-Total-Count")
-          res.headers["x-total-count"].should.be.eql("1")
-          res.body.should.be.a("array")
-          res.body.length.should.be.eql(1)
-          res.body[0].should.be.a("object")
-          res.body[0].prefLabel.de.should.be.eql("Dewey-Dezimalklassifikation")
-          done()
-        })
-    })
-
     it("should GET one concept", done => {
       chai.request(server.app)
-        .get("/data")
+        .get("/concepts")
         .query({
           uri: "http://dewey.info/class/61/e23/",
         })
@@ -1517,7 +1498,7 @@ describe("Express Server", () => {
 
     it("should GET one concept by notation", done => {
       chai.request(server.app)
-        .get("/data")
+        .get("/concepts")
         .query({
           notation: "61",
         })
@@ -1536,7 +1517,7 @@ describe("Express Server", () => {
 
     it("should add properties narrower, ancestors, and annotations when using properties=*", done => {
       chai.request(server.app)
-        .get("/data")
+        .get("/concepts")
         .query({
           notation: "6",
           properties: "*",
@@ -1564,7 +1545,7 @@ describe("Express Server", () => {
 
     it("should remove properties when prefixed with -", done => {
       chai.request(server.app)
-        .get("/data")
+        .get("/concepts")
         .query({
           notation: "61",
           properties: "-prefLabel",
@@ -1586,7 +1567,7 @@ describe("Express Server", () => {
 
     it("should GET multiple concepts", done => {
       chai.request(server.app)
-        .get("/data")
+        .get("/concepts")
         .query({
           uri: "http://dewey.info/class/60/e23/|http://dewey.info/class/61/e23/",
         })
@@ -1605,7 +1586,7 @@ describe("Express Server", () => {
 
     it("should GET no concepts for different concept scheme", done => {
       chai.request(server.app)
-        .get("/data")
+        .get("/concepts")
         .query({
           uri: "http://dewey.info/class/60/e23/|http://dewey.info/class/61/e23/",
           voc: "http://uri.gbv.de/terminology/bk/",
@@ -1621,29 +1602,9 @@ describe("Express Server", () => {
         })
     })
 
-    it("should GET multiple schemes and concepts by notation", done => {
-      chai.request(server.app)
-        .get("/data")
-        .query({
-          notation: "60|61|DDC",
-        })
-        .end((err, res) => {
-          res.should.have.status(200)
-          res.should.have.header("Link")
-          res.should.have.header("X-Total-Count")
-          res.headers["x-total-count"].should.be.eql("3")
-          res.body.should.be.a("array")
-          res.body.length.should.be.eql(3)
-          res.body[0].should.be.a("object")
-          res.body[1].should.be.a("object")
-          res.body[2].should.be.a("object")
-          done()
-        })
-    })
-
     it("should only GET concepts if voc is given", done => {
       chai.request(server.app)
-        .get("/data")
+        .get("/concepts")
         .query({
           notation: "60|61|DDC",
           voc: "http://dewey.info/scheme/edition/e23/",
@@ -2017,7 +1978,7 @@ describe("Express Server", () => {
 
     it("should GET the annotated concept including annotations with prefix syntax", done => {
       chai.request(server.app)
-        .get("/data")
+        .get("/concepts")
         .query({
           uri: annotation.target,
           properties: "+annotations",
