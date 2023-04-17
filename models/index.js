@@ -14,3 +14,17 @@ export {
   Terminology,
   Scheme,
 }
+
+export const byType = {
+  scheme: Scheme,
+  concept: Concept,
+  concordance: Concordance,
+  mapping: Mapping,
+  annotation: Annotation,
+}
+
+Object.keys(byType).forEach(type => {
+  Object.defineProperty(byType, `${type}s`, {
+    get: () => byType[type],
+  })
+})

@@ -14,7 +14,7 @@ import * as searchHelper from "./searchHelper.js"
 // Services, keys are according to req.type
 const services = {}
 import("../services/index.js").then(allServices => {
-  for (let type of ["scheme", "concept", "concordance", "mapping", "annotation"]) {
+  for (let type of Object.keys(allServices.byType)) {
     Object.defineProperty(services, `${type}s`, {
       get() {
         return allServices[`${type}Service`]

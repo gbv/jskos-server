@@ -15,3 +15,17 @@ export {
   statusService,
   validateService,
 }
+
+export const byType = {
+  scheme: schemeService,
+  concept: conceptService,
+  concordance: concordanceService,
+  mapping: mappingService,
+  annotation: annotationService,
+}
+
+Object.keys(byType).forEach(type => {
+  Object.defineProperty(byType, `${type}s`, {
+    get: () => byType[type],
+  })
+})

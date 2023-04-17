@@ -112,23 +112,9 @@ if (cli.flags.scheme && cli.flags.concordance) {
   })
 }
 
-import * as allServices from "../services/index.js"
-import * as allModels from "../models/index.js"
+import { byType as services } from "../services/index.js"
+import { byType as models } from "../models/index.js"
 
-const services = {
-  scheme: allServices.schemeService,
-  concept: allServices.conceptService,
-  concordance: allServices.concordanceService,
-  mapping: allServices.mappingService,
-  annotation: allServices.annotationService,
-}
-const models = {
-  scheme: allModels.Scheme,
-  concept: allModels.Concept,
-  concordance: allModels.Concordance,
-  mapping: allModels.Mapping,
-  annotation: allModels.Annotation,
-}
 const allTypes = Object.keys(services)
 
   ;

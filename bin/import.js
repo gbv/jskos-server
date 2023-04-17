@@ -182,15 +182,7 @@ import anystream from "json-anystream"
 import _ from "lodash"
 import * as db from "../utils/db.js"
 
-import * as allServices from "../services/index.js"
-
-const services = {
-  scheme: allServices.schemeService,
-  concept: allServices.conceptService,
-  concordance: allServices.concordanceService,
-  mapping: allServices.mappingService,
-  annotation: allServices.annotationService,
-}
+import { byType as services } from "../services/index.js"
 
 // Also import models for Mapping and Concordance
 // TODO: This won't be needed if these are imported through the service as well.

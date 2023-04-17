@@ -4,14 +4,7 @@ import assert from "node:assert"
 
 import { assertIndexes, assertMongoDB, dropDatabaseBeforeAndAfter, arrayToStream } from "./test-utils.js"
 
-import * as allServices from "../services/index.js"
-const services = {
-  scheme: allServices.schemeService,
-  concept: allServices.conceptService,
-  concordance: allServices.concordanceService,
-  mapping: allServices.mappingService,
-  annotation: allServices.annotationService,
-}
+import { byType as services } from "../services/index.js"
 
 describe("Services", () => {
   assertMongoDB()
