@@ -119,7 +119,7 @@ All missing keys will be defaulted from `config/config.default.json`:
   "mongo": {
     "user": "",
     "pass": "",
-    "host": "localhost",
+    "host": "127.0.0.1",
     "port": 27017,
     "db": "jskos-server",
     "options": {

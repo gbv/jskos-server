@@ -9,7 +9,7 @@
   "mongo": {
     "user": "a",
     "pass": "b",
-    "host": "localhost",
+    "host": "127.0.0.1",
     "port": 27018,
     "db": "jskos-server-db"
   },
