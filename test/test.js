@@ -376,6 +376,16 @@ describe("Express Server", () => {
         })
     })
 
+    it("should be able to retrieve concordance via GET /data", async () => {
+      const res = await chai.request(server.app)
+        .get("/data")
+        .query({
+          uri: createdConcordance.uri,
+        })
+      assert.ok(res.body[0])
+      assert.deepStrictEqual(res.body[0], createdConcordance)
+    })
+
     it("should PUT a concordance", done => {
       createdConcordance.scopeNote = { en: ["Test"] }
       chai.request(server.app)
@@ -497,6 +507,16 @@ describe("Express Server", () => {
               done()
             })
         })
+    })
+
+    it("should be able to retrieve mapping via GET /data", async () => {
+      const res = await chai.request(server.app)
+        .get("/data")
+        .query({
+          uri: createdMapping.uri,
+        })
+      assert.ok(res.body[0])
+      assert.deepStrictEqual(res.body[0], createdMapping)
     })
 
     it("should have updated extent and modified of concordance", done => {
@@ -1278,6 +1298,8 @@ describe("Express Server", () => {
         })
     })
 
+    let vocs
+
     it("should GET two vocabularies", done => {
       // Add vocabularies and concepts to database
       cpexec("NODE_ENV=test ./bin/import.js --indexes && NODE_ENV=test ./bin/import.js schemes ./test/terminologies/terminologies.json && NODE_ENV=test ./bin/import.js concepts ./test/concepts/concepts-ddc-6-60-61-62.json", (err) => {
@@ -1294,9 +1316,20 @@ describe("Express Server", () => {
             res.headers["x-total-count"].should.be.eql("2")
             res.body.should.be.a("array")
             res.body.length.should.be.eql(2)
+            vocs = res.body
             done()
           })
       })
+    })
+
+    it("should also GET the two vocabularies at the /data endpoint", async () => {
+      const res = await chai.request(server.app)
+        .get("/data")
+        .query({
+          uri: vocs.map(voc => voc.uri).join("|"),
+        })
+      // ? Do we know that the order will remain the same?
+      assert.deepStrictEqual(res.body, vocs)
     })
 
     it("should support filtering by language", done => {
@@ -1515,18 +1548,21 @@ describe("Express Server", () => {
         })
     })
 
+    let ddc6body, ddc6Query = {
+      uri: "http://dewey.info/class/6/e23/",
+      properties: "*",
+    }
+
     it("should add properties narrower, ancestors, and annotations when using properties=*", done => {
       chai.request(server.app)
         .get("/concepts")
-        .query({
-          notation: "6",
-          properties: "*",
-        })
+        .query(ddc6Query)
         .end((err, res) => {
           res.should.have.status(200)
           res.should.have.header("Link")
           res.should.have.header("X-Total-Count")
           assert.equal(res.headers["x-total-count"], "1")
+          ddc6body = res.body
           assert.ok(Array.isArray(res.body))
           assert.equal(res.body.length, 1)
           const first = res.body[0]
@@ -1543,27 +1579,33 @@ describe("Express Server", () => {
         })
     })
 
-    it("should remove properties when prefixed with -, but not when explicitly added again with +", done => {
-      chai.request(server.app)
+    it("should return the same data when requested via GET /data", async () => {
+      const res = await chai.request(server.app)
+        .get("/concepts")
+        .query(ddc6Query)
+      assert.deepStrictEqual(res.body, ddc6body)
+    })
+
+    it("should remove properties when prefixed with -, but not when explicitly added again with +", async () => {
+      // Request concept via /concepts endpoint
+      const res = await chai.request(server.app)
         .get("/concepts")
         .query({
           notation: "61",
           properties: "-notation,prefLabel,+notation",
         })
-        .end((err, res) => {
-          res.should.have.status(200)
-          res.should.have.header("Link")
-          res.should.have.header("X-Total-Count")
-          assert.equal(res.headers["x-total-count"], "1")
-          assert.ok(Array.isArray(res.body))
-          assert.equal(res.body.length, 1)
-          const first = res.body[0]
-          assert.ok(_.isObject(first))
-          assert.ok(!first.prefLabel)
-          assert.ok(!!first.notation)
-          assert.equal(first.uri, "http://dewey.info/class/61/e23/")
-          done()
-        })
+      res.should.have.status(200)
+      res.should.have.header("Link")
+      res.should.have.header("X-Total-Count")
+
+      assert.equal(res.headers["x-total-count"], "1")
+      assert.ok(Array.isArray(res.body))
+      assert.equal(res.body.length, 1)
+      const first = res.body[0]
+      assert.ok(_.isObject(first))
+      assert.ok(!first.prefLabel)
+      assert.ok(!!first.notation)
+      assert.equal(first.uri, "http://dewey.info/class/61/e23/")
     })
 
     it("should GET multiple concepts", done => {
@@ -1824,7 +1866,7 @@ describe("Express Server", () => {
     })
 
     let annotation = {
-      target: "http://dewey.info/class/60/e23/",
+      target: { id: "http://dewey.info/class/60/e23/" },
       motivation: "assessing",
       bodyValue: "+1",
     }
@@ -1841,11 +1883,23 @@ describe("Express Server", () => {
           // Save id for later use
           annotation.id = res.body.id
           res.body.creator.should.be.eql({ id: user.uri, name: user.name }) // Creator gets decoded from base64
-          _.get(res.body, "target.id", res.body.target).should.be.eql(annotation.target)
+          _.get(res.body, "target.id", res.body.target).should.be.eql(annotation.target.id)
           res.body.motivation.should.be.eql(annotation.motivation)
           res.body.bodyValue.should.be.eql(annotation.bodyValue)
           done()
         })
+    })
+
+    it("should be able to retrieve annotation via GET /data", async () => {
+      const res = await chai.request(server.app)
+        .get("/data")
+        .query({
+          uri: annotation.id,
+        })
+      assert.ok(res.body?.[0])
+      for (const prop of ["id", "target", "motivation", "bodyValue"]) {
+        assert.deepStrictEqual(res.body[0][prop], annotation[prop])
+      }
     })
 
     it("should not POST an invalid annotation", done => {
@@ -1981,7 +2035,7 @@ describe("Express Server", () => {
       chai.request(server.app)
         .get("/concepts")
         .query({
-          uri: annotation.target,
+          uri: annotation.target.id,
           properties: "+annotations",
         })
         .end((err, res) => {
