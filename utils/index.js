@@ -113,6 +113,12 @@ const adjust = async (req, res, next) => {
 adjust.data = async ({ req, data, type }) => {
   data = data ?? req.data
   type = type ?? req.type
+  // If data is still a mongoose object, convert it to plain object
+  if (_.isArray(data) && data[0]?.toObject) {
+    data = data.map(item => item.toObject ? item.toObject() : item)
+  } else if (!_.isArray(data) && data.toObject) {
+    data = data.toObject()
+  }
   // Remove "s" from the end of type if it's not an array
   if (!_.isArray(data)) {
     type = type.substring(0, type.length - 1)
