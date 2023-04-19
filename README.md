@@ -29,6 +29,7 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [GET /checkAuth](#get-checkauth)
   - [POST /validate](#post-validate)
   - [GET /validate](#get-validate)
+  - [GET /data](#get-data)
   - [GET /concordances](#get-concordances)
   - [GET /concordances/:\_id](#get-concordances_id)
   - [POST /concordances](#post-concordances)
@@ -53,7 +54,6 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [DELETE /voc/concepts](#delete-vocconcepts)
   - [GET /voc/suggest](#get-vocsuggest)
   - [GET /voc/search](#get-vocsearch)
-  - [GET /data](#get-data)
   - [GET /concepts](#get-concepts)
   - [POST /concepts](#post-concepts)
   - [PUT /concepts](#put-concepts)
@@ -810,6 +810,21 @@ Same as [POST /validate](#post-validate) but JSKOS data to be validated is passe
 
   `knownSchemes=[boolean]` see [POST /validate](#post-validate)
 
+### GET /data
+Returns data for a certain URI or URIs. Can return concept schemes, concepts, concordances, mappings, and annotations. This endpoint does not offer pagination via `limit` and `offset`. It will always return all results. Furthermore, there is no certain order to the result set (but it should be consistent across requests). If a certain type of data requires authentication and the user is not authenticated, that type of data will not be returned.
+
+**Note:** As of version 2.0, this endpoint was adjusted to return all types of items that are available in the database, instead of just concepts and concept schemes. The additional parameters, apart from `uri`, were also removed. For the previous behavior (only without returning concept schemes), see [GET /concepts](#get-concepts).
+
+* **URL Params**
+
+  `uri=[uri]` URIs for concepts or concept schemes separated by `|`
+
+  `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting `ancestors`, `narrower`, and `annotations`)
+
+* **Success Response**
+
+  JSON array of [JSKOS Items]
+
 ### GET /concordances
 Lists all concordances for mappings.
 
@@ -1550,21 +1565,6 @@ Returns concept scheme suggestions.
 
 ### GET /voc/search
 Currently the same as `/voc/suggest` with parameter `format=jskos`.
-
-### GET /data
-Returns data for a certain URI or URIs. Can return concept schemes, concepts, concordances, mappings, and annotations. This endpoint does not offer pagination via `limit` and `offset`. It will always return all results. Furthermore, there is no certain order to the result set (but it should be consistent across requests). If a certain type of data requires authentication and the user is not authenticated, that type of data will not be returned.
-
-**Note:** As of version 2.0, this endpoint was adjusted to return all types of items that are available in the database, instead of just concepts and concept schemes. The additional parameters, apart from `uri`, were also removed. For the previous behavior (only without returning concept schemes), see [GET /concepts](#get-concepts).
-
-* **URL Params**
-
-  `uri=[uri]` URIs for concepts or concept schemes separated by `|`
-
-  `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting `ancestors`, `narrower`, and `annotations`)
-
-* **Success Response**
-
-  JSON array of [JSKOS Items]
 
 ### GET /concepts
 Returns detailed data for concepts. Note that there is no certain order to the result set (but it should be consistent across requests).
