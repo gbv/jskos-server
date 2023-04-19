@@ -177,6 +177,20 @@ for (let type of ["schemes", "concepts", "mappings", "concordances", "annotation
   }
 }
 
+// Adjust annotations.mismatchTagVocabulary to have the correct "API" field so that clients using cocoda-sdk can natively query it
+if (config.annotations?.mismatchTagVocabulary) {
+  if (!config.annotations?.mismatchTagVocabulary?.API?.[0]) {
+    config.annotations.mismatchTagVocabulary.API = [
+      {
+        type: "http://bartoc.org/api-type/jskos",
+        url: config.baseUrl,
+      },
+    ]
+  } else {
+    config.warn("annotations.mismatchTagVocabulary currently does not support loading concepts from an external API. It will be attempted to load concepts from this instance instead.")
+  }
+}
+
 // Set data for status endpoint
 Object.defineProperty(config, "status", { get: function() {
   const baseUrl = this.baseUrl

@@ -4,6 +4,8 @@ import assert from "node:assert"
 
 import { assertIndexes, assertMongoDB, dropDatabaseBeforeAndAfter, arrayToStream } from "./test-utils.js"
 
+import { InvalidBodyError } from "../errors/index.js"
+
 import { byType as services } from "../services/index.js"
 
 describe("Services", () => {
@@ -200,6 +202,139 @@ describe("Services", () => {
         assert.deepStrictEqual(result.map(r => r.uri).sort(), expected.map(r => r.uri).sort())
       })
 
+    })
+
+  })
+
+  describe("Annotation Service", () => {
+
+    const mismatchTagScheme = {
+      uri: "https://uri.gbv.de/terminology/mismatch/",
+    }
+    const mismatchTagConcept = {
+      uri: "https://uri.gbv.de/terminology/mismatch/test",
+      inScheme: [{uri: "https://uri.gbv.de/terminology/mismatch/"}],
+    }
+
+    it("should post tag mismatch scheme and concepts", async () => {
+      await services.scheme.postScheme({ bodyStream: await arrayToStream([mismatchTagScheme]) })
+      await services.concept.postConcept({ bodyStream: await arrayToStream([mismatchTagConcept]) })
+      const concept = await services.concept.get(mismatchTagConcept.uri)
+      assert.strictEqual(concept?.uri, mismatchTagConcept.uri)
+    })
+
+    it("should post negative assessment annotation that is correctly tagged", async () => {
+      const annotation = {
+        target: "abc:def",
+        bodyValue: "-1",
+        body: [
+          {
+            type: "SpecificResource",
+            value: mismatchTagConcept.uri,
+            purpose: "tagging",
+          },
+        ],
+      }
+      const results = await services.annotation.postAnnotation({ bodyStream: await arrayToStream([annotation]) })
+      assert.ok(results?.[0]?.id)
+    })
+
+    it("should not post negative assessment annotation that is correctly tagged with a URI that is not explicitly allowed", async () => {
+      const annotation = {
+        target: "abc:def",
+        bodyValue: "-1",
+        body: [
+          {
+            type: "SpecificResource",
+            value: mismatchTagConcept.uri + "2",
+            purpose: "tagging",
+          },
+        ],
+      }
+      try {
+        await services.annotation.postAnnotation({ bodyStream: await arrayToStream([annotation]) })
+        assert.fail("No error was thrown even though it was expected.")
+      } catch (error) {
+        assert.ok(error instanceof InvalidBodyError)
+      }
+    })
+
+    it("should not post positive assessment annotation that is tagged", async () => {
+      const annotation = {
+        target: "abc:def",
+        bodyValue: "+1",
+        body: [
+          {
+            type: "SpecificResource",
+            value: mismatchTagConcept.uri,
+            purpose: "tagging",
+          },
+        ],
+      }
+      try {
+        await services.annotation.postAnnotation({ bodyStream: await arrayToStream([annotation]) })
+        assert.fail("No error was thrown even though it was expected.")
+      } catch (error) {
+        assert.ok(error instanceof InvalidBodyError)
+      }
+    })
+
+    it("should require `body` to be an array", async () => {
+      const annotation = {
+        target: "abc:def",
+        bodyValue: "-1",
+        body: {
+          type: "SpecificResource",
+          value: mismatchTagConcept.uri,
+          purpose: "tagging",
+        },
+      }
+      try {
+        await services.annotation.postAnnotation({ bodyStream: await arrayToStream([annotation]) })
+        assert.fail("No error was thrown even though it was expected.")
+      } catch (error) {
+        assert.ok(error instanceof InvalidBodyError)
+      }
+    })
+
+    it("should not negative assessment annotation that is tagged incorrectly (1)", async () => {
+      const annotation = {
+        target: "abc:def",
+        bodyValue: "-1",
+        body: [
+          {
+            type: "SpecificResources",
+            value: mismatchTagConcept.uri,
+            purpose: "tagging",
+          },
+        ],
+      }
+      try {
+        await services.annotation.postAnnotation({ bodyStream: await arrayToStream([annotation]) })
+        assert.fail("No error was thrown even though it was expected.")
+      } catch (error) {
+        assert.ok(error instanceof InvalidBodyError)
+      }
+    })
+
+    it("should not negative assessment annotation that is tagged incorrectly (2)", async () => {
+      const annotation = {
+        target: "abc:def",
+        bodyValue: "-1",
+        body: [
+          {
+            type: "SpecificResource",
+            value: mismatchTagConcept.uri,
+            purpose: "tag",
+          },
+        ],
+      }
+      try {
+        await services.annotation.postAnnotation({ bodyStream: await arrayToStream([annotation]) })
+        assert.fail("No error was thrown even though it was expected.")
+      } catch (error) {
+        assert.ok(error instanceof InvalidBodyError)
+      }
     })
 
   })

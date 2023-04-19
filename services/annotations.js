@@ -4,9 +4,36 @@ import * as utils from "../utils/index.js"
 import jskos from "jskos-tools"
 import validate from "jskos-validate"
 
-import { Annotation } from "../models/annotations.js"
-import { Mapping } from "../models/mappings.js"
+import { Annotation, Mapping, Concept } from "../models/index.js"
 import { EntityNotFoundError, DatabaseAccessError, InvalidBodyError, MalformedBodyError, MalformedRequestError, ForbiddenAccessError } from "../errors/index.js"
+
+// Wrapper around validate.annotation that also checks the `body` field and throws errors if necessary.
+const validateAnnotation = async (data, options) => {
+  // TODO: Due to an issue with lax schemas in jskos-validate (see https://github.com/gbv/jskos-validate/issues/17), we need a workaround here.
+  const result = validate.annotation(_.omit(data, "body"), options)
+  if (!result || (data.body && !_.isArray(data.body))) {
+    throw new InvalidBodyError()
+  }
+  // Check `body` property
+  if (data.body?.length) {
+    const mismatchTagConcepts = await Concept.find({ "inScheme.uri": config.annotations?.mismatchTagVocabulary?.uri })
+    if (data.bodyValue !== "-1") {
+      throw new InvalidBodyError("Property `body` is currently only allowed with when `bodyValue` is set to \"-1\".")
+    }
+    for (const tag of data.body) {
+      if (tag.type !== "SpecificResource") {
+        throw new InvalidBodyError("Currently, the only allowed `type` of body values in annotations is \"SpecificResource\".")
+      }
+      if (tag.purpose !== "tagging") {
+        throw new InvalidBodyError("Currently, the only allowed `purpose` of body values in annotations is \"tagging\".")
+      }
+      if (!mismatchTagConcepts.find(concept => jskos.compare(concept, { uri: tag.value }))) {
+        throw new InvalidBodyError(`Either \`annotations.mismatchTagVocabulary\` is not configured or tag mismatch URI "${tag.value}" is not a valid tag.`)
+      }
+    }
+  }
+  return true
+}
 
 export class AnnotationService {
 
@@ -110,7 +137,7 @@ export class AnnotationService {
 
     let response
 
-    // Adjust all mappings
+    // Adjust all annotations
     annotations = await Promise.all(annotations.map(async annotation => {
       try {
         // For type moderating, check if user is on the whitelist (except for admin=true).
@@ -129,10 +156,8 @@ export class AnnotationService {
         }
         // Remove type property
         _.unset(annotation, "type")
-        // Validate mapping
-        if (!validate.annotation(annotation)) {
-          throw new InvalidBodyError()
-        }
+        // Validate annotation
+        await validateAnnotation(annotation)
         // Add _id and URI
         delete annotation._id
         let uriBase = config.baseUrl + "annotations/"
@@ -194,10 +219,8 @@ export class AnnotationService {
     annotation.modified = (new Date()).toISOString()
     // Remove type property
     _.unset(annotation, "type")
-    // Validate mapping
-    if (!validate.annotation(annotation)) {
-      throw new InvalidBodyError()
-    }
+    // Validate annotation
+    await validateAnnotation(annotation)
 
     // Always preserve certain existing properties
     annotation.created = existing.created
@@ -238,10 +261,8 @@ export class AnnotationService {
     if (_.isString(annotation.target)) {
       annotation.target = { id: annotation.target }
     }
-    // Validate mapping
-    if (!validate.annotation(annotation)) {
-      throw new InvalidBodyError()
-    }
+    // Validate annotation
+    await validateAnnotation(annotation)
 
     const result = await Annotation.replaceOne({ _id: existing._id }, existing)
     if (result.acknowledged) {

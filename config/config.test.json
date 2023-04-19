@@ -87,7 +87,10 @@
       "crossUser": false,
       "identityProviders": null
     },
-    "moderatingIdentities": ["http://test-moderating.user"]
+    "moderatingIdentities": ["http://test-moderating.user"],
+    "mismatchTagVocabulary": {
+      "uri": "https://uri.gbv.de/terminology/mismatch/"
+    }
   },
   "identities": ["http://test.user", "http://test-moderating.user"],
   "identityProviders": ["test"],

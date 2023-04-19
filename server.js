@@ -45,6 +45,13 @@ const connect = async () => {
       config.status.search = null
       config.status.suggest = null
     }
+    if (config.annotations?.mismatchTagVocabulary?.uri) {
+      const model = await import("./models/concepts.js")
+      const concepts = await model.Concept.find({ "inScheme.uri": config.annotations.mismatchTagVocabulary.uri })
+      if (concepts.length === 0) {
+        config.warn("annotations.mismatchTagVocabulary is configured, but no data for that vocabulary could be found in the database. Import the vocabulary data into this instance for the setting to work.")
+      }
+    }
   } catch(error) {
     config.warn("Error connecting to database, reconnect in a few seconds...")
   }
