@@ -229,7 +229,13 @@ export class ConcordanceService {
     concordance.modified = (new Date()).toISOString()
 
     // Use lodash merge to merge concordance objects
-    _.merge(existing, concordance)
+    _.assign(existing, concordance)
+    // Remove null properties if necessary
+    Object.keys(existing).forEach(key => {
+      if (existing[key] === null) {
+        delete existing[key]
+      }
+    })
 
     // Validate concordance after merge
     if (!validateConcordance(existing)) {

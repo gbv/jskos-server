@@ -737,6 +737,12 @@ export class MappingService {
     if (!mapping.type || !mapping.type.length) {
       mapping.type = ["http://www.w3.org/2004/02/skos/core#mappingRelation"]
     }
+    // Remove null properties if necessary
+    Object.keys(newMapping).forEach(key => {
+      if (newMapping[key] === null) {
+        delete newMapping[key]
+      }
+    })
 
     // Validate mapping after merge
     if (!validateMapping(newMapping)) {

@@ -255,14 +255,20 @@ export class AnnotationService {
     _.unset(annotation, "type")
     _.unset(annotation, "_id")
     _.unset(annotation, "id")
-    // Use lodash merge to merge annotations
-    _.merge(existing, annotation)
+    // Use lodash assign to merge annotations
+    _.assign(existing, annotation)
     // Change target property to object if necessary
     if (_.isString(annotation.target)) {
       annotation.target = { id: annotation.target }
     }
+    // Remove null properties if necessary
+    Object.keys(existing).forEach(key => {
+      if (existing[key] === null) {
+        delete existing[key]
+      }
+    })
     // Validate annotation
-    await validateAnnotation(annotation)
+    await validateAnnotation(existing)
 
     const result = await Annotation.replaceOne({ _id: existing._id }, existing)
     if (result.acknowledged) {

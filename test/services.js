@@ -22,6 +22,49 @@ describe("Services", () => {
 
   })
 
+  describe("Concordance Service", () => {
+
+    const fromScheme = { uri: "test:fromScheme" }
+    const toScheme = { uri: "test:toScheme" }
+
+    it("should post schemes for testing concordances", async () => {
+      await services.scheme.postScheme({ bodyStream: await arrayToStream([fromScheme, toScheme]) })
+    })
+
+    it("should post a concordance with a named contributor, then remove the contributor name, then remove the contributor", async () => {
+      const concordance = {
+        fromScheme,
+        toScheme,
+        contributor: [{
+          uri: "test:user",
+          prefLabel: { de: "test" },
+        }],
+      }
+      const [postedConcordance] = await services.concordance.postConcordance({ bodyStream: await arrayToStream([concordance]) })
+      const patch = {
+        contributor: [{
+          uri: "test:user",
+        }],
+      }
+      const patchedConcordance = await services.concordance.patchConcordance({ body: patch, existing: postedConcordance.toObject() })
+      assert.ok(!patchedConcordance.contributor[0].prefLabel, "PATCH requests should merge objects only on the top level.")
+      const patch2 = {
+        contributor: null,
+      }
+      const patchedConcordance2 = await services.concordance.patchConcordance({ body: patch2, existing: patchedConcordance })
+      assert.ok(patchedConcordance2.contributor === undefined, "A field should be removed when set to `null`.")
+    })
+
+    for (const scheme of [fromScheme, toScheme]) {
+      it("should delete scheme after testing concordances", async () => {
+        scheme._id = scheme.uri
+        scheme.concepts = []
+        await services.scheme.deleteScheme({ uri: scheme.uri, existing: scheme })
+      })
+    }
+
+  })
+
   describe("Mapping Service", () => {
 
     describe("filter mappings by annotations", () => {
