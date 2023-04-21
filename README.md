@@ -114,6 +114,7 @@ All missing keys will be defaulted from `config/config.default.json`:
   "baseUrl": null,
   "title": "JSKOS Server",
   "version": null,
+  "closedWorldAssumption": true,
   "port": 3000,
   "proxies": [],
   "mongo": {
@@ -123,16 +124,15 @@ All missing keys will be defaulted from `config/config.default.json`:
     "port": 27017,
     "db": "jskos-server",
     "options": {
-      "reconnectTries": 5,
-      "reconnectInterval": 1000,
-      "useNewUrlParser": true
+      "connectTimeoutMS": 360000,
+      "socketTimeoutMS": 360000,
+      "heartbeatFrequencyMS": 10000
     }
   },
   "auth": {
     "algorithm": "RS256",
     "key": null
   },
-  "anonymous": false,
   "schemes": true,
   "concepts": true,
   "mappings": {
@@ -169,8 +169,11 @@ All missing keys will be defaulted from `config/config.default.json`:
     "delete": {
       "auth": true,
       "crossUser": false
-    }
+    },
+    "moderatingIdentities": [],
+    "mismatchTagVocabulary": null
   },
+  "anonymous": false,
   "identityProviders": null,
   "identities": null,
   "ips": null
