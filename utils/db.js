@@ -11,7 +11,7 @@ mongoose.set("bufferTimeoutMS", 30000)
 mongoose.set("strictQuery", false)
 
 connection.on("connected", () => {
-  config.log("Connected to database")
+  config.warn("Connected to database")
 })
 const onDisconnected = () => {
   config.warn("Disconnected from database, waiting for automatic reconnect...")
