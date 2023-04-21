@@ -219,11 +219,54 @@ Available actions for `schemes`, `concepts`, `mappings`, and `annotations` are `
 
 - **`fromSchemeWhitelist`/`toSchemeWhitelist`**: Can be defined only on type `mappings`. List of scheme objects that are allowed for `fromScheme`/`toScheme` respectively. `null` allows all schemes.
 
-- **`mismatchTagVocabulary`**: Can be defined only on type `annotations`. A [JSKOS Concept Schemes] object with required property `uri`. When configured, concept URIs belonging to this vocabulary can be used to tag mapping mismatches in mapping annotations. The vocabulary including concept data needs to be imported into the same JSKOS Server instance. For detailed information, please refer to the [2.0.0 release notes](https://github.com/gbv/jskos-server/releases/tag/v2.0.0).
+- **`mismatchTagVocabulary`**: Can be defined only on type `annotations`. A [JSKOS Concept Schemes] object with required property `uri`. When configured, concept URIs belonging to this vocabulary can be used to tag mapping mismatches in mapping annotations. See [below](#mapping-mismatch-tagging-for-negative-assessment-annotations) for detailed information about configuration and usage of this feature.
 
 \* Only applies to actions `create`, `update`, and `delete`.
 
 Note that any properties not mentioned here are not allowed!
+
+#### Mapping Mismatch Tagging for Negative Assessment Annotations
+To differentiate why a mapping was annotated with a negative assessment, a mismatch tagging vocabulary can now be configured under `annotations.mismatchTagVocabulary`. In theory, any vocabulary can be used, but [our instance](https://coli-conc.gbv.de/api/) will use a very small "mismatch" vocabulary available in https://github.com/gbv/jskos-data/tree/master/mismatch.
+
+To set up mapping mismatch tagging, add the vocabulary to the configuration:
+
+```json
+{
+  "annotations": {
+    "mismatchTagVocabulary": {
+      "uri": "https://uri.gbv.de/terminology/mismatch/"
+    }
+  }
+}
+```
+
+Currently, the vocabulary and its concepts are required to be imported in the same JSKOS Server instance:
+
+```bash
+npm run import schemes https://raw.githubusercontent.com/gbv/jskos-data/master/mismatch/mismatch-scheme.json
+npm run import concepts https://raw.githubusercontent.com/gbv/jskos-data/master/mismatch/mismatch-concepts.json
+```
+
+After restarting JSKOS Server, mapping mismatch tagging is available for annotations. To add such a tag to an annotation, add a `body` field like this:
+
+```json
+{
+  "motivation": "assessing",
+  "bodyValue": "-1",
+  "body": [
+    {
+      "type": "SpecificResource",
+      "value": "https://uri.gbv.de/terminology/mismatch/scope",
+      "purpose": "tagging"
+    }
+  ]
+}
+```
+
+Currently, this is the only supported format, i.e. `body` as an array containing an object with `type` of "SpecificResource", `purpose` of "tagging", and the tag concept's URI as `value`.
+
+To identify whether a JSKOS Server instance supports this kind of tagging, check the `/status` endpoint for the `config.annotations.mismatchTagVocabulary` key.
+
 
 ### Access control
 The rights to `read`, `create`, `update` and `delete` entities via API can be controlled via several configuration settings described above ([data import](#data-import) is not limited by these restrictions):
@@ -656,6 +699,15 @@ Note that certain properties from the actual configuration will not be shown in 
         "delete": {
           "auth": true,
           "crossUser": false
+        },
+        "mismatchTagVocabulary": {
+          "uri": "https://uri.gbv.de/terminology/mismatch/",
+          "API": [
+            {
+              "type": "http://bartoc.org/api-type/jskos",
+              "url": "http://localhost:3000/"
+            }
+          ]
         }
       },
       "identityProviders": null,
