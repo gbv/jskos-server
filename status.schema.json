@@ -72,6 +72,10 @@
       "description": "Server configuration object",
       "$ref": "#/definitions/config"
     },
+    "data": {
+      "description": "API URL for data",
+      "$ref": "#/definitions/uriOrNull"
+    },
     "schemes": {
       "description": "API URL for concept schemes",
       "$ref": "#/definitions/uriOrNull"
@@ -80,9 +84,9 @@
       "description": "API URL for top concepts",
       "$ref": "#/definitions/uriOrNull"
     },
-    "concepts": {
-      "description": "API URL for concepts",
-      "$ref": "#/definitions/uriOrNull"
+    "voc-concepts": {
+      "description": "API URL for a vocabulary's concepts",
+      "$ref": "#/definitions/stringOrNull"
     },
     "voc-suggest": {
       "description": "API URL for vocabulary suggest",
@@ -92,8 +96,8 @@
       "description": "API URL for vocabulary search",
       "$ref": "#/definitions/stringOrNull"
     },
-    "data": {
-      "description": "API URL for data",
+    "concepts": {
+      "description": "API URL for concepts",
       "$ref": "#/definitions/uriOrNull"
     },
     "narrower": {

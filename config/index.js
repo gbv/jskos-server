@@ -220,11 +220,12 @@ Object.defineProperty(config, "status", { get: function() {
     "top",
     "voc-search",
     "voc-suggest",
+    "voc-concepts",
     "concepts",
     "narrower",
     "ancestors",
-    "suggest",
     "search",
+    "suggest",
     "mappings",
     "concordances",
     "annotations",
@@ -238,14 +239,15 @@ Object.defineProperty(config, "status", { get: function() {
     status.top = `${baseUrl}voc/top`
     status["voc-search"] = `${baseUrl}voc/search`
     status["voc-suggest"] = `${baseUrl}voc/suggest`
+    status["voc-concepts"] = `${baseUrl}voc/concepts`
   }
   if (status.config.concepts) {
     // Add endpoints related to concepts
-    status.concepts = `${baseUrl}voc/concepts`
+    status.concepts = `${baseUrl}concepts`
     status.narrower = `${baseUrl}concepts/narrower`
     status.ancestors = `${baseUrl}concepts/ancestors`
-    status.suggest = `${baseUrl}concepts/suggest`
     status.search = `${baseUrl}concepts/search`
+    status.suggest = `${baseUrl}concepts/suggest`
   }
   if (status.config.mappings) {
     status.mappings = `${baseUrl}mappings`
