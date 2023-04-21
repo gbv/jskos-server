@@ -59,7 +59,8 @@
       "auth": true,
       "crossUser": false
     },
-    "moderatingIdentities": []
+    "moderatingIdentities": [],
+    "mismatchTagVocabulary": null
   },
   "anonymous": false,
   "identityProviders": null,
