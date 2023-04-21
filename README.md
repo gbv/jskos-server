@@ -216,6 +216,8 @@ Available actions for `schemes`, `concepts`, `mappings`, and `annotations` are `
 
 - **`fromSchemeWhitelist`/`toSchemeWhitelist`**: Can be defined only on type `mappings`. List of scheme objects that are allowed for `fromScheme`/`toScheme` respectively. `null` allows all schemes.
 
+- **`mismatchTagVocabulary`**: Can be defined only on type `annotations`. A [JSKOS Concept Schemes] object with required property `uri`. When configured, concept URIs belonging to this vocabulary can be used to tag mapping mismatches in mapping annotations. The vocabulary including concept data needs to be imported into the same JSKOS Server instance. For detailed information, please refer to the [2.0.0 release notes](https://github.com/gbv/jskos-server/releases/tag/v2.0.0).
+
 \* Only applies to actions `create`, `update`, and `delete`.
 
 Note that any properties not mentioned here are not allowed!
