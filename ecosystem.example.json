@@ -1,0 +1,7 @@
+{
+  "name": "jskos-server",
+  "script": "./server.js",
+  "env": {
+    "NODE_ENV": "production"
+  }
+}
