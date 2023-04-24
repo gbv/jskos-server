@@ -241,8 +241,8 @@ adjust.scheme = (scheme) => {
     scheme.type = scheme.type || ["http://www.w3.org/2004/02/skos/core#ConceptScheme"]
     // Remove existing "distributions" array (except for external URLs)
     scheme.distributions = (scheme.distributions || []).filter(dist => !dist.download || !dist.download.startsWith(config.baseUrl))
-    // If this instance contains concepts for this scheme, add distribution for it
     if (scheme.concepts && scheme.concepts.length) {
+      // If this instance contains concepts for this scheme, add distribution for it
       scheme.distributions = [
         {
           download: `${config.baseUrl}voc/concepts?uri=${encodeURIComponent(scheme.uri)}&download=ndjson`,
@@ -254,6 +254,15 @@ adjust.scheme = (scheme) => {
           mimetype: "application/json; charset=utf-8",
         },
       ].concat(scheme.distributions)
+      // Also add `API` field if it does not exist
+      if (!scheme.API) {
+        scheme.API = [
+          {
+            type: "http://bartoc.org/api-type/jskos",
+            url: config.baseUrl,
+          },
+        ]
+      }
     }
     // Add distributions based on API field
     (scheme.API || []).filter(api => api.type === "http://bartoc.org/api-type/jskos" && api.url !== config.baseUrl).forEach(api => {
