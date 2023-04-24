@@ -137,23 +137,16 @@
       "$ref": "#/definitions/anonymous"
     },
     "schemes": {
-      "$ref": "#/definitions/capabilityAndForbidMappingOnlyProperties"
+      "$ref": "#/definitions/capabilityAndForbidMappingAndAnnotationOnlyProperties"
     },
     "concepts": {
-      "$ref": "#/definitions/capabilityAndForbidMappingOnlyProperties"
+      "$ref": "#/definitions/capabilityAndForbidMappingAndAnnotationOnlyProperties"
     },
     "concordances": {
-      "$ref": "#/definitions/capabilityAndForbidMappingOnlyProperties"
+      "$ref": "#/definitions/capabilityAndForbidMappingAndAnnotationOnlyProperties"
     },
     "mappings": {
-      "anyOf": [
-        {
-          "type": "boolean"
-        },
-        {
-          "$ref": "#/definitions/capability"
-        }
-      ]
+      "$ref": "#/definitions/capabilityAndForbidAnnotationOnlyProperties"
     },
     "annotations": {
       "$ref": "#/definitions/capabilityAndForbidMappingOnlyProperties"
@@ -172,6 +165,43 @@
             },
             {
               "$ref": "#/definitions/forbidMappingOnlyProperties"
+            }
+          ]
+        }
+      ]
+    },
+    "capabilityAndForbidAnnotationOnlyProperties": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/definitions/capability"
+            },
+            {
+              "$ref": "#/definitions/forbidAnnotationOnlyProperties"
+            }
+          ]
+        }
+      ]
+    },
+    "capabilityAndForbidMappingAndAnnotationOnlyProperties": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/definitions/capability"
+            },
+            {
+              "$ref": "#/definitions/forbidMappingOnlyProperties"
+            },
+            {
+              "$ref": "#/definitions/forbidAnnotationOnlyProperties"
             }
           ]
         }
@@ -348,6 +378,7 @@
             {
               "type": "array",
               "items": {
+                "type": "object",
                 "required": [
                   "uri"
                 ],
@@ -376,6 +407,7 @@
             {
               "type": "array",
               "items": {
+                "type": "object",
                 "required": [
                   "uri"
                 ],
@@ -393,6 +425,16 @@
                   }
                 }
               }
+            }
+          ]
+        },
+        "mismatchTagVocabulary": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object"
             }
           ]
         }
@@ -451,18 +493,34 @@
       "not": {
         "anyOf": [
           {
+            "type": "object",
             "required": [
               "cardinality"
             ]
           },
           {
+            "type": "object",
             "required": [
               "fromSchemeWhitelist"
             ]
           },
           {
+            "type": "object",
             "required": [
               "toSchemeWhitelist"
+            ]
+          }
+        ]
+      }
+    },
+    "forbidAnnotationOnlyProperties": {
+      "$comment": "Use in non-annotation definitions. Needed to ensure that no additional properties are allowed.",
+      "not": {
+        "anyOf": [
+          {
+            "type": "object",
+            "required": [
+              "mismatchTagVocabulary"
             ]
           }
         ]

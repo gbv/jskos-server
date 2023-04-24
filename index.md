@@ -1,8 +1,10 @@
 # JSKOS Server
 
+[![GitHub release](https://img.shields.io/github/release/gbv/jskos-server.svg)](https://github.com/gbv/jskos-server/releases/latest)
+[![API Status](https://coli-conc-status.fly.dev/api/badge/2/status?label=API)](https://coli-conc.gbv.de/api/)
+[![License](https://img.shields.io/github/license/gbv/jskos-server.svg)](https://github.com/gbv/jskos-server/blob/master/LICENSE)
+[![Docker](https://img.shields.io/badge/Docker-ghcr.io%2Fgbv%2Fjskos--server-informational)](https://github.com/gbv/jskos-server/blob/master/docker/README.md)
 [![Test](https://github.com/gbv/jskos-server/actions/workflows/test.yml/badge.svg)](https://github.com/gbv/jskos-server/actions/workflows/test.yml)
-[![GitHub package version](https://img.shields.io/github/package-json/v/gbv/jskos-server.svg?label=version)](https://github.com/gbv/jskos-server)
-[![Uptime Robot status](https://img.shields.io/uptimerobot/status/m780815088-08758d5c5193e7b25236cfd7.svg?label=%2Fapi%2F)](https://stats.uptimerobot.com/qZQx1iYZY/780815088)
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg)](https://github.com/RichardLitt/standard-readme)
 
 > Web service to access [JSKOS] data.
@@ -27,6 +29,7 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [GET /checkAuth](#get-checkauth)
   - [POST /validate](#post-validate)
   - [GET /validate](#get-validate)
+  - [GET /data](#get-data)
   - [GET /concordances](#get-concordances)
   - [GET /concordances/:\_id](#get-concordances_id)
   - [POST /concordances](#post-concordances)
@@ -51,14 +54,14 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [DELETE /voc/concepts](#delete-vocconcepts)
   - [GET /voc/suggest](#get-vocsuggest)
   - [GET /voc/search](#get-vocsearch)
-  - [GET /data](#get-data)
-  - [POST /data](#post-data)
-  - [PUT /data](#put-data)
-  - [DELETE /data](#delete-data)
-  - [GET /narrower](#get-narrower)
-  - [GET /ancestors](#get-ancestors)
-  - [GET /suggest](#get-suggest)
-  - [GET /search](#get-search)
+  - [GET /concepts](#get-concepts)
+  - [POST /concepts](#post-concepts)
+  - [PUT /concepts](#put-concepts)
+  - [DELETE /concepts](#delete-concepts)
+  - [GET /concepts/narrower](#get-conceptsnarrower)
+  - [GET /concepts/ancestors](#get-conceptsancestors)
+  - [GET /concepts/suggest](#get-conceptssuggest)
+  - [GET /concepts/search](#get-conceptssearch)
   - [GET /annotations](#get-annotations)
   - [GET /annotations/:\_id](#get-annotations_id)
   - [POST /annotations](#post-annotations)
@@ -80,10 +83,10 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
 ## Install
 
 ### Docker
-The easiest way to install and use JSKOS Server is with Docker and Docker Compose. Please refer to the [documentation on Docker Hub](https://hub.docker.com/r/coliconc/jskos-server) for more information and instructions.
+The easiest way to install and use JSKOS Server is with Docker and Docker Compose. Please refer to [our Docker documentation](https://github.com/gbv/jskos-server/blob/master/docker/README.md) for more information and instructions.
 
 ### Dependencies
-You need Node.js 12 or later to run jskos-server (14 or 16 recommended). You need to have access to a [MongoDB database](https://docs.mongodb.com/manual/installation/).
+You need Node.js 18 to run JSKOS Server[^nodejs]. You need to have access to a [MongoDB database](https://docs.mongodb.com/manual/installation/) (v5 or v6 recommended).
 
 ### Clone and Install
 ```bash
@@ -111,25 +114,25 @@ All missing keys will be defaulted from `config/config.default.json`:
   "baseUrl": null,
   "title": "JSKOS Server",
   "version": null,
+  "closedWorldAssumption": true,
   "port": 3000,
   "proxies": [],
   "mongo": {
     "user": "",
     "pass": "",
-    "host": "localhost",
+    "host": "127.0.0.1",
     "port": 27017,
     "db": "jskos-server",
     "options": {
-      "reconnectTries": 5,
-      "reconnectInterval": 1000,
-      "useNewUrlParser": true
+      "connectTimeoutMS": 360000,
+      "socketTimeoutMS": 360000,
+      "heartbeatFrequencyMS": 10000
     }
   },
   "auth": {
     "algorithm": "RS256",
     "key": null
   },
-  "anonymous": false,
   "schemes": true,
   "concepts": true,
   "mappings": {
@@ -166,8 +169,11 @@ All missing keys will be defaulted from `config/config.default.json`:
     "delete": {
       "auth": true,
       "crossUser": false
-    }
+    },
+    "moderatingIdentities": [],
+    "mismatchTagVocabulary": null
   },
+  "anonymous": false,
   "identityProviders": null,
   "identities": null,
   "ips": null
@@ -213,9 +219,54 @@ Available actions for `schemes`, `concepts`, `mappings`, and `annotations` are `
 
 - **`fromSchemeWhitelist`/`toSchemeWhitelist`**: Can be defined only on type `mappings`. List of scheme objects that are allowed for `fromScheme`/`toScheme` respectively. `null` allows all schemes.
 
+- **`mismatchTagVocabulary`**: Can be defined only on type `annotations`. A [JSKOS Concept Schemes] object with required property `uri`. When configured, concept URIs belonging to this vocabulary can be used to tag mapping mismatches in mapping annotations. See [below](#mapping-mismatch-tagging-for-negative-assessment-annotations) for detailed information about configuration and usage of this feature.
+
 \* Only applies to actions `create`, `update`, and `delete`.
 
 Note that any properties not mentioned here are not allowed!
+
+#### Mapping Mismatch Tagging for Negative Assessment Annotations
+To differentiate why a mapping was annotated with a negative assessment, a mismatch tagging vocabulary can now be configured under `annotations.mismatchTagVocabulary`. In theory, any vocabulary can be used, but [our instance](https://coli-conc.gbv.de/api/) will use a very small "mismatch" vocabulary available in https://github.com/gbv/jskos-data/tree/master/mismatch.
+
+To set up mapping mismatch tagging, add the vocabulary to the configuration:
+
+```json
+{
+  "annotations": {
+    "mismatchTagVocabulary": {
+      "uri": "https://uri.gbv.de/terminology/mismatch/"
+    }
+  }
+}
+```
+
+Currently, the vocabulary and its concepts are required to be imported in the same JSKOS Server instance:
+
+```bash
+npm run import schemes https://raw.githubusercontent.com/gbv/jskos-data/master/mismatch/mismatch-scheme.json
+npm run import concepts https://raw.githubusercontent.com/gbv/jskos-data/master/mismatch/mismatch-concepts.json
+```
+
+After restarting JSKOS Server, mapping mismatch tagging is available for annotations. To add such a tag to an annotation, add a `body` field like this:
+
+```json
+{
+  "motivation": "assessing",
+  "bodyValue": "-1",
+  "body": [
+    {
+      "type": "SpecificResource",
+      "value": "https://uri.gbv.de/terminology/mismatch/scope",
+      "purpose": "tagging"
+    }
+  ]
+}
+```
+
+Currently, this is the only supported format, i.e. `body` as an array containing an object with `type` of "SpecificResource", `purpose` of "tagging", and the tag concept's URI as `value`.
+
+To identify whether a JSKOS Server instance supports this kind of tagging, check the `/status` endpoint for the `config.annotations.mismatchTagVocabulary` key.
+
 
 ### Access control
 The rights to `read`, `create`, `update` and `delete` entities via API can be controlled via several configuration settings described above ([data import](#data-import) is not limited by these restrictions):
@@ -455,7 +506,7 @@ Note about previous additional options for `auth`:
 JSKOS Server provides scripts to import JSKOS data into the database or delete data from the database. Right now, mappings, terminologies (concept schemes), concepts, concordances, and annotations, in JSON (object or array of objects) or [NDJSON](http://ndjson.org) format are supported.
 
 #### Import Notes
-**About hierarchies within concepts:** Hierarchies are supported. However, only the `broader` field will be used during import. Both `ancestors` and `narrower` will be removed and the respective endpoints ([GET /ancestors](#get-ancestors) and [GET /narrower](#get-narrower)) will dynamically rebuild these properties. That means that when converting your data, please normalize it so that the hierarchy is expressed via the `broader` field in JSKOS.
+**About hierarchies within concepts:** Hierarchies are supported. However, only the `broader` field will be used during import. Both `ancestors` and `narrower` will be removed and the respective endpoints ([GET /concepts/ancestors](#get-conceptsancestors) and [GET /concepts/narrower](#get-conceptsnarrower)) will dynamically rebuild these properties. That means that when converting your data, please normalize it so that the hierarchy is expressed via the `broader` field in JSKOS.
 
 Example scheme (as JSON object) with concepts in a hierarchy (as NDJSON):
 ```json
@@ -500,7 +551,7 @@ npm run import-batch -- mappings files.txt
 # You can, for example, store these batch import files in folder `imports` which is ignored in git.
 ```
 
-**Note: If you have concepts in your database, make sure to run `npm run import -- --indexes` at least once. This will make sure all necessary indexes are created. Without this step, the `/suggest` and `/search` endpoints will not work.**
+**Note: If you have concepts in your database, make sure to run `npm run import -- --indexes` at least once. This will make sure all necessary indexes are created. Without this step, the `/concepts/suggest` and `/concepts/search` endpoints will not work.**
 
 For more information about the import script, run `npm run import -- --help`.
 
@@ -560,8 +611,17 @@ Unless otherwise specified:
 - `POST`/`PUT`/`PATCH` endpoints will override `creator` and `contributor` of submitted objects (see [this comment](https://github.com/gbv/jskos-server/issues/122#issuecomment-723029967) for more details)
 - `POST`/`PUT`/`PATCH`/`DELETE` requests require authentication via a JWT from [login-server](https://github.com/gbv/login-server) in the header. Exception: Authentication for certain actions on certain endpoints can be disabled (see [configuration](#configuration)).
 - `PUT`/`PATCH`/`DELETE` requests are required to come from the owner of the entity that is being modified.
+- `PATCH` requests are merged only on the top level. To remove a top-level property, set it to `null` in the body.
 - All URL parameters are optional.
 - All `GET` endpoints (except for `/status` and those with `:_id`) offer pagination via `limit=[number]` (default: 100) and `offset=[number]` (default: 0) parameters. In the response, there will be a `Link` header like described in the [GitHub API documentation](https://developer.github.com/v3/#pagination), as well as a `X-Total-Count` header containing the total number of results.
+- All `GET` endpoints returning a certain type of JSKOS data offer the `properties=[list]` parameter, with `[list]` being a comma-separated list of properties.
+  - All JSKOS types allow removing properties by prefixing the property with `-`. All following properties in the list will also be removed.
+  - For concepts and mappings, the property `annotations` can be specified to add all annotations in the database for a certain item.
+  - For concepts, the properties `narrower` and `ancestors` can be specified to add narrower/ancestor concepts to a certain concept.
+  - Specifying a `*` adds all available properties.
+  - Example: `properties=*,-narrower,notation` will add properties `annotations` and `ancestors`, and remove the `notation` property from all return items.
+  - Properties can be explicitly re-added by prefixing them with `+`, e.g. `properties=-from,to,+from` will only remove the `to` property.
+  - Note that the `+` sign has to be properly encoded as `%2B`, otherwise it will be interpreted as a space.
 - For possible errors, see [Errors](#errors).
 
 ### GET /status
@@ -639,23 +699,33 @@ Note that certain properties from the actual configuration will not be shown in 
         "delete": {
           "auth": true,
           "crossUser": false
+        },
+        "mismatchTagVocabulary": {
+          "uri": "https://uri.gbv.de/terminology/mismatch/",
+          "API": [
+            {
+              "type": "http://bartoc.org/api-type/jskos",
+              "url": "http://localhost:3000/"
+            }
+          ]
         }
       },
       "identityProviders": null,
       "identities": null
     },
+    "data": "http://localhost:3000/data",
     "schemes": "http://localhost:3000/voc",
     "top": "http://localhost:3000/voc/top",
-    "concepts": "http://localhost:3000/voc/concepts",
-    "voc-suggest": "http://localhost:3000/voc/suggest",
     "voc-search": "http://localhost:3000/voc/search",
-    "data": "http://localhost:3000/data",
-    "narrower": "http://localhost:3000/narrower",
-    "ancestors": "http://localhost:3000/ancestors",
-    "suggest": "http://localhost:3000/suggest",
-    "search": "http://localhost:3000/search",
-    "concordances": "http://localhost:3000/concordances",
+    "voc-suggest": "http://localhost:3000/voc/suggest",
+    "voc-concepts": "http://localhost:3000/voc/concepts",
+    "concepts": "http://localhost:3000/concepts",
+    "narrower": "http://localhost:3000/concepts/narrower",
+    "ancestors": "http://localhost:3000/concepts/ancestors",
+    "search": "http://localhost:3000/concepts/search",
+    "suggest": "http://localhost:3000/concepts/suggest",
     "mappings": "http://localhost:3000/mappings",
+    "concordances": "http://localhost:3000/concordances",
     "annotations": "http://localhost:3000/annotations",
     "types": null,
     "validate": "http://localhost:3000/validate",
@@ -798,6 +868,21 @@ Same as [POST /validate](#post-validate) but JSKOS data to be validated is passe
   `unknownFields=[boolean]` see [POST /validate](#post-validate)
 
   `knownSchemes=[boolean]` see [POST /validate](#post-validate)
+
+### GET /data
+Returns data for a certain URI or URIs. Can return concept schemes, concepts, concordances, mappings, and annotations. This endpoint does not offer pagination via `limit` and `offset`. It will always return all results. Furthermore, there is no certain order to the result set (but it should be consistent across requests). If a certain type of data requires authentication and the user is not authenticated, that type of data will simply not be returned.
+
+**Note:** As of version 2.0, this endpoint was adjusted to return all types of items that are available in the database, instead of just concepts and concept schemes. The additional parameters, apart from `uri`, were also removed. For the previous behavior (only without returning concept schemes), see [GET /concepts](#get-concepts).
+
+* **URL Params**
+
+  `uri=[uri]` URIs for JSKOS items separated by `|` (annotations, despite using `id` instead of `uri`, can also be queried here)
+
+  `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting `ancestors`, `narrower`, and `annotations`)
+
+* **Success Response**
+
+  JSON array of [JSKOS Items]
 
 ### GET /concordances
 Lists all concordances for mappings.
@@ -1540,16 +1625,16 @@ Returns concept scheme suggestions.
 ### GET /voc/search
 Currently the same as `/voc/suggest` with parameter `format=jskos`.
 
-### GET /data
-Returns detailed data for concepts or concept schemes. Note that there is no certain order to the result set (but it should be consistent across requests).
+### GET /concepts
+Returns detailed data for concepts. Note that there is no certain order to the result set (but it should be consistent across requests).
 
 * **URL Params**
 
-  `uri=[uri]` URIs for concepts or concept schemes separated by `|`
+  `uri=[uri]` URIs for concepts separated by `|`
 
-  `notation=[notation]` notations for concepts or concept schemes separated by `|`
+  `notation=[notation]` notations for concepts separated by `|`
 
-  `voc=[uri]` filter by concept scheme URI (note that if `voc` is given, no concept schemes will be returned)
+  `voc=[uri]` filter by concept scheme URI
 
   `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting `ancestors`, `narrower`, and `annotations`)
 
@@ -1599,7 +1684,7 @@ Returns detailed data for concepts or concept schemes. Note that there is no cer
   ]
   ```
 
-### POST /data
+### POST /concepts
 Saves a concept or multiple concepts in the database. Each concept has to have a unique `uri` as well as a concept scheme that is available on the server in the `inScheme` or `topConceptOf` field.
 
 * **URL Params**
@@ -1614,14 +1699,14 @@ Saves a concept or multiple concepts in the database. Each concept has to have a
 
   When a single concept is provided, an error can be returned if there's something wrong with it (see [errors](#errors)). When multiple concepts are provided, the first error will be returned, except if bulk mode is enabled in which errors for individual concepts are ignored.
 
-### PUT /data
+### PUT /concepts
 Overwrites a concept in the database. Is identified via its `uri` field.
 
 * **Success Reponse**
 
   JSKOS Concept object as it was saved in the database.
 
-### DELETE /data
+### DELETE /concepts
 Deletes a concept from the database.
 
 * **URL Params**
@@ -1632,8 +1717,10 @@ Deletes a concept from the database.
 
   Status 204, no content.
 
-### GET /narrower
+### GET /concepts/narrower
 Returns narrower concepts for a concept.
+
+**Note:** The old `/narrower` endpoint is deprecated as of version 2.0 and will be removed in version 3.0.
 
 * **URL Params**
 
@@ -1648,7 +1735,7 @@ Returns narrower concepts for a concept.
 * **Sample Call**
 
   ```bash
-  curl https://coli-conc.gbv.de/api/narrower?uri=http://dewey.info/class/612.112/e23/
+  curl https://coli-conc.gbv.de/api/concepts/narrower?uri=http://dewey.info/class/612.112/e23/
   ```
 
   ```json
@@ -1744,8 +1831,10 @@ Returns narrower concepts for a concept.
   ]
   ```
 
-### GET /ancestors
+### GET /concepts/ancestors
 Returns ancestor concepts for a concept.
+
+**Note:** The old `/ancestors` endpoint is deprecated as of version 2.0 and will be removed in version 3.0.
 
 * **URL Params**
 
@@ -1760,7 +1849,7 @@ Returns ancestor concepts for a concept.
 * **Sample Call**
 
   ```bash
-  curl https://coli-conc.gbv.de/api/ancestors?uri=http://dewey.info/class/61/e23/
+  curl https://coli-conc.gbv.de/api/concepts/ancestors?uri=http://dewey.info/class/61/e23/
   ```
 
   ```json
@@ -1799,8 +1888,10 @@ Returns ancestor concepts for a concept.
   ]
   ```
 
-### GET /suggest
+### GET /concepts/suggest
 Returns concept suggestions.
+
+**Note:** The old `/suggest` endpoint is deprecated as of version 2.0 and will be removed in version 3.0.
 
 * **URL Params**
 
@@ -1817,7 +1908,7 @@ Returns concept suggestions.
 * **Sample Calls**
 
   ```bash
-  curl https://coli-conc.gbv.de/api/suggest?search=Krebs&limit=5
+  curl https://coli-conc.gbv.de/api/concepts/suggest?search=Krebs&limit=5
   ```
 
   ```json
@@ -1848,7 +1939,7 @@ Returns concept suggestions.
   ```
 
   ```bash
-  curl https://coli-conc.gbv.de/api/suggest?search=Krebs&limit=2&format=jskos
+  curl https://coli-conc.gbv.de/api/concepts/suggest?search=Krebs&limit=2&format=jskos
   ```
 
   ```json
@@ -1920,8 +2011,10 @@ Returns concept suggestions.
   ]
   ```
 
-### GET /search
-Currently the same as `/suggest` with parameter `format=jskos`. Additionally, search supports the parameter `properties=[list]` as in the other concept methods.
+### GET /concepts/search
+Currently the same as `/concepts/suggest` with parameter `format=jskos`. Additionally, search supports the parameter `properties=[list]` as in the other concept methods.
+
+**Note:** The old `/search` endpoint is deprecated as of version 2.0 and will be removed in version 3.0.
 
 ### GET /annotations
 Returns an array of annotations. Each annotation has a property `id` under which the specific annotation can be accessed.
@@ -2116,6 +2209,7 @@ If you'd like to run the import script daily to refresh current mappings, you ca
 [JSKOS Concept Mappings]: https://gbv.github.io/jskos/jskos.html#concept-mappings
 [JSKOS Concept Schemes]: https://gbv.github.io/jskos/jskos.html#concept-schemes
 [JSKOS Concepts]: https://gbv.github.io/jskos/jskos.html#concept
+[JSKOS Items]: https://gbv.github.io/jskos/jskos.html#item
 [Web Annotation Data Model]: https://www.w3.org/TR/annotation-model/
 
 ### Running Behind a Reverse Proxy
@@ -2200,3 +2294,4 @@ MIT © 2018 Verbundzentrale des GBV (VZG)
 
 [login-server]: https://github.com/gbv/login-server
 [jskos-validate]: https://github.com/gbv/jskos-validate
+[^nodejs]: In theory, Node.js 16 or even 14 should work as well, but as of JSKOS Server 2.0.0, we decided to require Node.js 18 due to the [upcoming early EOL of Node.js 16](https://nodejs.org/en/blog/announcements/nodejs16-eol).
