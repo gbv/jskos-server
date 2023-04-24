@@ -10,7 +10,7 @@ export { router as mappingRouter }
 // /mappings/suggest and /mappings/voc need to come before /mappings/:_id!
 router.get(
   "/suggest",
-  config.concepts && config.concepts.read.auth ? auth.main : auth.optional,
+  config.concepts && config.concepts.read?.auth ? auth.main : auth.optional,
   utils.wrappers.async(async (req) => {
     return await mappingService.getNotationSuggestions(req.query)
   }),
@@ -19,7 +19,7 @@ router.get(
 )
 router.get(
   "/voc",
-  config.schemes && config.schemes.read.auth ? auth.main : auth.optional,
+  config.schemes && config.schemes.read?.auth ? auth.main : auth.optional,
   utils.wrappers.async(async (req) => {
     return await mappingService.getMappingSchemes(req.query)
   }),

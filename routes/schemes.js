@@ -8,17 +8,19 @@ import * as auth from "../utils/auth.js"
 const router = express.Router()
 export { router as schemeRouter }
 
-router.get(
-  "/",
-  config.schemes.read.auth ? auth.main : auth.optional,
-  utils.supportDownloadFormats([]),
-  utils.wrappers.async(async (req) => {
-    return await schemeService.getSchemes(req.query)
-  }),
-  utils.addPaginationHeaders,
-  utils.adjust,
-  utils.returnJSON,
-)
+if (config.schemes.read) {
+  router.get(
+    "/",
+    config.schemes.read.auth ? auth.main : auth.optional,
+    utils.supportDownloadFormats([]),
+    utils.wrappers.async(async (req) => {
+      return await schemeService.getSchemes(req.query)
+    }),
+    utils.addPaginationHeaders,
+    utils.adjust,
+    utils.returnJSON,
+  )
+}
 
 if (config.schemes.create) {
   router.post(
@@ -110,25 +112,27 @@ if (config.concepts) {
 
 }
 
-router.get(
-  "/suggest",
-  config.schemes.read.auth ? auth.main : auth.optional,
-  utils.supportDownloadFormats([]),
-  utils.wrappers.async(async (req) => {
-    return await schemeService.getSuggestions(req.query)
-  }),
-  utils.addPaginationHeaders,
-  utils.returnJSON,
-)
+if (config.schemes.read) {
+  router.get(
+    "/suggest",
+    config.schemes.read.auth ? auth.main : auth.optional,
+    utils.supportDownloadFormats([]),
+    utils.wrappers.async(async (req) => {
+      return await schemeService.getSuggestions(req.query)
+    }),
+    utils.addPaginationHeaders,
+    utils.returnJSON,
+  )
 
-router.get(
-  "/search",
-  config.schemes.read.auth ? auth.main : auth.optional,
-  utils.supportDownloadFormats([]),
-  utils.wrappers.async(async (req) => {
-    return await schemeService.search(req.query)
-  }),
-  utils.addPaginationHeaders,
-  utils.adjust,
-  utils.returnJSON,
-)
+  router.get(
+    "/search",
+    config.schemes.read.auth ? auth.main : auth.optional,
+    utils.supportDownloadFormats([]),
+    utils.wrappers.async(async (req) => {
+      return await schemeService.search(req.query)
+    }),
+    utils.addPaginationHeaders,
+    utils.adjust,
+    utils.returnJSON,
+  )
+}
