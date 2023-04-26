@@ -71,7 +71,7 @@ if (!ajv.validate(schema, configUser)) {
 
 // Before merging, check whether `namespace` exists in the user config and if not, generate a namespace and save it to user config
 if (!configUser.namespace && env != "test") {
-  configUser.namespace = uuid
+  configUser.namespace = uuid()
   fs.writeFileSync(configFilePath, JSON.stringify(configUser, null, 2))
   console.log(`Info/Config: Created a namespace and wrote it to ${configFilePath}.`)
 }
