@@ -49,7 +49,6 @@
     "lint-staged": "^13.2.1",
     "mocha": "^10.2.0",
     "mocha-eslint": "^7.0.0",
-    "portfinder": "^1.0.32",
     "pre-commit": "^1.2.2"
   },
   "dependencies": {
@@ -76,6 +75,7 @@
     "passport": "~0.6.0",
     "passport-anonymous": "^1.0.1",
     "passport-jwt": "^4.0.1",
+    "portfinder": "^1.0.32",
     "uuid": "^9.0.0",
     "yesno": "^0.4.0"
   }
