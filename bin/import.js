@@ -268,7 +268,8 @@ async function doImport({ input, format, type, concordance }) {
       imported += result.nInserted + result.nUpserted + result.nModified
       console.log(`... ${imported} done ...`)
     }
-    for await (let object of stream) {
+    // Name the loop
+    mappingLoop: for await (let object of stream) {
       total += 1
       if (!validate[type] || !validate[type](object)) {
         logError({ message: `Could not validate ${type} number ${total}: ${object && object.uri}` })
@@ -309,6 +310,13 @@ async function doImport({ input, format, type, concordance }) {
       utils.addMappingSchemes(object, { concordance })
       // Check if schemes are available and replace them with URI/notation only
       await services.scheme.replaceSchemeProperties(object, ["fromScheme", "toScheme"])
+      // Reject mapping if either fromScheme or toScheme is missing
+      for (let field of ["fromScheme", "toScheme"]) {
+        if (!object[field]) {
+          logError({ message: `Field \`${field}\` missing for ${type} number ${total}: ${object && object.uri}` })
+          continue mappingLoop
+        }
+      }
       // Add mapping identifier
       try {
         object.identifier = jskos.addMappingIdentifiers(object).identifier

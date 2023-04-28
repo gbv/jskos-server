@@ -603,6 +603,12 @@ export class MappingService {
         utils.addMappingSchemes(mapping)
         // Check if schemes are available and replace them with URI/notation only
         await this.schemeService.replaceSchemeProperties(mapping, ["fromScheme", "toScheme"])
+        // Reject mapping if either fromScheme or toScheme is missing
+        for (let field of ["fromScheme", "toScheme"]) {
+          if (!mapping[field]) {
+            throw new InvalidBodyError(`Property \`${field}\` is missing.`)
+          }
+        }
         this.checkWhitelists(mapping)
         // _id and URI
         delete mapping._id
