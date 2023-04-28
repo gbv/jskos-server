@@ -180,6 +180,7 @@ import { v5 as uuidv5 } from "uuid"
 import path from "node:path"
 import anystream from "json-anystream"
 import _ from "lodash"
+import * as utils from "../utils/index.js"
 import * as db from "../utils/db.js"
 
 import { byType as services } from "../services/index.js"
@@ -304,6 +305,10 @@ async function doImport({ input, format, type, concordance }) {
       if (!object.modified && object.created) {
         object.modified = object.created
       }
+      // Set fromScheme and toScheme from concordance
+      utils.addMappingSchemes(object, { concordance })
+      // Check if schemes are available and replace them with URI/notation only
+      await services.scheme.replaceSchemeProperties(object, ["fromScheme", "toScheme"])
       // Add mapping identifier
       try {
         object.identifier = jskos.addMappingIdentifiers(object).identifier

@@ -599,8 +599,9 @@ export class MappingService {
         if (config.mappings.cardinality == "1-to-1" && jskos.conceptsOfMapping(mapping, "to").length > 1) {
           throw new InvalidBodyError("Only 1-to-1 mappings are supported.")
         }
+        // Add mapping schemes if necessary (e.g. from concepts' `inScheme` property)
+        utils.addMappingSchemes(mapping)
         // Check if schemes are available and replace them with URI/notation only
-        // TODO: Should we only support mappings for known schemes?
         await this.schemeService.replaceSchemeProperties(mapping, ["fromScheme", "toScheme"])
         this.checkWhitelists(mapping)
         // _id and URI
