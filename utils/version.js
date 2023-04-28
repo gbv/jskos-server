@@ -222,6 +222,36 @@ export const upgrades = {
     await mappingService.createIndexes()
     console.log("... done.")
   },
+  async "2.0.3"() {
+    console.log("Adding missing `fromScheme`/`toScheme` fields to mappings...")
+    const mappings = await Mapping.aggregate([
+      {
+        $match: { $or: [{ "fromScheme.uri": { $exists: false } }, {"toScheme.uri": { $exists: false }}] },
+      },
+      {
+        $lookup: {
+          from: Concordance.collection.name,
+          localField: "partOf.0.uri",
+          foreignField: "uri",
+          as: "CONCORDANCE",
+        },
+      },
+    ])
+    let adjustedCount = 0
+    for (const mapping of mappings) {
+      const concordance = mapping.CONCORDANCE?.[0]
+      const _id = mapping._id
+      const hasFromScheme = !!mapping.fromScheme, hasToScheme = !!mapping.toScheme
+      delete mapping._id
+      delete mapping.CONCORDANCE
+      utils.addMappingSchemes(mapping, { concordance })
+      if (!hasFromScheme && mapping.fromScheme || !hasToScheme && mapping.toScheme) {
+        await Mapping.replaceOne({ _id }, mapping)
+        adjustedCount += 1
+      }
+    }
+    console.log(`... done (${adjustedCount} out of ${mappings.length} were adjusted).`)
+  },
 }
 
 /**
