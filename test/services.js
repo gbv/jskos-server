@@ -245,6 +245,25 @@ describe("Services", () => {
         assert.deepStrictEqual(result.map(r => r.uri).sort(), expected.map(r => r.uri).sort())
       })
 
+      it("should add fromScheme and toScheme fields from concepts' inScheme property", async () => {
+        const mapping = {
+          from: {
+            memberSet: [{
+              uri: "urn:test:concept",
+              inScheme: [{ uri: "urn:test:fromScheme" }],
+            }],
+          },
+          to: {
+            memberSet: [{
+              uri: "urn:test:concept",
+              inScheme: [{ uri: "urn:test:toScheme" }],
+            }],
+          },
+        }
+        const postedMapping = (await services.mapping.postMapping({ bodyStream: await arrayToStream([mapping]) }))?.[0]
+        assert.deepStrictEqual(postedMapping.fromScheme?.uri, mapping.from.memberSet[0].inScheme[0].uri)
+        assert.deepStrictEqual(postedMapping.toScheme?.uri, mapping.to.memberSet[0].inScheme[0].uri)
+      })
     })
 
   })

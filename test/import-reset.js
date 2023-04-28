@@ -71,6 +71,12 @@ describe("Import and Reset Script", () => {
       assert.strictEqual(results.length, 2)
     })
 
+    it("should not import mappings without scheme", async () => {
+      await exec("NODE_ENV=test ./bin/import.js mappings ./test/mappings/mapping-ddc-gnd-noScheme.json")
+      const results = await server.db.collection("mappings").find({}).toArray()
+      assert.strictEqual(results.length, 0)
+    })
+
     it("should import mappings", async () => {
       // Add mappings to database
       await exec("NODE_ENV=test ./bin/import.js mappings ./test/mappings/mapping-ddc-gnd.json")
@@ -78,7 +84,7 @@ describe("Import and Reset Script", () => {
       assert.strictEqual(results.length, 3)
     })
 
-    it("should import mappings into a concordance", async () => {
+    it("should import mappings into a concordance (and set fromScheme/toScheme for the mappings)", async () => {
       let results
       const concordance = "http://coli-conc.gbv.de/concordances/ddc_rvk_medizin"
       const query = { "partOf.uri": concordance }
@@ -86,9 +92,13 @@ describe("Import and Reset Script", () => {
       results = await server.db.collection("mappings").find(query).toArray()
       assert.strictEqual(results.length, 0)
       // Add mappings to database
-      await exec(`NODE_ENV=test ./bin/import.js mappings ./test/mappings/mapping-ddc-gnd.json -c ${concordance}`)
+      await exec(`NODE_ENV=test ./bin/import.js mappings ./test/mappings/mapping-ddc-gnd-noScheme.json -c ${concordance}`)
       results = await server.db.collection("mappings").find(query).toArray()
       assert.strictEqual(results.length, 3)
+      results.forEach(mapping => {
+        assert.ok(mapping.fromScheme?.uri, "fromScheme field is missing from mapping")
+        assert.ok(mapping.toScheme?.uri, "toScheme field is missing from mapping")
+      })
     })
 
     it("should import annotations", async () => {
