@@ -245,6 +245,44 @@ describe("Services", () => {
         assert.deepStrictEqual(result.map(r => r.uri).sort(), expected.map(r => r.uri).sort())
       })
 
+      it("should reject mappings without fromScheme/toScheme", async () => {
+        for (const mapping of [
+          {
+            from: {
+              memberSet: [{
+                uri: "urn:test:concept",
+              }],
+            },
+            to: {
+              memberSet: [{
+                uri: "urn:test:concept",
+              }],
+            },
+            toScheme: { uri: "urn:test:toScheme" },
+          },
+          {
+            from: {
+              memberSet: [{
+                uri: "urn:test:concept",
+              }],
+            },
+            fromScheme: { uri: "urn:test:fromScheme" },
+            to: {
+              memberSet: [{
+                uri: "urn:test:concept",
+              }],
+            },
+          },
+        ]) {
+          try {
+            await services.mapping.postMapping({ bodyStream: await arrayToStream([mapping]) })
+            assert.fail("Expected postMapping to fail")
+          } catch (error) {
+            assert.ok(error instanceof InvalidBodyError)
+          }
+        }
+      })
+
       it("should add fromScheme and toScheme fields from concepts' inScheme property", async () => {
         const mapping = {
           from: {
