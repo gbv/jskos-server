@@ -26,22 +26,22 @@ Examples
   flags: {
     type: {
       type: "string",
-      alias: "t",
+      shortFlag: "t",
       default: "",
     },
     scheme: {
       type: "string",
-      alias: "s",
+      shortFlag: "s",
       default: "",
     },
     concordance: {
       type: "string",
-      alias: "c",
+      shortFlag: "c",
       default: "",
     },
     help: {
       type: "boolean",
-      alias: "h",
+      shortFlag: "h",
       default: false,
     },
   },

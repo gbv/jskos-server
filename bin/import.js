@@ -34,42 +34,42 @@ Examples
   flags: {
     reset: {
       type: "boolean",
-      alias: "r",
+      shortFlag: "r",
       default: false,
     },
     indexes: {
       type: "boolean",
-      alias: "i",
+      shortFlag: "i",
       default: false,
     },
     quiet: {
       type: "boolean",
-      alias: "q",
+      shortFlag: "q",
       default: false,
     },
     format: {
       type: "string",
-      alias: "f",
+      shortFlag: "f",
       default: "",
     },
     scheme: {
       type: "string",
-      alias: "s",
+      shortFlag: "s",
       default: "",
     },
     concordance: {
       type: "string",
-      alias: "c",
+      shortFlag: "c",
       default: "",
     },
     noreplace: {
       type: "boolean",
-      alias: "n",
+      shortFlag: "n",
       default: false,
     },
     help: {
       type: "boolean",
-      alias: "h",
+      shortFlag: "h",
       default: false,
     },
   },
