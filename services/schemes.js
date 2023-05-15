@@ -208,11 +208,11 @@ export class SchemeService {
     if (bulk) {
       // Use bulkWrite for most efficiency
       schemes.length && await Scheme.bulkWrite(utils.bulkOperationForEntities({ entities: schemes, replace: bulkReplace }))
-      schemes = await this.postAdjustmentsForScheme(schemes, bulk)
+      schemes = await this.postAdjustmentsForScheme(schemes, { bulk })
       response = schemes.map(s => ({ uri: s.uri }))
     } else {
       schemes = await Scheme.insertMany(schemes, { lean: true })
-      response = await this.postAdjustmentsForScheme(schemes, bulk)
+      response = await this.postAdjustmentsForScheme(schemes, { bulk })
     }
 
     return isMultiple ? response : response[0]
@@ -298,10 +298,10 @@ export class SchemeService {
    * - get updated concept scheme from database
    *
    * @param {[Object]} schemes array of concept schemes to be adjusted
-   * @param {Boolean} bulk indicates whether the adjustments are performaned as part of a bulk operation
+   * @param {Boolean} options.bulk indicates whether the adjustments are performaned as part of a bulk operation
    * @returns {[Object]} array of adjusted concept schemes
    */
-  async postAdjustmentsForScheme(schemes, bulk = false) {
+  async postAdjustmentsForScheme(schemes, { bulk = false } = {}) {
     // First, set created field if necessary
     await Scheme.updateMany(
       {
