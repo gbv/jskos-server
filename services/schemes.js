@@ -303,6 +303,8 @@ export class SchemeService {
    * @returns {[Object]} array of adjusted concept schemes
    */
   async postAdjustmentsForScheme(schemes, { bulk = false, setApi = false } = {}) {
+    // Get schemes from database instead
+    schemes = await Scheme.find({ _id: { $in: schemes.map(s => s.uri) } }).lean().exec()
     // First, set created field if necessary
     await Scheme.updateMany(
       {
