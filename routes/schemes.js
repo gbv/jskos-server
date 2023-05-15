@@ -47,6 +47,7 @@ if (config.schemes.update) {
       return await schemeService.putScheme({
         body: req.body,
         existing: req.existing,
+        setApi: req.query.setApi,
       })
     }),
     utils.adjust,
@@ -104,6 +105,7 @@ if (config.concepts) {
       utils.wrappers.async(async (req) => {
         return await conceptService.deleteConceptsFromScheme({
           scheme: req.existing,
+          setApi: req.query.setApi,
         })
       }),
       (req, res) => res.sendStatus(204),

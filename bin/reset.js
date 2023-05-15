@@ -18,6 +18,7 @@ Options
   --type                  -t          Object type to be deleted. If omitted, type will be "concepts" if -s is given, "mappings" if -c is given, all types otherwise.
   --scheme                -s          Only for concepts. Deletes only concepts from a certain scheme (inScheme). (Not applicable when URIs are specified.)
   --concordance           -c          Only for mappings. Deletes only mappings from a certain concordance (partOf). (Not applicable when URIs are specified.)
+  --set-api                           EXPERIMENTAL. Onlt for concepts. Will update the scheme's \`API\` property after deleting concepts.
 
 Examples
   $ npm run reset -- -t concepts -s http://uri.gbv.de/terminology/rvk/
@@ -33,6 +34,10 @@ Examples
       type: "string",
       shortFlag: "s",
       default: "",
+    },
+    setApi: {
+      type: "boolean",
+      default: false,
     },
     concordance: {
       type: "string",
@@ -101,6 +106,12 @@ if (cli.flags.scheme && cli.flags.concordance) {
 } else if (cli.flags.scheme && type != "concept") {
   logError({
     message: `Option -s is not compatible with type ${type}.`,
+    showHelp: true,
+    exit: true,
+  })
+} else if (cli.flags.setApi && type != "concept") {
+  logError({
+    message: `Option --set-api is not compatible with type ${type}.`,
     showHelp: true,
     exit: true,
   })
@@ -221,7 +232,7 @@ const allTypes = Object.keys(services)
       // Adjust schemes
       if (schemeUrisToAdjust.length) {
         log(`- adjusting ${schemeUrisToAdjust.length} schemes...`)
-        await services.scheme.postAdjustmentsForScheme(schemeUrisToAdjust.map(uri => ({ uri })))
+        await services.scheme.postAdjustmentsForScheme(schemeUrisToAdjust.map(uri => ({ uri })), { setApi: cli.flags.setApi })
       }
     }
     log()

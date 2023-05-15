@@ -31,6 +31,7 @@ if (config.concepts.create) {
         bodyStream: req.anystream,
         bulk: req.query.bulk,
         scheme: req.query.scheme,
+        setApi: req.query.setApi,
       })
     }),
     utils.adjust,
@@ -63,6 +64,7 @@ if (config.concepts.delete) {
       return await conceptService.deleteConcept({
         uri: req.query.uri,
         existing: req.existing,
+        setApi: req.query.setApi,
       })
     }),
     (req, res) => res.sendStatus(204),

@@ -24,6 +24,8 @@ Options
   --noreplace             -n          EXPERIMENTAL. When given, bulk writing will use insertOne instead of replaceOne,
                                       meaning that existing entities will not be overridden.
                                       Note that an error will be thrown when even one of the entities already exist.
+  --set-api                           EXPERIMENTAL. Onlt for concepts. Will update the scheme's \`API\` property after
+                                      importing concepts.
 
 Examples
   $ npm run import -- --indexes
@@ -56,6 +58,10 @@ Examples
       type: "string",
       shortFlag: "s",
       default: "",
+    },
+    setApi: {
+      type: "boolean",
+      default: false,
     },
     concordance: {
       type: "string",
@@ -130,6 +136,13 @@ if (!indexes && !type) {
 if (cli.flags.scheme && type != "concept") {
   logError({
     message: `The -s option is not compatible with type ${type}.`,
+    showHelp: true,
+    exit: true,
+  })
+}
+if (cli.flags.setApi && type != "concept") {
+  logError({
+    message: `The --set-api option is not compatible with type ${type}.`,
     showHelp: true,
     exit: true,
   })
@@ -256,6 +269,7 @@ async function doImport({ input, format, type, concordance }) {
       bulk: true,
       bulkReplace: !cli.flags.noreplace,
       scheme: cli.flags.scheme,
+      setApi: cli.flags.setApi,
     })
     log(`... done: ${_.isArray(result) ? result.length : 1} concepts imported.`)
   } else if (type == "mapping") {

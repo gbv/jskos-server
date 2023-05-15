@@ -222,7 +222,7 @@ export class ConceptService {
 
   // Write endpoints start here
 
-  async postConcept({ bodyStream, bulk = false, bulkReplace = true, scheme }) {
+  async postConcept({ bodyStream, bulk = false, setApi = false, bulkReplace = true, scheme }) {
     if (!bodyStream) {
       throw new MalformedBodyError()
     }
@@ -284,6 +284,7 @@ export class ConceptService {
       response = await Concept.insertMany(concepts, { lean: true })
     }
 
+    preparation.setApi = setApi
     await this.postAdjustmentsForConcepts(preparation)
 
     return isMultiple ? response : response[0]
@@ -328,7 +329,7 @@ export class ConceptService {
     return concept
   }
 
-  async deleteConcept({ uri, existing }) {
+  async deleteConcept({ uri, existing, setApi = false }) {
     if (!uri) {
       throw new MalformedRequestError()
     }
@@ -342,10 +343,11 @@ export class ConceptService {
       // Adjust scheme in case it was its last concept
       schemeUrisToAdjust: [_.get(existing, "inScheme[0].uri")],
       conceptUrisWithNarrower: [],
+      setApi,
     })
   }
 
-  async deleteConceptsFromScheme({ uri, scheme }) {
+  async deleteConceptsFromScheme({ uri, scheme, setApi = false }) {
     if (!uri && !scheme) {
       throw new MalformedRequestError()
     }
@@ -366,6 +368,7 @@ export class ConceptService {
     await this.postAdjustmentsForConcepts({
       schemeUrisToAdjust: [uri],
       conceptUrisWithNarrower: [],
+      setApi,
     })
   }
 
@@ -473,7 +476,7 @@ export class ConceptService {
    */
   async postAdjustmentsForConcepts(preparation) {
     // Adjust scheme after adding concept
-    await this.schemeService.postAdjustmentsForScheme(preparation.schemeUrisToAdjust.map(uri => ({ uri })))
+    await this.schemeService.postAdjustmentsForScheme(preparation.schemeUrisToAdjust.map(uri => ({ uri })), { setApi: preparation.setApi })
   }
 
   async createIndexes() {

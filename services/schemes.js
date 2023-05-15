@@ -1,4 +1,5 @@
 import _ from "lodash"
+import config from "../config/index.js"
 import * as utils from "../utils/index.js"
 import validate from "jskos-validate"
 
@@ -218,7 +219,7 @@ export class SchemeService {
     return isMultiple ? response : response[0]
   }
 
-  async putScheme({ body, existing }) {
+  async putScheme({ body, existing, setApi }) {
     let scheme = body
 
     // Prepare
@@ -238,7 +239,7 @@ export class SchemeService {
       throw new EntityNotFoundError()
     }
 
-    scheme = (await this.postAdjustmentsForScheme([scheme]))[0]
+    scheme = (await this.postAdjustmentsForScheme([scheme], { setApi }))[0]
 
     return scheme
   }
@@ -301,7 +302,7 @@ export class SchemeService {
    * @param {Boolean} options.bulk indicates whether the adjustments are performaned as part of a bulk operation
    * @returns {[Object]} array of adjusted concept schemes
    */
-  async postAdjustmentsForScheme(schemes, { bulk = false } = {}) {
+  async postAdjustmentsForScheme(schemes, { bulk = false, setApi = false } = {}) {
     // First, set created field if necessary
     await Scheme.updateMany(
       {
@@ -326,6 +327,23 @@ export class SchemeService {
           topConcepts: hasTopConcepts ? [null] : [],
           modified: (new Date()).toISOString(),
         },
+      }
+      if (setApi) {
+        let API = scheme.API || []
+        API = API.filter(entry => entry.url !== config.baseUrl)
+        if (hasConcepts) {
+          API = [
+            {
+              type: "http://bartoc.org/api-type/jskos",
+              url: config.baseUrl,
+            },
+          ].concat(API)
+        }
+        if (API.length) {
+          _.set(update, "$set.API", API)
+        } else {
+          _.set(update, "$unset.API", "")
+        }
       }
       if (bulk) {
         delete update.$set.modified
