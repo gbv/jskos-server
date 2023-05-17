@@ -249,8 +249,7 @@ export class AnnotationService {
     }
     // Add modified date.
     annotation.modified = (new Date()).toISOString()
-    // Remove creator, type, created
-    _.unset(annotation, "creator")
+    // Remove type, created
     _.unset(annotation, "created")
     _.unset(annotation, "type")
     _.unset(annotation, "_id")
