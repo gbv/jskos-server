@@ -243,7 +243,11 @@ To set up mapping mismatch tagging, add the vocabulary to the configuration:
 Currently, the vocabulary and its concepts are required to be imported in the same JSKOS Server instance:
 
 ```bash
+# Import vocabulary metadata
 npm run import schemes https://raw.githubusercontent.com/gbv/jskos-data/master/mismatch/mismatch-scheme.json
+# Reset existing concepts (e.g. if old version has been imported previously)
+npm run reset -- -t concepts -s "https://uri.gbv.de/terminology/mismatch/"
+# Import vocabulary concepts
 npm run import concepts https://raw.githubusercontent.com/gbv/jskos-data/master/mismatch/mismatch-concepts.json
 ```
 
