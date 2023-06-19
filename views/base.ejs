@@ -50,10 +50,8 @@
     <% if (config.mappings) { %>
     <h3>Mappings</h3>
     <ul>
-      <% if (config.mappings.read) { %>
       <li>GET <a href="mappings">/mappings</a> - Returns a list of mappings (<a href="https://github.com/gbv/jskos-server#get-mappings" target="_blank">documentation</a>)</li>
       <li>GET /mappings/:_id - Returns a specific mapping (<a href="https://github.com/gbv/jskos-server#get-mappings_id" target="_blank">documentation</a>)</li>
-      <% } %>
       <% if (config.mappings.create) { %>
       <li>POST /mappings - Saves a mapping in the database (<% if (config.mappings.create.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#post-mappings" target="_blank">documentation</a>)</li>
       <% } %>
@@ -64,6 +62,7 @@
       <% if (config.mappings.delete) { %>
       <li>DELETE /mappings/:_id - Deletes a mapping from the database (<% if (config.mappings.delete.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#delete-mappings_id" target="_blank">documentation</a>)</li>
       <% } %>
+      <li>GET <a href="mappings/infer">/mappings/infer</a> - Returns mappings based on stored mappings and mappings derived by inference (<a href="https://github.com/gbv/jskos-server#get-mappingsinfer" target="_blank">documentation</a>)</li>
       <li>GET <a href="mappings/suggest">/mappings/suggest</a> - Suggests notations used in mappings (<a href="https://github.com/gbv/jskos-server#get-mappingssuggest" target="_blank">documentation</a>)</li>
       <li>GET <a href="mappings/voc">/mappings/voc</a> - Returns a list of concept schemes used in mappings (<a href="https://github.com/gbv/jskos-server#get-mappingsvoc" target="_blank">documentation</a>)</li>
     </ul>
