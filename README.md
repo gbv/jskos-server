@@ -248,7 +248,7 @@ npm run import schemes https://raw.githubusercontent.com/gbv/jskos-data/master/m
 # Reset existing concepts (e.g. if old version has been imported previously)
 npm run reset -- -t concepts -s "https://uri.gbv.de/terminology/mismatch/"
 # Import vocabulary concepts
-npm run import concepts https://raw.githubusercontent.com/gbv/jskos-data/master/mismatch/mismatch-concepts.json
+npm run import concepts -- --set-api https://raw.githubusercontent.com/gbv/jskos-data/master/mismatch/mismatch-concepts.json
 ```
 
 After restarting JSKOS Server, mapping mismatch tagging is available for annotations. To add such a tag to an annotation, add a `body` field like this:
