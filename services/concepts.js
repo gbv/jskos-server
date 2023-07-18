@@ -6,6 +6,7 @@ import * as utils from "../utils/index.js"
 import { Concept } from "../models/concepts.js"
 import { schemeService } from "../services/schemes.js"
 import { MalformedBodyError, MalformedRequestError, EntityNotFoundError, InvalidBodyError, DatabaseAccessError } from "../errors/index.js"
+import config from "../config/index.js"
 
 function conceptFind(query, $skip, $limit, narrower = true) {
   const pipeline = [
@@ -239,12 +240,14 @@ export class ConceptService {
         const preparation = {
           concepts: [],
           schemeUrisToAdjust: [],
+          errors: [],
         }
         let current = []
         const saveObjects = async (objects) => {
-          const { concepts, schemeUrisToAdjust } = await this.prepareAndCheckConcepts(objects, { scheme })
+          const { concepts, errors, schemeUrisToAdjust } = await this.prepareAndCheckConcepts(objects, { scheme })
           concepts.length && await Concept.bulkWrite(utils.bulkOperationForEntities({ entities: concepts, replace: bulkReplace }))
           preparation.concepts = preparation.concepts.concat(concepts.map(c => ({ uri: c.uri })))
+          preparation.errors = preparation.errors.concat(errors.map(c => ({ uri: c.uri })))
           preparation.schemeUrisToAdjust = _.uniq(preparation.schemeUrisToAdjust.concat(schemeUrisToAdjust))
         }
         const promises = []
@@ -258,6 +261,7 @@ export class ConceptService {
         bodyStream.on("end", async () => {
           promises.push(saveObjects(current))
           await Promise.all(promises)
+          preparation.errors.length && config.warn(`Warning on bulk import of concepts: ${preparation.errors.length} concepts were not imported due to validation errors.`)
           resolve(preparation)
         })
       })
