@@ -787,6 +787,17 @@ describe("Express Server", () => {
         })
     })
 
+    it("should handle direction=both correctly when both from and fromScheme are given", async () => {
+      const res = await chai.request(server.app)
+        .get("/mappings")
+        .query({
+          from: "http://d-nb.info/gnd/4074195-3",
+          fromScheme: "DDC",
+          direction: "both",
+        })
+      assert.strictEqual(res.body?.length, 0)
+    })
+
     it("should GET only mappings from GND", done => {
       // Add mappings to database
       cpexec("yes | NODE_ENV=test ./bin/reset.js -t mappings && NODE_ENV=test ./bin/import.js mappings ./test/mappings/mappings-ddc.json", (err) => {
@@ -797,9 +808,7 @@ describe("Express Server", () => {
         chai.request(server.app)
           .get("/mappings")
           .query({
-            from: "612.112",
             to: "612.112",
-            mode: "or",
             fromScheme: "GND",
           })
           .end((err, res) => {

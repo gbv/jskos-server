@@ -92,43 +92,13 @@ export class MappingService {
         return value
       }
     }
-    var criteria = ["from", "to"].filter(uri => ({ from, to }[uri])).map(part => {
-      count = direction == "both" ? 2 : 1
-      let or = []
-      while (count > 0) {
-        let side = fromTo(part)
-        for (let searchString of { from, to }[part].split("|")) {
-          or.push({
-            [`${side}.memberSet.uri`]: regex(searchString),
-          })
-          or.push({
-            [`${side}.memberChoice.uri`]: regex(searchString),
-          })
-          or.push({
-            [`${side}.memberSet.notation`]: regex(searchString),
-          })
-          or.push({
-            [`${side}.memberChoice.notation`]: regex(searchString),
-          })
-        }
-      }
-      return { $or: or }
-    })
-    if (identifier) {
-      // Add identifier to criteria
-      criteria.push({ $or: identifier.split("|").map(id => ({ $or: [{ identifier: id }, { uri: id }] })) })
-    }
-    if (uri) {
-      // Add URI to criteria
-      criteria.push({ $or: uri.split("|").map(id => ({uri: id})) })
-    }
-    // Note: This should only be applied to "from" and "to", not to future parameters like "fromScheme" or "toScheme".
+
+    // Note that mode is only applied to from(Scheme), to(Scheme), uri, and identifier
     if (!["and", "or"].includes(mode)) {
       mode = "and"
     }
-    let mongoQuery1 = criteria.length ? { [`$${mode}`]: criteria } : {}
 
-    // fromScheme / toScheme
+    // Prepare fromScheme / toScheme
     let fromToScheme = { fromScheme, toScheme }
     for (let part of ["fromScheme", "toScheme"]) {
       // Replace query.fromScheme and query.toScheme with array of URIs
@@ -149,21 +119,55 @@ export class MappingService {
         fromToScheme[part] = allUris.length ? allUris : null
       }
     }
-    criteria = ["from", "to"].filter(uri => fromToScheme[uri + "Scheme"]).map(part => {
-      // reset count
+
+    // Handle from/fromScheme/to/toScheme here
+    var criteria = ["from", "to"].map(part => {
       count = direction == "both" ? 2 : 1
       let or = []
       while (count > 0) {
-        let fromToPart = fromTo(part)
-        for (let uri of fromToScheme[part + "Scheme"]) {
-          or.push({ [`${fromToPart}Scheme.uri`]: uri })
-          or.push({ [`${fromToPart}Scheme.notation`]: uri })
+        const conceptOr = [], schemeOr = []
+        // Depending on `count` and `direction`, the value of `side` will either be "from" or "to"
+        const side = fromTo(part)
+        // Deal with concepts
+        for (let searchString of ({ from, to }[part] || "").split("|").filter(Boolean)) {
+          conceptOr.push({
+            [`${side}.memberSet.uri`]: regex(searchString),
+          })
+          conceptOr.push({
+            [`${side}.memberChoice.uri`]: regex(searchString),
+          })
+          conceptOr.push({
+            [`${side}.memberSet.notation`]: regex(searchString),
+          })
+          conceptOr.push({
+            [`${side}.memberChoice.notation`]: regex(searchString),
+          })
+        }
+        // Deal with schemes
+        for (let uri of fromToScheme[part + "Scheme"] || []) {
+          schemeOr.push({ [`${side}Scheme.uri`]: uri })
+          schemeOr.push({ [`${side}Scheme.notation`]: uri })
+        }
+        if (conceptOr.length && schemeOr.length) {
+          or.push({ $and: [{ $or: conceptOr }, { $or: schemeOr }] })
+        } else if (conceptOr.length) {
+          or = or.concat(conceptOr)
+        } else if (schemeOr.length) {
+          or = or.concat(schemeOr)
         }
       }
       return { $or: or }
-    })
+    }).filter(entry => entry.$or.length > 0)
+    if (identifier) {
+      // Add identifier to criteria
+      criteria.push({ $or: identifier.split("|").map(id => ({ $or: [{ identifier: id }, { uri: id }] })) })
+    }
+    if (uri) {
+      // Add URI to criteria
+      criteria.push({ $or: uri.split("|").map(id => ({ uri: id })) })
+    }
 
-    let mongoQuery2 = criteria.length ? { $and: criteria } : {}
+    let mongoQuery1 = criteria.length ? { [`$${mode}`]: criteria } : {}
 
     // Type
     criteria = []
@@ -229,7 +233,7 @@ export class MappingService {
       mongoQuery6 = { "to.memberSet.1": { $exists: false } }
     }
 
-    const query = { $and: [mongoQuery1, mongoQuery2, mongoQuery3, mongoQuery4, mongoQuery5, mongoQuery6] }
+    const query = { $and: [mongoQuery1, mongoQuery3, mongoQuery4, mongoQuery5, mongoQuery6] }
 
     // Sorting (default: modified descending)
     sort = ["created", "modified", "mappingRelevance"].includes(sort) ? sort : "modified"
