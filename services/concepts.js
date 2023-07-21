@@ -9,11 +9,7 @@ import { MalformedBodyError, MalformedRequestError, EntityNotFoundError, Invalid
 import config from "../config/index.js"
 
 function conceptFind(query, $skip, $limit, narrower = true) {
-  const pipeline = [
-    {
-      $match: query,
-    },
-  ]
+  const pipeline = utils.queryToAggregation(query)
   if (narrower) {
     pipeline.push({
       $lookup: {
@@ -128,11 +124,31 @@ export class ConceptService {
       }
       criteria = { $or: uris.map(uri => ({ "inScheme.uri": uri })) }
     }
+    if (query.near) {
+      const [latitude, longitude] = query.near.split(",").map(parseFloat)
+      // distance is given in km, but MongoDB uses meters
+      const distance = (query.distance || 1) * 1000
+      if (!_.isFinite(latitude) || !_.isFinite(longitude) || !(latitude >= -90 && latitude <= 90) || !(longitude >= -180 && longitude <= 180)) {
+        throw new MalformedRequestError(`Parameter \`near\` (${query.near}) is malformed. The correct format is "latitude,longitude" with latitude between -90 and 90 and longitude between -180 and 180.`)
+      }
+      if (!distance) {
+        throw new MalformedRequestError(`Parameter \`distance\` (${query.distance}) is malformed. Please give a number in km (default: 1).`)
+      }
+      criteria.location = {
+        $nearSphere: {
+          $geometry: {
+            type: "Point",
+            coordinates: [longitude, latitude],
+          },
+          $maxDistance: distance,
+        },
+      }
+    }
     if (query.download) {
       return conceptFind(criteria, null, null, false).cursor()
     }
     const concepts = await conceptFind(criteria, query.offset, query.limit)
-    concepts.totalCount = await utils.count(Concept, [{ $match: criteria }])
+    concepts.totalCount = await utils.count(Concept, utils.queryToAggregation(criteria))
     return concepts
   }
 

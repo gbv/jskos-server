@@ -878,6 +878,37 @@ const isQueryEmpty = (query) => {
 }
 
 /**
+ * Converts a MongoDB "find" query to an aggregation pipeline.
+ *
+ * In most cases, this will simply be a single $match stage, but there's special handling for
+ * $nearSquere queries on the field `location` that is converted into a $geoNear stage.
+ *
+ * @param {*} query
+ * @returns array with aggregation pipeline
+ */
+const queryToAggregation = (query) => {
+  const pipeline = []
+  // Transform location $nearSphere query into $geoNear aggregation stage
+  if (query.location) {
+    const locationQuery = query.location.$nearSphere
+    pipeline.push({
+      $geoNear: {
+        spherical: true,
+        maxDistance: locationQuery.$maxDistance,
+        query: _.omit(query, ["location"]),
+        near: locationQuery.$geometry,
+        distanceField: "_distance",
+      },
+    })
+  } else {
+    pipeline.push({
+      $match: query,
+    })
+  }
+  return pipeline
+}
+
+/**
  * Returns the document count for a certain aggregation pipeline.
  * Uses estimatedDocumentCount() if possible (i.e. if the query is empty).
  *
@@ -959,6 +990,7 @@ export {
   getCreator,
   handleCreatorForObject,
   isQueryEmpty,
+  queryToAggregation,
   count,
   bulkOperationForEntities,
   addMappingSchemes,

@@ -1586,6 +1586,10 @@ Lists concepts for a concept scheme.
 
   `uri=[uri]` URI for a concept scheme
 
+  `near=[latitude,longitude]` filters concepts by distance to a location (JSKOS field `location`), with `latitude` being a floating point value between -90 and 90 and `longitude` being a floating point value between -180 and 180
+
+  `distance=[distance]` value in kilometers which sets the radius for the `near` parameter if specified (default: 1)
+
   `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting `ancestors` and `narrower`); not supported for download
 
   `download=[type]` returns the whole result as a download (available types are `json` and `ndjson`), ignores `limit` and `offset`
