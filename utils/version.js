@@ -4,7 +4,7 @@ import _ from "lodash"
 import yesno from "yesno"
 
 import { Scheme, Concordance, Mapping, Annotation } from "../models/index.js"
-import { schemeService, concordanceService, annotationService, mappingService } from "../services/index.js"
+import { schemeService, concordanceService, annotationService, mappingService, conceptService } from "../services/index.js"
 
 export class Version {
 
@@ -251,6 +251,12 @@ export const upgrades = {
       }
     }
     console.log(`... done (${adjustedCount} out of ${mappings.length} were adjusted).`)
+  },
+  async "2.1.0"() {
+    console.log("Creating indexes for concepts and annotations...")
+    await conceptService.createIndexes()
+    await annotationService.createIndexes()
+    console.log("... done.")
   },
 }
 

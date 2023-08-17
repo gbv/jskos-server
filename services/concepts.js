@@ -506,7 +506,9 @@ export class ConceptService {
     indexes.push([{ "inScheme.uri": 1 }, {}])
     indexes.push([{ uri: 1 }, {}])
     indexes.push([{ notation: 1 }, {}])
+    indexes.push([{ identifier: 1 }, {}])
     indexes.push([{ _keywordsLabels: 1 }, {}])
+    indexes.push([{ location: "2dsphere" }, {}])
     indexes.push([
       {
         _keywordsNotation: "text",

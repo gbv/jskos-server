@@ -287,6 +287,7 @@ export class AnnotationService {
   async createIndexes() {
     const indexes = [
       [{ id: 1 }, {}],
+      [{ identifier: 1 }, {}],
       [{ target: 1 }, {}],
       [{ "target.id": 1 }, {}],
       [{ creator: 1 }, {}],
