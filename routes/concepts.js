@@ -11,13 +11,14 @@ if (config.concepts.read) {
   router.get(
     "/concepts",
     config.concepts.read.auth ? auth.main : auth.optional,
-    utils.supportDownloadFormats([]),
+    utils.supportDownloadFormats(["json", "ndjson"]),
     utils.wrappers.async(async (req) => {
-      return await conceptService.getDetails(Object.assign(req.query, { conceptsOnly: true }))
+      return await conceptService.getConcepts(req.query)
     }),
-    utils.addPaginationHeaders,
-    utils.adjust,
-    utils.returnJSON,
+    utils.wrappers.download(utils.addPaginationHeaders, false),
+    utils.wrappers.download(utils.adjust, false),
+    utils.wrappers.download(utils.returnJSON, false),
+    utils.wrappers.download(utils.handleDownload("concepts"), true),
   )
 }
 

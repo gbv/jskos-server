@@ -1414,9 +1414,12 @@ describe("Express Server", () => {
 
   describe("GET /voc/concepts", () => {
 
-    it("should GET all four concepts", done => {
+    it("should GET all four DDC concepts", done => {
       chai.request(server.app)
         .get("/voc/concepts")
+        .query({
+          uri: "http://dewey.info/scheme/edition/e23/",
+        })
         .end((err, res) => {
           res.should.have.status(200)
           res.should.have.header("Link")

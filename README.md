@@ -1584,13 +1584,13 @@ Lists concepts for a concept scheme.
 
 * **URL Params**
 
-  `uri=[uri]` URI for a concept scheme
+  `uri=[uri]` URI for a concept scheme (required)
 
   `near=[latitude,longitude]` filters concepts by distance to a location (JSKOS field `location`), with `latitude` being a floating point value between -90 and 90 and `longitude` being a floating point value between -180 and 180
 
   `distance=[distance]` value in kilometers which sets the radius for the `near` parameter if specified (default: 1)
 
-  `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting `ancestors` and `narrower`); not supported for download
+  `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting `ancestors`, `narrower`, and `annotations`); not supported for download
 
   `download=[type]` returns the whole result as a download (available types are `json` and `ndjson`), ignores `limit` and `offset`
 
@@ -1644,7 +1644,13 @@ Returns detailed data for concepts. Note that there is no certain order to the r
 
   `voc=[uri]` filter by concept scheme URI
 
-  `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting `ancestors`, `narrower`, and `annotations`)
+  `near=[latitude,longitude]` filters concepts by distance to a location (JSKOS field `location`), with `latitude` being a floating point value between -90 and 90 and `longitude` being a floating point value between -180 and 180
+
+  `distance=[distance]` value in kilometers which sets the radius for the `near` parameter if specified (default: 1)
+
+  `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting `ancestors`, `narrower`, and `annotations`); not supported for download
+
+  `download=[type]` returns the whole result as a download (available types are `json` and `ndjson`), ignores `limit` and `offset`
 
 * **Success Response**
 
@@ -1653,7 +1659,7 @@ Returns detailed data for concepts. Note that there is no certain order to the r
 * **Sample Call**
 
   ```bash
-  curl https://coli-conc.gbv.de/api/data?uri=http://dewey.info/class/612.112/e23/
+  curl https://coli-conc.gbv.de/api/concepts?uri=http://dewey.info/class/612.112/e23/
   ```
 
   ```json

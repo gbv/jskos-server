@@ -48,39 +48,7 @@ export class ConceptService {
   }
 
   async get(uri) {
-    return (await this.getDetails({ uri, limit: 1, offset: 0, conceptsOnly: true }))[0]
-  }
-
-  /**
-   * Return a Promise with an array of concept data.
-   */
-  async getDetails(query) {
-    if (!query.uri && !query.notation) {
-      return []
-    }
-    const uris = query.uri ? query.uri.split("|") : []
-    const notations = query.notation ? query.notation.split("|") : []
-    let mongoQuery = {
-      $or: [].concat(uris.map(uri => ({ uri })), notations.map(notation => ({ notation }))),
-    }
-
-    if (query.voc) {
-      let uris
-      const scheme = await this.schemeService.getScheme(query.voc)
-      if (scheme) {
-        uris = [scheme.uri].concat(scheme.identifier || [])
-      } else {
-        uris = [query.uri]
-      }
-      mongoQuery["inScheme.uri"] = { $in: uris }
-    }
-
-    // Note: If query.voc is given, no schemes are returned
-    const schemes = (query.voc || query.conceptsOnly) ? [] : (await Promise.all([].concat(uris, notations).map(uri => this.schemeService.getScheme(uri)))).filter(scheme => scheme != null)
-    const concepts = await conceptFind(mongoQuery)
-    const results = [].concat(schemes, concepts).slice(query.offset, query.offset + query.limit)
-    results.totalCount = schemes.length + concepts.length
-    return results
+    return (await this.getConcepts({ uri, limit: 1, offset: 0 }))[0]
   }
 
   /**
@@ -107,22 +75,31 @@ export class ConceptService {
     return concepts
   }
 
-
   /**
    * Return a Promise with an array of concepts.
    */
   async getConcepts(query) {
-    let criteria = {}
-    if (query.uri) {
+    if (!_.intersection(Object.keys(query), ["uri", "notation", "voc", "near"]).length) {
+      return []
+    }
+    let criteria = []
+    const uris = query.uri ? query.uri.split("|") : []
+    const notations = query.notation ? query.notation.split("|") : []
+    if (uris.length || notations.length) {
+      criteria.push({
+        $or: [].concat(uris.map(uri => ({ uri })), notations.map(notation => ({ notation }))),
+      })
+    }
+    if (query.voc) {
       let uris
       // Get scheme from database
-      let scheme = await this.schemeService.getScheme(query.uri)
+      let scheme = await this.schemeService.getScheme(query.voc)
       if (scheme) {
         uris = [scheme.uri].concat(scheme.identifier || [])
       } else {
-        uris = [query.uri]
+        uris = [query.voc]
       }
-      criteria = { $or: uris.map(uri => ({ "inScheme.uri": uri })) }
+      criteria.push({ $or: uris.map(uri => ({ "inScheme.uri": uri })) })
     }
     if (query.near) {
       const [latitude, longitude] = query.near.split(",").map(parseFloat)
@@ -134,21 +111,24 @@ export class ConceptService {
       if (!distance) {
         throw new MalformedRequestError(`Parameter \`distance\` (${query.distance}) is malformed. Please give a number in km (default: 1).`)
       }
-      criteria.location = {
-        $nearSphere: {
-          $geometry: {
-            type: "Point",
-            coordinates: [longitude, latitude],
+      criteria.push({
+        location: {
+          $nearSphere: {
+            $geometry: {
+              type: "Point",
+              coordinates: [longitude, latitude],
+            },
+            $maxDistance: distance,
           },
-          $maxDistance: distance,
         },
-      }
+      })
     }
+    const mongoQuery = { $and: criteria }
     if (query.download) {
-      return conceptFind(criteria, null, null, false).cursor()
+      return conceptFind(mongoQuery, null, null, false).cursor()
     }
-    const concepts = await conceptFind(criteria, query.offset, query.limit)
-    concepts.totalCount = await utils.count(Concept, utils.queryToAggregation(criteria))
+    const concepts = await conceptFind(mongoQuery, query.offset, query.limit)
+    concepts.totalCount = await utils.count(Concept, utils.queryToAggregation(mongoQuery))
     return concepts
   }
 

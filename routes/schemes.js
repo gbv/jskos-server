@@ -4,6 +4,7 @@ import { conceptService } from "../services/concepts.js"
 import config from "../config/index.js"
 import * as utils from "../utils/index.js"
 import * as auth from "../utils/auth.js"
+import { MalformedRequestError } from "../errors/index.js"
 
 const router = express.Router()
 export { router as schemeRouter }
@@ -89,7 +90,12 @@ if (config.concepts) {
     config.concepts.read.auth ? auth.main : auth.optional,
     utils.supportDownloadFormats(["json", "ndjson"]),
     utils.wrappers.async(async (req) => {
-      return await conceptService.getConcepts(req.query)
+      if (!req.query.uri) {
+        throw new MalformedRequestError("Parameter `uri` (URI of a vocabulary) is required for endpoint /voc/concepts")
+      }
+      const query = { ...req.query, voc: req.query.uri }
+      delete query.uri
+      return await conceptService.getConcepts(query)
     }),
     utils.wrappers.download(utils.addPaginationHeaders, false),
     utils.wrappers.download(utils.adjust, false),
