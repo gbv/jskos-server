@@ -243,8 +243,12 @@ To set up mapping mismatch tagging, add the vocabulary to the configuration:
 Currently, the vocabulary and its concepts are required to be imported in the same JSKOS Server instance:
 
 ```bash
+# Import vocabulary metadata
 npm run import schemes https://raw.githubusercontent.com/gbv/jskos-data/master/mismatch/mismatch-scheme.json
-npm run import concepts https://raw.githubusercontent.com/gbv/jskos-data/master/mismatch/mismatch-concepts.json
+# Reset existing concepts (e.g. if old version has been imported previously)
+npm run reset -- -t concepts -s "https://uri.gbv.de/terminology/mismatch/"
+# Import vocabulary concepts
+npm run import concepts -- --set-api https://raw.githubusercontent.com/gbv/jskos-data/master/mismatch/mismatch-concepts.json
 ```
 
 After restarting JSKOS Server, mapping mismatch tagging is available for annotations. To add such a tag to an annotation, add a `body` field like this:
@@ -1024,15 +1028,15 @@ Returns an array of mappings. Each mapping has a property `uri` under which the 
 
   `from=[uriOrNotation1|uriOrNotation2|...]` specify the source URI or notation (truncated search possible by appending a `*`, multiple URIs/notations separated by `|`)
 
-  `to=[uriOrNotation1|uriOrNotation2|...]` specify the target URI or notation (truncated search possible by appending a `*`, multiple URIs/notations separated by `|`)
-
-  `mode=[mode]` specify the mode for `from`, `to`, and `identifier`, one of `and` (default) and `or`
-
-  `direction=[direction]` specify the direction of the mapping. Available values are: `forward` (default), `backward` (essentially swaps `from` and `to`), `both` (combines forward and backward).
-
   `fromScheme=[uriOrNotation1|uriOrNotation2|...]` only show mappings from concept scheme (URI or notation, multiple URIs/notations separated by `|`)
 
+  `to=[uriOrNotation1|uriOrNotation2|...]` specify the target URI or notation (truncated search possible by appending a `*`, multiple URIs/notations separated by `|`)
+
   `toScheme=[uriOrNotation1|uriOrNotation2|...]` only show mappings to concept scheme (URI or notation, multiple URIs/notations separated by `|`)
+
+  `mode=[mode]` specify the mode for `from`/`fromScheme`, `to`/`toScheme`, and `identifier`, one of `and` (default) and `or`; note that 1) multiple values given for a single parameter are always connected via "or", and 2) `from` and `fromScheme` / `to` and `toScheme` are always connected via "and"
+
+  `direction=[direction]` specify the direction of the mapping. Available values are: `forward` (default), `backward` (essentially swaps `from` and `to`), `both` (combines forward and backward).
 
   `type=[uri1|uri2|...]` only show mappings that conform to a certain type or types (see [JSKOS Concept Mappings]) (URIs separated by `|`)
 
@@ -1580,9 +1584,13 @@ Lists concepts for a concept scheme.
 
 * **URL Params**
 
-  `uri=[uri]` URI for a concept scheme
+  `uri=[uri]` URI for a concept scheme (required)
 
-  `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting `ancestors` and `narrower`); not supported for download
+  `near=[latitude,longitude]` filters concepts by distance to a location (JSKOS field `location`), with `latitude` being a floating point value between -90 and 90 and `longitude` being a floating point value between -180 and 180
+
+  `distance=[distance]` value in kilometers which sets the radius for the `near` parameter if specified (default: 1)
+
+  `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting `ancestors`, `narrower`, and `annotations`); not supported for download
 
   `download=[type]` returns the whole result as a download (available types are `json` and `ndjson`), ignores `limit` and `offset`
 
@@ -1626,7 +1634,7 @@ Returns concept scheme suggestions.
 Currently the same as `/voc/suggest` with parameter `format=jskos`.
 
 ### GET /concepts
-Returns detailed data for concepts. Note that there is no certain order to the result set (but it should be consistent across requests).
+Returns detailed data for concepts. Note that there is no certain order to the result set (but it should be consistent across requests). Note that no data is returned if no filtering parameter is given (one of `uri`, `notation`, `voc`, or `near`).
 
 * **URL Params**
 
@@ -1636,7 +1644,13 @@ Returns detailed data for concepts. Note that there is no certain order to the r
 
   `voc=[uri]` filter by concept scheme URI
 
-  `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting `ancestors`, `narrower`, and `annotations`)
+  `near=[latitude,longitude]` filters concepts by distance to a location (JSKOS field `location`), with `latitude` being a floating point value between -90 and 90 and `longitude` being a floating point value between -180 and 180
+
+  `distance=[distance]` value in kilometers which sets the radius for the `near` parameter if specified (default: 1)
+
+  `properties=[list]` with `[list]` being a comma-separated list of properties (currently supporting `ancestors`, `narrower`, and `annotations`); not supported for download
+
+  `download=[type]` returns the whole result as a download (available types are `json` and `ndjson`), ignores `limit` and `offset`
 
 * **Success Response**
 
@@ -1645,7 +1659,7 @@ Returns detailed data for concepts. Note that there is no certain order to the r
 * **Sample Call**
 
   ```bash
-  curl https://coli-conc.gbv.de/api/data?uri=http://dewey.info/class/612.112/e23/
+  curl https://coli-conc.gbv.de/api/concepts?uri=http://dewey.info/class/612.112/e23/
   ```
 
   ```json
