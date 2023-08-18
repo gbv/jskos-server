@@ -1634,7 +1634,7 @@ Returns concept scheme suggestions.
 Currently the same as `/voc/suggest` with parameter `format=jskos`.
 
 ### GET /concepts
-Returns detailed data for concepts. Note that there is no certain order to the result set (but it should be consistent across requests).
+Returns detailed data for concepts. Note that there is no certain order to the result set (but it should be consistent across requests). Note that no data is returned if no filtering parameter is given (one of `uri`, `notation`, `voc`, or `near`).
 
 * **URL Params**
 
