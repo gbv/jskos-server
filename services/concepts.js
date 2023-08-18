@@ -82,7 +82,8 @@ export class ConceptService {
     if (!_.intersection(Object.keys(query), ["uri", "notation", "voc", "near"]).length) {
       return []
     }
-    let criteria = []
+    const criteria = []
+    const mongoQuery = { $and: criteria }
     const uris = query.uri ? query.uri.split("|") : []
     const notations = query.notation ? query.notation.split("|") : []
     if (uris.length || notations.length) {
@@ -111,19 +112,16 @@ export class ConceptService {
       if (!distance) {
         throw new MalformedRequestError(`Parameter \`distance\` (${query.distance}) is malformed. Please give a number in km (default: 1).`)
       }
-      criteria.push({
-        location: {
-          $nearSphere: {
-            $geometry: {
-              type: "Point",
-              coordinates: [longitude, latitude],
-            },
-            $maxDistance: distance,
+      mongoQuery.location = {
+        $nearSphere: {
+          $geometry: {
+            type: "Point",
+            coordinates: [longitude, latitude],
           },
+          $maxDistance: distance,
         },
-      })
+      }
     }
-    const mongoQuery = { $and: criteria }
     if (query.download) {
       return conceptFind(mongoQuery, null, null, false).cursor()
     }
