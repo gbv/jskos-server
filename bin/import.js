@@ -279,7 +279,7 @@ async function doImport({ input, format, type, concordance }) {
     let total = 0
     const saveMappings = async (mappings) => {
       const result = await Mapping.bulkWrite(bulkOperationForEntities({ entities: mappings, replace: !cli.flags.noreplace }))
-      imported += result.nInserted + result.nUpserted + result.nModified
+      imported += result.insertedCount + result.upsertedCount + result.modifiedCount
       console.log(`... ${imported} done ...`)
     }
     // Name the loop
@@ -393,7 +393,7 @@ async function doImport({ input, format, type, concordance }) {
       const uri = concordance.uri
       concordance._id = uri
       const result = await Concordance.bulkWrite(bulkOperationForEntities({ entities: [concordance], replace: !cli.flags.noreplace }))
-      if (result.nInserted + result.nModified + result.nUpserted === 1) {
+      if (result.insertedCount + result.modifiedCount + result.upsertedCount === 1) {
         imported += 1
         log(`... imported concordance ${uri}, now importing its mappings...`)
         // TODO: Should concordance be dropped?
