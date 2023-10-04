@@ -86,7 +86,7 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
 The easiest way to install and use JSKOS Server is with Docker and Docker Compose. Please refer to [our Docker documentation](https://github.com/gbv/jskos-server/blob/master/docker/README.md) for more information and instructions.
 
 ### Dependencies
-You need Node.js 18 to run JSKOS Server[^nodejs]. You need to have access to a [MongoDB database](https://docs.mongodb.com/manual/installation/) (v5 or v6 recommended).
+You need Node.js 18 or Node.js 20 (recommended) to run JSKOS Server[^nodejs]. You need to have access to a [MongoDB database](https://docs.mongodb.com/manual/installation/) (minimun v4; v6 or v7 recommended).
 
 ### Clone and Install
 ```bash
@@ -2303,4 +2303,4 @@ MIT © 2018 Verbundzentrale des GBV (VZG)
 
 [login-server]: https://github.com/gbv/login-server
 [jskos-validate]: https://github.com/gbv/jskos-validate
-[^nodejs]: In theory, Node.js 16 or even 14 should work as well, but as of JSKOS Server 2.0.0, we decided to require Node.js 18 due to the [upcoming early EOL of Node.js 16](https://nodejs.org/en/blog/announcements/nodejs16-eol).
+[^nodejs]: In theory, Node.js 16 or even 14 should work as well, but as of JSKOS Server 2.0.0, we decided to require Node.js 18 due to the [early EOL of Node.js 16](https://nodejs.org/en/blog/announcements/nodejs16-eol).
