@@ -25,6 +25,7 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [Run Tests](#run-tests)
   - [Run Supplemental Scripts](#run-supplemental-scripts)
 - [API](#api)
+  - [General](#general)
   - [GET /status](#get-status)
   - [GET /checkAuth](#get-checkauth)
   - [POST /validate](#post-validate)
@@ -602,22 +603,19 @@ There are some supplemental scripts that were added to deal with specific sitatu
 - `supplementNotationsInMappings`: This will look for mappings where the field `notation` is missing for any of the concepts, and it will attempt to supplement those notations. This only works for vocabularies which are also imported into the same jskos-server instance and where either `uriPattern` or `namespace` are given.
 
 ## API
-Unless otherwise specified:
-- `GET` requests will return code 200 on success.
-- `POST` requests will return code 201 on success.
-- `DELETE` requests will return code 204 on success.
+
+### General
+
+All API methods stick to the following rules, unless otherwise specified.
+
+#### Requests
+- All URL parameters are optional.
 - `POST`/`PUT`/`PATCH` requests require a JSON body.
 - Alternatively, `POST` can also receive the following inputs:
   - any kind of JSON stream
   - mutlipart/form-data with the file in `data`
   - a URL with JSON data as `url` in the request params
   - Note: The `type` request param might be required (either `json`, `ndjson`, or `multipart`)
-- `POST`/`PUT`/`PATCH` endpoints will override `creator` and `contributor` of submitted objects (see [this comment](https://github.com/gbv/jskos-server/issues/122#issuecomment-723029967) for more details)
-- `POST`/`PUT`/`PATCH`/`DELETE` requests require authentication via a JWT from [login-server](https://github.com/gbv/login-server) in the header. Exception: Authentication for certain actions on certain endpoints can be disabled (see [configuration](#configuration)).
-- `PUT`/`PATCH`/`DELETE` requests are required to come from the owner of the entity that is being modified.
-- `PATCH` requests are merged only on the top level. To remove a top-level property, set it to `null` in the body.
-- All URL parameters are optional.
-- All `GET` endpoints (except for `/status` and those with `:_id`) offer pagination via `limit=[number]` (default: 100) and `offset=[number]` (default: 0) parameters. In the response, there will be a `Link` header like described in the [GitHub API documentation](https://developer.github.com/v3/#pagination), as well as a `X-Total-Count` header containing the total number of results.
 - All `GET` endpoints returning a certain type of JSKOS data offer the `properties=[list]` parameter, with `[list]` being a comma-separated list of properties.
   - All JSKOS types allow removing properties by prefixing the property with `-`. All following properties in the list will also be removed.
   - For concepts and mappings, the property `annotations` can be specified to add all annotations in the database for a certain item.
@@ -626,7 +624,19 @@ Unless otherwise specified:
   - Example: `properties=*,-narrower,notation` will add properties `annotations` and `ancestors`, and remove the `notation` property from all return items.
   - Properties can be explicitly re-added by prefixing them with `+`, e.g. `properties=-from,to,+from` will only remove the `to` property.
   - Note that the `+` sign has to be properly encoded as `%2B`, otherwise it will be interpreted as a space.
-- For possible errors, see [Errors](#errors).
+- All `GET` endpoints (except for `/status` and those with `:_id`) offer pagination via `limit=[number]` (default: 100) and `offset=[number]` (default: 0) parameters. In the response, there will be a `Link` header like described in the [GitHub API documentation](https://developer.github.com/v3/#pagination), as well as a `X-Total-Count` header containing the total number of results.
+
+#### Write access
+- `POST`/`PUT`/`PATCH`/`DELETE` requests require [authentication](#authentication) via a JWT from [login-server](https://github.com/gbv/login-server) in the header. Exception: Authentication for certain actions on certain endpoints can be disabled (see [configuration](#configuration)).
+- `PUT`/`PATCH`/`DELETE` requests are required to come from the owner of the entity that is being modified.
+- `POST`/`PUT`/`PATCH` endpoints will override `creator` and `contributor` of submitted objects (see [this comment](https://github.com/gbv/jskos-server/issues/122#issuecomment-723029967) for more details)
+- `PATCH` request bodies are merged on the top level, so it's enough to include object properties to be modified. To remove a top-level property, set it to `null`.
+
+#### Responses
+- `GET` requests will return code 200 on success.
+- `POST` requests will return code 201 on success.
+- `DELETE` requests will return code 204 on success.
+- For possible error responses, see [Errors](#errors).
 
 ### GET /status
 Returns a status object.
