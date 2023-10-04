@@ -247,25 +247,20 @@ export class AnnotationService {
     if (!annotation) {
       throw new InvalidBodyError()
     }
-    // Add modified date.
+
     annotation.modified = (new Date()).toISOString()
-    // Remove type, created
-    _.unset(annotation, "created")
-    _.unset(annotation, "type")
-    _.unset(annotation, "_id")
-    _.unset(annotation, "id")
-    // Use lodash assign to merge annotations
+
+    for (let key of ["_id","id","type","created"]) delete annotation[key]
+
     _.assign(existing, annotation)
+
     // Change target property to object if necessary
     if (_.isString(annotation.target)) {
       annotation.target = { id: annotation.target }
     }
-    // Remove null properties if necessary
-    Object.keys(existing).forEach(key => {
-      if (existing[key] === null) {
-        delete existing[key]
-      }
-    })
+
+    utils.removeNullProperties(existing)
+
     // Validate annotation
     await validateAnnotation(existing)
 

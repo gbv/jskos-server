@@ -94,6 +94,10 @@ const cleanJSON = (json, depth = 0) => {
   }
 }
 
+
+// remove object properties when its value is null
+const removeNullProperties = obj => Object.keys(obj).filter(key => obj[key] === null).forEach(key => delete obj[key])
+
 // Adjust data in req.data based on req.type (which is set by `addMiddlewareProperties`)
 const adjust = async (req, res, next) => {
   /**
@@ -975,6 +979,7 @@ const addMappingSchemes = (mapping, options = {}) => {
 export {
   wrappers,
   cleanJSON,
+  removeNullProperties,
   adjust,
   uuid,
   isValidUuid,

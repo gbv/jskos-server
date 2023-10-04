@@ -230,12 +230,8 @@ export class ConcordanceService {
 
     // Use lodash merge to merge concordance objects
     _.assign(existing, concordance)
-    // Remove null properties if necessary
-    Object.keys(existing).forEach(key => {
-      if (existing[key] === null) {
-        delete existing[key]
-      }
-    })
+
+    utils.removeNullProperties(existing)
 
     // Validate concordance after merge
     if (!validateConcordance(existing)) {

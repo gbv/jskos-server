@@ -716,21 +716,19 @@ export class MappingService {
       throw new InvalidBodyError()
     }
 
-    _.unset(mapping, "_id")
-    _.unset(mapping, "uri")
-    _.unset(mapping, "created")
+    for (let key of ["_id","uri","created"]) delete mapping[key]
     // Remove creator/contributor if there are no changes
     // TODO: Possibly check this is utils.handleCreatorForObject
-    if (body.creator && _.isEqual(body.creator, existing.creator)) {
-      _.unset(mapping, "creator")
+    if (mapping.creator && _.isEqual(mapping.creator, existing.creator)) {
+      delete mapping.creator
     }
-    if (body.contributor && _.isEqual(body.contributor, existing.contributor)) {
-      _.unset(mapping, "contributor")
+    if (mapping.contributor && _.isEqual(mapping.contributor, existing.contributor)) {
+      delete mapping.contributor
     }
     // Add modified date, except if only updating `partOf`
-    const keys = Object.keys(body)
+    const keys = Object.keys(mapping)
     if (keys.length === 1 && keys[0] === "partOf") {
-      _.unset(mapping, "modified")
+      delete mapping.modified
     } else {
       mapping.modified = (new Date()).toISOString()
     }
@@ -748,12 +746,7 @@ export class MappingService {
     if (!mapping.type || !mapping.type.length) {
       mapping.type = ["http://www.w3.org/2004/02/skos/core#mappingRelation"]
     }
-    // Remove null properties if necessary
-    Object.keys(newMapping).forEach(key => {
-      if (newMapping[key] === null) {
-        delete newMapping[key]
-      }
-    })
+    utils.removeNullProperties(newMapping)
 
     // Validate mapping after merge
     if (!validateMapping(newMapping)) {
