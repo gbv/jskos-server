@@ -1425,7 +1425,7 @@ Saves a mapping or multiple mappings in the database.
 
   When a single mapping is provided, an error can be returned if there's something wrong with it (see [errors](#errors)). When multiple mappings are provided, the first error will be returned, except if bulk mode is enabled in which errors for individual mappings are ignored.
 
-Note that the `partOf` property is currently not allowed. Associating a mapping with a concordances has to be done in a separate [PUT]((#put-mappings_id) or [PATCH]((#patch-mappings_id) request.
+Note that the `partOf` property is currently not allowed. Associating a mapping with a concordances has to be done in a separate [PUT](#put-mappings_id) or [PATCH](#patch-mappings_id) request.
 
 ### PUT /mappings/:_id
 Overwrites a mapping in the database.
