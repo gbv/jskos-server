@@ -17,4 +17,6 @@ COPY docker/.env .env
 # Use pm2 to run app
 RUN npm i -g pm2
 
-CMD ["pm2-runtime", "server.js"]
+COPY docker/docker-entrypoint.sh /usr/local/bin/
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+CMD ["%%CMD%%"]
