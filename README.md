@@ -739,12 +739,7 @@ Note that certain properties from the actual configuration will not be shown in 
 
 * **Error Response**
 
-  ```json
-  {
-    "ok": 0
-  }
-  ```
-  (other properties omitted)
+  In case of an error, for instance a failed database connection, the value of response property `ok` is set to `0`.
 
 ### GET /checkAuth
 Endpoint to check whether a user is authorized. If `type` or `action` are not set, it will use `identities`/`identityProviders` that are defined directly under config.
