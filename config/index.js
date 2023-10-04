@@ -32,7 +32,7 @@ if (configFile.startsWith("/")) {
 
 // If file doesn't exist, create it with an empty array
 if (env !== "test" && !fs.existsSync(configFilePath)) {
-  fs.writeFileSync(configFilePath, "{\"mongo\":{\"host\":\"mongo\"}}")
+  fs.writeFileSync(configFilePath, "{}")
 }
 
 // Load default config
