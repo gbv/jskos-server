@@ -38,7 +38,7 @@ services:
     restart: unless-stopped
 
   mongo:
-    image: mongo:5
+    image: mongo:7
     # replace this with your UID/GID if necessary (id -u; id -g); remove on macOS/Windows
     user: 1000:1000
     volumes:
