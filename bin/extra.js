@@ -39,13 +39,17 @@ const scripts = {
         let concepts = mapping[side].memberSet
         scheme = await schemeService.getScheme(scheme.uri)
         scheme = scheme && new jskos.ConceptScheme(scheme)
-        if (!scheme) { continue }
+        if (!scheme) {
+          continue
+        }
         concepts.forEach((concept, index) => {
           if (concept.notation && concept.notation.length) {
             return
           }
           const notation = scheme.notationFromUri(concept.uri)
-          if (!notation) { return }
+          if (!notation) {
+            return
+          }
           concept.notation = [notation]
           changedPaths.push(`${side}.memberSet.${index}.notation`)
         })

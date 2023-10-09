@@ -89,13 +89,19 @@ export class ConcordanceService {
     let result
     // First look via ID
     result = await Concordance.findById(uriOrId).lean()
-    if (result) return result
+    if (result) {
+      return result
+    }
     // Then via URI
     result = await Concordance.findOne({ uri: uriOrId }).lean()
-    if (result) return result
+    if (result) {
+      return result
+    }
     // Then via identifier
     result = await Concordance.findOne({ identifier: uriOrId }).lean()
-    if (result) return result
+    if (result) {
+      return result
+    }
 
     throw new EntityNotFoundError(null, uriOrId)
   }

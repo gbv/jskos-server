@@ -111,7 +111,11 @@ if (env === "test") {
 
 // Set baseUrl to localhost if not set
 if (!config.baseUrl) {
-  Object.defineProperty(config, "baseUrl", { get: function() { return `http://localhost:${this.port}/` } })
+  Object.defineProperty(config, "baseUrl", {
+    get: function () {
+      return `http://localhost:${this.port}/`
+    },
+  })
 }
 if (!config.baseUrl.endsWith("/")) {
   config.baseUrl += "/"

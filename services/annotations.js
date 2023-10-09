@@ -250,7 +250,9 @@ export class AnnotationService {
 
     annotation.modified = (new Date()).toISOString()
 
-    for (let key of ["_id","id","type","created"]) delete annotation[key]
+    for (let key of ["_id", "id", "type", "created"]) {
+      delete annotation[key]
+    }
 
     _.assign(existing, annotation)
 

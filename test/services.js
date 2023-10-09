@@ -173,7 +173,9 @@ describe("Services", () => {
               return false
             }
             const annotationSum = annotations.filter(a => a.target === m.uri).reduce((prev, cur) => {
-              if (cur.motivation !== "assessing") return prev
+              if (cur.motivation !== "assessing") {
+                return prev
+              }
               return prev + parseInt(cur.bodyValue)
             }, 0)
             return Function(`"use strict";return (${annotationSum}${annotatedWith})`)()

@@ -11,7 +11,9 @@ export function makeSuffixes(values) {
     for (var i = 0; i < val.length - 1; i++) {
       tmp = val.substr(i)
       hasSuffix = results.includes(tmp)
-      if (!hasSuffix) results.push(tmp)
+      if (!hasSuffix) {
+        results.push(tmp)
+      }
     }
   })
   return results
@@ -26,7 +28,9 @@ export function makePrefixes(values) {
     for (var i = 2; i < val.length; i++) {
       tmp = val.substr(0, i)
       hasPrefix = results.includes(tmp)
-      if (!hasPrefix) results.push(tmp)
+      if (!hasPrefix) {
+        results.push(tmp)
+      }
     }
   })
   return results

@@ -251,9 +251,8 @@ export class MappingService {
       // Parameter `from` or `to` is required to use sum of assessment annotations
       if (!from && !to) {
         // Do nothing here; annotatedWith parameter will be completely ignored
-      }
-      // > or <
-      else if (assessmentSumMatch[1]) {
+      } else if (assessmentSumMatch[1]) {
+        // > or <
         assessmentSumQuery = {
           _assessmentSum: { [`$${{ "<": "lt", ">": "gt"}[assessmentSumMatch[1]]}${{ "=": "e", "": "" }[assessmentSumMatch[2]]}`]: parseInt(assessmentSumMatch[3]) },
         }
@@ -294,17 +293,16 @@ export class MappingService {
 
       // Filter by annotations
       // Three different paths
-      // 1. No filter by annotations
       if (!annotatedWith && !annotatedBy && !annotatedFor && !assessmentSumQuery) {
+        // 1. No filter by annotations
         // Simply match mapping query
         pipeline = [
           { $match: query },
           ...(sorting ? [{ $sort: sorting }] : []),
         ]
         pipeline.model = Mapping
-      }
-      // 2. Filter by annotation, and from/to/creator is defined
-      else if (from || to || creator || negativeAnnotationAssertion) {
+      } else if (from || to || creator || negativeAnnotationAssertion) {
+        // 2. Filter by annotation, and from/to/creator is defined
         // We'll first filter the mappings, then add annotations and filter by those
         const annotationQuery = buildAnnotationQuery({ annotatedWith, annotatedFor, annotatedBy, prefix: "annotations." })
         pipeline = [
@@ -333,8 +331,12 @@ export class MappingService {
                     body: function (annotations) {
                       return annotations.reduce((prev, cur) => {
                         if (cur.motivation === "assessing") {
-                          if (cur.bodyValue === "+1") return prev + 1
-                          if (cur.bodyValue === "-1") return prev - 1
+                          if (cur.bodyValue === "+1") {
+                            return prev + 1
+                          }
+                          if (cur.bodyValue === "-1") {
+                            return prev - 1
+                          }
                         }
                         return prev
                       }, 0)
@@ -349,9 +351,8 @@ export class MappingService {
           { $project: { annotations: 0, _assessmentSum: 0 } },
         ]
         pipeline.model = Mapping
-      }
-      // 3. Filter by annotation, and none of the properties is given
-      else {
+      } else {
+        // 3. Filter by annotation, and none of the properties is given
         // We'll first filter the annotations, then get the associated mappings, remove duplicates, and filter those
         const annotationQuery = buildAnnotationQuery({ annotatedWith, annotatedFor, annotatedBy })
         pipeline = [
@@ -716,7 +717,9 @@ export class MappingService {
       throw new InvalidBodyError()
     }
 
-    for (let key of ["_id","uri","created"]) delete mapping[key]
+    for (let key of ["_id", "uri", "created"]) {
+      delete mapping[key]
+    }
     // Remove creator/contributor if there are no changes
     // TODO: Possibly check this is utils.handleCreatorForObject
     if (mapping.creator && _.isEqual(mapping.creator, existing.creator)) {
@@ -897,7 +900,9 @@ export class MappingService {
     for (let mapping of mappings) {
       for (let path of paths) {
         let concepts = _.get(mapping, path, null)
-        if (!concepts) continue
+        if (!concepts) {
+          continue
+        }
         let notations = []
         for (let concept of concepts) {
           notations = notations.concat(concept.notation)
