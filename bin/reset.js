@@ -169,7 +169,7 @@ const allTypes = Object.keys(services)
         query["partOf.uri"] = { $in: filterUris }
       }
     } else {
-      query._id = { $in: uris }
+      query[type === "annotation" ? "id" : "uri"] = { $in: uris }
     }
     toBeDeleted[type] = (await models[type].find(query, { _id: 1 }).lean()).map(r => r._id)
   }
