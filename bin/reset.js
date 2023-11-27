@@ -226,6 +226,11 @@ const allTypes = Object.keys(services)
       if (type == "concept") {
         schemeUrisToAdjust = await models.concept.distinct("inScheme.uri", query).lean()
       }
+      // For mappings, get all concordances to be adjusted later
+      let concordanceUrisToAdjust = []
+      if (type == "mapping") {
+        concordanceUrisToAdjust = await models.mapping.distinct("partOf.uri", query).lean()
+      }
       // Delete entities...
       const result = await models[type].deleteMany(query)
       log(`- ${result.deletedCount} ${type}s deleted.`)
@@ -233,6 +238,11 @@ const allTypes = Object.keys(services)
       if (schemeUrisToAdjust.length) {
         log(`- adjusting ${schemeUrisToAdjust.length} schemes...`)
         await services.scheme.postAdjustmentsForScheme(schemeUrisToAdjust.map(uri => ({ uri })), { setApi: cli.flags.setApi })
+      }
+      // Adjust concordances
+      if (concordanceUrisToAdjust.length) {
+        log(`- adjusting extent for ${concordanceUrisToAdjust.length} concordances...`)
+        await Promise.all(concordanceUrisToAdjust.map(uri => services.concordance.postAdjustmentForConcordance(uri)))
       }
     }
     log()

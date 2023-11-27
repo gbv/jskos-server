@@ -230,7 +230,7 @@ const allTypes = Object.keys(services)
     let concordance
     if (cli.flags.concordance) {
       // Query concordance from database
-      concordance = await Concordance.findById(cli.flags.concordance).lean()
+      concordance = await services.concordance.get(cli.flags.concordance)
       if (!concordance) {
         logError({
           message: `Concordance with URI ${cli.flags.concordance} not found, aborting...`,
@@ -275,6 +275,11 @@ async function doImport({ input, format, type, concordance }) {
   } else if (type == "mapping") {
     // TODO: Eventually, this should also be done through the service.
     let mappings = []
+    // Keep track of concordances that need to be adjusted
+    const concordanceUrisToAdjust = new Set()
+    if (concordance?.uri) {
+      concordanceUrisToAdjust.add(concordance.uri)
+    }
     let imported = 0
     let total = 0
     const saveMappings = async (mappings) => {
@@ -300,10 +305,12 @@ async function doImport({ input, format, type, concordance }) {
         }
       }
       // Add reference to concordance.
-      if (concordance && concordance.uri) {
+      if (concordance?.uri) {
         object.partOf = [{
           uri: concordance.uri,
         }]
+      } else if (object.partOf?.[0]?.uri) {
+        concordanceUrisToAdjust.add(object.partOf?.[0]?.uri)
       }
       // Copy creator from concordance if it doesn't exist.
       if (!object.creator && concordance && concordance.creator) {
@@ -355,17 +362,10 @@ async function doImport({ input, format, type, concordance }) {
     }
     mappings.length && await saveMappings(mappings)
     log(`... done: ${imported} mappings imported (${total - imported} skipped).`)
-    if (concordance) {
-      // Recalculate extent of concordance
-      const uri = concordance.uri
-      const count = (await Mapping.countDocuments({ "partOf.uri": uri })) || ""
-      log(`... recalculated extend of concordance ${uri} to be ${count}...`)
-      await Concordance.updateOne({ _id: uri }, {
-        $set:
-        {
-          extent: `${count}`,
-        },
-      })
+    if (concordanceUrisToAdjust.size) {
+      log(`... adjusting extent for ${concordanceUrisToAdjust.size} concordances...`)
+      await Promise.all([...concordanceUrisToAdjust].map(uri => services.concordance.postAdjustmentForConcordance(uri)))
+      log("... done.")
     }
   } else if (type == "concordance") {
     // TODO: Eventually, this should also be done through the service.
