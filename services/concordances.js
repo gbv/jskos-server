@@ -266,7 +266,7 @@ export class ConcordanceService {
 
   async getMappingsCountForConcordance(concordance) {
     const uris = [concordance.uri].concat(concordance.identifier || [])
-    return await Mapping.count({ $or: uris.map(uri => ({ "partOf.uri": uri })) })
+    return await Mapping.countDocuments({ $or: uris.map(uri => ({ "partOf.uri": uri })) })
   }
 
   async postAdjustmentForConcordance(uriOrId) {
@@ -278,7 +278,7 @@ export class ConcordanceService {
         await Concordance.updateOne({ _id: concordance._id }, { extent: `${count}`, modified: (new Date()).toISOString() })
       }
     } catch (error) {
-      // Ignore errors here
+      config.error(error)
     }
   }
 
