@@ -32,14 +32,26 @@
       ]
     },
     "version": {
-      "description": "The version of the JSKOS API specification that is used; do not set manually",
+      "description": "The version of the JSKOS API specification that is used; do not set manually (uses `apiVersion` field from package.json)",
       "anyOf": [
         {
           "type": "null"
         },
         {
           "type": "string",
-          "pattern": "^\\d+\\.\\d+(\\.\\d+)?$"
+          "pattern": "^\\d+\\.\\d+$"
+        }
+      ]
+    },
+    "serverVersion": {
+      "description": "The version of JSKOS server that a particular instance is running; do not set manually (uses `version` field from package.json)",
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
         }
       ]
     },

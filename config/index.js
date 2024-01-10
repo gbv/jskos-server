@@ -121,10 +121,9 @@ if (!config.baseUrl.endsWith("/")) {
   config.baseUrl += "/"
 }
 
-// Set JSKOS API version if not set
-if (!config.version) {
-  config.version = info.version.split(".").slice(0,2).join(".")
-}
+// Set JSKOS API version and JSKOS Server version from package.json
+config.version = info.apiVersion.split(".").slice(0,2).join(".")
+config.serverVersion = info.version
 
 // Further expansion of config
 const defaultActions = {
