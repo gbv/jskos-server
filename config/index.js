@@ -122,7 +122,7 @@ if (!config.baseUrl.endsWith("/")) {
 }
 
 // Set JSKOS API version and JSKOS Server version from package.json
-config.version = info.apiVersion.split(".").slice(0,2).join(".")
+config.version = info.apiVersion
 config.serverVersion = info.version
 
 // Further expansion of config
