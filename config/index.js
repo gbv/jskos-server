@@ -49,8 +49,10 @@ let configUser = {}
 try {
   configUser = JSON.parse(fs.readFileSync(configFilePath))
 } catch(error) {
-  console.error(`Warning: Could not load configuration file from ${configFilePath}. Please check whether it is valid JSON and restart the application.`)
-  process.exit(1)
+  if (env !== "test") {
+    console.error(`Warning: Could not load configuration file from ${configFilePath}. Please check whether it is valid JSON and restart the application.`)
+    process.exit(1)
+  }
 }
 if (env == "test") {
   configUser = _.pick(configUser, ["mongo"])
