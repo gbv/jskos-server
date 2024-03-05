@@ -11,7 +11,7 @@ import { v4 as uuid } from "uuid"
 // Prepare environment
 import * as dotenv from "dotenv"
 dotenv.config()
-const env = process.env.NODE_ENV || "development"
+const env = process.env.NODE_ENV
 const configFile = process.env.CONFIG_FILE || "./config.json"
 
 function getDirname(url) {
@@ -77,6 +77,7 @@ if (!configUser.namespace && env != "test") {
 }
 
 let config = _.defaultsDeep({ env }, configEnv, configUser, configDefault)
+config.env = config.env ?? "development"
 
 if (![true, false, "log", "warn", "error"].includes(config.verbosity)) {
   console.warn(`Invalid verbosity value "${config.verbosity}", defaulting to "${configDefault.verbosity}" instead.`)

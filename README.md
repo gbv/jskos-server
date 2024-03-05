@@ -113,6 +113,7 @@ All missing keys will be defaulted from `config/config.default.json`:
 {
   "verbosity": "warn",
   "baseUrl": null,
+  "env": "development",
   "title": "JSKOS Server",
   "version": null,
   "closedWorldAssumption": true,
