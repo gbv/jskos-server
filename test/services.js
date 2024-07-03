@@ -46,7 +46,7 @@ describe("Services", () => {
           uri: "test:user",
         }],
       }
-      const patchedConcordance = await services.concordance.patchConcordance({ body: patch, existing: postedConcordance.toObject() })
+      const patchedConcordance = await services.concordance.patchConcordance({ body: patch, existing: postedConcordance })
       assert.ok(!patchedConcordance.contributor[0].prefLabel, "PATCH requests should merge objects only on the top level.")
       const patch2 = {
         contributor: null,
