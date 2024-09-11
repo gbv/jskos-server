@@ -1,12 +1,7 @@
 /* eslint-env node, mocha */
 
-import chai from "chai"
-import chaiAsPromised from "chai-as-promised"
-chai.use(chaiAsPromised)
-import chaiHttp from "chai-http"
-chai.use(chaiHttp)
-// eslint-disable-next-line no-unused-vars
-const should = chai.should()
+import chai from "./chai.js"
+
 import * as server from "../server.js"
 import assert from "node:assert"
 import { assertIndexes, assertMongoDB, dropDatabaseBeforeAndAfter } from "./test-utils.js"
@@ -71,7 +66,7 @@ describe("/mappings/infer", () => {
           url: `http://localhost:${config.port}`,
         },
       ],
-      chai.request(server.app)
+      chai.request.execute(server.app)
         .post("/voc")
         .send(s)
         .end((error, res) => {
@@ -88,7 +83,7 @@ describe("/mappings/infer", () => {
   })
 
   it("should POST test concepts", done => {
-    chai.request(server.app)
+    chai.request.execute(server.app)
       .post("/concepts")
       .send(concepts)
       .end((error, res) => {
@@ -100,7 +95,7 @@ describe("/mappings/infer", () => {
   })
 
   it("should return empty result for /mappings/infer", done => {
-    chai.request(server.app)
+    chai.request.execute(server.app)
       .get("/mappings/infer")
       .query({
         from: _.last(concepts).uri,
@@ -122,7 +117,7 @@ describe("/mappings/infer", () => {
       to: { memberSet: [{ uri: `${targetScheme.uri}:5` }] },
       toScheme: targetScheme,
     }
-    chai.request(server.app)
+    chai.request.execute(server.app)
       .post("/mappings")
       .set("Authorization", `Bearer ${token}`)
       .send(mapping)
@@ -130,7 +125,7 @@ describe("/mappings/infer", () => {
         assert.equal(res.status, 201)
         const mappingUri = res.body.uri
         // Request /mappings/infer again
-        chai.request(server.app)
+        chai.request.execute(server.app)
           .get("/mappings/infer")
           .query({
             from: _.last(concepts).uri,
@@ -150,7 +145,7 @@ describe("/mappings/infer", () => {
   })
 
   it("should also work with notation instead of URI", done => {
-    chai.request(server.app)
+    chai.request.execute(server.app)
       .get("/mappings/infer")
       .query({
         from: _.last(concepts).uri.replace(scheme.namespace, ""),
@@ -166,7 +161,7 @@ describe("/mappings/infer", () => {
   })
 
   it("should return nothing for previous request if depth is set to 1", done => {
-    chai.request(server.app)
+    chai.request.execute(server.app)
       .get("/mappings/infer")
       .query({
         from: _.last(concepts).uri,
@@ -190,7 +185,7 @@ describe("/mappings/infer", () => {
       toScheme: targetScheme,
       type: ["http://www.w3.org/2004/02/skos/core#closeMatch"],
     }
-    chai.request(server.app)
+    chai.request.execute(server.app)
       .post("/mappings")
       .set("Authorization", `Bearer ${token}`)
       .send(mapping)
@@ -198,7 +193,7 @@ describe("/mappings/infer", () => {
         assert.equal(res.status, 201)
         const mappingUri = res.body.uri
         // Request /mappings/infer again
-        chai.request(server.app)
+        chai.request.execute(server.app)
           .get("/mappings/infer")
           .query({
             from: _.last(concepts).uri,
@@ -218,7 +213,7 @@ describe("/mappings/infer", () => {
   })
 
   it("should return nothing for previous request if depth is set to 0", done => {
-    chai.request(server.app)
+    chai.request.execute(server.app)
       .get("/mappings/infer")
       .query({
         from: _.last(concepts).uri,
@@ -235,7 +230,7 @@ describe("/mappings/infer", () => {
   })
 
   it("should not use mapping of type `closeMatch` for inference if parameter `strict` is set", done => {
-    chai.request(server.app)
+    chai.request.execute(server.app)
       .get("/mappings/infer")
       .query({
         from: _.last(concepts).uri,
@@ -260,7 +255,7 @@ describe("/mappings/infer", () => {
       to: { memberSet: [{ uri: `${targetScheme.uri}:7` }] },
       toScheme: targetScheme,
     }
-    chai.request(server.app)
+    chai.request.execute(server.app)
       .post("/mappings")
       .set("Authorization", `Bearer ${token}`)
       .send(mapping)
@@ -268,7 +263,7 @@ describe("/mappings/infer", () => {
         assert.equal(res.status, 201)
         const mappingUri = res.body.uri
         // Request /mappings/infer again
-        chai.request(server.app)
+        chai.request.execute(server.app)
           .get("/mappings/infer")
           .query({
             from: _.last(concepts).uri,
@@ -287,7 +282,7 @@ describe("/mappings/infer", () => {
   })
 
   it("should return empty result when mappings of type `broadMatch` are requested", done => {
-    chai.request(server.app)
+    chai.request.execute(server.app)
       .get("/mappings/infer")
       .query({
         from: _.last(concepts).uri,
@@ -304,7 +299,7 @@ describe("/mappings/infer", () => {
   })
 
   it("should throw error when parameter `to` is given", done => {
-    chai.request(server.app)
+    chai.request.execute(server.app)
       .get("/mappings/infer")
       .query({
         from: _.last(concepts).uri,
@@ -319,7 +314,7 @@ describe("/mappings/infer", () => {
   })
 
   it("should throw error when parameter `direction` is given with value `backward`", done => {
-    chai.request(server.app)
+    chai.request.execute(server.app)
       .get("/mappings/infer")
       .query({
         from: _.last(concepts).uri,

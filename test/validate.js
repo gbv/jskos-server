@@ -1,12 +1,7 @@
 // Tests for /validate endpoints
 
-import chai from "chai"
-import chaiAsPromised from "chai-as-promised"
-chai.use(chaiAsPromised)
-import chaiHttp from "chai-http"
-chai.use(chaiHttp)
-// eslint-disable-next-line no-unused-vars
-const should = chai.should()
+import chai from "./chai.js"
+
 import * as server from "../server.js"
 
 import glob from "glob"
@@ -53,7 +48,7 @@ describe("Validation endpoint: jskos-validate tests", () => {
             objects = object
           }
           for (let object of objects) {
-            chai.request(server.app)
+            chai.request.execute(server.app)
               .post("/validate")
               .query({
                 type,
@@ -83,7 +78,7 @@ describe("Validation endpoint: parameters", () => {
   dropDatabaseBeforeAndAfter()
 
   it("should validate empty object without type parameter", done => {
-    chai.request(server.app)
+    chai.request.execute(server.app)
       .post("/validate")
       .send({})
       .end((error, res) => {
@@ -97,7 +92,7 @@ describe("Validation endpoint: parameters", () => {
 
   it("should fail validation for object with unknown parameter, but pass when `unknownFields` is set", done => {
     const object = { abcdef: 1 }
-    chai.request(server.app)
+    chai.request.execute(server.app)
       .post("/validate")
       .send(object)
       .end((error, res) => {
@@ -108,7 +103,7 @@ describe("Validation endpoint: parameters", () => {
         assert.notEqual(res.body[0].length, 0)
 
         // Set parameter
-        chai.request(server.app)
+        chai.request.execute(server.app)
           .post("/validate")
           .query({
             unknownFields: true,
@@ -144,7 +139,7 @@ describe("Validation endpoint: parameters", () => {
         inScheme: [{uri: "http://example.org/voc"}],
       },
     ]
-    chai.request(server.app)
+    chai.request.execute(server.app)
       .post("/validate")
       .send(objects)
       .end((error, res) => {
@@ -180,7 +175,7 @@ describe("Validation endpoint: parameters", () => {
       },
     ]
     // 1. POST scheme
-    chai.request(server.app)
+    chai.request.execute(server.app)
       .post("/voc")
       .send(scheme)
       .end((error, res) => {
@@ -189,7 +184,7 @@ describe("Validation endpoint: parameters", () => {
         res.body.should.be.an("object")
         assert.equal(res.body.uri, scheme.uri)
         // 2. Validate objects
-        chai.request(server.app)
+        chai.request.execute(server.app)
           .post("/validate")
           .query({
             knownSchemes: true,
