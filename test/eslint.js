@@ -1,11 +1,22 @@
-import lint from "mocha-eslint"
+import assert from "node:assert"
+import { loadESLint } from "eslint"
 
-// ESLint as part of the tests
-let paths = [
+const DefaultESLint = await loadESLint()
+const eslint = new DefaultESLint()
+const results = await eslint.lintFiles([
   "**/*.js",
-  "!node_modules/**/*.js",
-]
-let options = {
-  contextName: "ESLint",
-}
-lint(paths, options)
+])
+
+describe("ESLint Errors", () => {
+
+  results.forEach(result => {
+    it(result.filePath, (done) => {
+      assert(
+        result.errorCount === 0,
+        "\n" + result.messages.map(m => `\t\t${m.line}:${m.column}\terror\t${m.message}\t${m.ruleId}`).join("\n"),
+      )
+      done()
+    })
+  })
+
+})
