@@ -234,7 +234,6 @@ export class MappingService {
     }
 
     const query = { $and: [mongoQuery1, mongoQuery3, mongoQuery4, mongoQuery5, mongoQuery6] }
-    console.log(JSON.stringify(query, null, 2))
 
     // Sorting (default: modified descending)
     sort = ["created", "modified", "mappingRelevance"].includes(sort) ? sort : "modified"
