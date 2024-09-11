@@ -49,7 +49,6 @@
     "jsonwebtoken": "^9.0.2",
     "lint-staged": "^15.2.10",
     "mocha": "^10.7.3",
-    "mocha-eslint": "^7.0.0",
     "pre-commit": "^1.2.2"
   },
   "dependencies": {
