@@ -121,7 +121,7 @@ export class MappingService {
     }
 
     // Handle from/fromScheme/to/toScheme here
-    var criteria = ["from", "to"].map(part => {
+    let criteria = ["from", "to"].map(part => {
       count = direction == "both" ? 2 : 1
       let or = []
       while (count > 0) {

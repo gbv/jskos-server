@@ -4,11 +4,11 @@ import jskos from "jskos-tools"
 
 // from https://web.archive.org/web/20170609122132/http://jam.sg/blog/efficient-partial-keyword-searches/
 export function makeSuffixes(values) {
-  var results = []
+  const results = []
   values.forEach(function (val) {
     val = val.toUpperCase().trim()
-    var tmp, hasSuffix
-    for (var i = 0; i < val.length - 1; i++) {
+    let tmp, hasSuffix
+    for (let i = 0; i < val.length - 1; i++) {
       tmp = val.substr(i)
       hasSuffix = results.includes(tmp)
       if (!hasSuffix) {
@@ -20,12 +20,12 @@ export function makeSuffixes(values) {
 }
 // adapted from above
 export function makePrefixes(values) {
-  var results = []
+  const results = []
   values.forEach(function (val) {
     val = val.toUpperCase().trim()
-    var tmp, hasPrefix
+    let tmp, hasPrefix
     results.push(val)
-    for (var i = 2; i < val.length; i++) {
+    for (let i = 2; i < val.length; i++) {
       tmp = val.substr(0, i)
       hasPrefix = results.includes(tmp)
       if (!hasPrefix) {

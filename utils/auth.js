@@ -88,7 +88,7 @@ let optional = [], auth = (req, res, next) => {
 
 // Prepare authorization via JWT
 if (config.auth.algorithm && config.auth.key) {
-  var opts = {
+  const opts = {
     jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
     secretOrKey: config.auth.key,
     algorithms: [config.auth.algorithm],
