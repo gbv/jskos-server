@@ -23,7 +23,8 @@
     "reset": "./bin/reset.js",
     "upgrade": "./bin/upgrade.js",
     "extra": "./bin/extra.js",
-    "release": "git checkout dev && git pull && npm test && npm version $SEMVER && git push && git checkout master && git merge dev && git push --follow-tags && git checkout dev",
+    "yesno": "node -e \"const yesno = require('yesno'); yesno({ question: 'Are you sure you want to continue?' }).then(ok => process.exit(ok ? 0 : 1));\"",
+    "release": "test $(git rev-parse --abbrev-ref HEAD) = dev && git pull && npm test && npm version $SEMVER && npm run --silent yesno && (git push && git checkout master && git merge dev && git push --follow-tags && git checkout dev) || (git tag -d $(git describe --tags) && git reset --hard HEAD~1)",
     "release:patch": "SEMVER=patch npm run release",
     "release:minor": "SEMVER=minor npm run release",
     "release:major": "SEMVER=major npm run release"
@@ -49,7 +50,8 @@
     "jsonwebtoken": "^9.0.2",
     "lint-staged": "^15.2.10",
     "mocha": "^10.7.3",
-    "pre-commit": "^1.2.2"
+    "pre-commit": "^1.2.2",
+    "yesno": "^0.4.0"
   },
   "dependencies": {
     "ajv": "^8.17.1",
@@ -76,7 +78,6 @@
     "passport-anonymous": "^1.0.1",
     "passport-jwt": "^4.0.1",
     "portfinder": "^1.0.32",
-    "uuid": "^10.0.0",
-    "yesno": "^0.4.0"
+    "uuid": "^10.0.0"
   }
 }
