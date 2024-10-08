@@ -2,7 +2,7 @@ import _ from "lodash"
 import config from "../config/index.js"
 import * as utils from "../utils/index.js"
 import jskos from "jskos-tools"
-import validate from "jskos-validate"
+import { validate } from "jskos-validate"
 
 import { Annotation, Mapping, Concept } from "../models/index.js"
 import { EntityNotFoundError, DatabaseAccessError, InvalidBodyError, MalformedBodyError, MalformedRequestError, ForbiddenAccessError } from "../errors/index.js"

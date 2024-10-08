@@ -86,7 +86,7 @@ export async function exec(command, options) {
 }
 
 import Stream from "node:stream"
-import anystream from "json-anystream"
+import * as anystream from "json-anystream"
 
 export async function arrayToStream(array) {
   const readable = new Stream.Readable({ objectMode: true })

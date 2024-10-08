@@ -1,6 +1,6 @@
 import _ from "lodash"
 import jskos from "jskos-tools"
-import validate from "jskos-validate"
+import { validate } from "jskos-validate"
 import * as utils from "../utils/index.js"
 
 import { Concept } from "../models/concepts.js"

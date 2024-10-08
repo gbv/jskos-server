@@ -1,4 +1,4 @@
-import validate from "jskos-validate"
+import { validate } from "jskos-validate"
 import jskos from "jskos-tools"
 import { schemeService } from "./schemes.js"
 const guessObjectType = jskos.guessObjectType

@@ -187,11 +187,11 @@ indexes && log("- will create indexes", type ? `for type ${type}` : "for all typ
 format && log(`- with format: ${format}`)
 log("")
 
-import validate from "jskos-validate"
+import { validate } from "jskos-validate"
 import config from "../config/index.js"
 import { v5 as uuidv5 } from "uuid"
 import path from "node:path"
-import anystream from "json-anystream"
+import * as anystream from "json-anystream"
 import _ from "lodash"
 import * as utils from "../utils/index.js"
 import * as db from "../utils/db.js"

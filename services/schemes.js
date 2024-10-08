@@ -1,7 +1,7 @@
 import _ from "lodash"
 import config from "../config/index.js"
 import * as utils from "../utils/index.js"
-import validate from "jskos-validate"
+import { validate } from "jskos-validate"
 
 import { MalformedBodyError, MalformedRequestError, EntityNotFoundError, DatabaseAccessError, InvalidBodyError } from "../errors/index.js"
 import { Scheme } from "../models/schemes.js"

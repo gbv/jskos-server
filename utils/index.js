@@ -7,7 +7,7 @@ import { v4 as uuid } from "uuid"
 
 import { Transform, Readable } from "node:stream"
 import JSONStream from "JSONStream"
-import anystream from "json-anystream"
+import * as anystream from "json-anystream"
 import express from "express"
 import * as searchHelper from "./searchHelper.js"
 
