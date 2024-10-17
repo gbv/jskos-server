@@ -80,7 +80,6 @@ export class MappingService {
       } else {
         result = fromTo == "from" ? "to" : "from"
       }
-      count -= 1
       return result
     }
     // Converts value to regex object for MongoDB if it ends with `*`.
@@ -121,10 +120,12 @@ export class MappingService {
     }
 
     // Handle from/fromScheme/to/toScheme here
-    let criteria = ["from", "to"].map(part => {
-      count = direction == "both" ? 2 : 1
-      let or = []
-      while (count > 0) {
+    let criteria = []
+    let or = []
+    count = direction == "both" ? 2 : 1
+    while (count > 0) {
+      let and = []
+      for (const part of ["from", "to"]) {
         const conceptOr = [], schemeOr = []
         // Depending on `count` and `direction`, the value of `side` will either be "from" or "to"
         const side = fromTo(part)
@@ -148,16 +149,21 @@ export class MappingService {
           schemeOr.push({ [`${side}Scheme.uri`]: uri })
           schemeOr.push({ [`${side}Scheme.notation`]: uri })
         }
-        if (conceptOr.length && schemeOr.length) {
-          or.push({ $and: [{ $or: conceptOr }, { $or: schemeOr }] })
-        } else if (conceptOr.length) {
-          or = or.concat(conceptOr)
-        } else if (schemeOr.length) {
-          or = or.concat(schemeOr)
+        if (conceptOr.length) {
+          and.push({ $or: conceptOr })
+        }
+        if (schemeOr.length) {
+          and.push({ $or: schemeOr })
         }
       }
-      return { $or: or }
-    }).filter(entry => entry.$or.length > 0)
+      if (and.length) {
+        or.push({ $and: and })
+      }
+      count -= 1
+    }
+    if (or.length) {
+      criteria.push({ $or: or })
+    }
     if (identifier) {
       // Add identifier to criteria
       criteria.push({ $or: identifier.split("|").map(id => ({ $or: [{ identifier: id }, { uri: id }] })) })

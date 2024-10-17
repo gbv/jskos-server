@@ -793,6 +793,17 @@ describe("Express Server", () => {
       assert.strictEqual(res.body?.length, 0)
     })
 
+    it("should handle direction=both correctly for edge case with from and toScheme (#219)", async () => {
+      const res = await chai.request.execute(server.app)
+        .get("/mappings")
+        .query({
+          from: "612.112",
+          toScheme: "DDC",
+          direction: "both",
+        })
+      assert.strictEqual(res.body?.length, 0)
+    })
+
     it("should GET only mappings from GND", done => {
       // Add mappings to database
       cpexec("yes | NODE_ENV=test ./bin/reset.js -t mappings && NODE_ENV=test ./bin/import.js mappings ./test/mappings/mappings-ddc.json", (err) => {
