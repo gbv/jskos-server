@@ -9,7 +9,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - run: mkdir gh-pages
     - run: cp status.schema.json gh-pages/status.schema.json
     - run: cp config/config.schema.json gh-pages/config.schema.json
