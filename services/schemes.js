@@ -377,6 +377,7 @@ export class SchemeService {
         _keywordsNotation: "text",
         _keywordsLabels: "text",
         _keywordsOther: "text",
+        _keywordsPublisher: "text",
       },
       {
         name: "text",
@@ -385,6 +386,7 @@ export class SchemeService {
           _keywordsNotation: 10,
           _keywordsLabels: 6,
           _keywordsOther: 3,
+          _keywordsPublisher: 3,
         },
       },
     ])
