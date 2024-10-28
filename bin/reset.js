@@ -154,8 +154,12 @@ const allTypes = Object.keys(services)
       filterUris = [cli.flags.scheme]
     }
   } else if (cli.flags.concordance) {
-    // Don't support multiple URIs for concordances
-    filterUris = [cli.flags.concordance]
+    const concordance = await services.concordance.getConcordance(cli.flags.concordance)
+    if (concordance) {
+      filterUris = [concordance.uri].concat(concordance.identifier || [])
+    } else {
+      filterUris = [cli.flags.concordance]
+    }
   }
   const toBeDeleted = {}
   for (let type of types) {
