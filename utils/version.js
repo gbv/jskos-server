@@ -258,6 +258,36 @@ export const upgrades = {
     await annotationService.createIndexes()
     console.log("... done.")
   },
+  async "2.1.6"() {
+    console.log("Rewriting concordance URIs for mappings...")
+
+    // Find all concordances with "identifier" set
+    const concordances = await Concordance.find({
+      "identifier.0": { $exists: true },
+    })
+    console.log(`- Found ${concordances.length} concordances where updates might be necessary.`)
+
+    let updatedConcordaces = 0, updatedMappings = 0
+    for (const concordance of concordances) {
+      // Update concordance URIs
+      const result = await Mapping.updateMany({
+        "partOf.0.uri": {
+          $in: concordance.identifier,
+        },
+      }, {
+        "partOf.0.uri": concordance.uri,
+      })
+      if (result.modifiedCount) {
+        updatedConcordaces += 1
+        updatedMappings += result.modifiedCount
+      }
+    }
+    if (concordances.length) {
+      console.log(`- Updated ${updatedMappings} mappings in ${updatedConcordaces} concordances.`)
+    }
+
+    console.log("... done.")
+  },
 }
 
 /**
