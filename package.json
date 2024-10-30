@@ -41,15 +41,15 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "chai": "^5.1.1",
+    "chai": "^5.1.2",
     "chai-as-promised": "^8.0.0",
     "chai-http": "^5.1.1",
     "eslint": "~9.12",
     "eslint-config-gbv": "~2.2",
-    "esmock": "^2.6.7",
+    "esmock": "^2.6.9",
     "jsonwebtoken": "^9.0.2",
     "lint-staged": "^15.2.10",
-    "mocha": "^10.7.3",
+    "mocha": "^10.8.1",
     "pre-commit": "^1.2.2"
   },
   "dependencies": {
@@ -68,8 +68,8 @@
     "JSONStream": "^1.3.5",
     "lodash": "^4.17.21",
     "meow": "^13.2.0",
-    "mongodb": "^6.9.0",
-    "mongoose": "^8.7.1",
+    "mongodb": "^6.10.0",
+    "mongoose": "^8.7.3",
     "morgan": "^1.10.0",
     "nocache": "^4.0.0",
     "nodemon": "^3.1.7",
@@ -77,7 +77,7 @@
     "passport-anonymous": "^1.0.1",
     "passport-jwt": "^4.0.1",
     "portfinder": "^1.0.32",
-    "uuid": "^10.0.0",
+    "uuid": "^11.0.2",
     "yesno": "^0.4.0"
   }
 }
