@@ -124,7 +124,7 @@ export class MappingService {
     let or = []
     count = direction == "both" ? 2 : 1
     while (count > 0) {
-      let and = []
+      let current = []
       for (const part of ["from", "to"]) {
         const conceptOr = [], schemeOr = []
         // Depending on `count` and `direction`, the value of `side` will either be "from" or "to"
@@ -149,15 +149,21 @@ export class MappingService {
           schemeOr.push({ [`${side}Scheme.uri`]: uri })
           schemeOr.push({ [`${side}Scheme.notation`]: uri })
         }
-        if (conceptOr.length) {
-          and.push({ $or: conceptOr })
-        }
-        if (schemeOr.length) {
-          and.push({ $or: schemeOr })
+        if (conceptOr.length && schemeOr.length) {
+          // Concept and scheme from same side are always connected via "and'
+          current.push({ $and: [
+            { $or: conceptOr },
+            { $or: schemeOr },
+          ]})
+        } else if (conceptOr.length) {
+          current.push({ $or: conceptOr })
+        } else if (schemeOr.length) {
+          current.push({ $or: schemeOr })
         }
       }
-      if (and.length) {
-        or.push({ $and: and })
+      if (current.length) {
+        // Add current conditions depending on `mode`
+        or.push({ [`$${mode}`]: current })
       }
       count -= 1
     }
