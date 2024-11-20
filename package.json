@@ -18,6 +18,7 @@
     "lint": "eslint",
     "fix": "eslint --fix",
     "lint-staged": "lint-staged",
+    "prepare": "husky || true",
     "import": "./bin/import.js",
     "import-batch": "func() { tr '\\n' '\\0' < \"$2\"  | xargs -0 -n1 ./bin/import.js $1; }; func",
     "reset": "./bin/reset.js",
@@ -37,7 +38,6 @@
       "eslint --fix"
     ]
   },
-  "pre-commit": "lint-staged",
   "author": "",
   "license": "MIT",
   "devDependencies": {
@@ -47,10 +47,10 @@
     "eslint": "~9.14",
     "eslint-config-gbv": "~2.4",
     "esmock": "^2.6.9",
+    "husky": "^9.1.7",
     "jsonwebtoken": "^9.0.2",
     "lint-staged": "^15.2.10",
-    "mocha": "^10.8.2",
-    "pre-commit": "^1.2.2"
+    "mocha": "^10.8.2"
   },
   "dependencies": {
     "ajv": "^8.17.1",
