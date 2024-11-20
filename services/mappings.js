@@ -121,7 +121,7 @@ export class MappingService {
 
     // Handle from/fromScheme/to/toScheme here
     let criteria = []
-    let or = []
+    let or = [], orEfficientFirstStage = []
     count = direction == "both" ? 2 : 1
     while (count > 0) {
       let current = []
@@ -160,12 +160,21 @@ export class MappingService {
         } else if (schemeOr.length) {
           current.push({ $or: schemeOr })
         }
+        if (conceptOr.length) {
+          // Here we're implementing a first stage where only concept URIs/notations are matched, because we know that
+          // it is a lot more specific and can speed up the query significantly.
+          orEfficientFirstStage = orEfficientFirstStage.concat(conceptOr)
+        }
       }
       if (current.length) {
         // Add current conditions depending on `mode`
         or.push({ [`$${mode}`]: current })
       }
       count -= 1
+    }
+    // Only add the efficiency first stage for mode "and"
+    if (orEfficientFirstStage.length && mode === "and") {
+      criteria.push({ $or: orEfficientFirstStage })
     }
     if (or.length) {
       criteria.push({ $or: or })
