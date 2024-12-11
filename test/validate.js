@@ -4,7 +4,7 @@ import chai from "./chai.js"
 
 import * as server from "../server.js"
 
-import glob from "glob"
+import { globSync } from "glob"
 import fs from "node:fs"
 
 import assert from "node:assert"
@@ -18,7 +18,7 @@ let examples = {}
 for (let type of types) {
   examples[type] = []
   for (let expected of [true, false]) {
-    let files = glob.sync(`./node_modules/jskos-validate/examples/${type}/${expected ? "pass" : "fail"}/*.json`)
+    let files = globSync(`./node_modules/jskos-validate/examples/${type}/${expected ? "pass" : "fail"}/*.json`)
     for (let file of files) {
       try {
         let object = JSON.parse(fs.readFileSync(file))
