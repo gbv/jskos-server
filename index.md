@@ -766,7 +766,7 @@ Endpoint to validate JSKOS objects via [jskos-validate].
 
 * **URL Params**
 
-  `type=[type]` a [JSKOS object type](https://gbv.github.io/jskos/jskos.html#object-types) that all objects must have (optional)
+  `type=[type]` a [JSKOS object type](https://gbv.github.io/jskos/#object-types) that all objects must have (optional)
 
   `unknownFields=[boolean]` with `1` or `true` to allow unknown fields inside objects (by default, unknown fields do not pass validation)
 
@@ -913,7 +913,7 @@ Lists all concordances for mappings.
 
 * **Success Response**
 
-  JSON array of [JSKOS Concordances](https://gbv.github.io/jskos/jskos.html#concordances)
+  JSON array of [JSKOS Concordances](https://gbv.github.io/jskos/#concordances)
 
 * **Sample Call**
 
@@ -2225,11 +2225,11 @@ If you'd like to run the import script daily to refresh current mappings, you ca
 00 01 * * * cd /srv/cocoda/jskos-server; ./scripts/import.sh
 ```
 
-[JSKOS]: https://gbv.github.io/jskos/jskos.html
-[JSKOS Concept Mappings]: https://gbv.github.io/jskos/jskos.html#concept-mappings
-[JSKOS Concept Schemes]: https://gbv.github.io/jskos/jskos.html#concept-schemes
-[JSKOS Concepts]: https://gbv.github.io/jskos/jskos.html#concept
-[JSKOS Items]: https://gbv.github.io/jskos/jskos.html#item
+[JSKOS]: https://gbv.github.io/jskos/
+[JSKOS Concept Mappings]: https://gbv.github.io/jskos/#concept-mappings
+[JSKOS Concept Schemes]: https://gbv.github.io/jskos/#concept-schemes
+[JSKOS Concepts]: https://gbv.github.io/jskos/#concept
+[JSKOS Items]: https://gbv.github.io/jskos/#item
 [Web Annotation Data Model]: https://www.w3.org/TR/annotation-model/
 
 ### Running Behind a Reverse Proxy
