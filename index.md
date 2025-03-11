@@ -75,6 +75,7 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [Update an instances deployed with PM2](#update-an-instances-deployed-with-pm2)
   - [Daily Import](#daily-import)
   - [Running Behind a Reverse Proxy](#running-behind-a-reverse-proxy)
+- [Data flow](#data-flow)
 - [Related works](#related-works)
 - [Maintainers](#maintainers)
 - [Contribute](#contribute)
@@ -2272,25 +2273,34 @@ The following would be an example for 2./3./4. with an Apache reverse proxy:
 
 <!-- TODO: Add example for nginx. -->
 
+## Data flow
+
+JSKOS data is internally stored in a MongoDB database. The data can be read and written via [JSKOS API](#API) and imported via local command line import script. In additional there are helper scripts not shown in the diagram.
+
+```mermaid
+graph TD
+    jskos(JSKOS<br>schemes, concepts, mappings, concordances, annotations)
+    mongodb(MongoDB)
+    server <--> mongodb
+    scripts --> mongodb
+    server <-- JSKOS API --> jskos
+    jskos --CLI --> scripts
+    subgraph jskos-server [ ]
+        server[**server**]
+        scripts[**import**]
+    end
+```
+
 ## Related works
 
 jskos-server is developed together with the [cocoda](https://coli-conc.gbv.de/cocoda/) mapping application.
 
-Alternative open source applications for hosting concept schemes include:
-
-* [Skosmos](http://skosmos.org/)
-* [Skohub](https://skohub.io/)
-* [OpenSKOS](http://openskos.org)
-* [TemaTres](https://www.vocabularyserver.com)
-* [iQVoc](http://iqvoc.net/)
-* [VocPrez](https://github.com/GeoscienceAustralia/VocPrez)
-* ...
+Alternative open source applications for hosting concept schemes are listed at <https://bartoc.org/software>.
 
 See [cocoda-sdk](https://github.com/gbv/cocoda-sdk) for efforts to provide uniform access to vocabulary information from different applications and sources.
 
 ## Maintainers
 
-- [@stefandesu](https://github.com/stefandesu)
 - [@nichtich](https://github.com/nichtich)
 
 ## Contribute
