@@ -2290,7 +2290,6 @@ See [cocoda-sdk](https://github.com/gbv/cocoda-sdk) for efforts to provide unifo
 
 ## Maintainers
 
-- [@stefandesu](https://github.com/stefandesu)
 - [@nichtich](https://github.com/nichtich)
 
 ## Contribute
