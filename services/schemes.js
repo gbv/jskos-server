@@ -45,6 +45,11 @@ export class SchemeService {
     if (query.publisher) {
       mongoQuery._keywordsPublisher = query.publisher
     }
+    if (query.notation) {
+      const notations = query.notation.split("|")
+      mongoQuery.notation = { $in: notations }
+    }
+
     // Sort order (default: asc = 1)
     const order = query.order === "desc" ? -1 : 1
     const sort = {}
@@ -95,8 +100,10 @@ export class SchemeService {
     if (_.isNumber(query.limit)) {
       pipeline.push({ $limit: query.limit })
     }
+    
     const schemes = await Scheme.aggregate(pipeline)
     schemes.totalCount = await utils.count(Scheme, [{ $match: mongoQuery }])
+    
     return schemes
   }
 
