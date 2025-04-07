@@ -1327,7 +1327,7 @@ describe("Express Server", () => {
 
     let vocs
 
-    it("should GET two vocabularies", done => {
+    it("should GET three vocabularies", done => {
       // Add vocabularies and concepts to database
       cpexec("NODE_ENV=test ./bin/import.js --indexes && NODE_ENV=test ./bin/import.js schemes ./test/terminologies/terminologies.json && NODE_ENV=test ./bin/import.js concepts ./test/concepts/concepts-ddc-6-60-61-62.json", (err) => {
         if (err) {
@@ -1340,23 +1340,26 @@ describe("Express Server", () => {
             res.should.have.status(200)
             res.should.have.header("Link")
             res.should.have.header("X-Total-Count")
-            res.headers["x-total-count"].should.be.eql("2")
+            res.headers["x-total-count"].should.be.eql("3")
             res.body.should.be.a("array")
-            res.body.length.should.be.eql(2)
+            res.body.length.should.be.eql(3)
             vocs = res.body
             done()
           })
       })
     })
 
-    it("should also GET the two vocabularies at the /data endpoint", async () => {
+    it("should also GET the three vocabularies at the /data endpoint", async () => {
       const res = await chai.request.execute(server.app)
         .get("/data")
         .query({
           uri: vocs.map(voc => voc.uri).join("|"),
         })
-      // ? Do we know that the order will remain the same?
-      assert.deepStrictEqual(res.body, vocs)
+      // Unordered comparison through lodash
+      assert(_.isEqual(
+        _.sortBy(res.body, "uri"),
+        _.sortBy(vocs, "uri"),
+      ))
     })
 
     it("should support filtering by language", done => {
@@ -1371,6 +1374,24 @@ describe("Express Server", () => {
     it("should support filtering by multiple languages", done => {
       chai.request.execute(server.app)
         .get("/voc?languages=it,jp,de")
+        .end((err, res) => {
+          res.body.length.should.be.eql(3)
+          done()
+        })
+    })
+
+    it("should support filtering by notation", done => {
+      chai.request.execute(server.app)
+        .get("/voc?notation=DDC")
+        .end((err, res) => {
+          res.body.length.should.be.eql(1)
+          done()
+        })
+    })
+
+    it("should support filtering by notations", done => {
+      chai.request.execute(server.app)
+        .get("/voc?notation=DDC|ASB")
         .end((err, res) => {
           res.body.length.should.be.eql(2)
           done()
@@ -1394,7 +1415,8 @@ describe("Express Server", () => {
           sort: "label",
         })
       assert.strictEqual(res.body[0].uri, "http://dewey.info/scheme/edition/e23/")
-      assert.strictEqual(res.body[1].uri, "http://bartoc.org/en/node/313")
+      assert.strictEqual(res.body[1].uri, "http://bartoc.org/en/node/732")
+      assert.strictEqual(res.body[2].uri, "http://bartoc.org/en/node/313")
     })
 
     it("should support sorting by notation", async () => {
@@ -1405,7 +1427,8 @@ describe("Express Server", () => {
         })
       // STW in our test does not have a notation, so it should be on top
       assert.strictEqual(res.body[0].uri, "http://bartoc.org/en/node/313")
-      assert.strictEqual(res.body[1].uri, "http://dewey.info/scheme/edition/e23/")
+      assert.strictEqual(res.body[1].uri, "http://bartoc.org/en/node/732")
+      assert.strictEqual(res.body[2].uri, "http://dewey.info/scheme/edition/e23/")
     })
 
   })

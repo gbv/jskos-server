@@ -36,7 +36,7 @@ describe("Import and Reset Script", () => {
       // Add vocabularies to database
       await exec("NODE_ENV=test ./bin/import.js schemes ./test/terminologies/terminologies.json")
       const results = await server.db.collection("terminologies").find({}).toArray()
-      assert.strictEqual(results.length, 2)
+      assert.strictEqual(results.length, 3)
     })
 
     it("should import concepts", async () => {

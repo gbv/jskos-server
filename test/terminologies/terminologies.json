@@ -70,4 +70,25 @@
       "de"
     ]
   }
+  ,
+  {
+    "uri" : "http://bartoc.org/en/node/732",
+    "identifier": [
+      "http://www.wikidata.org/entity/Q1571087"
+    ],
+    "languages": [
+      "de"
+    ],
+    "notation": [
+      "ASB"
+    ],
+    "prefLabel":{
+      "de": "Allgemeine Systematik für Öffentliche Bibliotheken",
+      "en": "General Systematic for Public Libraries"
+    },
+    "type": [
+      "http://www.w3.org/2004/02/skos/core#ConceptScheme",
+      "http://w3id.org/nkos/nkostype#classification_schema"
+    ]
+  }
 ]

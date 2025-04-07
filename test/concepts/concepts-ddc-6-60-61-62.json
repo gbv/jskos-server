@@ -1,1 +1,123 @@
-[{"@context":"https://gbv.github.io/jskos/context.json","created":"2000-02-02","identifier":["856c92e9-8b1f-3131-bfbe-f2d2266527d3"],"modified":"2005-11-02","notation":["6"],"prefLabel":{"de":"Technik, Medizin, angewandte Wissenschaften"},"topConceptOf":[{"uri":"http://dewey.info/scheme/edition/e23/"}],"type":["http://www.w3.org/2004/02/skos/core#Concept"],"uri":"http://dewey.info/class/6/e23/","narrower":[null]},{"@context":"https://gbv.github.io/jskos/context.json","broader":[{"uri":"http://dewey.info/class/6/e23/"}],"created":"2000-02-02","identifier":["028d7bfc-77bf-3062-a6a8-857f66153fb9"],"inScheme":[{"uri":"http://dewey.info/scheme/edition/e23/"}],"modified":"2005-11-02","notation":["60"],"prefLabel":{"de":"Technik","en":"Technology"},"type":["http://www.w3.org/2004/02/skos/core#Concept"],"uri":"http://dewey.info/class/60/e23/","narrower":[null]},{"@context":"https://gbv.github.io/jskos/context.json","broader":[{"uri":"http://dewey.info/class/6/e23/"}],"created":"2000-02-02","identifier":["c14b599b-42cc-327e-abe2-fc1bb609e99e"],"inScheme":[{"uri":"http://dewey.info/scheme/edition/e23/"}],"modified":"2005-11-02","notation":["61"],"prefLabel":{"de":"Medizin & Gesundheit"},"type":["http://www.w3.org/2004/02/skos/core#Concept"],"uri":"http://dewey.info/class/61/e23/","narrower":[null]},{"@context":"https://gbv.github.io/jskos/context.json","broader":[{"uri":"http://dewey.info/class/6/e23/"}],"created":"2000-02-02","identifier":["ac872f11-eb09-3f7d-a307-613f3042791e"],"inScheme":[{"uri":"http://dewey.info/scheme/edition/e23/"}],"modified":"2005-11-02","notation":["62"],"prefLabel":{"de":"Ingenieurwissenschaften"},"type":["http://www.w3.org/2004/02/skos/core#Concept"],"uri":"http://dewey.info/class/62/e23/","narrower":[null]}]
+[
+    {
+      "@context": "https://gbv.github.io/jskos/context.json",
+      "created": "2000-02-02",
+      "identifier": [
+        "856c92e9-8b1f-3131-bfbe-f2d2266527d3"
+      ],
+      "modified": "2005-11-02",
+      "notation": [
+        "6"
+      ],
+      "prefLabel": {
+        "de": "Technik, Medizin, angewandte Wissenschaften"
+      },
+      "topConceptOf": [
+        {
+          "uri": "http://dewey.info/scheme/edition/e23/"
+        }
+      ],
+      "type": [
+        "http://www.w3.org/2004/02/skos/core#Concept"
+      ],
+      "uri": "http://dewey.info/class/6/e23/",
+      "narrower": [
+        null
+      ]
+    },
+    {
+      "@context": "https://gbv.github.io/jskos/context.json",
+      "broader": [
+        {
+          "uri": "http://dewey.info/class/6/e23/"
+        }
+      ],
+      "created": "2000-02-02",
+      "identifier": [
+        "028d7bfc-77bf-3062-a6a8-857f66153fb9"
+      ],
+      "inScheme": [
+        {
+          "uri": "http://dewey.info/scheme/edition/e23/"
+        }
+      ],
+      "modified": "2005-11-02",
+      "notation": [
+        "60"
+      ],
+      "prefLabel": {
+        "de": "Technik",
+        "en": "Technology"
+      },
+      "type": [
+        "http://www.w3.org/2004/02/skos/core#Concept"
+      ],
+      "uri": "http://dewey.info/class/60/e23/",
+      "narrower": [
+        null
+      ]
+    },
+    {
+      "@context": "https://gbv.github.io/jskos/context.json",
+      "broader": [
+        {
+          "uri": "http://dewey.info/class/6/e23/"
+        }
+      ],
+      "created": "2000-02-02",
+      "identifier": [
+        "c14b599b-42cc-327e-abe2-fc1bb609e99e"
+      ],
+      "inScheme": [
+        {
+          "uri": "http://dewey.info/scheme/edition/e23/"
+        }
+      ],
+      "modified": "2005-11-02",
+      "notation": [
+        "61"
+      ],
+      "prefLabel": {
+        "de": "Medizin & Gesundheit"
+      },
+      "type": [
+        "http://www.w3.org/2004/02/skos/core#Concept"
+      ],
+      "uri": "http://dewey.info/class/61/e23/",
+      "narrower": [
+        null
+      ]
+    },
+    {
+      "@context": "https://gbv.github.io/jskos/context.json",
+      "broader": [
+        {
+          "uri": "http://dewey.info/class/6/e23/"
+        }
+      ],
+      "created": "2000-02-02",
+      "identifier": [
+        "ac872f11-eb09-3f7d-a307-613f3042791e"
+      ],
+      "inScheme": [
+        {
+          "uri": "http://dewey.info/scheme/edition/e23/"
+        }
+      ],
+      "modified": "2005-11-02",
+      "notation": [
+        "62"
+      ],
+      "prefLabel": {
+        "de": "Ingenieurwissenschaften"
+      },
+      "type": [
+        "http://www.w3.org/2004/02/skos/core#Concept"
+      ],
+      "uri": "http://dewey.info/class/62/e23/",
+      "narrower": [
+        null
+      ]
+    }
+  ]
+  
