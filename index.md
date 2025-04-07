@@ -1484,6 +1484,8 @@ Lists supported terminologies (concept schemes).
 
   `order=[order]` order to use for sorting. Available are `asc` (default) and `desc`.
 
+  `notation` Notations for concept schemes separated by `|`. You can filter by one or more notations, i.e. `voc?notation=ASB|EuroVoc`
+
 * **Success Response**
 
   JSON array of [JSKOS Concept Schemes]
