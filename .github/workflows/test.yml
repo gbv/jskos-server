@@ -13,30 +13,30 @@ jobs:
         node-version: [ 20.x, 22.x ]
         mongo-version: [4, 5, 6]
 
-    services:
-      mongodb:
-        image: mongo:${{ matrix.mongo-version }}
-        ports:
-          - 27017:27017
-        options: --replSet rs0 # pass `--replSet rs0` so changeStreams work
-
     steps:
     - uses: actions/checkout@v4
+
+    # 1) Start a Mongo container in replica‐set mode
+    - name: Start MongoDB replica set
+      run: |
+          docker run -d --name mongodb -p 27017:27017 mongo:${{ matrix.mongo-version }} \
+            --replSet rs0 --bind_ip_all
+
+    # 2) Initiate the replica set
+    - name: Initiate replica set
+      run: |
+          until docker exec mongodb mongo --eval 'rs.initiate()'; do
+            echo "Waiting for Mongo…"
+            sleep 1
+          done
+          
+    # 3) Install Node and dependencies
     - uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-
-
-    # Wait a bit for Mongo to start in replSet mode, then initiate the set
-    - name: Initiate MongoDB replica set
-      run: |
-        # use the mongo shell to initiate; retry until it succeeds
-        until mongo --eval 'rs.initiate()'; do
-          echo "Waiting for mongo to be ready…"
-          sleep 1
-        done
-        
     - run: npm ci
+
+    # 4) Actual running tests
     - run: npm test
 
 
