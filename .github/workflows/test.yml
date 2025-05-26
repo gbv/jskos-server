@@ -18,11 +18,28 @@ jobs:
         image: mongo:${{ matrix.mongo-version }}
         ports:
           - 27017:27017
+        options: --replSet rs0 # pass `--replSet rs0` so changeStreams work
 
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
+
+
+    # Wait a bit for Mongo to start in replSet mode, then initiate the set
+    - name: Initiate MongoDB replica set
+      run: |
+        # use the mongo shell to initiate; retry until it succeeds
+        until mongo --eval 'rs.initiate()'; do
+          echo "Waiting for mongo to be ready…"
+          sleep 1
+        done
+        
     - run: npm ci
     - run: npm test
+
+
+
+
+    
