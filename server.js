@@ -9,6 +9,8 @@ import { ipcheck } from "./utils/ipcheck.js"
 import * as auth from "./utils/auth.js"
 import * as errors from "./errors/index.js"
 import portfinder from "portfinder"
+import expressWs from "express-ws"
+import registerChangesRoutes from "./utils/changes.js"
 
 const __dirname = config.getDirname(import.meta.url)
 const connection = db.connection
@@ -21,6 +23,11 @@ if (!config.baseUrl) {
 
 // Initialize express with settings
 const app = express()
+
+// Initialize WebSocket support
+expressWs(app)
+
+
 app.set("json spaces", 2)
 if (config.proxies && config.proxies.length) {
   app.set("trust proxy", config.proxies)
@@ -88,8 +95,13 @@ app.get("/", (req, res) => {
 })
 // JSON Schema for /status
 app.use("/status.schema.json", express.static(__dirname + "/status.schema.json"))
+
 // Status page /status
 app.use("/status", routers.statusRouter)
+
+// finally wire up change-stream endpoints:
+registerChangesRoutes(app)
+
 // Database check middleware
 app.use((req, res, next) => {
   if (connection.readyState === 1) {
