@@ -15,6 +15,15 @@ services:
 
   mongo:
     image: mongo:7
+    entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "rs0" ]
     volumes:
       - ./data/db:/data/db
     restart: unless-stopped
+
+  mongo-setup-replica-set:
+    image: mongo:7
+    depends_on:
+      - mongo
+    volumes: 
+      - ./mongo-initdb.d:/docker-entrypoint-initdb.d
+    restart: "no"
