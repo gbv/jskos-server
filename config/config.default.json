@@ -5,6 +5,11 @@
   "version": null,
   "closedWorldAssumption": true,
   "port": 3000,
+  "changesApi" : {
+    "enableChangesApi": false,
+    "rsMaxRetries": 20,
+    "rsRetryInterval": 5000
+  },
   "proxies": [],
   "mongo": {
     "user": "",

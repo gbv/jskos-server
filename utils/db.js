@@ -21,6 +21,7 @@ export {
   mongoose,
   connection,
 }
+
 export async function connect(retry = false) {
   connection.on("disconnected", onDisconnected)
   function addErrorHandler() {
@@ -74,8 +75,29 @@ export async function connect(retry = false) {
   }
   return result
 }
+
 export function disconnect() {
   connection.removeListener("disconnected", onDisconnected)
   config.log("Disconnected from database (on purpose)")
   return mongoose.disconnect()
 }
+
+/**
+ * Waits for the MongoDB replica set to become available
+ * by retrying replSetGetStatus until success or timeout.
+ */
+export async function waitForReplicaSet({ retries = 10, interval = 3000 } = {}) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      await connection.db.admin().command({ replSetGetStatus: 1 })
+      return true
+    } catch (err) {
+      console.log(
+        `Replica set not yet ready (attempt ${i + 1}/${retries}), retrying in ${interval}ms...`,
+      )
+      await new Promise(resolve => setTimeout(resolve, interval))
+    }
+  }
+  return false
+}
+
