@@ -91,6 +91,25 @@ The easiest way to install and use JSKOS Server is with Docker and Docker Compos
 ### Dependencies
 You need Node.js 18 or Node.js 20 (recommended) to run JSKOS Server. You need to have access to a [MongoDB database](https://docs.mongodb.com/manual/installation/) (minimun v4; v6 or v7 recommended).
 
+> **Change-Streams Requirement:**
+> To use the **Change-Streams** (`/…/changes`) WebSocket API, MongoDB **must** be configured as a **replica set**.
+> Change Streams are not supported on standalone deployments. If you attempt to enable the Change API against a non–replica‐set instance, the server will refuse to start (or throw a configuration error).
+
+### Running MongoDB as a Replica Set
+If you are using Docker, please refer to [our Docker documentation](https://github.com/gbv/jskos-server/blob/master/docker/README.md) for more information and instructions
+about Replica Set.
+
+
+For a non‐Docker setup, start `mongod` with the `--replSet` flag, then connect with the shell and run:
+
+```js
+rs.initiate({ _id: "rs0", members: [{ _id: 0, host: "localhost:27017" }] });
+```
+
+Once the replica set is initialized, JSKOS Server will detect it at startup (the `replSetGetStatus` command is retried up to `changesApi.rsMaxRetries` times). Only when the replica set is confirmed will the Change-Streams endpoints be registered.
+
+
+
 ### Clone and Install
 ```bash
 git clone https://github.com/gbv/jskos-server.git
@@ -120,6 +139,11 @@ All missing keys will be defaulted from `config/config.default.json`:
   "version": null,
   "closedWorldAssumption": true,
   "port": 3000,
+  "changesApi" : {
+    "enableChangesApi": true,
+    "rsMaxRetries": 20,
+    "rsRetryInterval": 5000
+  },
   "proxies": [],
   "mongo": {
     "user": "",
@@ -228,6 +252,22 @@ Available actions for `schemes`, `concepts`, `mappings`, and `annotations` are `
 \* Only applies to actions `create`, `update`, and `delete`.
 
 Note that any properties not mentioned here are not allowed!
+
+#### Change-Streams API Configuration
+
+The `changesApi` section controls how JSKOS Server handles MongoDB Change Streams:
+
+- **`enableChangesApi`** (boolean, default `false`)  
+  Globally turn all `/…/changes` WebSocket endpoints on or off. When `false`, no change-stream routes are registered.
+
+- **`rsMaxRetries`** (integer, default `20`)  
+  How many times to retry the `replSetGetStatus` command while waiting for the replica set to initialise before giving up.
+
+- **`rsRetryInterval`** (integer, default `5000`)  
+  Milliseconds to wait between each retry attempt when checking replica-set status.
+
+Only once the replica set is confirmed will the `/…/changes` endpoints become active.
+
 
 #### Mapping Mismatch Tagging for Negative Assessment Annotations
 To differentiate why a mapping was annotated with a negative assessment, a mismatch tagging vocabulary can now be configured under `annotations.mismatchTagVocabulary`. In theory, any vocabulary can be used, but [our instance](https://coli-conc.gbv.de/api/) will use a very small "mismatch" vocabulary available in https://github.com/gbv/jskos-data/tree/master/mismatch.
