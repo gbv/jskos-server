@@ -84,6 +84,33 @@ Note: After adjusting any configurations, it is required to restart or recreate 
 - After changing configuration files, restart the container: `docker compose restart jskos-server`
 - After changing `docker-compose.yml` (e.g. adjusting environment variables), recreate the container: `docker compose up -d`
 
+
+### Replica Set Initialization Script
+
+Place the following `mongo_setup.sh` (or similar) in `./mongo-initdb.d/` on the host:
+
+```bash
+#!/bin/bash
+
+echo "🕒 Sleeping for 10 seconds to allow MongoDB to start..."
+sleep 10
+
+echo "⚙️ Initiating Replica Set at $(date)"
+
+mongosh --host mongo:27017 <<EOF
+rs.initiate({
+  _id: "rs0",
+  members: [ { _id: 0, host: "mongo:27017", priority: 1 } ]
+});
+EOF
+```
+
+* **Sleep**: ensures the `mongo` service is accepting connections.
+* **`mongosh`**: connects to the `mongo` container by its Docker network alias.
+* **`rs.initiate()`**: configures the single-node replica set named `rs0`.
+
+With this setup, **jskos-server** can safely use MongoDB change streams (`db.collection.watch()`) for real-time WebSocket notifications.
+
 ### Configuration
 The folder `/config` (mounted as `./data/config` if configured as above) contains the configuration file `config.json` where jskos-server is configured. Please refer to the [documentation on GitHub](https://github.com/gbv/jskos-server#configuration) to see how to configure jskos-server. Note that this image creates a configuration file if none is found on startup. By default, the MongoDB `mongo` will be used (as configured above).
 
