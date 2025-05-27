@@ -70,6 +70,7 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [PATCH /annotations/:\_id](#patch-annotations_id)
   - [DELETE /annotations/:\_id](#delete-annotations_id)
   - [Errors](#errors)
+  - [Real-time Change Stream Endpoints](#real-time-change-stream-endpoints)
 - [Deployment](#deployment)
   - [Notes about depolyment on Ubuntu](#notes-about-depolyment-on-ubuntu)
   - [Update an instances deployed with PM2](#update-an-instances-deployed-with-pm2)
@@ -2201,6 +2202,81 @@ Status code 500. Will be returned if there is an error in the configuration that
 
 #### ForbiddenAccessError
 Status code 403. Will be returned if the user is not allow access (i.e. when not on the whitelist or when an identity provider is missing).
+
+
+
+
+
+### Real-time Change Stream Endpoints
+
+JSKOS-Server provides WebSocket endpoints that push live notifications whenever data changes. Available routes:
+
+* **`/voc/changes`** — broadcasts events for **ConceptSchemes**
+* **`/concepts/changes`** — broadcasts events for **Concepts**
+* **`/mappings/changes`** — broadcasts events for **Mappings**
+* **`/concordances/changes`** — broadcasts events for **Concordances**
+* **`/annotations/changes`** — broadcasts events for **Annotations**
+
+---
+
+#### Connection
+
+```shell
+# Example for ConceptSchemes
+wscat -c ws://<host>:<port>/voc/changes
+```
+---
+
+#### Event Payload
+
+Each given message is a JSON object with:
+
+| Field        | Type     | Description                                                                       |
+| ------------ | -------- | --------------------------------------------------------------------------------- |
+| `objectType` | `String` | One of: `ConceptScheme`, `Concept`, `ConceptMapping`, `Concordance`, `Annotation` |
+| `type`       | `String` | Mapped from Mongo’s operation:                                                    |
+
+* `insert` → `create`
+* `update`/`replace` → `update`
+* `delete` → `delete` |
+  \| `id`         | `ObjectId` or `String`  | The Mongo `_id` of the changed document.                                     |
+  \| `document`   | `Object` (omitted on delete) | Full JSKOS record as stored in MongoDB (only for `create` & `update`). |
+
+<details>
+<summary>Example `create` event</summary>
+
+```json
+{
+  "objectType": "ConceptScheme",
+  "type":       "create",
+  "id":         "650b1a5f3c9e2f001234abcd",
+  "document": {
+    "_id":      "650b1a5f3c9e2f001234abcd",
+    "uri":      "http://example.org/voc/123",
+    "type":     ["http://www.w3.org/2004/02/skos/core#ConceptScheme"],
+    "prefLabel": { "en": ["Example Scheme"] },
+    // … other JSKOS fields …
+  }
+}
+```
+
+</details>
+
+<details>
+<summary>Example `delete` event</summary>
+
+```json
+{
+  "objectType": "ConceptScheme",
+  "type":       "delete",
+  "id":         "650b1a5f3c9e2f001234abcd"
+}
+```
+
+</details>
+
+---
+
 
 ## Deployment
 The application is currently deployed at http://coli-conc.gbv.de/api/. At the moment, there is no automatic deployment of new versions.
