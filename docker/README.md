@@ -41,9 +41,21 @@ services:
     image: mongo:7
     # replace this with your UID/GID if necessary (id -u; id -g); remove on macOS/Windows
     user: 1000:1000
+    entrypoint: [ "/usr/bin/mongod",  # The MongoDB server binary
+    "--bind_ip_all",                  # Permit connections from any network interface
+    "--replSet", "rs0"                # Start in replica‐set mode, naming the set “rs0”
+    ]
     volumes:
       - ./data/db:/data/db
     restart: unless-stopped
+
+  mongo-setup-replica-set:
+    image: mongo:7
+    depends_on:
+      - mongo
+    volumes: 
+      - ./mongo-initdb.d:/docker-entrypoint-initdb.d
+    restart: "no"
 ```
 
 2. Create data folders:
