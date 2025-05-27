@@ -10,7 +10,7 @@ import * as auth from "./utils/auth.js"
 import * as errors from "./errors/index.js"
 import portfinder from "portfinder"
 import expressWs from "express-ws"
-import registerChangesRoutes from "./utils/changes.js"
+import { setupChangesApi } from "./utils/changes.js"
 
 const __dirname = config.getDirname(import.meta.url)
 const connection = db.connection
@@ -99,9 +99,6 @@ app.use("/status.schema.json", express.static(__dirname + "/status.schema.json")
 // Status page /status
 app.use("/status", routers.statusRouter)
 
-// finally wire up change-stream endpoints:
-registerChangesRoutes(app)
-
 // Database check middleware
 app.use((req, res, next) => {
   if (connection.readyState === 1) {
@@ -154,6 +151,9 @@ app.use((error, req, res, next) => {
     next(error)
   }
 })
+
+//setup changes API
+await setupChangesApi(app)
 
 const start = async () => {
   if (config.env == "test") {

@@ -1,7 +1,8 @@
 // utils/changes.js
 import * as jskos from "jskos-tools"
-import { connection } from "./db.js"  
-
+import { connection, waitForReplicaSet } from "./db.js"  
+import config from "../config/index.js"
+import { ConfigurationError } from "../errors/index.js"
 
 export const collections = {
   voc:          "terminologies",
@@ -34,6 +35,29 @@ export default function registerChangesRoutes(app) {
       ws.on("close", () => stream.close())
     })
   }
+}
+
+// After DB connection, conditionally enable change-stream routes
+export async function setupChangesApi(app) {
+  if (!config.changesApi.enableChangesApi) {
+    console.log("Changes API is disabled by configuration.")
+    return
+  }
+
+  const ok = await waitForReplicaSet({
+    retries: config.changesApi.rsMaxRetries || 10,
+    interval: config.changesApi.rsRetryInterval || 5000,
+  })
+
+  if (!ok) {
+    throw new ConfigurationError(
+      "Changes API enabled, but MongoDB replica set did not initialize in time.",
+    )
+  }
+
+  // Register WebSocket change-stream endpoints
+  registerChangesRoutes(app)
+  console.log("Changes API enabled: replica set confirmed, endpoints are registered.")
 }
 
 
