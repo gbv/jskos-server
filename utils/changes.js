@@ -39,14 +39,14 @@ export default function registerChangesRoutes(app) {
 
 // After DB connection, conditionally enable change-stream routes
 export async function setupChangesApi(app) {
-  if (!config.changesApi.enableChangesApi) {
+  if (!config.changesApi?.enableChangesApi) {
     console.log("Changes API is disabled by configuration.")
     return
   }
 
   const ok = await waitForReplicaSet({
-    retries: config.changesApi.rsMaxRetries || 10,
-    interval: config.changesApi.rsRetryInterval || 5000,
+    retries: config.changesApi?.rsMaxRetries || 10,
+    interval: config.changesApi?.rsRetryInterval || 5000,
   })
 
   if (!ok) {
