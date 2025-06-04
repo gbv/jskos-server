@@ -14,12 +14,55 @@ Currently, only `x86-64` is supported, but we are planning to add more architect
 - We follow SemVer for versioning the application. Therefore, `x` offers the latest image for the major version x, `x.y` offers the latest image for the minor version x.y, and `x.y.z` offers the image for a specific patch version x.y.z.
 - Additionally, the latest development version is available under `dev`.
 
+
+
 ## Usage
+
 It is recommended to run the image using [Docker Compose](https://docs.docker.com/compose/) together with the required MongoDB database. Note that depending on your system, it might be necessary to use `sudo docker compose`. For older Docker versions, use `docker-compose` instead of `docker compose`.
 
-1. Create `docker-compose.yml`:
+JSKOS Server can run with **or without** MongoDB configured as a **replica set**, depending on whether you want to use the **Change Streams WebSocket API** (`/changes`).
 
-```yml
+If you **do not need** real-time change notifications via WebSocket, you can run MongoDB in standalone mode. This is the simplest and most common setup.
+
+
+1. Create `docker-compose.yml`
+
+##### Option 1: Without Replica Set (simpler setup)
+
+In this setup, the Change API (`changesApi.enabled`) must remain **disabled** (default). The server will run normally without real-time WebSocket updates.
+
+```yaml
+version: "3"
+
+services:
+  jskos-server:
+    image: ghcr.io/gbv/jskos-server
+    # replace this with your UID/GID if necessary (id -u; id -g); remove on macOS/Windows
+    user: 1000:1000
+    depends_on:
+      - mongo
+    volumes:
+      - ./data/config:/config
+    # environment:
+    #   - NODE_ENV=production # note that this requires the server to be run behind a HTTPS proxy
+    ports:
+      - 3000:3000
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:7
+    # replace this with your UID/GID if necessary (id -u; id -g); remove on macOS/Windows
+    user: 1000:1000
+    volumes:
+      - ./data/db:/data/db
+    restart: unless-stopped
+```
+
+##### Option 2: With Replica Set (for Change Streams support)
+
+If you want to use the WebSocket API for Change Streams, MongoDB must be configured as a **replica set**. You can do this with an additional setup container. In this setup, you **can enable** `changesApi.enabled` in your `config.json` to use the `/changes` WebSocket endpoint.
+
+```yaml
 version: "3"
 
 services:
@@ -57,6 +100,9 @@ services:
       - ./mongo-initdb.d:/docker-entrypoint-initdb.d
     restart: "no"
 ```
+
+You'll also need to add a `mongo_setup.sh` script in `./mongo-initdb.d/` to initialize the replica set.
+
 
 2. Create data folders:
 
