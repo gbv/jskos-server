@@ -13,6 +13,7 @@ export const collections = {
 }
 
 export const operationTypeMap = { insert: "create", update: "update", delete: "delete" }
+export let isChangesApiAvailable = false
 
 export default function registerChangesRoutes(app) {
   for (const [route, collName] of Object.entries(collections)) {
@@ -57,6 +58,7 @@ export async function setupChangesApi(app) {
 
   // Register WebSocket change-stream endpoints
   registerChangesRoutes(app)
+  isChangesApiAvailable = true
   console.log("Changes API enabled: replica set confirmed, endpoints are registered.")
 }
 

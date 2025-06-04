@@ -45,6 +45,9 @@
       <% if (config.concordances.delete) { %>
       <li>DELETE /concordances/:_id - Deletes a mapping from the database (<% if (config.concordances.delete.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#delete-concordances_id" target="_blank">documentation</a>)</li>
       <% } %>
+       <% if (isChangesApiAvailable) { %>
+        <li>GET <a href="concordances/changes">/concordances/changes</a> - Real-time updates for concordances (<a href="https://github.com/gbv/jskos-server#real-time-change-stream-endpoints" target="_blank">documentation</a>)</li>
+      <% } %>
     </ul>
     <% } %>
     <% if (config.mappings) { %>
@@ -65,6 +68,9 @@
       <li>GET <a href="mappings/infer">/mappings/infer</a> - Returns mappings based on stored mappings and mappings derived by inference (<a href="https://github.com/gbv/jskos-server#get-mappingsinfer" target="_blank">documentation</a>)</li>
       <li>GET <a href="mappings/suggest">/mappings/suggest</a> - Suggests notations used in mappings (<a href="https://github.com/gbv/jskos-server#get-mappingssuggest" target="_blank">documentation</a>)</li>
       <li>GET <a href="mappings/voc">/mappings/voc</a> - Returns a list of concept schemes used in mappings (<a href="https://github.com/gbv/jskos-server#get-mappingsvoc" target="_blank">documentation</a>)</li>
+       <% if (isChangesApiAvailable) { %>
+        <li>GET <a href="mappings/changes">/mappings/changes</a> - Real-time updates for mappings (<a href="https://github.com/gbv/jskos-server#real-time-change-stream-endpoints" target="_blank">documentation</a>)</li>
+      <% } %>
     </ul>
     <% } %>
     <% if (config.schemes) { %>
@@ -78,6 +84,10 @@
         (<a href="https://github.com/gbv/jskos-server#get-vocsuggest" target="_blank">documentation</a>)</li>
       <li>GET <a href="voc/search">/voc/search</a> - Concept scheme search
         (<a href="https://github.com/gbv/jskos-server#get-vocsearch" target="_blank">documentation</a>)</li>
+
+       <% if (isChangesApiAvailable) { %>
+        <li>GET <a href="voc/changes">/voc/changes</a> - Real-time updates for concept schemes (<a href="https://github.com/gbv/jskos-server#real-time-change-stream-endpoints" target="_blank">documentation</a>)</li>
+      <% } %>
 
       <% if (config.schemes.create) { %>
       <li>POST /voc - Saves a concept scheme or multiple concept schemes in the database (<% if (config.schemes.create.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#post-voc" target="_blank">documentation</a>)</li>
@@ -107,6 +117,9 @@
       <% if (config.concepts.delete) { %>
       <li>DELETE /concepts - Deletes a concept from the database (<% if (config.schemes.delete.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#delete-concepts" target="_blank">documentation</a>)</li>
       <% } %>
+     <% if (isChangesApiAvailable) { %>
+        <li>GET <a href="concepts/changes">/concepts/changes</a> - Real-time updates for concepts (<a href="https://github.com/gbv/jskos-server#real-time-change-stream-endpoints" target="_blank">documentation</a>)</li>
+      <% } %>
     </ul>
     <% } %>
     <% if (config.annotations) { %>
@@ -126,6 +139,9 @@
         <% if (config.annotations.delete) { %>
         <li>DELETE /annotations/:_id - Deletes an annotation from the database (<% if (config.annotations.delete.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#put-annotations_id" target="_blank">documentation</a>)</li>
         <% } %>
+         <% if (isChangesApiAvailable) { %>
+        <li>GET <a href="annotations/changes">/annotations/changes</a> - Real-time updates for annotations (<a href="https://github.com/gbv/jskos-server#real-time-change-stream-endpoints" target="_blank">documentation</a>)</li>  
+      <% } %>
     </ul>
     <% } %>
     </ul>

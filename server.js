@@ -10,7 +10,7 @@ import * as auth from "./utils/auth.js"
 import * as errors from "./errors/index.js"
 import portfinder from "portfinder"
 import expressWs from "express-ws"
-import { setupChangesApi } from "./utils/changes.js"
+import { setupChangesApi, isChangesApiAvailable } from "./utils/changes.js"
 
 const __dirname = config.getDirname(import.meta.url)
 const connection = db.connection
@@ -91,6 +91,7 @@ app.get("/", (req, res) => {
   res.setHeader("Content-Type", "text/html")
   res.render("base", {
     config,
+    isChangesApiAvailable,
   })
 })
 // JSON Schema for /status
