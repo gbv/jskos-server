@@ -2,12 +2,26 @@
 import * as server from "../server.js"
 import assert from "node:assert"
 
-import { assertIndexes, assertMongoDB, dropDatabaseBeforeAndAfter, exec } from "./test-utils.js"
+import { teardownInMemoryMongo, createCollectionsAndIndexes, setupInMemoryMongo, assertIndexes, assertMongoDB, dropDatabaseBeforeAndAfter, exec } from "./test-utils.js"
 
 describe("Import and Reset Script", () => {
 
-  assertMongoDB()
+  before(async () => {
+    const mongoUri = await setupInMemoryMongo({ replSet: false })
+    process.env.MONGO_URI = mongoUri  
+    await createCollectionsAndIndexes()
+  })
+        
+  after(async () => {
+    // close server if you started one
+    await teardownInMemoryMongo()
+  })
+        
+  // 🗑 Drop DB before *and* after every single `it()` in this file
   dropDatabaseBeforeAndAfter()
+        
+  // 🔌 Sanity‐check that mongoose really is connected
+  assertMongoDB()
 
   describe("Import Script", () => {
 

@@ -6,7 +6,7 @@ import * as server from "../server.js"
 import assert from "node:assert"
 import { exec as cpexec } from "node:child_process"
 import _ from "lodash"
-import { assertMongoDB, dropDatabaseBeforeAndAfter } from "./test-utils.js"
+import { assertMongoDB, dropDatabaseBeforeAndAfter, setupInMemoryMongo, createCollectionsAndIndexes, teardownInMemoryMongo } from "./test-utils.js"
 import { isValidUuid } from "../utils/index.js"
 
 // Prepare jwt
@@ -137,11 +137,23 @@ describe("Configuration", () => {
 
 })
 
-assertMongoDB()
-
 describe("Express Server", () => {
-
+  before(async () => {
+    const mongoUri = await setupInMemoryMongo({ replSet: false })
+    process.env.MONGO_URI = mongoUri 
+    await createCollectionsAndIndexes()
+  })
+      
+  after(async () => {
+    // close server if you started one
+    await teardownInMemoryMongo()
+  })
+      
+  // 🗑 Drop DB before *and* after every single `it()` in this file
   dropDatabaseBeforeAndAfter()
+      
+  // 🔌 Sanity‐check that mongoose really is connected
+  assertMongoDB()
 
   describe("GET /status", () => {
 

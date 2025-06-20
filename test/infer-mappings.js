@@ -4,17 +4,10 @@ import chai from "./chai.js"
 
 import * as server from "../server.js"
 import assert from "node:assert"
-import { assertIndexes, assertMongoDB, dropDatabaseBeforeAndAfter } from "./test-utils.js"
+import { assertIndexes, assertMongoDB, dropDatabaseBeforeAndAfter, setupInMemoryMongo, createCollectionsAndIndexes, teardownInMemoryMongo } from "./test-utils.js"
 
 import _ from "lodash"
 import config from "../config/index.js"
-
-assertMongoDB()
-dropDatabaseBeforeAndAfter()
-
-describe("Indexes", () => {
-  assertIndexes()
-})
 
 // Prepare jwt
 import jwt from "jsonwebtoken"
@@ -57,8 +50,26 @@ const concepts = [
 ]
 
 describe("/mappings/infer", () => {
+  before(async () => {
+    const mongoUri = await setupInMemoryMongo({ replSet: false })
+    process.env.MONGO_URI = mongoUri  
+    await createCollectionsAndIndexes()
+    await assertIndexes()
+  })
+        
+  after(async () => {
+    // close server if you started one
+    await teardownInMemoryMongo()
+  })
+        
+  // 🗑 Drop DB before *and* after every single `it()` in this file
+  dropDatabaseBeforeAndAfter()
+        
+  // 🔌 Sanity‐check that mongoose really is connected
+  assertMongoDB()
 
-  [scheme, targetScheme].forEach(s => {
+  const schemeTargetScheme = [scheme, targetScheme]
+  schemeTargetScheme.forEach(s => {
     it("should POST test scheme", done => {
       scheme.API = [
         {

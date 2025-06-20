@@ -1,3 +1,12 @@
 import gbv from "eslint-config-gbv"
 
-export default gbv
+// Extend base config and add ignores for Docker data
+export default [
+  ...gbv,
+  {
+    ignores: [
+      "docker/data/**",
+    ],
+  },
+]
+

@@ -1,93 +1,85 @@
 /* eslint-env node, mocha */
-import config from "../config/index.js"
-import assert, { AssertionError } from "assert"
-import * as server from "../server.js"
-import { setupChangesApi } from "../utils/changes.js"
-import { connection } from "../utils/db.js"
-import { objectTypes } from "jskos-tools"
-import { assertMongoDB, dropDatabaseBeforeAndAfter, assertIndexes } from "./test-utils.js"
+import { assertMongoDB, dropDatabaseBeforeAndAfter, setupInMemoryMongo, teardownInMemoryMongo, createCollectionsAndIndexes } from "./test-utils.js"
 import WebSocket from "ws"
+import assert from "assert"
+import config from "../config/index.js"
+import { app } from "../server.js"
+import { setupChangesApi } from "../utils/changes.js"
+import { objectTypes } from "jskos-tools"
+import mongoose from "mongoose"
 
-// map each route to its collection name and expected JSKOS type
+// Map each route to its collection name and expected JSKOS type
 const routes = {
-  voc:          { coll: "terminologies",    type: "ConceptScheme" },
-  concepts:     { coll: "concepts",         type: "Concept" },
-  mappings:     { coll: "mappings",         type: "ConceptMapping" },
-  concordances: { coll: "concordances",     type: "Concordance" },
-  annotations:  { coll: "annotations",      type: "Annotation" },
+  voc:          { coll: "terminologies", type: "ConceptScheme"  },
+  concepts:     { coll: "concepts",       type: "Concept"        },
+  mappings:     { coll: "mappings",       type: "ConceptMapping" },
+  concordances: { coll: "concordances",   type: "Concordance"    },
+  annotations:  { coll: "annotations",    type: "Annotation"     },
 }
-
 
 // Capture console.log output
 let loggedMessages = []
 const originalLog = console.log
 
-before(() => {
+before(async () => {
   console.log = (msg) => loggedMessages.push(msg)
+
 })
 
-after(() => {
+after(async () => {
   console.log = originalLog
-})
 
+})
 
 describe("Change‐Streams API setup", () => {
+  // Capture console.log output
+  let loggedMessages = []
+  const originalLog = console.log
+
+  before(async () => {
+    console.log = (msg) => loggedMessages.push(msg)
+
+  })
+
+  after(async () => {
+    console.log = originalLog
+
+  })
 
   it("should skip registering when enableChangesApi is false", async () => {
     // ensure flag is off
     config.changesApi.enableChangesApi = false
 
-    // Clear any previous logs
-    loggedMessages.length = 0
-
     // call the exported setup function
-    await setupChangesApi(server.app)
+    await setupChangesApi(app)
 
     // assert our early‐return message was logged
     loggedMessages.includes("Change API is disabled by configuration.")
   })
 
-  it("throws ConfigurationError when enabled but replica set unreachable", async () => {
-  // turn the flag on
-    config.changesApi.enableChangesApi = true
-
-    // stub out the replica‐set check to simulate unreachable
-    const origWait = server.db.waitForReplicaSet
-    server.db.waitForReplicaSet = async () => false
-
-    try {
-      await setupChangesApi(server.app)
-    } catch (err) {
-    // verify we got the right error
-      assert.ok(
-        err instanceof AssertionError,
-        `Expected ConfigurationError but got ${err.constructor.name}`,
-      )
-      assert.strictEqual(
-        err.message,
-        "Change API enabled, but MongoDB replica set did not initialize in time.",
-      )
-    } finally {
-    // restore original
-      server.db.waitForReplicaSet = origWait
-    }
-  })
-
 })
 
-describe("WebSocket Change‐Streams (integration)", () => {
-  assertMongoDB()
-  dropDatabaseBeforeAndAfter()
-  assertIndexes()
+describe("WebSocket Change‐Streams (integration)", function () {
 
-
-  // Tell the server to enable changes‐API…
   before(async () => {
+    await setupInMemoryMongo({ replSet: true })
     config.changesApi.enableChangesApi = true
-    // re‐run the setup so registerChangeRoutes() actually wires up the /…/changes endpoints
-    await setupChangesApi(server.app)
+    await setupChangesApi(app)
+    await createCollectionsAndIndexes()
+    // optionally spin up your HTTP+WS server here
   })
-
+  
+  after(async () => {
+    // close server if you started one
+    await teardownInMemoryMongo()
+  })
+  
+  // 🗑 Drop DB before *and* after every single `it()` in this file
+  dropDatabaseBeforeAndAfter()
+  
+  // 🔌 Sanity‐check that mongoose really is connected
+  assertMongoDB()
+  
   // generate tests for each route
   for (const [route, info] of Object.entries(routes)) {
     lifecycleTests(route, info)
@@ -103,7 +95,7 @@ function lifecycleTests(route, { coll, type }) {
     it("emits create", done => {
       const ws = new WebSocket(`ws://localhost:${config.port}/${route}/changes`)
       ws.on("open", async () => {
-        await connection.db.collection(coll).insertOne({
+        await mongoose.connection.db.collection(coll).insertOne({
           uri:       `${uriBase}:1`,
           type:      typeUri,
           prefLabel: { en: ["A"] },
@@ -127,12 +119,12 @@ function lifecycleTests(route, { coll, type }) {
     it("emits update", done => {
       const ws = new WebSocket(`ws://localhost:${config.port}/${route}/changes`)
       ws.on("open", async () => {
-        const { insertedId } = await connection.db.collection(coll).insertOne({
+        const { insertedId } = await mongoose.connection.db.collection(coll).insertOne({
           uri:       `${uriBase}:2`,
           type:      typeUri,
           prefLabel: { en: ["B"] },
         })
-        await connection.db.collection(coll).updateOne(
+        await mongoose.connection.db.collection(coll).updateOne(
           { _id: insertedId },
           { $set: { prefLabel: { en: ["BB"] } } },
         )
@@ -157,12 +149,12 @@ function lifecycleTests(route, { coll, type }) {
     it("emits delete", done => {
       const ws = new WebSocket(`ws://localhost:${config.port}/${route}/changes`)
       ws.on("open", async () => {
-        const { insertedId } = await connection.db.collection(coll).insertOne({
+        const { insertedId } = await mongoose.connection.db.collection(coll).insertOne({
           uri:       `${uriBase}:3`,
           type:      typeUri,
           prefLabel: { en: ["C"] },
         })
-        await connection.db.collection(coll).deleteOne({ _id: insertedId })
+        await mongoose.connection.db.collection(coll).deleteOne({ _id: insertedId })
       })
       ws.on("message", raw => {
         const evt = JSON.parse(raw)

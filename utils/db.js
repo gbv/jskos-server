@@ -32,7 +32,8 @@ export async function connect(retry = false) {
   // If retry === false, add error handler before connecting
   !retry && addErrorHandler()
   async function _connect() {
-    return await mongoose.connect(`${config.mongo.url}/${config.mongo.db}`, config.mongo.options)
+    const mongoUri = process.env.MONGO_URI || `${config.mongo.url}/${config.mongo.db}`
+    return await mongoose.connect(mongoUri, config.mongo.options)
   }
   let result
   while (!result) {

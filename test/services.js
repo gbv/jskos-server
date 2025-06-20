@@ -2,16 +2,30 @@ import jskos from "jskos-tools"
 import _ from "lodash"
 import assert from "node:assert"
 
-import { assertIndexes, assertMongoDB, dropDatabaseBeforeAndAfter, arrayToStream } from "./test-utils.js"
+import { teardownInMemoryMongo, setupInMemoryMongo, createCollectionsAndIndexes, assertIndexes, assertMongoDB, dropDatabaseBeforeAndAfter, arrayToStream } from "./test-utils.js"
 
 import { InvalidBodyError } from "../errors/index.js"
 
 import { byType as services } from "../services/index.js"
 
-describe("Services", () => {
-  assertMongoDB()
+describe("Services Features", () => {
+  before(async () => {
+    const mongoUri = await setupInMemoryMongo({ replSet: false })
+    process.env.MONGO_URI = mongoUri  
+    await createCollectionsAndIndexes()
+    await assertIndexes()
+  })
+        
+  after(async () => {
+    // close server if you started one
+    await teardownInMemoryMongo()
+  })
+        
+  // 🗑 Drop DB before *and* after every single `it()` in this file
   dropDatabaseBeforeAndAfter()
-  assertIndexes()
+        
+  // 🔌 Sanity‐check that mongoose really is connected
+  assertMongoDB()
 
   Object.keys(services).forEach(type => {
     const method = "get" + type.charAt(0).toUpperCase() + type.slice(1) + "s"
