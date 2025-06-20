@@ -17,20 +17,6 @@ const routes = {
   annotations:  { coll: "annotations",    type: "Annotation"     },
 }
 
-// Capture console.log output
-let loggedMessages = []
-const originalLog = console.log
-
-before(async () => {
-  console.log = (msg) => loggedMessages.push(msg)
-
-})
-
-after(async () => {
-  console.log = originalLog
-
-})
-
 describe("Change‐Streams API setup", () => {
   // Capture console.log output
   let loggedMessages = []
