@@ -85,6 +85,25 @@
       "minimum": 0,
       "maximum": 65535
     },
+    "changesApi" : {
+      "description": "Configuration specs about ChangesApi",
+      "type": "object",
+      "additionalProperties": false,
+       "properties": { 
+          "enableChangesApi": {
+            "description": "Enabling the changes api",
+            "type": "boolean"
+          },
+          "rsMaxRetries": {
+            "description": "Maximum number of retries",
+            "type": "number"
+          },
+          "rsRetryInterval": {
+            "description": "Retry interval in milliseconds",
+            "type": "number"
+          }
+       }
+  },
     "proxies": {
       "description": "A list of proxy IP addresses or ranges",
       "$ref": "#/definitions/ips"

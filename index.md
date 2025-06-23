@@ -70,6 +70,7 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [PATCH /annotations/:\_id](#patch-annotations_id)
   - [DELETE /annotations/:\_id](#delete-annotations_id)
   - [Errors](#errors)
+  - [Real-time Change Stream Endpoints](#real-time-change-stream-endpoints)
 - [Deployment](#deployment)
   - [Notes about depolyment on Ubuntu](#notes-about-depolyment-on-ubuntu)
   - [Update an instances deployed with PM2](#update-an-instances-deployed-with-pm2)
@@ -89,6 +90,26 @@ The easiest way to install and use JSKOS Server is with Docker and Docker Compos
 
 ### Dependencies
 You need Node.js 18 or Node.js 20 (recommended) to run JSKOS Server. You need to have access to a [MongoDB database](https://docs.mongodb.com/manual/installation/) (minimun v4; v6 or v7 recommended).
+
+> **Change-Streams (WebSocket API) – Optional Feature**
+> JSKOS Server supports a /…/changes WebSocket API based on MongoDB Change Streams, which allows clients to receive live updates when data changes. This feature is **disabled by default**. To enable it, set `changesApi.enabled` to `true` in the configuration file.
+> If `changesApi.enabled` is `true` but MongoDB is `not` running as a replica set, JSKOS Server will log an error during startup and `skip registering` the Change-Streams endpoints — but the server `will continue running` normally for all other features.
+
+### Running MongoDB as a Replica Set
+> MongoDB must be configured as a **replica set** to support Change Streams. Standalone MongoDB deployments are not compatible.
+> To use the **Change-Streams** (`/changes`) WebSocket API, MongoDB **must** be configured as a **replica set**.
+If you want to use the Change-Streams API and you're using Docker, please refer to [our Docker documentation](https://github.com/gbv/jskos-server/blob/master/docker/README.md) for instructions on setting up a replica set.
+
+
+For a non‐Docker setup, start `mongod` with the `--replSet` flag, then connect with the shell and run:
+
+```js
+rs.initiate({ _id: "rs0", members: [{ _id: 0, host: "localhost:27017" }] });
+```
+
+Once the replica set is initialized, JSKOS Server will detect it at startup (the `replSetGetStatus` command is retried up to `changesApi.rsMaxRetries` times). 
+
+The [Change-Streams endpoints](#real-time-change-stream-endpoints) will only be registered if a replica set is confirmed.
 
 ### Clone and Install
 ```bash
@@ -119,6 +140,11 @@ All missing keys will be defaulted from `config/config.default.json`:
   "version": null,
   "closedWorldAssumption": true,
   "port": 3000,
+  "changesApi" : {
+    "enableChangesApi": false,
+    "rsMaxRetries": 20,
+    "rsRetryInterval": 5000
+  },
   "proxies": [],
   "mongo": {
     "user": "",
@@ -227,6 +253,22 @@ Available actions for `schemes`, `concepts`, `mappings`, and `annotations` are `
 \* Only applies to actions `create`, `update`, and `delete`.
 
 Note that any properties not mentioned here are not allowed!
+
+#### Change-Streams API Configuration
+
+The `changesApi` section controls how JSKOS Server handles MongoDB Change Streams:
+
+- **`enableChangesApi`** (boolean, default `false`)  
+  Globally turn all `/…/changes` WebSocket endpoints on or off. When `false`, no change-stream routes are registered.
+
+- **`rsMaxRetries`** (integer, default `20`)  
+  How many times to retry the `replSetGetStatus` command while waiting for the replica set to initialise before giving up.
+
+- **`rsRetryInterval`** (integer, default `5000`)  
+  Milliseconds to wait between each retry attempt when checking replica-set status.
+
+Only once the replica set is confirmed will the `/…/changes` endpoints become active.
+
 
 #### Mapping Mismatch Tagging for Negative Assessment Annotations
 To differentiate why a mapping was annotated with a negative assessment, a mismatch tagging vocabulary can now be configured under `annotations.mismatchTagVocabulary`. In theory, any vocabulary can be used, but [our instance](https://coli-conc.gbv.de/api/) will use a very small "mismatch" vocabulary available in https://github.com/gbv/jskos-data/tree/master/mismatch.
@@ -598,6 +640,21 @@ Tests will use the real MongoDB with `-test-${namespace}` appended to the databa
 ```bash
 npm test
 ```
+
+### Run Tests
+All of our tests—including the Change-Stream integration tests—now use an ephemeral, in-memory MongoDB server powered by [mongodb-memory-server](https://www.npmjs.com/package/mongodb-memory-server). No need for a local MongoDB instance running to execute the tests.
+
+```bash
+npm test
+```
+
+This will:
+
+1. **Start** a MongoDB (sometimes also a replica-set) entirely in memory.
+2. **Connect** Mongoose to that in-memory server.
+3. **Create** all JSKOS collections & indexes via services.
+4. **Drop** the database before and after each test suite, ensuring full isolation.
+5. **Tear down** the in-memory server when the suite completes.
 
 ### Run Supplemental Scripts
 There are some supplemental scripts that were added to deal with specific sitatuations. These can be called with `npm run extra name-of-script`. The following scripts are available:
@@ -2156,6 +2213,72 @@ Deletes an annotation from the database.
 
   Status 204, no content.
 
+### Real-time Change Stream Endpoints
+
+JSKOS-Server provides WebSocket endpoints that push live notifications whenever data changes. Available routes:
+
+* **`/voc/changes`** — broadcasts events for **ConceptSchemes**
+* **`/concepts/changes`** — broadcasts events for **Concepts**
+* **`/mappings/changes`** — broadcasts events for **Mappings**
+* **`/concordances/changes`** — broadcasts events for **Concordances**
+* **`/annotations/changes`** — broadcasts events for **Annotations**
+
+#### Connection to websocket
+
+```shell
+# Example for ConceptSchemes
+wscat -c ws://<host>:<port>/voc/changes
+```
+
+## Messages
+
+Each message is a JSON object with the following fields:
+
+| Field        | Type                   | Description                                                                                                                             |
+| ------------ | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `objectType` | `string`               | The JSKOS object type. One of: `ConceptScheme`, `Concept`, `ConceptMapping`, `Concordance`, `Annotation`.                               |
+| `type`       | `string`               | Change type, derived from the MongoDB operation:<br>• `insert` → `create`<br>• `update` / `replace` → `update`<br>• `delete` → `delete` |
+| `id`         | `string` or `ObjectId` | The `_id` of the changed MongoDB document.                                                                                              |
+| `document`   | `object` *(optional)*  | The full JSKOS record as stored in MongoDB. Present only for `create` and `update`.                                                     |
+
+<details>
+<summary>Example: <code>create</code> event</summary>
+
+```json
+{
+  "objectType": "ConceptScheme",
+  "type":       "create",
+  "id":         "650b1a5f3c9e2f001234abcd",
+  "document": {
+    "_id":      "650b1a5f3c9e2f001234abcd",
+    "uri":      "http://example.org/voc/123",
+    "type":     ["http://www.w3.org/2004/02/skos/core#ConceptScheme"],
+    "prefLabel": { "en": ["Example Scheme"] }
+    // … other JSKOS fields …
+  }
+}
+```
+
+</details>
+
+<details>
+<summary>Example: <code>delete</code> event</summary>
+
+```json
+{
+  "objectType": "ConceptScheme",
+  "type":       "delete",
+  "id":         "650b1a5f3c9e2f001234abcd"
+}
+```
+
+</details>
+
+
+
+
+
+
 ### Errors
 If possible, errors will be returned as a JSON object in the following format (example):
 
@@ -2201,6 +2324,7 @@ Status code 500. Will be returned if there is an error in the configuration that
 
 #### ForbiddenAccessError
 Status code 403. Will be returned if the user is not allow access (i.e. when not on the whitelist or when an identity provider is missing).
+
 
 ## Deployment
 The application is currently deployed at http://coli-conc.gbv.de/api/. At the moment, there is no automatic deployment of new versions.
