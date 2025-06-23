@@ -641,6 +641,21 @@ Tests will use the real MongoDB with `-test-${namespace}` appended to the databa
 npm test
 ```
 
+### Run Tests
+All of our tests—including the Change-Stream integration tests—now use an ephemeral, in-memory MongoDB server powered by [mongodb-memory-server](https://www.npmjs.com/package/mongodb-memory-server). No need for a local MongoDB instance running to execute the tests.
+
+```bash
+npm test
+```
+
+This will:
+
+1. **Start** a MongoDB (sometimes also a replica-set) entirely in memory.
+2. **Connect** Mongoose to that in-memory server.
+3. **Create** all JSKOS collections & indexes via services.
+4. **Drop** the database before and after each test suite, ensuring full isolation.
+5. **Tear down** the in-memory server when the suite completes.
+
 ### Run Supplemental Scripts
 There are some supplemental scripts that were added to deal with specific sitatuations. These can be called with `npm run extra name-of-script`. The following scripts are available:
 
