@@ -120,13 +120,13 @@
       <li>GET <a href="suggest">/concepts/suggest</a> - Returns concept suggestions (<a href="https://github.com/gbv/jskos-server#get-conceptssuggest" target="_blank">documentation</a>)</li>
       <li>GET <a href="search">/concepts/search</a> - Concept search (<a href="https://github.com/gbv/jskos-server#get-conceptssearch" target="_blank">documentation</a>)</li>
     <% if (config.concepts.create) { %>
-      <li>POST /concepts - Saves a concept or multiple concepts in the database (<% if (config.schemes.create.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#post-concepts" target="_blank">documentation</a>)</li>
+      <li>POST /concepts - Saves a concept or multiple concepts in the database (<% if (config.concepts.create.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#post-concepts" target="_blank">documentation</a>)</li>
       <% } %>
       <% if (config.concepts.update) { %>
-      <li>PUT /concepts - Overwrites a concept in the database (<% if (config.schemes.update.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#put-concepts" target="_blank">documentation</a>)</li>
+      <li>PUT /concepts - Overwrites a concept in the database (<% if (config.concepts.update.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#put-concepts" target="_blank">documentation</a>)</li>
       <% } %>
       <% if (config.concepts.delete) { %>
-      <li>DELETE /concepts - Deletes a concept from the database (<% if (config.schemes.delete.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#delete-concepts" target="_blank">documentation</a>)</li>
+      <li>DELETE /concepts - Deletes a concept from the database (<% if (config.concepts.delete.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#delete-concepts" target="_blank">documentation</a>)</li>
       <% } %>
      <% if (isChangesApiAvailable) { %>
         <li>WS /concepts/changes - Real-time updates for concepts via WebSocket (<a href="https://github.com/gbv/jskos-server#real-time-change-stream-endpoints" target="_blank">documentation</a>) <span class="ws-endpoint">WebSocket</span> </li>
@@ -151,7 +151,7 @@
         <li>DELETE /annotations/:_id - Deletes an annotation from the database (<% if (config.annotations.delete.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#put-annotations_id" target="_blank">documentation</a>)</li>
         <% } %>
          <% if (isChangesApiAvailable) { %>
-        <li>WS /annotations/changes - Real-time updates for annotations via WebSocket (<a href="https://github.com/gbv/jskos-server#real-time-change-stream-endpoints" target="_blank">documentation</a>) <span class="ws-endpoint">WebSocket</span></li>  
+        <li>WS /annotations/changes - Real-time updates for annotations via WebSocket (<a href="https://github.com/gbv/jskos-server#real-time-change-stream-endpoints" target="_blank">documentation</a>) <span class="ws-endpoint">WebSocket</span></li>
       <% } %>
     </ul>
     <% } %>
