@@ -92,6 +92,7 @@ function lifecycleTests(route, { coll, type }) {
           assert.strictEqual(evt.type, "create")
           assert.strictEqual(evt.objectType, type)
           assert.deepStrictEqual(evt.document.prefLabel.en, ["A"])
+          assertOptionalIsoTimestamp(evt.timestamp)
           ws.close()
           done()
         } catch (err) {
@@ -122,6 +123,7 @@ function lifecycleTests(route, { coll, type }) {
         try {
           assert.strictEqual(evt.objectType, type)
           assert.deepStrictEqual(evt.document.prefLabel.en, ["BB"])
+          assertOptionalIsoTimestamp(evt.timestamp)
           ws.close()
           done()
         } catch (err) {
@@ -158,4 +160,18 @@ function lifecycleTests(route, { coll, type }) {
       ws.on("error", err => done(err))
     })
   })
+}
+
+/**
+ * Validates that the provided timestamp, if present, is a string matching the strict ISO 8601 format `YYYY-MM-DDTHH:mm:ss.SSSZ`.
+ *
+ * @param {?string} ts - The timestamp to validate.
+ * @throws {AssertionError} If the timestamp is not a string or does not match the ISO 8601 format.
+ */
+function assertOptionalIsoTimestamp(ts) {
+  if (ts == null) {
+    return
+  }
+  assert.strictEqual(typeof ts, "string")
+  assert.match(ts, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/)
 }
