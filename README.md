@@ -2216,6 +2216,7 @@ Each message is a JSON object with the following fields:
 | `objectType` | `string`               | The JSKOS object type. One of: `ConceptScheme`, `Concept`, `ConceptMapping`, `Concordance`, `Annotation`.                               |
 | `type`       | `string`               | Change type, derived from the MongoDB operation:<br>• `insert` → `create`<br>• `update` / `replace` → `update`<br>• `delete` → `delete` |
 | `id`         | `string` or `ObjectId` | The `_id` of the changed MongoDB document.                                                                                              |
+| `timestamp`  | `string`               | The ISO 8601 timestamp of the change event, derived from the MongoDB change stream `clusterTime` (available since MongoDB 3.6).         |
 | `document`   | `object` *(optional)*  | The full JSKOS record as stored in MongoDB. Present only for `create` and `update`.                                                     |
 
 <details>
