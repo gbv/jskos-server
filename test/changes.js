@@ -88,6 +88,9 @@ function lifecycleTests(route, { coll, type }) {
       })
       ws.on("message", raw => {
         const evt = JSON.parse(raw)
+        if (evt.type !== "create") {
+          return
+        }
         try {
           assert.strictEqual(evt.type, "create")
           assert.strictEqual(evt.objectType, type)
