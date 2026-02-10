@@ -34,6 +34,16 @@ export default function registerChangesRoutes(app) {
         ws.send(JSON.stringify(evt))
       })
 
+      stream.on("error", (err) => {
+        if (err?.name === "MongoClientClosedError") {
+          return
+        }
+        console.error(
+          `[changes] ChangeStream error on "${route}" (${collName}):`,
+          err,
+        )
+      })
+
       ws.on("close", () => stream.close())
     })
   }
