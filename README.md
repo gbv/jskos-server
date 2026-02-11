@@ -68,6 +68,13 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [PUT /annotations/:\_id](#put-annotations_id)
   - [PATCH /annotations/:\_id](#patch-annotations_id)
   - [DELETE /annotations/:\_id](#delete-annotations_id)
+  - [GET /registries](#get-registries)
+  - [GET /registries/:\_id](#get-registries_id)
+  - [GET /registries/suggest](#get-registriessuggest)
+  - [POST /registries](#post-registries)
+  - [PUT /registries/:\_id](#put-registries_id)
+  - [PATCH /registries/:\_id](#patch-registries_id)
+  - [DELETE /registries/:\_id](#delete-registries_id)
   - [Errors](#errors)
   - [Change Stream Endpoints](#change-stream-endpoints)
 - [Deployment](#deployment)
@@ -182,6 +189,22 @@ All missing keys will be defaulted from `config/config.default.json`:
     "moderatingIdentities": [],
     "mismatchTagVocabulary": null
   },
+  "registries": {
+    "read": {
+      "auth": false
+    },
+    "create": {
+      "auth": true
+    },
+    "update": {
+      "auth": true,
+      "crossUser": false
+    },
+    "delete": {
+      "auth": true,
+      "crossUser": false
+    }
+  },
   "anonymous": false,
   "identityProviders": null,
   "identities": null,
@@ -210,7 +233,7 @@ With the keys `schemes`, `concepts`, `mappings`, `concordances`, and `annotation
 }
 ```
 
-Available actions for `schemes`, `concepts`, `mappings`, and `annotations` are `read`, `create`, `update`, and `delete`. By default, all types can be read, while `mappings` and `annotations` can be created, updated, and deleted with authentication. Explanantions for additional options:
+Available actions for `schemes`, `concepts`, `mappings`, `annotations`, and `registries` are `read`, `create`, `update`, and `delete`. By default, all types can be read, while `mappings`, `annotations`, and `registries` can be created, updated, and deleted with authentication. Explanations for additional options:
 
 - **`auth`**: Boolean. Can be defined only on actions. Defines whether access will require [authentication via JWT](#authentication). By default `false` for `read`, and `true` for all other actions.
 
@@ -314,7 +337,7 @@ The second control is only checked when the first control cannot be applied and 
 
 For authenticated actions with `anonymous` being `false` creation of a new object will always set its initial `creator` to the autenticated user and `update` of an object will always add the user to `contributor` unless it is already included as `creator` or `contributor`. Further modification of `creator` and `contributor` (removal and addition of entries) is limited to vocabularies and concordance by authenticated users listed as `creator` of the object.
 
-Here are some helpful example presets for configuration of "concordances, "mappings", or "annotations".
+Here are some helpful example presets for configuration of "concordances, "mappings", "annotations", or "registries".
 
 **Read-only access (does not make sense for annotations):**
 ```json
@@ -750,6 +773,21 @@ Note that certain properties from the actual configuration will not be shown in 
           "auth": true,
           "crossUser": false
         },
+        "registries": {
+          "read": {
+            "auth": false
+          },
+          "create": {
+            "auth": true
+          },
+          "update": {
+            "auth": true,
+            "crossUser": false
+          },
+          "delete": {
+            "auth": true,
+            "crossUser": false
+        },
         "mismatchTagVocabulary": {
           "uri": "https://uri.gbv.de/terminology/mismatch/",
           "API": [
@@ -777,6 +815,7 @@ Note that certain properties from the actual configuration will not be shown in 
     "mappings": "http://localhost:3000/mappings",
     "concordances": "http://localhost:3000/concordances",
     "annotations": "http://localhost:3000/annotations",
+    "registries": "http://localhost:3000/registries",
     "types": null,
     "validate": "http://localhost:3000/validate",
     "ok": 1
@@ -915,7 +954,7 @@ Same as [POST /validate](#post-validate) but JSKOS data to be validated is passe
   `knownSchemes=[boolean]` see [POST /validate](#post-validate)
 
 ### GET /data
-Returns data for a certain URI or URIs. Can return concept schemes, concepts, concordances, mappings, and annotations. This endpoint does not offer pagination via `limit` and `offset`. It will always return all results. Furthermore, there is no certain order to the result set (but it should be consistent across requests). If a certain type of data requires authentication and the user is not authenticated, that type of data will simply not be returned.
+Returns data for a certain URI or URIs. Can return concept schemes, concepts, concordances, mappings, annotations, and registries. This endpoint does not offer pagination via `limit` and `offset`. It will always return all results. Furthermore, there is no certain order to the result set (but it should be consistent across requests). If a certain type of data requires authentication and the user is not authenticated, that type of data will simply not be returned.
 
 **Note:** As of version 2.0, this endpoint was adjusted to return all types of items that are available in the database, instead of just concepts and concept schemes. The additional parameters, apart from `uri`, were also removed. For the previous behavior (only without returning concept schemes), see [GET /concepts](#get-concepts).
 
@@ -2187,6 +2226,163 @@ Note that any changes to the `created` property will be ignored.
 Deletes an annotation from the database.
 
 * **Success Reponse**
+  Status 204, no content.
+
+### GET /registries
+Returns an array of registries. Each registry has a property `id` under which the specific registry can be accessed.
+
+* **URL Params**
+
+  `id=[id]` specify a registry ID
+
+* **Success Response**
+
+  Array of registries in [JSKOS Registry] format
+
+* **Sample Call**
+
+  ```bash
+  curl https://coli-conc.gbv.de/api/registries?limit=1
+  ```
+
+  ```json
+  [
+    {
+      "API": [
+        {
+          "type": "http://bartoc.org/api-type/jskos",
+          "url": "https://api.dante.gbv.de/"
+        }
+      ],
+      "startDate": "2017",
+      "definition": {
+        "en": [
+          "DANTE (Datendrehscheibe für Normdaten und Terminologien) is a vocabulary server hosted by VZG based on easyDB. Its vocabularies are mainly from museums and related organizations."
+        ]
+      },
+      "prefLabel": {
+        "en": "DANTE"
+      },
+      "type": [
+        "http://www.w3.org/ns/dcat#Catalog",
+        "http://bartoc.org/full-repository"
+      ],
+      "uri": "http://bartoc.org/en/node/19999",
+      "url": "https://api.dante.gbv.de/"
+    }
+  ]
+  ```
+
+### GET /registries/:_id
+Returns a specific registry.
+
+* **Success Response**
+
+  Object for registry in [JSKOS Registry] format.
+
+* **Error Response**
+
+  If no registry with `_id` could be found, it will return a 404 not found error.
+
+* **Sample Call**
+
+  ```bash
+  curl "http://localhost:3000/registries/http%3A%2F%2Fbartoc.org%2Fen%2Fnode%2F18927"
+  ```
+
+  ```json
+  {
+    "definition": {
+      "en": [
+        "This Agrisemantics Map of Data Standards is the continuation of the VEST Registry started on the FAO AIMS website (now superseded by tis Map) and it includes metadata from the AgroPortal ontology repository managed by University of Montpelier and Stanford University."
+      ]
+    },
+    "prefLabel": {
+      "en": "VEST Registry"
+    },
+    "type": [
+      "http://www.w3.org/ns/dcat#Catalog"
+    ],
+    "uri": "http://bartoc.org/en/node/18927",
+    "url": "http://aims.fao.org/vest-registry"
+  }
+  ```
+
+### GET /registries/suggest
+Returns registry suggestions.
+
+* **URL Params**
+
+  `search=[keyword|notation]` specifies the keyword or notation (prefix) to search for
+
+* **Success Response**
+
+  JSON array of suggestions.
+
+* **Sample Calls**
+
+  ```bash
+  curl https://coli-conc.gbv.de/api/registries/suggest?search=Stanford
+  ```
+
+  ```json
+  [
+    "Stanford",
+    [
+      "ERMS VEST Registry"
+    ],
+    [
+      "",
+      "",
+      ""
+    ],
+    [
+      "http://bartoc.org/en/node/18927"
+    ]
+  ]
+  ```
+
+  ```bash
+  curl https://coli-conc.gbv.de/api/concepts/suggest?search=Krebs&limit=2&format=jskos
+  ```
+
+### POST /registries
+Saves an annotation or multiple registries in the database.
+
+* **URL Params**
+
+  `bulk=[boolean]` `1` or `true` enable bulk mode for importing multiple registries into the database. Errors for individual registries will be ignored and existing registries will be overridden. The resulting set will only include the `id` for each registry that was written into the database.
+
+* **Success Response**
+
+  Registry object or array of object as was saved in the database in [JSKOS Registry] format, or array of registry objects with only a `id` if bulk mode was used.
+
+* **Error Response**
+
+  When a single registry is provided, an error can be returned if there's something wrong with it (see [errors](#errors)). When multiple registries are provided, the first error will be returned, except if bulk mode is enabled in which errors for individual registries are ignored.
+
+### PUT /registries/:_id
+Overwrites a registry in the database.
+
+* **Success Response**
+
+  Registry object as it was saved in the database in [JSKOS Registry] format.
+
+Note that any changes to the `created` property will be ignored.
+
+### PATCH /registries/:_id
+Adjusts a registry in the database.
+
+* **Success Response**
+
+  Registry object as it was saved in the database in [JSKOS Registry] format.
+
+Note that any changes to the `created` property will be ignored.
+
+### DELETE /registries/:_id
+Deletes a registry from the database.
+
+* **Success Response**
 
   Status 204, no content.
 
@@ -2199,6 +2395,7 @@ JSKOS-Server provides WebSocket endpoints that push live notifications whenever 
 * **`/mappings/changes`** — broadcasts events for **Mappings**
 * **`/concordances/changes`** — broadcasts events for **Concordances**
 * **`/annotations/changes`** — broadcasts events for **Annotations**
+* **`/registries/changes`** — broadcasts events for **Registries**
 
 #### Connection to websocket
 
@@ -2213,7 +2410,7 @@ Each message is a JSON object with the following fields:
 
 | Field        | Type                   | Description                                                                                                                             |
 | ------------ | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `objectType` | `string`               | The JSKOS object type. One of: `ConceptScheme`, `Concept`, `ConceptMapping`, `Concordance`, `Annotation`.                               |
+| `objectType` | `string`               | The JSKOS object type. One of: `ConceptScheme`, `Concept`, `ConceptMapping`, `Concordance`, `Annotation`, `Registry`.                               |
 | `type`       | `string`               | Change type, derived from the MongoDB operation:<br>• `insert` → `create`<br>• `update` / `replace` → `update`<br>• `delete` → `delete` |
 | `id`         | `string` or `ObjectId` | The `_id` of the changed MongoDB document.                                                                                              |
 | `timestamp`  | `string`               | The ISO 8601 timestamp of the change event, derived from the MongoDB change stream `clusterTime` (available since MongoDB 3.6).         |
@@ -2330,7 +2527,9 @@ If you'd like to run the import script daily to refresh current mappings, you ca
 [JSKOS Concept Schemes]: https://gbv.github.io/jskos/#concept-schemes
 [JSKOS Concepts]: https://gbv.github.io/jskos/#concept
 [JSKOS Items]: https://gbv.github.io/jskos/#item
+[JSKOS Registry]: https://gbv.github.io/jskos/#registry
 [Web Annotation Data Model]: https://www.w3.org/TR/annotation-model/
+
 
 ### Running Behind a Reverse Proxy
 There are certain things to consider when running `jskos-server` behind a reverse proxy:
