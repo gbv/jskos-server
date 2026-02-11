@@ -544,42 +544,8 @@ After that, you can use [login-client](https://github.com/gbv/login-client) to i
 
 For testing your authentication without a full-fledged solution using login-client, you can use http://localhost:3004/token (where `localhost:3004` is your instance of login-server) to request a JWT.
 
----
-
-Note about previous additional options for `auth`:
-- `postAuthRequired`: now covered by `mappings.create.auth`
-- `whitelist`: now covered by `identities`
-- `allowCrossUserEditing`: now covered by `mappings.update.crossUser` and `mappings.delete.crossUser`
-
 ### Data Import
 JSKOS Server provides scripts to import JSKOS data into the database or delete data from the database. Right now, mappings, terminologies (concept schemes), concepts, concordances, and annotations, in JSON (object or array of objects) or [NDJSON](http://ndjson.org) format are supported.
-
-#### Import Notes
-**About hierarchies within concepts:** Hierarchies are supported. However, only the `broader` field will be used during import. Both `ancestors` and `narrower` will be removed and the respective endpoints ([GET /concepts/ancestors](#get-conceptsancestors) and [GET /concepts/narrower](#get-conceptsnarrower)) will dynamically rebuild these properties. That means that when converting your data, please normalize it so that the hierarchy is expressed via the `broader` field in JSKOS.
-
-Example scheme (as JSON object) with concepts in a hierarchy (as NDJSON):
-```json
-{
-  "uri": "urn:test:scheme",
-  "notation": [
-    "TEST"
-  ],
-  "uriPattern": "^urn:test:concept-(.+)$"
-}
-```
-```json
-{ "topConceptOf": [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-a" }
-{ "inScheme":     [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-a.1",    "broader": [{ "uri": "urn:test:concept-a" }] }
-{ "inScheme":     [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-a.2",    "broader": [{ "uri": "urn:test:concept-a" }] }
-{ "topConceptOf": [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-b" }
-{ "inScheme":     [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-b.1",    "broader": [{ "uri": "urn:test:concept-b" }] }
-{ "inScheme":     [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-b.1.1",  "broader": [{ "uri": "urn:test:concept-b.1" }] }
-{ "inScheme":     [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-b.1.2",  "broader": [{ "uri": "urn:test:concept-b.1" }] }
-```
-
-(Note that a notation for the concepts can be omitted because we have defined `uriPattern` on the concept scheme. Also, we don't need to define `inScheme` for concepts with `topConceptOf`.)
-
-**About the `created` property for concept schemes:** The import script uses the bulk write endpoints to import data. For concept schemes, this means that any existing data for imported schemes will be **overwritten** and replaced with the new data. This includes especially the `created` property which might not exist in your source data and will be set on import if necessary. If you need a consistent `created` date, make sure that your source data already includes this field.
 
 #### Import Script
 Examples of using the import script:
@@ -622,6 +588,35 @@ npm run reset -- --help
 ```
 
 For scripting, you can use the `yes` command to skip confirmation. **Make sure you know what you're doing!** Example: `yes | npm run reset -- urn:test:uri`.
+
+#### Specifics of importing concepts
+Only the `broader` field will be used during import of concepts: both `ancestors` and `narrower` will be removed and the respective endpoints ([GET /concepts/ancestors](#get-conceptsancestors) and [GET /concepts/narrower](#get-conceptsnarrower)) will dynamically rebuild these properties. That means that when converting your data, please normalize it so that the hierarchy is expressed via the `broader` field in JSKOS.
+
+Example scheme (as JSON object) with concepts in a hierarchy (as NDJSON):
+```json
+{
+  "uri": "urn:test:scheme",
+  "notation": [
+    "TEST"
+  ],
+  "uriPattern": "^urn:test:concept-(.+)$"
+}
+```
+```json
+{ "topConceptOf": [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-a" }
+{ "inScheme":     [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-a.1",    "broader": [{ "uri": "urn:test:concept-a" }] }
+{ "inScheme":     [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-a.2",    "broader": [{ "uri": "urn:test:concept-a" }] }
+{ "topConceptOf": [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-b" }
+{ "inScheme":     [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-b.1",    "broader": [{ "uri": "urn:test:concept-b" }] }
+{ "inScheme":     [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-b.1.1",  "broader": [{ "uri": "urn:test:concept-b.1" }] }
+{ "inScheme":     [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-b.1.2",  "broader": [{ "uri": "urn:test:concept-b.1" }] }
+```
+
+(Note that a notation for the concepts can be omitted because we have defined `uriPattern` on the concept scheme. Also, we don't need to define `inScheme` for concepts with `topConceptOf`.)
+
+#### Specifics of importing concept schemes
+The import script uses the bulk write endpoints to import data. For concept schemes, this means that any existing data for imported schemes will be **overwritten** and replaced with the new data. This includes especially the `created` property which might not exist in your source data and will be set on import if necessary. If you need a consistent `created` date, make sure that your source data already includes this field.
+
 
 ## Usage
 
@@ -2454,11 +2449,13 @@ If possible, errors will be returned as a JSON object in the following format (e
 
 ```json
 {
-  error: "EntityNotFoundError",
-  status: 404,
-  message: "The requested entity ABC could not be found.",
+  "error": "EntityNotFoundError",
+  "status": 404,
+  "message": "The requested entity ABC could not be found.",
 }
 ```
+
+Validation errors reported from [/validate endpoint](#post-validate) are no API errors (unless validation could not be executed for some reason).
 
 The following errors are currently caught and returned as JSON:
 
