@@ -4,6 +4,7 @@ import { Concordance } from "./concordances.js"
 import { Mapping } from "./mappings.js"
 import { Meta } from "./meta.js"
 import { Scheme } from "./schemes.js"
+import { Registry } from "./registries.js"
 
 export {
   Annotation,
@@ -12,6 +13,7 @@ export {
   Mapping,
   Meta,
   Scheme,
+  Registry,
 }
 
 export const models = {
@@ -20,6 +22,7 @@ export const models = {
   concordance: Concordance,
   mapping: Mapping,
   annotation: Annotation,
+  registry: Registry,
 }
 
 Object.keys(models).forEach(type => {

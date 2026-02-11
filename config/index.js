@@ -146,7 +146,7 @@ const defaultActions = {
     crossUser: false,
   },
 }
-for (let type of ["schemes", "concepts", "mappings", "concordances", "annotations"]) {
+for (let type of ["schemes", "concepts", "mappings", "concordances", "annotations", "registries"]) {
   if (config[type] === true) {
     // Default is read-only without authentication
     config[type] = {
@@ -236,6 +236,7 @@ Object.defineProperty(config, "status", { get: function() {
     "mappings",
     "concordances",
     "annotations",
+    "registries",
   ]) {
     status[type] = null
   }
@@ -265,6 +266,9 @@ Object.defineProperty(config, "status", { get: function() {
   if (status.config.annotations) {
     // Add endpoints related to annotations
     status.annotations = `${baseUrl}annotations`
+  }
+  if (status.config.registries) {
+    status.registries = `${baseUrl}registries`
   }
   // Explicitly disable types (not yet supported in jskos-server)
   status.types = null

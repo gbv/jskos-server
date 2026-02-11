@@ -181,6 +181,9 @@
     },
     "annotations": {
       "$ref": "#/definitions/capabilityAndForbidMappingOnlyProperties"
+    },
+    "registries": {
+      "$ref": "#/definitions/capabilityAndForbidMappingOnlyProperties"
     }
   },
   "definitions": {

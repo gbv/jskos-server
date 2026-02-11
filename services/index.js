@@ -6,6 +6,7 @@ import { schemeService } from "./schemes.js"
 import { dataService } from "./data.js"
 import { statusService } from "./status.js"
 import { validateService } from "./validate.js"
+import { registryService } from "./registries.js"
 
 export {
   annotationService,
@@ -16,6 +17,7 @@ export {
   dataService,
   statusService,
   validateService,
+  registryService,
 }
 
 export const services = {
@@ -24,10 +26,13 @@ export const services = {
   concordance: concordanceService,
   mapping: mappingService,
   annotation: annotationService,
+  registry: registryService,
 }
 
 for (let type of Object.keys(services)) {
-  Object.defineProperty(services, `${type}s`, {
+  const plural = type === "registry" ? "registries" : `${type}s`
+
+  Object.defineProperty(services, plural, {
     get: () => services[type],
   })
 }

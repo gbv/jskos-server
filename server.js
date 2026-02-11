@@ -134,6 +134,10 @@ if (config.annotations) {
 if (config.concepts) {
   app.use(routers.conceptRouter)
 }
+// Registry related endpoints
+if (config.registries) {
+  app.use("/registries", routers.registryRouter)
+}
 // Data endpoint
 app.use(routers.dataRouter)
 // Validate endpoint

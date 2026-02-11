@@ -39,7 +39,7 @@
       <li>GET <a href="status">/status</a> - Returns a status object (<a href="status.schema.json">JSON Schema</a>, <a href="https://github.com/gbv/jskos-server#get-status" target="_blank">documentation</a>)</li>
       <li>GET <a href="checkAuth">/checkAuth</a> - Endpoint to check whether a user is authorized (<a href="https://github.com/gbv/jskos-server#get-checkauth" target="_blank">documentation</a>)</li>
       <li>POST/GET <a href="validate">/validate</a> - Endpoint to validate JSKOS data (<a href="https://github.com/gbv/jskos-server#post-validate" target="_blank">documentation</a>)</li>
-      <li>GET <a href="data">/data</a> - Returns data for a certain URI or URIs (concept schemes, concepts, concordances, mappings, annotations) (<a href="https://github.com/gbv/jskos-server#get-data" target="_blank">documentation</a>)</li>
+      <li>GET <a href="data">/data</a> - Returns data for a certain URI or URIs (concept schemes, concepts, concordances, mappings, annotations, registries) (<a href="https://github.com/gbv/jskos-server#get-data" target="_blank">documentation</a>)</li>
     </ul>
     <% if (config.concordances) { %>
     <h3>Concordances</h3>
@@ -155,6 +155,20 @@
       <% } %>
     </ul>
     <% } %>
+    <% if (config.registries) { %>
+    <h3>Registries</h3>
+    <ul>
+      <li>GET <a href="registries">/registries</a> - Returns a list of registries (<a href="https://github.com/gbv/jskos-server#get-registries" target="_blank">documentation</a>)</li>
+      <li>GET /registries/:_id - Returns a specific registry (<a href="https://github.com/gbv/jskos-server#get-registries_id" target="_blank">documentation</a>)</li>
+      <li>GET <a href="registries/suggest">/registries/suggest</a> - Returns registry suggestions (<a href="https://github.com/gbv/jskos-server#get-registriessuggest" target="_blank">documentation</a>)</li>
+      <li>POST /registries - Saves a registry in the database (<a href="https://github.com/gbv/jskos-server#post-registries" target="_blank">documentation</a>)</li>
+      <li>PUT /registries/:_id - Overwrites a registry in the database (<a href="https://github.com/gbv/jskos-server#put-registries_id" target="_blank">documentation</a>)</li>
+      <li>PATCH /registries/:_id - Adjusts a registry in the database (<a href="https://github.com/gbv/jskos-server#patch-registries_id" target="_blank">documentation</a>)</li>
+      <li>DELETE /registries/:_id - Deletes a registry from the database (<a href="https://github.com/gbv/jskos-server#put-registries_id" target="_blank">documentation</a>)</li>
+      <% if (isChangesApiAvailable) { %>
+      <li>WS /registries/changes - Real-time updates for registries via WebSocket (<a href="https://github.com/gbv/jskos-server#real-time-change-stream-endpoints" target="_blank">documentation</a>) <span class="ws-endpoint">WebSocket</span> </li>
+      <% } %>
     </ul>
+    <% } %>
   </body>
 </html>
