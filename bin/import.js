@@ -31,6 +31,7 @@ Examples
   $ npm run import -- --indexes
   $ npm run import -- schemes schemes.ndjson
   $ npm run import -- concepts concepts.ndjson
+  $ npm run import -- registry registries.ndjson
 `, {
   importMeta: import.meta,
   flags: {
@@ -424,5 +425,13 @@ async function doImport({ input, format, type, concordance }) {
       admin: true,
     })
     log(`... done: ${Array.isArray(result) ? result.length : 1} annotations imported.`)
+  } else if (type == "registry") {
+    log("Importing registries...")
+    const result = await services.registry.postRegistries({
+      bodyStream: stream,
+      bulk: true,
+      bulkReplace: !cli.flags.noreplace,
+    })
+    log(`... done: ${Array.isArray(result) ? result.length : 1} registries imported.`)
   }
 }

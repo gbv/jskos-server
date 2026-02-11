@@ -67,6 +67,22 @@
     "moderatingIdentities": [],
     "mismatchTagVocabulary": null
   },
+  "registries": {
+    "read": {
+      "auth": false
+    },
+    "create": {
+      "auth": true
+    },
+    "update": {
+      "auth": true,
+      "crossUser": false
+    },
+    "delete": {
+      "auth": true,
+      "crossUser": false
+    }
+  },
   "anonymous": false,
   "identityProviders": null,
   "identities": null,

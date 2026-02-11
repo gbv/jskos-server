@@ -6,6 +6,7 @@ import { schemeRouter } from "./schemes.js"
 import { statusRouter } from "./status.js"
 import { dataRouter } from "./data.js"
 import { validateRouter } from "./validate.js"
+import { registryRouter } from "./registries.js"
 
 export {
   annotationRouter,
@@ -16,4 +17,5 @@ export {
   statusRouter,
   dataRouter,
   validateRouter,
+  registryRouter,
 }

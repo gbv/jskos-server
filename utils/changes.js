@@ -10,6 +10,7 @@ export const collections = {
   mappings:     "mappings",
   concordances: "concordances",
   annotations:  "annotations",
+  registries:   "registries",
 }
 
 export const operationTypeMap = { insert: "create", update: "update", delete: "delete" }
