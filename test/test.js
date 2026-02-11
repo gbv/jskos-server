@@ -3,6 +3,7 @@ import chai from "./chai.js"
 import * as server from "../server.js"
 import assert from "node:assert"
 import { exec as cpexec } from "node:child_process"
+import { promisify } from "node:util"
 import _ from "lodash"
 import { assertMongoDB, dropDatabaseBeforeAndAfter, setupInMemoryMongo, createCollectionsAndIndexes, teardownInMemoryMongo } from "./test-utils.js"
 import { isValidUuid } from "../utils/index.js"
@@ -2217,4 +2218,74 @@ describe("Express Server", () => {
 
   })
 
+  describe("GET /registries", () => {
+    it("should GET an empty array", (done) => {
+      chai.request
+        .execute(server.app)
+        .get("/registries")
+        .end((err, res) => {
+          if (err) {
+            return done(err)
+          }
+          res.should.have.status(200)
+          res.should.have.header("Link")
+          res.should.have.header("X-Total-Count")
+          res.headers["x-total-count"].should.be.eql("0")
+          res.body.should.be.a("array")
+          res.body.length.should.be.eql(0)
+          done()
+        })
+    })
+
+    describe("after import", () => {
+      before(async function () {
+        this.timeout(15000)
+        await promisify(cpexec)(
+          "NODE_ENV=test ./bin/import.js --indexes && NODE_ENV=test ./bin/import.js registry ./test/registries/registries.ndjson",
+        )
+      })
+
+      it("should GET registries after import", (done) => {
+        chai.request
+          .execute(server.app)
+          .get("/registries")
+          .end((err, res) => {
+            if (err) {
+              return done(err)
+            }
+            res.should.have.status(200)
+            res.should.have.header("Link")
+            res.should.have.header("X-Total-Count")
+            res.body.should.be.a("array")
+            res.body.length.should.be.above(0)
+            parseInt(res.headers["x-total-count"]).should.be.above(0)
+            done()
+          })
+      })
+
+      describe("GET /registries/suggest", () => {
+
+        it("should GET correct results for notation", done => {
+          chai.request.execute(server.app)
+            .get("/registries/suggest")
+            .query({
+              search: "ERMS",
+            })
+            .end((err, res) => {
+              res.should.have.status(200)
+              res.should.have.header("Link")
+              res.should.have.header("X-Total-Count")
+              res.headers["x-total-count"].should.be.eql("1")
+              res.body.should.be.a("array")
+              res.body.length.should.be.eql(4) // OpenSearch Suggest Format
+              res.body[0].should.be.a("string")
+              res.body[1].should.be.a("array")
+              res.body[1].length.should.be.eql(1)
+              done()
+            })
+        })
+      })
+    })
+
+  })
 })
