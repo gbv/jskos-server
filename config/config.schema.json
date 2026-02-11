@@ -89,7 +89,7 @@
       "description": "Configuration specs about ChangesApi",
       "type": "object",
       "additionalProperties": false,
-       "properties": { 
+       "properties": {
           "enableChangesApi": {
             "description": "Enabling the changes api",
             "type": "boolean"
@@ -183,7 +183,7 @@
       "$ref": "#/definitions/capabilityAndForbidMappingOnlyProperties"
     },
     "registries": {
-      "$ref": "#/definitions/capabilityAndForbidMappingOnlyProperties"
+      "$ref": "#/definitions/capabilityAndForbidMappingAndAnnotationOnlyProperties"
     }
   },
   "definitions": {

@@ -11,21 +11,7 @@ import { isValidUuid } from "../utils/index.js"
 // Prepare jwt
 import jwt from "jsonwebtoken"
 
-import fs from "node:fs"
-import config from "../config/index.js"
-
-const __dirname = config.getDirname(import.meta.url)
-
-// Prepare JSON Schemas
-import { ajvErrorsToString } from "../utils/ajvErrorsToString.js"
-import AJV from "ajv"
-import addAjvFormats from "ajv-formats"
-const ajv = new AJV({ allErrors: true })
-addAjvFormats(ajv)
-const configSchema = JSON.parse(fs.readFileSync(__dirname + "/../config/config.schema.json"))
-ajv.addSchema(configSchema)
-const statusSchema = JSON.parse(fs.readFileSync(__dirname + "/../status.schema.json"))
-ajv.addSchema(statusSchema)
+import { ajv, ajvErrorsToString, statusSchema } from "./ajv.js"
 
 const user = {
   uri: "http://test.user",
@@ -109,32 +95,6 @@ let mapping = {
     "http://www.w3.org/2004/02/skos/core#relatedMatch",
   ],
 }
-
-describe("Configuration", () => {
-
-  for (let file of [
-    "config/config.default.json",
-    "config/config.test.json",
-  ].concat(fs.readdirSync("./test/configs").map(f => `test/configs/${f}`))) {
-    const shouldFail = file.includes("fail-")
-    it(`should ${shouldFail ? "not " : ""}validate ${file}`, async () => {
-      let valid = false
-      try {
-        const data = JSON.parse(fs.readFileSync(file))
-        valid = ajv.validate(configSchema, data)
-      } catch (error) {
-        // Ignore error
-      }
-      if (shouldFail) {
-        assert.ok(!valid, "File passed validation even though it shouldn't.")
-      } else {
-        const notValidMessage = ajvErrorsToString(ajv.errors || [])
-        assert.ok(valid, notValidMessage)
-      }
-    })
-  }
-
-})
 
 describe("Express Server", () => {
   before(async () => {
