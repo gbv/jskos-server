@@ -14,6 +14,7 @@ const routes = {
   mappings:     { coll: "mappings",       type: "ConceptMapping" },
   concordances: { coll: "concordances",   type: "Concordance"    },
   annotations:  { coll: "annotations",    type: "Annotation"     },
+  registries:   { coll: "registries",     type: "Registry"       },
 }
 
 describe("Change‐Streams API setup", () => {

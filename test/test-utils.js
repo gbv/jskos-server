@@ -110,7 +110,7 @@ export function assertMongoDB() {
  * This replaces running `import.js --indexes`.
  */
 export async function createCollectionsAndIndexes() {
-  const collNames = ["terminologies","concepts","concordances","mappings","annotations"]
+  const collNames = ["terminologies","concepts","concordances","mappings","annotations","registries"]
   // 1. Create an empty collection if it doesn't exist
   for (const name of collNames) {
     const exists = await mongoose.connection.db
@@ -133,7 +133,7 @@ export async function createCollectionsAndIndexes() {
  */
 export async function assertIndexes() {
   it("should have at least default indexes", async () => {
-    const collections = ["terminologies", "concepts", "concordances", "mappings", "annotations"]
+    const collections = ["terminologies", "concepts", "concordances", "mappings", "annotations", "registries"]
     for (const name of collections) {
       // ensure collection exists
       const exists = await mongoose.connection.db.listCollections({ name }).hasNext()

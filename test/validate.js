@@ -53,7 +53,10 @@ describe("Validation endpoint testing", () => {
 
     // Validate difference object types
     for (let type of types) {
-      let typePlural = type + "s"
+      let typePlural =
+        type.endsWith("y") && !/[aeiou]y$/i.test(type)
+          ? type.slice(0, -1) + "ies"
+          : type + "s"
       describe(typePlural, () => {
         for (let { object, expected, file } of examples[type]) {
           it(`should validate ${typePlural} (${file})`, done => {

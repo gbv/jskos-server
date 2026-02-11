@@ -28,7 +28,12 @@ describe("Services Features", () => {
   assertMongoDB()
 
   Object.keys(services).forEach(type => {
-    const method = "get" + type.charAt(0).toUpperCase() + type.slice(1) + "s"
+    const capType = type.charAt(0).toUpperCase() + type.slice(1)
+    const pluralCapType =
+      capType.endsWith("y") && !/[aeiou]y$/i.test(capType)
+        ? capType.slice(0, -1) + "ies"
+        : capType + "s"
+    const method = "get" + pluralCapType
     it(`should return an empty array for ${method}`, async () => {
       const entities = await services[type][method]({ limit: 1, offset: 0 })
       assert.strictEqual(entities.length, 0)
@@ -448,6 +453,92 @@ describe("Services Features", () => {
       try {
         await services.annotation.postAnnotation({ bodyStream: await arrayToStream([annotation]) })
         assert.fail("No error was thrown even though it was expected.")
+      } catch (error) {
+        assert.ok(error instanceof InvalidBodyError)
+      }
+    })
+
+  })
+
+  describe("Registry Service", () => {
+
+    const registryExample = {
+      uri: "urn:test:registry:1",
+      notation: ["ERMS"],
+      prefLabel: { en: "Example Registry" },
+      definition: { en: ["Example definition mentioning ERMS."] },
+      url: "https://example.org/registry/1",
+    }
+
+    it("should post a registry and return an id/uri", async () => {
+      const result = await services.registry.postRegistries({
+        bodyStream: await arrayToStream([registryExample]),
+        bulk: false,
+      })
+      assert.ok(result?.length === 1)
+      assert.ok(result[0]?.uri || result[0]?._id || result[0]?.id)
+    })
+
+    it("should get a registry by id/uri after posting", async () => {
+      const doc = await services.registry.getRegistry(registryExample.uri)
+      assert.strictEqual(doc?.uri, registryExample.uri)
+    })
+
+    it("should patch a registry and remove a field when set to null", async () => {
+      const existing = await services.registry.getRegistry(registryExample.uri)
+
+      // Add a field and verify it exists
+      const patched1 = await services.registry.patchRegistry({
+        existing,
+        body: { publisher: [{ uri: "urn:test:publisher", prefLabel: { en: "Pub" } }] },
+      })
+      assert.ok(patched1.publisher?.length)
+
+      // Now remove field and verify it is removed
+      const patched2 = await services.registry.patchRegistry({
+        existing: patched1,
+        body: { publisher: null },
+      })
+      assert.ok(patched2.publisher === undefined, "A field should be removed when set to `null`.")
+    })
+
+    it("should put a registry and preserve immutable fields while updating", async () => {
+      const existing = await services.registry.getRegistry(registryExample.uri)
+
+      const body = {
+        // intentionally omit _id/id/created; service should preserve/override them
+        uri: registryExample.uri,
+        prefLabel: { en: "Example Registry Updated" },
+        notation: ["ERMS"],
+      }
+
+      const updated = await services.registry.putRegistry({ body, existing })
+      assert.strictEqual(updated._id, existing._id)
+      assert.strictEqual(updated.id, existing.id)
+      assert.strictEqual(updated.created, existing.created)
+      assert.ok(updated.modified, "modified should be set")
+      assert.strictEqual(updated.prefLabel?.en, "Example Registry Updated")
+    })
+
+    it("should delete a registry", async () => {
+      const existing = await services.registry.getRegistry(registryExample.uri)
+      await services.registry.deleteRegistry({ existing })
+      try {
+        await services.registry.getRegistry(registryExample.uri)
+        assert.fail("Expected getRegistry to fail after delete")
+      } catch (error) {
+        assert.ok(error)
+      }
+    })
+
+    it("should reject invalid registry bodies", async () => {
+      delete registryExample.uri
+      try {
+        await services.registry.postRegistries({
+          bodyStream: await arrayToStream([registryExample]),
+          bulk: false,
+        })
+        assert.fail("Expected postRegistries to fail")
       } catch (error) {
         assert.ok(error instanceof InvalidBodyError)
       }
