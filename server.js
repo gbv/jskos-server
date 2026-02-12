@@ -12,7 +12,7 @@ import portfinder from "portfinder"
 import expressWs from "express-ws"
 import { setupChangesApi, isChangesApiAvailable } from "./utils/changes.js"
 
-const __dirname = config.getDirname(import.meta.url)
+const __dirname = import.meta.dirname
 const connection = db.connection
 
 config.log(`Running in ${config.env} mode.`)

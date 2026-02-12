@@ -11,7 +11,7 @@ import { isValidUuid } from "../utils/index.js"
 // Prepare jwt
 import jwt from "jsonwebtoken"
 
-import { ajv, ajvErrorsToString, statusSchema } from "./ajv.js"
+import { validateStatus } from "../config/setup.js"
 
 const user = {
   uri: "http://test.user",
@@ -134,9 +134,7 @@ describe("Express Server", () => {
         .end((err, res) => {
           res.should.have.status(200)
           res.body.should.be.a("object")
-          const valid = ajv.validate(statusSchema, res.body)
-          const notValidMessage = ajvErrorsToString(ajv.errors || [])
-          valid.should.be.eql(true, notValidMessage)
+          assert.ok(validateStatus(res.body))
           done()
         })
     })
