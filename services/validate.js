@@ -1,13 +1,12 @@
 import { validate } from "jskos-validate"
 import jskos from "jskos-tools"
-import { schemeService } from "./schemes.js"
+import { SchemeService } from "./schemes.js"
 const guessObjectType = jskos.guessObjectType
 
 export class ValidateService {
 
-  constructor() {
-    // TODOESM?
-    this.schemeService = schemeService
+  constructor(config) {
+    this.schemeService = new SchemeService(config)
   }
 
   async validate(data, { unknownFields, type, knownSchemes = false } = {}) {
@@ -35,5 +34,3 @@ export class ValidateService {
   }
 
 }
-
-export const validateService = new ValidateService()

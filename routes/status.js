@@ -1,14 +1,18 @@
 import express from "express"
-import { statusService } from "../services/status.js"
+import StatusService from "../services/status.js"
 import * as utils from "../utils/index.js"
 
-const router = express.Router()
-export { router as statusRouter }
+export default config => {
+  const router = express.Router()
+  const statusService = new StatusService(config)
 
-router.get(
-  "/",
-  utils.wrappers.async(async () => {
-    return await statusService.getStatus()
-  }),
-  utils.wrappers.download(utils.returnJSON, false),
-)
+  router.get(
+    "/",
+    utils.wrappers.async(async () => {
+      return await statusService.getStatus()
+    }),
+    utils.wrappers.download(utils.returnJSON, false),
+  )
+
+  return router
+}

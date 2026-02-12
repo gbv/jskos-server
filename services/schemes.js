@@ -1,5 +1,4 @@
 import _ from "lodash"
-import config from "../config/index.js"
 import * as utils from "../utils/index.js"
 import { validate } from "jskos-validate"
 
@@ -8,6 +7,10 @@ import { Scheme } from "../models/schemes.js"
 import { Concept } from "../models/concepts.js"
 
 export class SchemeService {
+
+  constructor(config) {
+    this.baseUrl = config.baseUrl
+  }
 
   /**
    * Return a Promise with an array of vocabularies.
@@ -81,10 +84,10 @@ export class SchemeService {
         $set: {
           _uriSuffixNumber: {
             $function: {
-              body: function(uri) {
+              body: function (uri) {
                 return parseInt(uri.substring(uri.lastIndexOf("/") + 1))
               },
-              args: [ "$uri" ],
+              args: ["$uri"],
               lang: "js",
             },
           },
@@ -100,10 +103,10 @@ export class SchemeService {
     if (_.isNumber(query.limit)) {
       pipeline.push({ $limit: query.limit })
     }
-    
+
     const schemes = await Scheme.aggregate(pipeline)
     schemes.totalCount = await utils.count(Scheme, [{ $match: mongoQuery }])
-    
+
     return schemes
   }
 
@@ -116,7 +119,7 @@ export class SchemeService {
     if (!identifierOrNotation) {
       return null
     }
-    return await Scheme.findOne({ $or: [{ uri: identifierOrNotation }, { identifier: identifierOrNotation }, { notation: new RegExp(`^${_.escapeRegExp(identifierOrNotation)}$`, "i") }]}).lean().exec()
+    return await Scheme.findOne({ $or: [{ uri: identifierOrNotation }, { identifier: identifierOrNotation }, { notation: new RegExp(`^${_.escapeRegExp(identifierOrNotation)}$`, "i") }] }).lean().exec()
   }
 
   async replaceSchemeProperties(entity, propertyPaths, ignoreError = true) {
@@ -341,12 +344,12 @@ export class SchemeService {
       }
       if (setApi) {
         let API = scheme.API || []
-        API = API.filter(entry => entry.url !== config.baseUrl)
+        API = API.filter(entry => entry.url !== this.baseUrl)
         if (hasConcepts) {
           API = [
             {
               type: "http://bartoc.org/api-type/jskos",
-              url: config.baseUrl,
+              url: this.baseUrl,
             },
           ].concat(API)
         }
@@ -409,7 +412,4 @@ export class SchemeService {
       await Scheme.collection.createIndex(index, options)
     }
   }
-
 }
-
-export const schemeService = new SchemeService()

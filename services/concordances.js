@@ -1,12 +1,11 @@
 import _ from "lodash"
-import config from "../config/index.js"
 import * as utils from "../utils/index.js"
 import jskos from "jskos-tools"
 import { validate } from "jskos-validate"
 
 import { Concordance } from "../models/concordances.js"
 import { Mapping } from "../models/mappings.js"
-import { schemeService } from "./schemes.js"
+import { SchemeService } from "./schemes.js"
 
 const validateConcordance = validate.concordance
 
@@ -14,10 +13,10 @@ import { MalformedRequestError, EntityNotFoundError, MalformedBodyError, Invalid
 
 export class ConcordanceService {
 
-  constructor() {
-    // TODOESM?
-    this.schemeService = schemeService
+  constructor(config) {
+    this.schemeService = new SchemeService(config)
     this.uriBase = config.baseUrl + "concordances/"
+    this.config = config
   }
 
   /**
@@ -278,7 +277,7 @@ export class ConcordanceService {
         await Concordance.updateOne({ _id: concordance._id }, { extent: `${count}`, modified: (new Date()).toISOString() })
       }
     } catch (error) {
-      config.error(error)
+      this.config.error(error)
     }
   }
 
@@ -303,5 +302,3 @@ export class ConcordanceService {
   }
 
 }
-
-export const concordanceService = new ConcordanceService()

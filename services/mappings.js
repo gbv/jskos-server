@@ -1,5 +1,4 @@
 import _ from "lodash"
-import config from "../config/index.js"
 import * as utils from "../utils/index.js"
 import jskos from "jskos-tools"
 import { validate } from "jskos-validate"
@@ -7,8 +6,8 @@ import { cdk } from "cocoda-sdk"
 
 import { Mapping } from "../models/mappings.js"
 import { Annotation } from "../models/annotations.js"
-import { schemeService } from "./schemes.js"
-import { concordanceService } from "./concordances.js"
+import { SchemeService } from "./schemes.js"
+import { ConcordanceService } from "./concordances.js"
 import { MalformedBodyError, MalformedRequestError, EntityNotFoundError, InvalidBodyError, DatabaseAccessError, BackendError } from "../errors/index.js"
 
 const validateMapping = (mapping) => {
@@ -25,11 +24,10 @@ const validateMapping = (mapping) => {
 
 export class MappingService {
 
-  constructor() {
-    // TODOESM?
-    this.schemeService = schemeService
-    this.concordanceService = concordanceService
-
+  constructor(config) {
+    this.config = config
+    this.schemeService = new SchemeService(config)
+    this.concordanceService = new ConcordanceService(config)
     this.loadWhitelists()
   }
 
@@ -40,7 +38,7 @@ export class MappingService {
     // Load schemes from fromSchemeWhitelist and toSchemeWhitelist
     for (let type of ["fromSchemeWhitelist", "toSchemeWhitelist"]) {
       let whitelist = []
-      for (let scheme of config.mappings[type] || []) {
+      for (let scheme of this.config.mappings[type] || []) {
         scheme = (await this.schemeService.getScheme(scheme.uri)) || scheme
         whitelist.push(scheme)
       }
@@ -151,10 +149,12 @@ export class MappingService {
         }
         if (conceptOr.length && schemeOr.length) {
           // Concept and scheme from same side are always connected via "and'
-          current.push({ $and: [
-            { $or: conceptOr },
-            { $or: schemeOr },
-          ]})
+          current.push({
+            $and: [
+              { $or: conceptOr },
+              { $or: schemeOr },
+            ],
+          })
         } else if (conceptOr.length) {
           current.push({ $or: conceptOr })
         } else if (schemeOr.length) {
@@ -275,7 +275,7 @@ export class MappingService {
       } else if (assessmentSumMatch[1]) {
         // > or <
         assessmentSumQuery = {
-          _assessmentSum: { [`$${{ "<": "lt", ">": "gt"}[assessmentSumMatch[1]]}${{ "=": "e", "": "" }[assessmentSumMatch[2]]}`]: parseInt(assessmentSumMatch[3]) },
+          _assessmentSum: { [`$${{ "<": "lt", ">": "gt" }[assessmentSumMatch[1]]}${{ "=": "e", "": "" }[assessmentSumMatch[2]]}`]: parseInt(assessmentSumMatch[3]) },
         }
       } else {
         assessmentSumQuery = {
@@ -622,7 +622,7 @@ export class MappingService {
           throw new InvalidBodyError("Property `partOf` is currently not allowed.")
         }
         // Check cardinality for 1-to-1
-        if (config.mappings.cardinality == "1-to-1" && jskos.conceptsOfMapping(mapping, "to").length > 1) {
+        if (this.config.mappings.cardinality == "1-to-1" && jskos.conceptsOfMapping(mapping, "to").length > 1) {
           throw new InvalidBodyError("Only 1-to-1 mappings are supported.")
         }
         // Add mapping schemes if necessary (e.g. from concepts' `inScheme` property)
@@ -638,7 +638,7 @@ export class MappingService {
         this.checkWhitelists(mapping)
         // _id and URI
         delete mapping._id
-        let uriBase = config.baseUrl + "mappings/"
+        let uriBase = this.config.baseUrl + "mappings/"
         if (mapping.uri) {
           let uri = mapping.uri
           // URI already exists, use if it's valid, otherwise move to identifier
@@ -653,7 +653,7 @@ export class MappingService {
           mapping.uri = uriBase + mapping._id
         }
         // Make sure URI is a https URI when in production
-        if (config.env === "production") {
+        if (this.config.env === "production") {
           mapping.uri.replace("http:", "https:")
         }
         // Set mapping identifier
@@ -664,7 +664,7 @@ export class MappingService {
         }
 
         return mapping
-      } catch(error) {
+      } catch (error) {
         if (bulk) {
           return null
         }
@@ -695,7 +695,7 @@ export class MappingService {
     if (!validateMapping(mapping)) {
       throw new InvalidBodyError()
     }
-    if (config.mappings.cardinality == "1-to-1" && jskos.conceptsOfMapping(mapping, "to").length > 1) {
+    if (this.config.mappings.cardinality == "1-to-1" && jskos.conceptsOfMapping(mapping, "to").length > 1) {
       throw new InvalidBodyError("Only 1-to-1 mappings are supported.")
     }
     // If it's part of a concordance, don't allow changing fromScheme/toScheme
@@ -776,7 +776,7 @@ export class MappingService {
     if (!validateMapping(newMapping)) {
       throw new InvalidBodyError()
     }
-    if (config.mappings.cardinality == "1-to-1" && jskos.conceptsOfMapping(mapping, "to").length > 1) {
+    if (this.config.mappings.cardinality == "1-to-1" && jskos.conceptsOfMapping(mapping, "to").length > 1) {
       throw new InvalidBodyError("Only 1-to-1 mappings are supported.")
     }
     this.checkWhitelists(mapping)
@@ -828,7 +828,7 @@ export class MappingService {
           "to.memberSet.uri": query.to,
         }, {
           "to.memberSet.notation": query.to,
-        },{
+        }, {
           "to.memberChoice.uri": query.to,
         }, {
           "to.memberChoice.notation": query.to,
@@ -1015,5 +1015,3 @@ export class MappingService {
   }
 
 }
-
-export const mappingService = new MappingService()

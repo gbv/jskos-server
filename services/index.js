@@ -1,12 +1,22 @@
-import { annotationService } from "./annotations.js"
-import { conceptService } from "./concepts.js"
-import { concordanceService } from "./concordances.js"
-import { mappingService } from "./mappings.js"
-import { schemeService } from "./schemes.js"
-import { dataService } from "./data.js"
-import { statusService } from "./status.js"
-import { validateService } from "./validate.js"
-import { registryService } from "./registries.js"
+import { AnnotationService } from "./annotations.js"
+import { ConceptService } from "./concepts.js"
+import { ConcordanceService } from "./concordances.js"
+import { MappingService } from "./mappings.js"
+import { SchemeService } from "./schemes.js"
+import { DataService } from "./data.js"
+import { ValidateService } from "./validate.js"
+import { RegistryService } from "./registries.js"
+
+import config from "../config/index.js"
+
+const annotationService = new AnnotationService(config)
+const conceptService = new ConceptService(config)
+const concordanceService = new ConcordanceService(config)
+const mappingService = new MappingService(config)
+const schemeService = new SchemeService(config)
+const dataService = new DataService(config)
+const validateService = new ValidateService(config)
+const registryService = new RegistryService(config)
 
 export {
   annotationService,
@@ -15,7 +25,6 @@ export {
   mappingService,
   schemeService,
   dataService,
-  statusService,
   validateService,
   registryService,
 }

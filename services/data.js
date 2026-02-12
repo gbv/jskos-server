@@ -11,14 +11,14 @@ export class DataService {
       }
       const model = models[type]
       const prop = model.schema.paths.id ? "id" : "uri"
-      const results = await model.find({ $or: [
-        { [prop]: { $in: uris } },
-        { identifier: { $in: uris } },
-      ] }).lean()
+      const results = await model.find({
+        $or: [
+          { [prop]: { $in: uris } },
+          { identifier: { $in: uris } },
+        ],
+      }).lean()
       // Return adjusted data (needs to be done separately for each data type)
       return adjust.data({ req, data: results, type: `${type}s` })
     })))
   }
 }
-
-export const dataService = new DataService()
