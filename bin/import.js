@@ -432,6 +432,11 @@ async function doImport({ input, format, type, concordance }) {
       bulk: true,
       bulkReplace: !cli.flags.noreplace,
     })
-    log(`... done: ${Array.isArray(result) ? result.length : 1} registries imported.`)
+
+    const imported = result?.importedCount ?? 0
+    const skipped = result?.skippedCount ?? 0
+    log(
+      `... done: ${imported} registries imported${skipped > 0 ? ` (${skipped} skipped).` : "."}`,
+    )
   }
 }

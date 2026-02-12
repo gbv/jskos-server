@@ -229,28 +229,44 @@ export class RegistryService {
     let response
 
     // Prepare
+    const skipped = []
     registries = await Promise.all(registries.map(registry => {
       return this.prepareAndCheckRegistryForAction(registry, "create")
         .catch(error => {
           // Ignore errors for bulk
           if (bulk) {
+            skipped.push({
+              uri: registry?.uri,
+              error: error?.name,
+              message: error?.message,
+            })
             return null
           }
           throw error
         })
     }))
     // Filter out null
-    registries = registries.filter(s => s)
+    registries = registries.filter(Boolean)
 
     if (bulk) {
-      // Use bulkWrite for most efficiency
-      registries.length && await Registry.bulkWrite(utils.bulkOperationForEntities({ entities: registries, replace: bulkReplace }))
-      response = registries.map(s => ({ uri: s.uri }))
+      registries.length && await Registry.bulkWrite(
+        utils.bulkOperationForEntities({ entities: registries, replace: bulkReplace }),
+      )
+      response = {
+        imported: registries.map(r => ({ uri: r.uri })),
+        skipped,
+        skippedCount: skipped.length,
+        importedCount: registries.length,
+      }
     } else {
       response = await Registry.insertMany(registries, { lean: true })
     }
 
-    return isMultiple ? response : response[0]
+    return Array.isArray(response)
+      ? isMultiple
+        ? response
+        : response[0]
+      : response
   }
 
   /**
