@@ -81,7 +81,18 @@
     "delete": {
       "auth": true,
       "crossUser": false
-    }
+    },
+    "types": {
+      "concepts": true,
+      "schemes": true,
+      "concordances": true,
+      "occurrences": true,
+      "registries": true,
+      "types": true,
+      "properties": true,
+      "annotations": true
+    },
+    "mixedTypes": false
   },
   "anonymous": false,
   "identityProviders": null,
