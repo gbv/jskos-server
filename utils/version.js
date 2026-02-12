@@ -4,7 +4,7 @@ import _ from "lodash"
 import yesno from "yesno"
 
 import { Scheme, Concordance, Mapping, Annotation } from "../models/index.js"
-import { schemeService, concordanceService, annotationService, mappingService, conceptService } from "../services/index.js"
+import { schemeService, concordanceService, annotationService, mappingService, conceptService, registryService } from "../services/index.js"
 
 export class Version {
 
@@ -286,6 +286,11 @@ export const upgrades = {
       console.log(`- Updated ${updatedMappings} mappings in ${updatedConcordaces} concordances.`)
     }
 
+    console.log("... done.")
+  },
+  async "2.4.0"() {
+    console.log("Creating index for registries...")
+    await registryService.createIndexes()
     console.log("... done.")
   },
 }
