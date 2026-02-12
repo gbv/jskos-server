@@ -1,7 +1,12 @@
 import { adjust } from "../utils/index.js"
 import { models } from "../models/index.js"
 
-export class DataService {
+import { Service } from "./service.js"
+
+export class DataService extends Service {
+  constructor(config) {
+    super(config)
+  }
   async getData(req) {
     const uris = req.query.uri?.split("|") ?? []
     return [].concat(...await Promise.all(Object.keys(models).map(async type => {

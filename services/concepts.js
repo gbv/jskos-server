@@ -7,11 +7,13 @@ import { Concept } from "../models/concepts.js"
 import { SchemeService } from "../services/schemes.js"
 import { MalformedBodyError, MalformedRequestError, EntityNotFoundError, InvalidBodyError, DatabaseAccessError } from "../errors/index.js"
 
-export class ConceptService {
+import { Service } from "./service.js"
+
+export class ConceptService extends Service {
 
   constructor(config) {
+    super(config)
     this.schemeService = new SchemeService(config)
-    this.config = config
   }
 
   conceptFind(query, $skip, $limit, narrower = true) {
@@ -254,7 +256,7 @@ export class ConceptService {
         bodyStream.on("end", async () => {
           promises.push(saveObjects(current))
           await Promise.all(promises)
-          preparation.errors.length && this.config.warn(`Warning on bulk import of concepts: ${preparation.errors.length} concepts were not imported due to validation errors.`)
+          preparation.errors.length && this.warn(`Warning on bulk import of concepts: ${preparation.errors.length} concepts were not imported due to validation errors.`)
           resolve(preparation)
         })
       })
@@ -439,7 +441,7 @@ export class ConceptService {
       throw new InvalidBodyError()
     }
     // Check concept scheme
-    const inScheme = _.get(concept, "inScheme[0]")
+    const inScheme = concept.inScheme?.[0]
     // Load scheme from database if necessary
     if (!schemes || !schemes.length) {
       schemes = await this.schemeService.getSchemes({ uri: inScheme.uri })

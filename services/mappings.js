@@ -22,10 +22,12 @@ const validateMapping = (mapping) => {
   return true
 }
 
-export class MappingService {
+import { Service } from "./service.js"
+
+export class MappingService extends Service {
 
   constructor(config) {
-    this.config = config
+    super(config)
     this.schemeService = new SchemeService(config)
     this.concordanceService = new ConcordanceService(config)
     this.loadWhitelists()

@@ -11,12 +11,14 @@ const validateConcordance = validate.concordance
 
 import { MalformedRequestError, EntityNotFoundError, MalformedBodyError, InvalidBodyError, DatabaseAccessError } from "../errors/index.js"
 
-export class ConcordanceService {
+import { Service } from "./service.js"
+
+export class ConcordanceService extends Service {
 
   constructor(config) {
+    super(config)
     this.schemeService = new SchemeService(config)
     this.uriBase = config.baseUrl + "concordances/"
-    this.config = config
   }
 
   /**
@@ -277,7 +279,7 @@ export class ConcordanceService {
         await Concordance.updateOne({ _id: concordance._id }, { extent: `${count}`, modified: (new Date()).toISOString() })
       }
     } catch (error) {
-      this.config.error(error)
+      this.error(error)
     }
   }
 

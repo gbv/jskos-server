@@ -1,8 +1,10 @@
 import { connection } from "../utils/db.js"
 
-export default class StatusService {
+import { Service } from "./service.js"
+
+export default class StatusService extends Service {
   constructor(config) {
-    this.config = config
+    super(config)
   }
 
   async getStatus() {

@@ -10,7 +10,12 @@ import {
   MalformedRequestError,
 } from "../errors/index.js"
 
-export class RegistryService {
+import { Service } from "./service.js"
+
+export class RegistryService extends Service {
+  constructor(config) {
+    super(config)
+  }
   /**
    * Retrieves registry entries.
    *
@@ -392,7 +397,7 @@ export class RegistryService {
     try {
       await Registry.createCollection()
     } catch (error) {
-      console.error("Error creating collection:", error)
+      this.error("Error creating collection:", error)
       // Ignore error
     }
 

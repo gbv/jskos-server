@@ -3,9 +3,12 @@ import jskos from "jskos-tools"
 import { SchemeService } from "./schemes.js"
 const guessObjectType = jskos.guessObjectType
 
-export class ValidateService {
+import { Service } from "./service.js"
+
+export class ValidateService extends Service {
 
   constructor(config) {
+    super(config)
     this.schemeService = new SchemeService(config)
   }
 

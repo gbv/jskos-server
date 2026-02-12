@@ -6,10 +6,12 @@ import { validate } from "jskos-validate"
 import { Annotation, Mapping, Concept } from "../models/index.js"
 import { EntityNotFoundError, DatabaseAccessError, InvalidBodyError, MalformedBodyError, MalformedRequestError, ForbiddenAccessError } from "../errors/index.js"
 
-export class AnnotationService {
+import { Service } from "./service.js"
+
+export class AnnotationService extends Service {
 
   constructor(config) {
-    this.config = config
+    super(config)
   }
 
   // Wrapper around validate.annotation that also checks the `body` field and throws errors if necessary.

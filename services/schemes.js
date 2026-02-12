@@ -6,9 +6,12 @@ import { MalformedBodyError, MalformedRequestError, EntityNotFoundError, Databas
 import { Scheme } from "../models/schemes.js"
 import { Concept } from "../models/concepts.js"
 
-export class SchemeService {
+import { Service } from "./service.js"
+
+export class SchemeService extends Service {
 
   constructor(config) {
+    super(config)
     this.baseUrl = config.baseUrl
   }
 
