@@ -44,6 +44,14 @@ export class InvalidBodyError extends Error {
   }
 }
 
+export class InvalidRegistryMembershipError extends Error {
+  constructor(message) {
+    message = message || "Registry membership fields are not allowed by server configuration."
+    super(message)
+    this.statusCode = 422
+  }
+}
+
 export class CreatorDoesNotMatchError extends Error {
   constructor(message) {
     message = message || "Access to this ressource is not allowed for you (but might be for other users)."

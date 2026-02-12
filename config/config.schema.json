@@ -183,7 +183,7 @@
       "$ref": "#/definitions/capabilityAndForbidMappingOnlyProperties"
     },
     "registries": {
-      "$ref": "#/definitions/capabilityAndForbidMappingAndAnnotationOnlyProperties"
+      "$ref": "#/definitions/registriesCapabilityAndForbidMappingAndAnnotationOnlyProperties"
     }
   },
   "definitions": {
@@ -240,6 +240,292 @@
           ]
         }
       ]
+    },
+    "registriesCapabilityAndForbidMappingAndAnnotationOnlyProperties": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/definitions/registriesCapability"
+            },
+            {
+              "$ref": "#/definitions/forbidMappingOnlyProperties"
+            },
+            {
+              "$ref": "#/definitions/forbidAnnotationOnlyProperties"
+            }
+          ]
+        }
+      ]
+    },
+    "registriesCapability": {
+      "description": "Describes capabilities for registries with additional registry-specific options.",
+      "additionalProperties": false,
+      "type": "object",
+      "definitions": {
+        "auth": {
+          "description": "Indicates whether a certain action requires authentication.",
+          "type": "boolean"
+        },
+        "crossUser": {
+          "description": "Indicates whether a certain action can be performed on items that were created by a different user (boolean or list of user URIs).",
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          ]
+        }
+      },
+      "properties": {
+        "read": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "auth": {
+                  "$ref": "#/definitions/registriesCapability/definitions/auth"
+                },
+                "identityProviders": {
+                  "$ref": "#/definitions/identityProviders"
+                },
+                "identities": {
+                  "$ref": "#/definitions/identities"
+                },
+                "ips": {
+                  "$ref": "#/definitions/ips"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "create": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "auth": {
+                  "$ref": "#/definitions/registriesCapability/definitions/auth"
+                },
+                "anonymous": {
+                  "$ref": "#/definitions/anonymous"
+                },
+                "identityProviders": {
+                  "$ref": "#/definitions/identityProviders"
+                },
+                "identities": {
+                  "$ref": "#/definitions/identities"
+                },
+                "ips": {
+                  "$ref": "#/definitions/ips"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "update": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "auth": {
+                  "$ref": "#/definitions/registriesCapability/definitions/auth"
+                },
+                "crossUser": {
+                  "$ref": "#/definitions/registriesCapability/definitions/crossUser"
+                },
+                "anonymous": {
+                  "$ref": "#/definitions/anonymous"
+                },
+                "identityProviders": {
+                  "$ref": "#/definitions/identityProviders"
+                },
+                "identities": {
+                  "$ref": "#/definitions/identities"
+                },
+                "ips": {
+                  "$ref": "#/definitions/ips"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "delete": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "auth": {
+                  "$ref": "#/definitions/registriesCapability/definitions/auth"
+                },
+                "crossUser": {
+                  "$ref": "#/definitions/registriesCapability/definitions/crossUser"
+                },
+                "anonymous": {
+                  "$ref": "#/definitions/anonymous"
+                },
+                "identityProviders": {
+                  "$ref": "#/definitions/identityProviders"
+                },
+                "identities": {
+                  "$ref": "#/definitions/identities"
+                },
+                "ips": {
+                  "$ref": "#/definitions/ips"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "identityProviders": {
+          "$ref": "#/definitions/identityProviders"
+        },
+        "identities": {
+          "$ref": "#/definitions/identities"
+        },
+        "ips": {
+          "$ref": "#/definitions/ips"
+        },
+        "moderatingIdentities": {
+          "$ref": "#/definitions/identities"
+        },
+        "anonymous": {
+          "$ref": "#/definitions/anonymous"
+        },
+        "cardinality": {
+          "type": "string",
+          "enum": [
+            "1-to-1",
+            "1-to-n"
+          ]
+        },
+        "fromSchemeWhitelist": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "uri"
+                ],
+                "properties": {
+                  "uri": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "identifier": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "toSchemeWhitelist": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "uri"
+                ],
+                "properties": {
+                  "uri": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "identifier": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "mismatchTagVocabulary": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object"
+            }
+          ]
+        },
+        "types": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "concepts": {
+              "type": "boolean"
+            },
+            "schemes": {
+              "type": "boolean"
+            },
+            "concordances": {
+              "type": "boolean"
+            },
+            "occurrences": {
+              "type": "boolean"
+            },
+            "registries": {
+              "type": "boolean"
+            },
+            "types": {
+              "type": "boolean"
+            },
+            "properties": {
+              "type": "boolean"
+            },
+            "annotations": {
+              "type": "boolean"
+            }
+          }
+        },
+        "mixedTypes": {
+          "type": "boolean"
+        }
+      }
     },
     "capability": {
       "description": "Describes capabilities for a certain item type.",

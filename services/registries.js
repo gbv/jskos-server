@@ -1,11 +1,13 @@
 import _ from "lodash"
 import * as utils from "../utils/index.js"
 import { validate } from "jskos-validate"
+import config from "../config/index.js"
 import { Registry } from "../models/registries.js"
 import {
   EntityNotFoundError,
   DatabaseAccessError,
   InvalidBodyError,
+  InvalidRegistryMembershipError,
   MalformedBodyError,
   MalformedRequestError,
 } from "../errors/index.js"
@@ -103,6 +105,51 @@ export class RegistryService {
   }
 
   /**
+   * Validates registry fields based on config.registries.types.
+   *
+   * @param {Object} registry registry object
+   * @throws {InvalidRegistryMembershipError} When a disallowed field is present.
+   */
+  validateMembershipFields(registry) {
+    const typesConfig = config?.registries?.types
+    if (!typesConfig || typeof typesConfig !== "object") {
+      return
+    }
+    const typeFields = Object.keys(typesConfig)
+
+    // Fields that are disallowed by config (typesConfig[field] === false)
+    const disallowedFields = Object.entries(typesConfig)
+      .filter(([, allowed]) => allowed === false)
+      .map(([field]) => field)
+
+    // Disallowed fields that are actually present on the registry object
+    const disallowed = disallowedFields.filter(field =>
+      registry?.[field] !== undefined && registry?.[field] !== null,
+    )
+
+    if (disallowed.length) {
+      throw new InvalidRegistryMembershipError(
+        `Registry validation failed: disallowed field(s): ${disallowed.join(", ")}`,
+      )
+    }
+
+    // If mixedTypes is not allowed, check that at most one type field is present
+    const mixedTypes = config?.registries?.mixedTypes
+    if (mixedTypes === true) {
+      const presentTypes = typeFields.filter(
+        (field) =>
+          registry?.[field] !== undefined && registry?.[field] !== null,
+      )
+      if (presentTypes.length > 1) {
+        throw new InvalidRegistryMembershipError(
+          `Registry validation failed: mixed types are not allowed (${presentTypes.join(", ")}).`,
+        )
+      }
+    }
+
+  }
+
+  /**
    * Prepares and checks a registry before inserting/updating:
    * - validates object, throws error if it doesn't (create/update)
    * - add `_id` property (create/update)
@@ -128,6 +175,10 @@ export class RegistryService {
           msgs.join("; ") || "Registry validation failed",
         )
       }
+
+      // Validate membership fields
+      this.validateMembershipFields(registry)
+
       // Add _id
       registry._id = registry.uri
 
@@ -226,6 +277,8 @@ export class RegistryService {
     // Remove type property
     _.unset(body, "type")
 
+    this.validateMembershipFields(body)
+
     // Validate registry
     const ok = validate.registry ? validate.registry(body) : validate(body)
     if (!ok) {
@@ -295,6 +348,8 @@ export class RegistryService {
     _.assign(existing, body)
 
     utils.removeNullProperties(existing)
+
+    this.validateMembershipFields(existing)
 
     // Validate merged object
     const ok = validate.registry
