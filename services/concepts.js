@@ -208,10 +208,9 @@ export class ConceptService extends Service {
   }
 
   async searchConcept(search, voc) {
-    return utils.searchHelper.searchItem({
+    return this._searchItem({
       search,
       voc,
-      schemeService: this.schemeService,
       queryFunction: this.conceptFind,
     })
   }

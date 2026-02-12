@@ -100,7 +100,7 @@ export class RegistryService extends Service {
     const search = query?.search || query?.q || ""
     const voc = query?.voc
 
-    return utils.searchHelper.searchItem({
+    return this._searchItem({
       search,
       voc,
       queryFunction: (mongoQuery) => Registry.find(mongoQuery).lean().exec(),

@@ -1,7 +1,6 @@
 // utils/changes.js
 import * as jskos from "jskos-tools"
-import { connection, waitForReplicaSet } from "./db.js"  
-import config from "../config/index.js"
+import { connection, waitForReplicaSet } from "./db.js"
 import { ConfigurationError } from "../errors/index.js"
 
 export const collections = {
@@ -51,7 +50,7 @@ export default function registerChangesRoutes(app) {
 }
 
 // After DB connection, conditionally enable change-stream routes
-export async function setupChangesApi(app) {
+export async function setupChangesApi(app, config) {
   if (!config.changesApi?.enableChangesApi) {
     console.log("Changes API is disabled by configuration.")
     return

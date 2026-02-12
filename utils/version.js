@@ -1,5 +1,4 @@
 import * as utils from "./index.js"
-import config from "../config/index.js"
 import _ from "lodash"
 import yesno from "yesno"
 
@@ -44,12 +43,27 @@ export class Version {
 
 }
 
-/**
- * An object with necessary upgrades.
- * keys = versions
- * values = function that performs upgrades necessary for that version
- */
-export const upgrades = {
+export class Upgrader {
+
+  constructor(config) {
+    this.baseUrl = config.baseUrl
+  }
+
+  // Returns an array of version strings for which upgrades are necessary.
+  getUpgrades(fromVersion, { forceLatest = false })  {
+    const list = []
+    fromVersion = Version.from(fromVersion)
+
+    for (let version of Object.getOwnPropertyNames(Upgrader).filter(/^[0-9.]+$/)) {
+      if (fromVersion.lt(version) || forceLatest && fromVersion.eq(version)) {
+        list.push(version)
+      }
+    }
+    return list
+  }
+
+  // Methods that perform upgrades necessary for that version
+
   async "1.2.0"() {
     // 1. Additional fields for schemes (full-text search)
     console.log("Creating additional fields for schemes...")
@@ -67,7 +81,7 @@ export const upgrades = {
     console.log("Creating indexes for schemes...")
     await schemeService.createIndexes()
     console.log("... done.")
-  },
+  }
   async "1.2.2"() {
     // Update text search fields for schemes (full-text search)
     console.log("Updating text search fields for schemes...")
@@ -79,7 +93,7 @@ export const upgrades = {
       await Scheme.findByIdAndUpdate(scheme._id, scheme)
     }
     console.log("... done.")
-  },
+  }
   async "1.2.3"() {
     // Update text search fields for schemes (full-text search)
     console.log("Updating text search fields for schemes...")
@@ -89,7 +103,7 @@ export const upgrades = {
       await Scheme.findByIdAndUpdate(scheme._id, scheme)
     }
     console.log("... done.")
-  },
+  }
   async "1.2.7"() {
     // 1. Update publisher keywords field for schemes
     console.log("Updating publisher keywords fields for schemes...")
@@ -103,16 +117,16 @@ export const upgrades = {
     console.log("Creating indexes for schemes...")
     await schemeService.createIndexes()
     console.log("... done.")
-  },
+  }
   async "1.3"() {
     console.log("Creating indexes for annotations...")
     await annotationService.createIndexes()
     console.log("... done.")
-  },
+  }
   async "1.4"() {
     console.log("Concordances will be upgraded:")
     console.log("- _id will be changed to notation (if available) or a new UUID")
-    console.log(`- URI will be adjusted to start with ${config.baseUrl}`)
+    console.log(`- URI will be adjusted to start with ${this.baseUrl}`)
     console.log("- Previous URI(s) will be moved to identifier")
     console.log("- Distribtions which are served from this instance are removed (will be added dynamically)")
     const ok = await yesno({
@@ -147,11 +161,11 @@ export const upgrades = {
       }
       // Set new _id and URI, add previous to identifier
       concordance._id = _id
-      concordance.uri = `${config.baseUrl}concordances/${_id}`
+      concordance.uri = `${this.baseUrl}concordances/${_id}`
       console.log(`- Updating concordance ${previous_id} to _id ${_id} (${concordance.uri})`)
       concordance.identifier = (concordance.identifier || []).concat(identifier)
       // Remove distributions that are served by jskos-server and instead add them dynamically
-      concordance.distributions = (concordance.distributions || []).filter(dist => !dist.download || !dist.download.startsWith(config.baseUrl))
+      concordance.distributions = (concordance.distributions || []).filter(dist => !dist.download || !dist.download.startsWith(this.baseUrl))
       if (!concordance.distributions.length) {
         delete concordance.distributions
       }
@@ -171,7 +185,7 @@ export const upgrades = {
     if (failed > 0) {
       throw new Error("Not all concordances could be adjusted. Please check the errors and try again.")
     }
-  },
+  }
   async "1.4.5"() {
     console.log("Upgrades to annotations (see #173):")
 
@@ -209,19 +223,19 @@ export const upgrades = {
     }
     console.log(`... done (${updatedCount} annotations updated).`)
 
-  },
+  }
   async "1.5.3"() {
     // Create indexes for mappings with index for mappingRelevance
     console.log("Creating indexes for mappings...")
     await mappingService.createIndexes()
     console.log("... done.")
-  },
+  }
   async "1.6.3"() {
     // Create compound indexes for mappings to create a stable sorting order
     console.log("Creating indexes for mappings...")
     await mappingService.createIndexes()
     console.log("... done.")
-  },
+  }
   async "2.0.3"() {
     console.log("Adding missing `fromScheme`/`toScheme` fields to mappings...")
     const mappings = await Mapping.aggregate([
@@ -251,13 +265,13 @@ export const upgrades = {
       }
     }
     console.log(`... done (${adjustedCount} out of ${mappings.length} were adjusted).`)
-  },
+  }
   async "2.1.0"() {
     console.log("Creating indexes for concepts and annotations...")
     await conceptService.createIndexes()
     await annotationService.createIndexes()
     console.log("... done.")
-  },
+  }
   async "2.1.6"() {
     console.log("Rewriting concordance URIs for mappings...")
 
@@ -287,26 +301,10 @@ export const upgrades = {
     }
 
     console.log("... done.")
-  },
+  }
   async "2.4.0"() {
     console.log("Creating index for registries...")
     await registryService.createIndexes()
     console.log("... done.")
-  },
-}
-
-/**
- * Returns an array of version strings for which upgrades are necessary.
- *
- * @param {string} fromVersion version string
- */
-export const getUpgrades = (fromVersion, { forceLatest = false }) => {
-  const list = []
-  fromVersion = Version.from(fromVersion)
-  for (let version of Object.keys(upgrades)) {
-    if (fromVersion.lt(version) || forceLatest && fromVersion.eq(version)) {
-      list.push(version)
-    }
   }
-  return list
 }

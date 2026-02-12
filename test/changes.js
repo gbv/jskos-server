@@ -37,7 +37,7 @@ describe("Change‐Streams API setup", () => {
     config.changesApi.enableChangesApi = false
 
     // call the exported setup function
-    await setupChangesApi(app)
+    await setupChangesApi(app, config)
 
     // assert our early‐return message was logged
     loggedMessages.includes("Change API is disabled by configuration.")
@@ -50,7 +50,7 @@ describe("WebSocket Change‐Streams (integration)", function () {
   before(async () => {
     await setupInMemoryMongo({ replSet: true })
     config.changesApi.enableChangesApi = true
-    await setupChangesApi(app)
+    await setupChangesApi(app, config)
     await createCollectionsAndIndexes()
     // optionally spin up your HTTP+WS server here
   })

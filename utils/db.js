@@ -1,5 +1,8 @@
 import config from "../config/index.js"
-import { getUpgrades } from "../utils/version.js"
+import { Upgrader } from "../utils/version.js"
+
+const upgrader = new Upgrader(config)
+
 import mongoose from "mongoose"
 const connection = mongoose.connection
 import { Meta } from "../models/meta.js"
@@ -67,7 +70,7 @@ export async function connect(retry = false) {
       // get version from meta
       meta = await Meta.findOne()
     }
-    if (meta && getUpgrades(meta.version).length) {
+    if (meta && upgrader.getUpgrades(meta.version).length) {
       console.warn("Info: jskos-server was updated. Please run \"npm run upgrade\" to perform necessary upgrades to ensure full functionalities of all features.")
     }
   } catch (error) {

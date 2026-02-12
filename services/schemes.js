@@ -173,7 +173,7 @@ export class SchemeService extends Service {
   }
 
   async searchScheme(search) {
-    return utils.searchHelper.searchItem({
+    return this._searchItem({
       search,
       queryFunction: (query) => {
         return Scheme.find(query).lean()

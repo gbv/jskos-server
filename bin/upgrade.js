@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-import {
-  upgrades,
-  getUpgrades,
-} from "../utils/version.js"
+import { Upgrader } from "../utils/version.js"
+import config from "../config/index.js"
+
+const upgrader = new Upgrader(config)
 
 import * as db from "../utils/db.js"
 import { Meta } from "../models/meta.js"
@@ -11,12 +11,12 @@ import { Meta } from "../models/meta.js"
 ;(async () => {
   await db.connect()
   const meta = await Meta.findOne()
-  const list = getUpgrades(meta.version, { forceLatest: process.argv.includes("-f") || process.argv.includes("--force-latest") })
+  const list = upgrader.getUpgrades(meta.version, { forceLatest: process.argv.includes("-f") || process.argv.includes("--force-latest") })
   console.log()
   for (const version of list) {
     console.log(`Performing necessary upgrades for version ${version}...`)
     try {
-      await upgrades[version]()
+      await upgrader[version]()
       meta.version = version
       await meta.save()
       console.log(`... upgrades for version ${version} done.`)

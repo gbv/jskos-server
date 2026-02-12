@@ -120,7 +120,8 @@ app.use((req, res, next) => {
   }
 })
 // IP check middleware
-app.use(ipcheck)
+app.use(ipcheck(config))
+
 // /checkAuth
 app.get("/checkAuth", auth.main, (req, res) => {
   res.sendStatus(204)
@@ -164,8 +165,8 @@ app.use((error, req, res, next) => {
   }
 })
 
-//setup changes API
-await setupChangesApi(app)
+// Changes API
+await setupChangesApi(app, config)
 
 const start = async () => {
   if (config.env == "test") {

@@ -65,20 +65,20 @@ const wrappers = {
  * @param {(Object|Object[])} json JSON object or array of objects
  * @param {number} [depth=0] Should not be set when called from outside
  */
-const cleanJSON = (json, depth = 0) => {
+const cleanJSON = (json, depth = 0, closedWorld = config.closedWorldAssumption) => {
   if (Array.isArray(json)) {
-    json.forEach(value => cleanJSON(value, depth))
+    json.forEach(value => cleanJSON(value, depth, closedWorld))
   } else if (_.isObject(json)) {
     _.forOwn(json, (value, key) => {
       if (
         // Remove top level empty arrays/objects if closedWorldAssumption is set to false
-        (depth === 0 && !config.closedWorldAssumption && (_.isEqual(value, {}) || _.isEqual(value, [])) )
+        (depth === 0 && !closedWorld && (_.isEqual(value, {}) || _.isEqual(value, [])) )
         // Remove all fields started with _
         || key.startsWith("_")
       ) {
         _.unset(json, key)
       } else {
-        cleanJSON(value, depth + 1)
+        cleanJSON(value, depth + 1, closedWorld)
       }
     })
   }
