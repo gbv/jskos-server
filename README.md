@@ -21,8 +21,8 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [Data Import](#data-import)
 - [Usage](#usage)
   - [Run Server](#run-server)
-  - [Run Tests](#run-tests)
-  - [Run Supplemental Scripts](#run-supplemental-scripts)
+  - [Supplemental Scripts](#supplemental-scripts)
+  - [Development and Testing](#development-and-testing)
 - [API](#api)
   - [General](#general)
   - [GET /status](#get-status)
@@ -614,6 +614,7 @@ The import script uses the bulk write endpoints to import data. For concept sche
 ## Usage
 
 ### Run Server
+
 ```bash
 # Development server with hot reload and auto reconnect at localhost:3000 (default)
 npm run start
@@ -622,15 +623,15 @@ npm run start
 NODE_ENV=production node ./server.js
 ```
 
-### Run Tests
-Tests will use the real MongoDB with `-test-${namespace}` appended to the database name.
+### Supplemental Scripts
 
-```bash
-npm test
-```
+In addition to [data import](#data-import) there are some supplemental scripts that were added to deal with specific sitatuations. These can be called with `npm run extra name-of-script`. The following scripts are available:
 
-### Run Tests
-All of our tests—including the Change-Stream integration tests—now use an ephemeral, in-memory MongoDB server powered by [mongodb-memory-server](https://www.npmjs.com/package/mongodb-memory-server). No need for a local MongoDB instance running to execute the tests.
+- `supplementNotationsInMappings`: This will look for mappings where the field `notation` is missing for any of the concepts, and it will attempt to supplement those notations. This only works for vocabularies which are also imported into the same jskos-server instance and where either `uriPattern` or `namespace` are given.
+
+### Development and Testing
+
+Tests use an ephemeral, in-memory MongoDB server powered by [mongodb-memory-server](https://www.npmjs.com/package/mongodb-memory-server).
 
 ```bash
 npm test
@@ -644,10 +645,18 @@ This will:
 4. **Drop** the database before and after each test suite, ensuring full isolation.
 5. **Tear down** the in-memory server when the suite completes.
 
-### Run Supplemental Scripts
-There are some supplemental scripts that were added to deal with specific sitatuations. These can be called with `npm run extra name-of-script`. The following scripts are available:
+You can also start an in-memory MongoDB with local configuration:
 
-- `supplementNotationsInMappings`: This will look for mappings where the field `notation` is missing for any of the concepts, and it will attempt to supplement those notations. This only works for vocabularies which are also imported into the same jskos-server instance and where either `uriPattern` or `namespace` are given.
+```bash
+npm run mongodb             # not verbose
+npm run mongodb -- --debug  # very verbose
+```
+
+And then start jskos-server:
+
+```bash
+npm run start
+```
 
 ## API
 

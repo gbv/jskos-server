@@ -16,7 +16,6 @@
     "test": "NODE_ENV=test mocha --exit --timeout 60000 --slow 2000",
     "start": "nodemon server.js",
     "mongodb": "./bin/mongodb.js",
-    "mongodb-debug": "./bin/mongodb.js",
     "lint": "eslint",
     "fix": "eslint --fix",
     "lint-staged": "lint-staged",
