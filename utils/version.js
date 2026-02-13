@@ -1,4 +1,4 @@
-import * as utils from "./middleware.js"
+import { addMappingSchemes } from "./utils.js"
 import { uuid } from "./uuid.js"
 import _ from "lodash"
 import yesno from "yesno"
@@ -11,7 +11,7 @@ import { MappingService } from "../services/mappings.js"
 import { ConceptService } from "../services/concepts.js"
 import { RegistryService } from "../services/registries.js"
 
-import { addKeywords } from "../utils/searchHelper.js"
+import { addKeywords } from "./searchHelper.js"
 
 export class Version {
 
@@ -272,7 +272,7 @@ export class Upgrader {
       const hasFromScheme = !!mapping.fromScheme, hasToScheme = !!mapping.toScheme
       delete mapping._id
       delete mapping.CONCORDANCE
-      utils.addMappingSchemes(mapping, { concordance })
+      addMappingSchemes(mapping, { concordance })
       if (!hasFromScheme && mapping.fromScheme || !hasToScheme && mapping.toScheme) {
         await Mapping.replaceOne({ _id }, mapping)
         adjustedCount += 1
