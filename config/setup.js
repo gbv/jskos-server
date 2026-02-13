@@ -48,6 +48,12 @@ export function setupConfig(config) {
 
   // Merge in default values
   config = _.defaultsDeep(config, configDefault)
+  const defaultChangesConfig = { retries: 20, interval: 5000 }
+  if (config.changes === true) {
+    config.changes = defaultChangesConfig
+  } else if (config.changes) {
+    config.changes = { ...defaultChangesConfig, ...config.changes }
+  }
 
   // Add versions from package
   config.version = info.apiVersion

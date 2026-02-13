@@ -75,8 +75,8 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [PUT /registries/:\_id](#put-registries_id)
   - [PATCH /registries/:\_id](#patch-registries_id)
   - [DELETE /registries/:\_id](#delete-registries_id)
-  - [Errors](#errors)
   - [Change Stream Endpoints](#change-stream-endpoints)
+  - [Errors](#errors)
 - [Deployment](#deployment)
   - [Notes about depolyment on Ubuntu](#notes-about-depolyment-on-ubuntu)
   - [Update an instances deployed with PM2](#update-an-instances-deployed-with-pm2)
@@ -100,7 +100,7 @@ To enable optional [Change Stream endpoints](#change-stream-endpoints) the Mongo
 rs.initiate({ _id: "rs0", members: [{ _id: 0, host: "localhost:27017" }] });
 ```
 
-If the replica set is initialized, JSKOS Server will detect it at startup (the `replSetGetStatus` command is retried up to `changesApi.rsMaxRetries` times). If Change Streams [are configured](#change-streams-configuration) but no replica set was detected, JSKOS Server will log an error during startup but continue running with Change Streams disabled.
+If the replica set is initialized, JSKOS Server will detect it at startup (the `replSetGetStatus` command is retried up to `changes.retries` times). If Change Streams [are configured](#change-streams-configuration) but no replica set was detected, JSKOS Server will log an error during startup but continue running with Change Streams disabled.
 
 ### Docker
 The easiest way to install and use JSKOS Server as stand-alone application is with Docker and Docker Compose. Please refer to [our Docker documentation](docker/README.md) for more information and instructions.
@@ -127,11 +127,6 @@ All missing keys will be defaulted from `config/config.default.json`:
   "version": null,
   "closedWorldAssumption": true,
   "port": 3000,
-  "changesApi" : {
-    "enableChangesApi": false,
-    "rsMaxRetries": 20,
-    "rsRetryInterval": 5000
-  },
   "proxies": [],
   "mongo": {
     "user": "",
@@ -205,6 +200,7 @@ All missing keys will be defaulted from `config/config.default.json`:
       "crossUser": false
     }
   },
+  "changes": false,
   "anonymous": false,
   "identityProviders": null,
   "identities": null,
@@ -259,15 +255,12 @@ Note that any properties not mentioned here are not allowed!
 
 #### Change Streams Configuration
 
-The `changesApi` section controls how JSKOS Server handles MongoDB Change Streams:
+[Change Stream Endpoints](#change-stream-endpoints) are only enabled if `changes` is set to `true` or to an object with the following optional keys:
 
-- **`enableChangesApi`** (boolean, default `false`)
-  Globally turn all `/…/changes` WebSocket endpoints on or off. When `false`, no change-stream routes are registered.
-
-- **`rsMaxRetries`** (integer, default `20`)
+- **`retries`** (integer, default `20`)
   How many times to retry the `replSetGetStatus` command while waiting for the replica set to initialise before giving up.
 
-- **`rsRetryInterval`** (integer, default `5000`)
+- **`interval`** (integer, default `5000`)
   Milliseconds to wait between each retry attempt when checking replica-set status.
 
 Only once the replica set is confirmed will the `/…/changes` endpoints become active, unless MongoDB does is not running with replica set.

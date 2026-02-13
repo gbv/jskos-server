@@ -24,17 +24,15 @@ describe("Change‐Streams API setup", () => {
 
   before(async () => {
     console.log = (msg) => loggedMessages.push(msg)
-
   })
 
   after(async () => {
     console.log = originalLog
-
   })
 
-  it("should skip registering when enableChangesApi is false", async () => {
+  it("should skip registering when changes is false", async () => {
     // ensure flag is off
-    config.changesApi.enableChangesApi = false
+    config.changes = false
 
     // call the exported setup function
     await setupChangesApi(app, config)
@@ -49,7 +47,7 @@ describe("WebSocket Change‐Streams (integration)", function () {
 
   before(async () => {
     await setupInMemoryMongo({ replSet: true })
-    config.changesApi.enableChangesApi = true
+    config.changes = true
     await setupChangesApi(app, config)
     await createCollectionsAndIndexes()
     // optionally spin up your HTTP+WS server here

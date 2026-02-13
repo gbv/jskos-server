@@ -51,17 +51,12 @@ export default function registerChangesRoutes(app) {
 
 // After DB connection, conditionally enable change-stream routes
 export async function setupChangesApi(app, config) {
-  if (!config.changesApi?.enableChangesApi) {
+  if (!config.changes) {
     console.log("Changes API is disabled by configuration.")
     return
   }
 
-  const ok = await waitForReplicaSet({
-    retries: config.changesApi?.rsMaxRetries || 10,
-    interval: config.changesApi?.rsRetryInterval || 5000,
-  })
-
-  if (!ok) {
+  if (!await waitForReplicaSet(config.changes)) {
     throw new ConfigurationError(
       "Changes API enabled, but MongoDB replica set did not initialize in time.",
     )
