@@ -7,9 +7,9 @@ import { validate } from "jskos-validate"
 import { Annotation, Mapping, Concept } from "../models/index.js"
 import { EntityNotFoundError, DatabaseAccessError, InvalidBodyError, MalformedBodyError, MalformedRequestError, ForbiddenAccessError } from "../errors/index.js"
 
-import { Service } from "./service.js"
+import { AbstractService } from "./abstract.js"
 
-export class AnnotationService extends Service {
+export class AnnotationService extends AbstractService {
 
   constructor(config) {
     super(config)
@@ -93,7 +93,7 @@ export class AnnotationService extends Service {
 
     const mongoQuery = criteria.length ? { $and: criteria } : {}
     const annotations = await Annotation.find(mongoQuery).lean().skip(query.offset).limit(query.limit).exec()
-    annotations.totalCount = await Service.count(Annotation, [{ $match: mongoQuery }])
+    annotations.totalCount = await this._count(Annotation, [{ $match: mongoQuery }])
     return annotations
 
   }

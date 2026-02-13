@@ -7,9 +7,9 @@ import { MalformedBodyError, MalformedRequestError, EntityNotFoundError, Databas
 import { Scheme } from "../models/schemes.js"
 import { Concept } from "../models/concepts.js"
 
-import { Service } from "./service.js"
+import { AbstractService } from "./abstract.js"
 
-export class SchemeService extends Service {
+export class SchemeService extends AbstractService {
 
   constructor(config) {
     super(config)
@@ -109,7 +109,7 @@ export class SchemeService extends Service {
     }
 
     const schemes = await Scheme.aggregate(pipeline)
-    schemes.totalCount = await Service.count(Scheme, [{ $match: mongoQuery }])
+    schemes.totalCount = await this._count(Scheme, [{ $match: mongoQuery }])
 
     return schemes
   }

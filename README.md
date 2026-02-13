@@ -22,6 +22,7 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
 - [Usage](#usage)
   - [Run Server](#run-server)
   - [Supplemental Scripts](#supplemental-scripts)
+  - [Use as Module](#use-as-module)
   - [Development and Testing](#development-and-testing)
 - [API](#api)
   - [General](#general)
@@ -630,6 +631,19 @@ NODE_ENV=production node ./server.js
 In addition to [data import](#data-import) there are some supplemental scripts that were added to deal with specific sitatuations. These can be called with `npm run extra name-of-script`. The following scripts are available:
 
 - `supplementNotationsInMappings`: This will look for mappings where the field `notation` is missing for any of the concepts, and it will attempt to supplement those notations. This only works for vocabularies which are also imported into the same jskos-server instance and where either `uriPattern` or `namespace` are given.
+
+### Use as Module
+
+*Use as module is experimental and authentication is ignored!*
+
+~~~js
+import { validateConfig, createServices } from "jskos-server"
+
+validateConfig(config)
+const services = createServices(config)
+
+const scheme = await services.scheme.getScheme(schemeUri)
+~~~
 
 ### Development and Testing
 

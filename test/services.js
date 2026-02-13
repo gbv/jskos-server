@@ -6,7 +6,9 @@ import { teardownInMemoryMongo, setupInMemoryMongo, createCollectionsAndIndexes,
 
 import { InvalidBodyError } from "../errors/index.js"
 
-import { services } from "../services/index.js"
+import { createServices } from "../index.js"
+import config from "../config/config.test.json" with { type: "json" }
+const services = createServices(config)
 
 describe("Services Features", () => {
   before(async () => {

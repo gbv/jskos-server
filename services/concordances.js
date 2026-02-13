@@ -13,9 +13,9 @@ const validateConcordance = validate.concordance
 
 import { MalformedRequestError, EntityNotFoundError, MalformedBodyError, InvalidBodyError, DatabaseAccessError } from "../errors/index.js"
 
-import { Service } from "./service.js"
+import { AbstractService } from "./abstract.js"
 
-export class ConcordanceService extends Service {
+export class ConcordanceService extends AbstractService {
 
   constructor(config) {
     super(config)
@@ -73,7 +73,7 @@ export class ConcordanceService extends Service {
     } else {
       // Otherwise, return results
       const concordances = await Concordance.find(mongoQuery).lean().skip(query.offset).limit(query.limit).exec()
-      concordances.totalCount = await Service.count(Concordance, [{ $match: mongoQuery }])
+      concordances.totalCount = await this._count(Concordance, [{ $match: mongoQuery }])
       return concordances
     }
   }

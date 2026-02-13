@@ -1,7 +1,7 @@
 import _ from "lodash"
 import jskos from "jskos-tools"
 
-export class Service {
+export class AbstractService {
   constructor(config) {
     // logging methods
     this.config = config
@@ -136,9 +136,8 @@ export class Service {
    * @param {*} model a mongoose model
    * @param {*} pipeline an aggregation pipeline
    */
-  static async count(model, pipeline) {
-
-    if (pipeline.length === 1 && pipeline[0].$match && Service.isQueryEmpty(pipeline[0].$match)) {
+  async _count(model, pipeline) {
+    if (pipeline.length === 1 && pipeline[0].$match && isQueryEmpty(pipeline[0].$match)) {
     // It's an empty query, i.e. we can use estimatedDocumentCount()
       return await model.estimatedDocumentCount()
     } else {
@@ -147,21 +146,23 @@ export class Service {
     }
   }
 
-  // Determines whether a query is actually empty (i.e. returns all documents).
-  static isQueryEmpty(query) {
-    const allowedProps = ["$and", "$or"]
-    let result = true
-    _.forOwn(query, (value, key) => {
-      if (!allowedProps.includes(key)) {
-        result = false
-      } else {
-        // for $and and $or, value is an array
-        _.forEach(value, (element) => {
-          result = result && Service.isQueryEmpty(element)
-        })
-      }
-    })
-    return result
-  }
-
 }
+
+// Determines whether a query is actually empty (i.e. returns all documents).
+export function isQueryEmpty(query) {
+  const allowedProps = ["$and", "$or"]
+  let result = true
+  _.forOwn(query, (value, key) => {
+    if (!allowedProps.includes(key)) {
+      result = false
+    } else {
+      // for $and and $or, value is an array
+      _.forEach(value, (element) => {
+        result = result && isQueryEmpty(element)
+      })
+    }
+  })
+  return result
+}
+
+

@@ -2,13 +2,13 @@
   "name": "jskos-server",
   "version": "2.3.0",
   "apiVersion": "2.1",
-  "description": "",
+  "description": "JSKOS database and web service",
   "repository": {
     "type": "git",
     "url": "https://github.com/gbv/jskos-server.git"
   },
   "type": "module",
-  "exports": "./server.js",
+  "exports": "./index.js",
   "engines": {
     "node": ">=22"
   },

@@ -1,8 +1,8 @@
 import { models } from "../models/index.js"
-import { Service } from "./service.js"
+import { AbstractService } from "./abstract.js"
 import { createAdjuster } from "../utils/adjust.js"
 
-export class DataService extends Service {
+export class DataService extends AbstractService {
   constructor(config) {
     super(config)
     this.adjust = createAdjuster(config)

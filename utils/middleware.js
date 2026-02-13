@@ -9,9 +9,11 @@ import * as anystream from "json-anystream"
 import express from "express"
 
 import { cleanJSON } from "./utils.js"
-import { services } from "../services/index.js"
 
+import { createServices } from "../services/index.js"
 import { createAdjuster } from "./adjust.js"
+
+const services = createServices(config)
 const adjust = createAdjuster(config, services)
 
 /**

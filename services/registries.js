@@ -12,9 +12,9 @@ import {
   MalformedRequestError,
 } from "../errors/index.js"
 
-import { Service } from "./service.js"
+import { AbstractService } from "./abstract.js"
 
-export class RegistryService extends Service {
+export class RegistryService extends AbstractService {
   constructor(config) {
     super(config)
   }

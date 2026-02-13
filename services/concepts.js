@@ -8,9 +8,9 @@ import { Concept } from "../models/concepts.js"
 import { SchemeService } from "../services/schemes.js"
 import { MalformedBodyError, MalformedRequestError, EntityNotFoundError, InvalidBodyError, DatabaseAccessError } from "../errors/index.js"
 
-import { Service } from "./service.js"
+import { AbstractService } from "./abstract.js"
 
-export class ConceptService extends Service {
+export class ConceptService extends AbstractService {
 
   constructor(config) {
     super(config)
@@ -73,7 +73,7 @@ export class ConceptService extends Service {
       criteria = { "topConceptOf.uri": { $type: 2 } }
     }
     const concepts = await this.conceptFind(criteria, query.offset, query.limit)
-    concepts.totalCount = await Service.count(Concept, [{ $match: criteria }])
+    concepts.totalCount = await this._count(Concept, [{ $match: criteria }])
     return concepts
   }
 
@@ -128,7 +128,7 @@ export class ConceptService extends Service {
       return this.conceptFind(mongoQuery, null, null, false).cursor()
     }
     const concepts = await this.conceptFind(mongoQuery, query.offset, query.limit)
-    concepts.totalCount = await Service.count(Concept, queryToAggregation(mongoQuery))
+    concepts.totalCount = await this._count(Concept, queryToAggregation(mongoQuery))
     return concepts
   }
 

@@ -23,9 +23,9 @@ const validateMapping = (mapping) => {
   return true
 }
 
-import { Service } from "./service.js"
+import { AbstractService } from "./abstract.js"
 
-export class MappingService extends Service {
+export class MappingService extends AbstractService {
 
   constructor(config) {
     super(config)
@@ -425,9 +425,9 @@ export class MappingService extends Service {
         // Instead, count by building a pipeline without `annotatedFor`, then another pipeline with the opposite `annotatedFor`, count for both and calculate the difference
         const totalCountPipeline = buildPipeline({ query, annotatedWith, annotatedBy })
         const oppositeCountPipeline = buildPipeline({ query, annotatedWith, annotatedBy, annotatedFor: annotatedFor === "none" ? "any" : annotatedFor.slice(1) })
-        mappings.totalCount = await Service.count(totalCountPipeline.model, totalCountPipeline) - await Service.count(oppositeCountPipeline.model, oppositeCountPipeline)
+        mappings.totalCount = await this._count(totalCountPipeline.model, totalCountPipeline) - await this._count(oppositeCountPipeline.model, oppositeCountPipeline)
       } else {
-        mappings.totalCount = await Service.count(pipeline.model, pipeline.filter(p => !p.$sort))
+        mappings.totalCount = await this._count(pipeline.model, pipeline.filter(p => !p.$sort))
       }
       return mappings
     }

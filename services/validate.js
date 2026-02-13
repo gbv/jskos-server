@@ -3,9 +3,9 @@ import jskos from "jskos-tools"
 import { SchemeService } from "./schemes.js"
 const guessObjectType = jskos.guessObjectType
 
-import { Service } from "./service.js"
+import { AbstractService } from "./abstract.js"
 
-export class ValidateService extends Service {
+export class ValidateService extends AbstractService {
 
   constructor(config) {
     super(config)

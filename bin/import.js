@@ -209,7 +209,8 @@ import * as anystream from "json-anystream"
 import _ from "lodash"
 import * as db from "../utils/db.js"
 
-import { services } from "../services/index.js"
+import { createServices } from "../services/index.js"
+const services = createServices(config)
 const allTypes = Object.keys(services)
 
 // Also import models for Mapping and Concordance

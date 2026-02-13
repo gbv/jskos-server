@@ -1,8 +1,10 @@
 import assert from "node:assert"
 import mongoose from "mongoose"
 import { MongoMemoryServer, MongoMemoryReplSet } from "mongodb-memory-server"
-import { services } from "../services/index.js"
+import { createServices } from "../index.js"
 
+import config from "../config/config.test.json" with { type: "json" }
+const services = createServices(config)
 
 let mongod
 
