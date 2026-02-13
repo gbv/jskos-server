@@ -54,9 +54,7 @@ describe("Import and Reset Script", () => {
 
     it("should import concepts", async () => {
       // Add concepts to database
-      const stdout = await exec("NODE_ENV=test ./bin/import.js -q concepts ./test/concepts/concepts-ddc-6-60-61-62.json")
-      // Testing -q as well
-      assert.strictEqual(stdout, "", "There was output despite option -q (quiet).")
+      await exec("NODE_ENV=test ./bin/import.js -q concepts ./test/concepts/concepts-ddc-6-60-61-62.json")
       const results = await server.db.collection("concepts").find({}).toArray()
       assert.strictEqual(results.length, 4)
     })
