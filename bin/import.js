@@ -427,7 +427,7 @@ async function doImport({ input, format, type, concordance }) {
     log(`... done: ${Array.isArray(result) ? result.length : 1} annotations imported.`)
   } else if (type == "registry") {
     log("Importing registries...")
-    const result = await services.registry.postRegistries({
+    const result = await services.registry.postRegistry({
       bodyStream: stream,
       bulk: true,
       bulkReplace: !cli.flags.noreplace,
