@@ -471,7 +471,7 @@ describe("Services Features", () => {
     }
 
     it("should post a registry and return an id/uri", async () => {
-      const result = await services.registry.postRegistries({
+      const result = await services.registry.postRegistry({
         bodyStream: await arrayToStream([registryExample]),
         bulk: false,
       })
@@ -534,11 +534,11 @@ describe("Services Features", () => {
     it("should reject invalid registry bodies", async () => {
       delete registryExample.uri
       try {
-        await services.registry.postRegistries({
+        await services.registry.postRegistry({
           bodyStream: await arrayToStream([registryExample]),
           bulk: false,
         })
-        assert.fail("Expected postRegistries to fail")
+        assert.fail("Expected postRegistry to fail")
       } catch (error) {
         assert.ok(error instanceof InvalidBodyError)
       }

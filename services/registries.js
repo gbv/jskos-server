@@ -204,7 +204,7 @@ export class RegistryService {
    * @throws {MalformedBodyError} When the body stream is missing.
    * @throws {InvalidBodyError} When validation fails in non-bulk mode.
    */
-  async postRegistries({ bodyStream, bulk = true, bulkReplace = true }) {
+  async postRegistry({ bodyStream, bulk = true, bulkReplace = true }) {
     if (!bodyStream) {
       throw new MalformedBodyError()
     }
