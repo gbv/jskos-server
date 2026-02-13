@@ -24,6 +24,7 @@ Options
   --noreplace             -n          EXPERIMENTAL. When given, bulk writing will use insertOne instead of replaceOne,
                                       meaning that existing entities will not be overridden.
                                       Note that an error will be thrown when even one of the entities already exist.
+  --nobulk                -b          Disable bulk import no not ignore and filter out invalid entities
   --set-api                           EXPERIMENTAL. Onlt for concepts. Will update the scheme's \`API\` property after
                                       importing concepts.
 
@@ -72,6 +73,11 @@ Examples
     noreplace: {
       type: "boolean",
       shortFlag: "n",
+      default: false,
+    },
+    nobulk: {
+      type: "boolean",
+      shortFlag: "b",
       default: false,
     },
     help: {
@@ -152,6 +158,13 @@ if (cli.flags.concordance && type != "mapping") {
   logError({
     message: `The -c option is not compatible with type ${type}.`,
     showHelp: true,
+    exit: true,
+  })
+}
+
+if (cli.flags.bulk && ["concordance","concordance"].find(type)) {
+  logError({
+    message: `The --nobulk option is not supported with type ${type}`,
     exit: true,
   })
 }
@@ -252,23 +265,19 @@ const allTypes = Object.keys(services)
 })()
 
 async function doImport({ input, format, type, concordance }) {
-  const stream = await anystream.make(input, format)
+  const bodyStream = await anystream.make(input, format)
+  const bulk = !cli.flags.nobulk
+  const bulkReplace = !cli.flags.noreplace
 
   if (type == "scheme") {
     log("Importing schemes...")
-    const result = await services.scheme.postScheme({
-      bodyStream: stream,
-      bulk: true,
-      bulkReplace: !cli.flags.noreplace,
-    })
+    const result = await services.scheme.postScheme({ bodyStream, bulk, bulkReplace })
     log(`... done: ${Array.isArray(result) ? result.length : 1} schemes imported.`)
   } else if (type == "concept") {
     log("Importing concepts...")
     // TODO: Find way to output progress.
     const result = await services.concept.postConcept({
-      bodyStream: stream,
-      bulk: true,
-      bulkReplace: !cli.flags.noreplace,
+      bodyStream, bulk, bulkReplace,
       scheme: cli.flags.scheme,
       setApi: cli.flags.setApi,
     })
@@ -289,7 +298,7 @@ async function doImport({ input, format, type, concordance }) {
       console.log(`... ${imported} done ...`)
     }
     // Name the loop
-    mappingLoop: for await (let object of stream) {
+    mappingLoop: for await (let object of bodyStream) {
       total += 1
       if (!validate[type] || !validate[type](object)) {
         logError({ message: `Could not validate ${type} number ${total}: ${object && object.uri}` })
@@ -372,7 +381,7 @@ async function doImport({ input, format, type, concordance }) {
     // TODO: Eventually, this should also be done through the service.
     let imported = 0
     let total = 0
-    for await (let concordance of stream) {
+    for await (let concordance of bodyStream) {
       total += 1
       // Rewrite "distribution" to "distributions" if necessary
       if (concordance.distribution) {
@@ -418,20 +427,11 @@ async function doImport({ input, format, type, concordance }) {
   } else if (type == "annotation") {
     log("Importing annotations...")
     // TODO: Find way to output progress.
-    const result = await services.annotation.postAnnotation({
-      bodyStream: stream,
-      bulk: true,
-      bulkReplace: !cli.flags.noreplace,
-      admin: true,
-    })
+    const result = await services.annotation.postAnnotation({ bodyStream, bulk, bulkReplace, admin: true })
     log(`... done: ${Array.isArray(result) ? result.length : 1} annotations imported.`)
   } else if (type == "registry") {
     log("Importing registries...")
-    const result = await services.registry.postRegistries({
-      bodyStream: stream,
-      bulk: true,
-      bulkReplace: !cli.flags.noreplace,
-    })
+    const result = await services.registry.postRegistries({ bodyStream, bulk, bulkReplace })
     log(`... done: ${Array.isArray(result) ? result.length : 1} registries imported.`)
   }
 }

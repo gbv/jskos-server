@@ -541,6 +541,8 @@ For testing your authentication without a full-fledged solution using login-clie
 JSKOS Server provides scripts to import JSKOS data into the database or delete data from the database. Right now, mappings, terminologies (concept schemes), concepts, concordances, and annotations, in JSON (object or array of objects) or [NDJSON](http://ndjson.org) format are supported.
 
 #### Import Script
+By default the import script has enabled **bulk import** so invalid entities are filtered out and reported only.
+
 Examples of using the import script:
 ```bash
 

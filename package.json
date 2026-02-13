@@ -14,7 +14,7 @@
   },
   "scripts": {
     "test": "NODE_ENV=test mocha --exit --timeout 60000 --slow 2000",
-    "coverage": "NODE_ENV=test c8 --reporter=text mocha --exit --timeout 60000 --slow 2000",
+    "coverage": "NODE_ENV=test c8 --reporter=text --skip-full mocha --exit --timeout 60000 --slow 2000",
     "start": "nodemon server.js",
     "mongodb": "./bin/mongodb.js",
     "lint": "eslint",

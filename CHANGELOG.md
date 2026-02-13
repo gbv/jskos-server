@@ -5,6 +5,8 @@
 - increase requried node version to 22
 - don't ignore missing config files
 - change configuration of changes API (**breaking change**)
+- add import script option --nobulk
 - refactor to allow use as module (not completed yet)
+- allow to calculate code coverage
 
 More release notes can be found at <https://github.com/gbv/jskos-server/releases>
