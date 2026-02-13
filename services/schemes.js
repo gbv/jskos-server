@@ -1,5 +1,5 @@
 import _ from "lodash"
-import * as utils from "../utils/middleware.js"
+import { bulkOperationForEntities } from "../utils/utils.js"
 import { validate } from "jskos-validate"
 
 import { toOpenSearchSuggestFormat, addKeywords } from "../utils/searchHelper.js"
@@ -224,7 +224,7 @@ export class SchemeService extends Service {
 
     if (bulk) {
       // Use bulkWrite for most efficiency
-      schemes.length && await Scheme.bulkWrite(utils.bulkOperationForEntities({ entities: schemes, replace: bulkReplace }))
+      schemes.length && await Scheme.bulkWrite(bulkOperationForEntities({ entities: schemes, replace: bulkReplace }))
       schemes = await this.postAdjustmentsForScheme(schemes, { bulk })
       response = schemes.map(s => ({ uri: s.uri }))
     } else {

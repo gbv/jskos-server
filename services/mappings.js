@@ -1,7 +1,6 @@
 import _ from "lodash"
-import * as utils from "../utils/middleware.js"
 import { uuid, isValidUuid } from "../utils/uuid.js"
-import { removeNullProperties } from "../utils/utils.js"
+import { removeNullProperties, bulkOperationForEntities, addMappingSchemes } from "../utils/utils.js"
 import jskos from "jskos-tools"
 import { validate } from "jskos-validate"
 import { cdk } from "cocoda-sdk"
@@ -630,7 +629,7 @@ export class MappingService extends Service {
           throw new InvalidBodyError("Only 1-to-1 mappings are supported.")
         }
         // Add mapping schemes if necessary (e.g. from concepts' `inScheme` property)
-        utils.addMappingSchemes(mapping)
+        addMappingSchemes(mapping)
         // Check if schemes are available and replace them with URI/notation only
         await this.schemeService.replaceSchemeProperties(mapping, ["fromScheme", "toScheme"])
         // Reject mapping if either fromScheme or toScheme is missing
@@ -679,7 +678,7 @@ export class MappingService extends Service {
 
     if (bulk) {
       // Use bulkWrite for most efficiency
-      mappings.length && await Mapping.bulkWrite(utils.bulkOperationForEntities({ entities: mappings, replace: bulkReplace }))
+      mappings.length && await Mapping.bulkWrite(bulkOperationForEntities({ entities: mappings, replace: bulkReplace }))
       response = mappings.map(c => ({ uri: c.uri }))
     } else {
       response = await Mapping.insertMany(mappings, { lean: true })
@@ -746,7 +745,7 @@ export class MappingService extends Service {
       delete mapping[key]
     }
     // Remove creator/contributor if there are no changes
-    // TODO: Possibly check this is utils.handleCreatorForObject
+    // TODO: Possibly check this is handleCreatorForObject
     if (mapping.creator && _.isEqual(mapping.creator, existing.creator)) {
       delete mapping.creator
     }

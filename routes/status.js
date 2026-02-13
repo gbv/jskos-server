@@ -1,6 +1,6 @@
 import express from "express"
 import StatusService from "../services/status.js"
-import { wrappers, returnJSON } from "../utils/middleware.js"
+import { wrapAsync, wrapDownload, returnJSON } from "../utils/middleware.js"
 
 export default config => {
   const router = express.Router()
@@ -8,10 +8,8 @@ export default config => {
 
   router.get(
     "/",
-    wrappers.async(async () => {
-      return await statusService.getStatus()
-    }),
-    wrappers.download(returnJSON, false),
+    wrapAsync(async () => await statusService.getStatus()),
+    wrapDownload(returnJSON, false),
   )
 
   return router

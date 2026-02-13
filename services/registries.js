@@ -1,6 +1,5 @@
 import _ from "lodash"
-import * as utils from "../utils/middleware.js"
-import { removeNullProperties } from "../utils/utils.js"
+import { removeNullProperties, bulkOperationForEntities } from "../utils/utils.js"
 import { validate } from "jskos-validate"
 import { Registry } from "../models/registries.js"
 
@@ -199,7 +198,7 @@ export class RegistryService extends Service {
 
     if (bulk) {
       // Use bulkWrite for most efficiency
-      registries.length && await Registry.bulkWrite(utils.bulkOperationForEntities({ entities: registries, replace: bulkReplace }))
+      registries.length && await Registry.bulkWrite(bulkOperationForEntities({ entities: registries, replace: bulkReplace }))
       response = registries.map(s => ({ uri: s.uri }))
     } else {
       response = await Registry.insertMany(registries, { lean: true })

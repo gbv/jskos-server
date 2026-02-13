@@ -2195,7 +2195,7 @@ describe("Express Server", () => {
         })
     })
 
-    describe("after import", () => {
+    describe("POST /registries", () => {
       before(async function () {
         this.timeout(15000)
         await promisify(cpexec)(

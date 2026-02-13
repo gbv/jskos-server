@@ -1,7 +1,8 @@
 // Tests for utilities
 
 import assert from "node:assert"
-import { getCreator, handleCreatorForObject, cleanJSON } from "../utils/middleware.js"
+import { getCreator, handleCreatorForObject } from "../utils/middleware.js"
+import { cleanJSON } from "../utils/utils.js"
 import config from "../config/index.js"
 
 describe("utils", () => {
@@ -412,8 +413,7 @@ describe("utils", () => {
     let index = 0
     for (let { closedWorldAssumption, input, output } of tests) {
       it(`should pass test[${index}]`, async () => {
-        config.closedWorldAssumption = closedWorldAssumption
-        cleanJSON(input)
+        cleanJSON(input, 0, closedWorldAssumption)
         assert.deepEqual(input, output)
       })
       index += 1

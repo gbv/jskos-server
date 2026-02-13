@@ -1,6 +1,7 @@
 import express from "express"
 import { ConceptService } from "../services/concepts.js"
 import * as utils from "../utils/middleware.js"
+import { wrapAsync, wrapDownload } from "../utils/middleware.js"
 import * as auth from "../utils/auth.js"
 
 export default config => {
@@ -13,13 +14,13 @@ export default config => {
       "/concepts",
       concepts.read.auth ? auth.main : auth.optional,
       utils.supportDownloadFormats(["json", "ndjson"]),
-      utils.wrappers.async(async (req) => {
+      wrapAsync(async (req) => {
         return await conceptService.getConcepts(req.query)
       }),
-      utils.wrappers.download(utils.addPaginationHeaders, false),
-      utils.wrappers.download(utils.adjust, false),
-      utils.wrappers.download(utils.returnJSON, false),
-      utils.wrappers.download(utils.handleDownload("concepts"), true),
+      wrapDownload(utils.addPaginationHeaders, false),
+      wrapDownload(utils.adjust, false),
+      wrapDownload(utils.returnJSON, false),
+      wrapDownload(utils.handleDownload("concepts"), true),
     )
   }
 
@@ -28,7 +29,7 @@ export default config => {
       "/concepts",
       concepts.create.auth ? auth.main : auth.optional,
       utils.bodyParser,
-      utils.wrappers.async(async (req) => {
+      wrapAsync(async (req) => {
         return await conceptService.postConcept({
           bodyStream: req.anystream,
           bulk: req.query.bulk,
@@ -46,7 +47,7 @@ export default config => {
       "/concepts",
       concepts.update.auth ? auth.main : auth.optional,
       utils.bodyParser,
-      utils.wrappers.async(async (req) => {
+      wrapAsync(async (req) => {
         return await conceptService.putConcept({
           body: req.body,
           existing: req.existing,
@@ -62,7 +63,7 @@ export default config => {
       "/concepts",
       concepts.delete.auth ? auth.main : auth.optional,
       utils.bodyParser,
-      utils.wrappers.async(async (req) => {
+      wrapAsync(async (req) => {
         return await conceptService.deleteConcept({
           uri: req.query.uri,
           existing: req.existing,
@@ -84,7 +85,7 @@ export default config => {
         prefix + "/narrower",
         concepts.read.auth ? auth.main : auth.optional,
         utils.supportDownloadFormats([]),
-        utils.wrappers.async(async (req) => {
+        wrapAsync(async (req) => {
           return await conceptService.getNarrower(req.query)
         }),
         utils.addPaginationHeaders,
@@ -96,7 +97,7 @@ export default config => {
         prefix + "/ancestors",
         concepts.read.auth ? auth.main : auth.optional,
         utils.supportDownloadFormats([]),
-        utils.wrappers.async(async (req) => {
+        wrapAsync(async (req) => {
           return await conceptService.getAncestors(req.query)
         }),
         utils.addPaginationHeaders,
@@ -108,7 +109,7 @@ export default config => {
         prefix + "/suggest",
         concepts.read.auth ? auth.main : auth.optional,
         utils.supportDownloadFormats([]),
-        utils.wrappers.async(async (req) => {
+        wrapAsync(async (req) => {
           return await conceptService.getSuggestions(req.query)
         }),
         utils.addPaginationHeaders,
@@ -119,7 +120,7 @@ export default config => {
         prefix + "/search",
         concepts.read.auth ? auth.main : auth.optional,
         utils.supportDownloadFormats([]),
-        utils.wrappers.async(async (req) => {
+        wrapAsync(async (req) => {
           return await conceptService.search(req.query)
         }),
         utils.addPaginationHeaders,

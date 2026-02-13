@@ -1,6 +1,7 @@
 import express from "express"
 import { ConcordanceService } from "../services/concordances.js"
 import * as utils from "../utils/middleware.js"
+import { wrapAsync, wrapDownload } from "../utils/middleware.js"
 import * as auth from "../utils/auth.js"
 
 export default config => {
@@ -13,25 +14,25 @@ export default config => {
       "/",
       concordances.read.auth ? auth.main : auth.optional,
       utils.supportDownloadFormats(["json", "ndjson"]),
-      utils.wrappers.async(async (req) => {
+      wrapAsync(async (req) => {
         return await concordanceService.getConcordances(req.query)
       }),
-      utils.wrappers.download(utils.addPaginationHeaders, false),
-      utils.wrappers.download(utils.adjust, false),
-      utils.wrappers.download(utils.returnJSON, false),
-      utils.wrappers.download(utils.handleDownload("concordances"), true),
+      wrapDownload(utils.addPaginationHeaders, false),
+      wrapDownload(utils.adjust, false),
+      wrapDownload(utils.returnJSON, false),
+      wrapDownload(utils.handleDownload("concordances"), true),
     )
 
     router.get(
       "/:_id",
       concordances.read.auth ? auth.main : auth.optional,
       utils.supportDownloadFormats(["json", "ndjson"]),
-      utils.wrappers.async(async (req) => {
+      wrapAsync(async (req) => {
         return await concordanceService.get(req.params._id)
       }),
-      utils.wrappers.download(utils.adjust, false),
-      utils.wrappers.download(utils.returnJSON, false),
-      utils.wrappers.download(utils.handleDownload("concordance"), true),
+      wrapDownload(utils.adjust, false),
+      wrapDownload(utils.returnJSON, false),
+      wrapDownload(utils.handleDownload("concordance"), true),
     )
   }
 
@@ -40,7 +41,7 @@ export default config => {
       "/",
       concordances.create.auth ? auth.main : auth.optional,
       utils.bodyParser,
-      utils.wrappers.async(async (req) => {
+      wrapAsync(async (req) => {
         return await concordanceService.postConcordance({
           bodyStream: req.anystream,
           user: req.user,
@@ -56,7 +57,7 @@ export default config => {
       "/:_id",
       concordances.update.auth ? auth.main : auth.optional,
       utils.bodyParser,
-      utils.wrappers.async(async (req) => {
+      wrapAsync(async (req) => {
         return await concordanceService.putConcordance({
           _id: req.params._id,
           body: req.body,
@@ -72,7 +73,7 @@ export default config => {
       "/:_id",
       concordances.update.auth ? auth.main : auth.optional,
       utils.bodyParser,
-      utils.wrappers.async(async (req) => {
+      wrapAsync(async (req) => {
         return await concordanceService.patchConcordance({
           _id: req.params._id,
           body: req.body,
@@ -90,7 +91,7 @@ export default config => {
       "/:_id",
       concordances.delete.auth ? auth.main : auth.optional,
       utils.bodyParser,
-      utils.wrappers.async(async (req) => {
+      wrapAsync(async (req) => {
         return await concordanceService.deleteConcordance({
           _id: req.params._id,
           user: req.user,

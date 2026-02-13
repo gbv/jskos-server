@@ -1,10 +1,11 @@
-import { adjust } from "../utils/middleware.js"
 import { models } from "../models/index.js"
 import { Service } from "./service.js"
+import { createAdjuster } from "../utils/adjust.js"
 
 export class DataService extends Service {
   constructor(config) {
     super(config)
+    this.adjust = createAdjuster(config)
   }
   async getData(req) {
     const uris = req.query.uri?.split("|") ?? []
@@ -22,7 +23,7 @@ export class DataService extends Service {
         ],
       }).lean()
       // Return adjusted data (needs to be done separately for each data type)
-      return adjust.data({ req, data: results, type: `${type}s` })
+      return this.adjust.data({ req, data: results, type: `${type}s` })
     })))
   }
 }

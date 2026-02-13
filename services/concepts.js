@@ -1,7 +1,8 @@
 import _ from "lodash"
 import jskos from "jskos-tools"
 import { validate } from "jskos-validate"
-import * as utils from "../utils/middleware.js"
+
+import { bulkOperationForEntities, queryToAggregation } from "../utils/utils.js"
 import { toOpenSearchSuggestFormat, addKeywords } from "../utils/searchHelper.js"
 import { Concept } from "../models/concepts.js"
 import { SchemeService } from "../services/schemes.js"
@@ -17,7 +18,7 @@ export class ConceptService extends Service {
   }
 
   conceptFind(query, $skip, $limit, narrower = true) {
-    const pipeline = utils.queryToAggregation(query)
+    const pipeline = queryToAggregation(query)
     if (narrower) {
       pipeline.push({
         $lookup: {
@@ -127,7 +128,7 @@ export class ConceptService extends Service {
       return this.conceptFind(mongoQuery, null, null, false).cursor()
     }
     const concepts = await this.conceptFind(mongoQuery, query.offset, query.limit)
-    concepts.totalCount = await Service.count(Concept, utils.queryToAggregation(mongoQuery))
+    concepts.totalCount = await Service.count(Concept, queryToAggregation(mongoQuery))
     return concepts
   }
 
@@ -236,7 +237,7 @@ export class ConceptService extends Service {
         let current = []
         const saveObjects = async (objects) => {
           const { concepts, errors, schemeUrisToAdjust } = await this.prepareAndCheckConcepts(objects, { scheme })
-          concepts.length && await Concept.bulkWrite(utils.bulkOperationForEntities({ entities: concepts, replace: bulkReplace }))
+          concepts.length && await Concept.bulkWrite(bulkOperationForEntities({ entities: concepts, replace: bulkReplace }))
           preparation.concepts = preparation.concepts.concat(concepts.map(c => ({ uri: c.uri })))
           preparation.errors = preparation.errors.concat(errors.map(c => ({ uri: c.uri })))
           preparation.schemeUrisToAdjust = _.uniq(preparation.schemeUrisToAdjust.concat(schemeUrisToAdjust))

@@ -210,12 +210,12 @@ import _ from "lodash"
 import * as db from "../utils/db.js"
 
 import { services } from "../services/index.js"
+const allTypes = Object.keys(services)
 
 // Also import models for Mapping and Concordance
 // TODO: This won't be needed if these are imported through the service as well.
 import { Mapping, Concordance } from "../models/index.js"
-import { addMappingSchemes, bulkOperationForEntities } from "../utils/middleware.js"
-const allTypes = Object.keys(services)
+import { bulkOperationForEntities, addMappingSchemes} from "../utils/utils.js"
 
 ;(async () => {
   try {

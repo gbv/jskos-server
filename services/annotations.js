@@ -1,7 +1,6 @@
 import _ from "lodash"
-import * as utils from "../utils/middleware.js"
 import { uuid, isValidUuid } from "../utils/uuid.js"
-import { removeNullProperties } from "../utils/utils.js"
+import { removeNullProperties, bulkOperationForEntities } from "../utils/utils.js"
 import jskos from "jskos-tools"
 import { validate } from "jskos-validate"
 
@@ -208,7 +207,7 @@ export class AnnotationService extends Service {
 
     if (bulk) {
       // Use bulkWrite for most efficiency
-      annotations.length && await Annotation.bulkWrite(utils.bulkOperationForEntities({ entities: annotations, replace: bulkReplace }))
+      annotations.length && await Annotation.bulkWrite(bulkOperationForEntities({ entities: annotations, replace: bulkReplace }))
       response = annotations.map(a => ({ id: a.id }))
     } else {
       response = await Annotation.insertMany(annotations, { lean: true })

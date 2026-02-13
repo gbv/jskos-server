@@ -1,6 +1,7 @@
 import express from "express"
 import { MappingService } from "../services/mappings.js"
 import * as utils from "../utils/middleware.js"
+import { wrapAsync, wrapDownload } from "../utils/middleware.js"
 import * as auth from "../utils/auth.js"
 
 export default config => {
@@ -11,7 +12,7 @@ export default config => {
   router.get(
     "/suggest",
     config.concepts && config.concepts.read?.auth ? auth.main : auth.optional,
-    utils.wrappers.async(async (req) => {
+    wrapAsync(async (req) => {
       return await mappingService.getNotationSuggestions(req.query)
     }),
     utils.addPaginationHeaders,
@@ -20,7 +21,7 @@ export default config => {
   router.get(
     "/voc",
     config.schemes && config.schemes.read?.auth ? auth.main : auth.optional,
-    utils.wrappers.async(async (req) => {
+    wrapAsync(async (req) => {
       return await mappingService.getMappingSchemes(req.query)
     }),
     utils.addPaginationHeaders,
@@ -33,19 +34,19 @@ export default config => {
       "/",
       config.mappings.read.auth ? auth.main : auth.optional,
       utils.supportDownloadFormats(["json", "ndjson", "csv", "tsv"]),
-      utils.wrappers.async(async (req) => {
+      wrapAsync(async (req) => {
         return await mappingService.getMappings(req.query)
       }),
-      utils.wrappers.download(utils.addPaginationHeaders, false),
-      utils.wrappers.download(utils.adjust, false),
-      utils.wrappers.download(utils.returnJSON, false),
-      utils.wrappers.download(utils.handleDownload("mappings"), true),
+      wrapDownload(utils.addPaginationHeaders, false),
+      wrapDownload(utils.adjust, false),
+      wrapDownload(utils.returnJSON, false),
+      wrapDownload(utils.handleDownload("mappings"), true),
     )
 
     router.get(
       "/infer",
       config.mappings.read.auth ? auth.main : auth.optional,
-      utils.wrappers.async(async (req) => {
+      wrapAsync(async (req) => {
         return await mappingService.inferMappings(req.query)
       }),
       utils.addPaginationHeaders,
@@ -57,12 +58,12 @@ export default config => {
       "/:_id",
       config.mappings.read.auth ? auth.main : auth.optional,
       utils.supportDownloadFormats(["json", "ndjson", "csv", "tsv"]),
-      utils.wrappers.async(async (req) => {
+      wrapAsync(async (req) => {
         return await mappingService.getMapping(req.params._id)
       }),
-      utils.wrappers.download(utils.adjust, false),
-      utils.wrappers.download(utils.returnJSON, false),
-      utils.wrappers.download(utils.handleDownload("mapping"), true),
+      wrapDownload(utils.adjust, false),
+      wrapDownload(utils.returnJSON, false),
+      wrapDownload(utils.handleDownload("mapping"), true),
     )
   }
 
@@ -71,7 +72,7 @@ export default config => {
       "/",
       config.mappings.create.auth ? auth.main : auth.optional,
       utils.bodyParser,
-      utils.wrappers.async(async (req) => {
+      wrapAsync(async (req) => {
         return await mappingService.postMapping({
           bodyStream: req.anystream,
           user: req.user,
@@ -88,7 +89,7 @@ export default config => {
       "/:_id",
       config.mappings.update.auth ? auth.main : auth.optional,
       utils.bodyParser,
-      utils.wrappers.async(async (req) => {
+      wrapAsync(async (req) => {
         return await mappingService.putMapping({
           _id: req.params._id,
           body: req.body,
@@ -104,7 +105,7 @@ export default config => {
       "/:_id",
       config.mappings.update.auth ? auth.main : auth.optional,
       utils.bodyParser,
-      utils.wrappers.async(async (req) => {
+      wrapAsync(async (req) => {
         return await mappingService.patchMapping({
           _id: req.params._id,
           body: req.body,
@@ -122,7 +123,7 @@ export default config => {
       "/:_id",
       config.mappings.delete.auth ? auth.main : auth.optional,
       utils.bodyParser,
-      utils.wrappers.async(async (req) => {
+      wrapAsync(async (req) => {
         return await mappingService.deleteMapping({
           _id: req.params._id,
           user: req.user,
