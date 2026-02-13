@@ -207,7 +207,6 @@ import { v5 as uuidv5 } from "uuid"
 import path from "node:path"
 import * as anystream from "json-anystream"
 import _ from "lodash"
-import * as utils from "../utils/index.js"
 import * as db from "../utils/db.js"
 
 import { services } from "../services/index.js"
@@ -215,7 +214,7 @@ import { services } from "../services/index.js"
 // Also import models for Mapping and Concordance
 // TODO: This won't be needed if these are imported through the service as well.
 import { Mapping, Concordance } from "../models/index.js"
-import { bulkOperationForEntities } from "../utils/index.js"
+import { addMappingSchemes, bulkOperationForEntities } from "../utils/middleware.js"
 const allTypes = Object.keys(services)
 
 ;(async () => {
@@ -338,7 +337,7 @@ async function doImport({ input, format, type, concordance }) {
         object.modified = object.created
       }
       // Set fromScheme and toScheme from concordance
-      utils.addMappingSchemes(object, { concordance })
+      addMappingSchemes(object, { concordance })
       // Check if schemes are available and replace them with URI/notation only
       await services.scheme.replaceSchemeProperties(object, ["fromScheme", "toScheme"])
       // Reject mapping if either fromScheme or toScheme is missing

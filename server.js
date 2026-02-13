@@ -1,5 +1,5 @@
 import config from "./config/index.js"
-import * as utils from "./utils/index.js"
+import * as utils from "./utils/middleware.js"
 import express from "express"
 import * as db from "./utils/db.js"
 import morgan from "morgan"

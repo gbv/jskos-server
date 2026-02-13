@@ -1,5 +1,7 @@
 import _ from "lodash"
-import * as utils from "../utils/index.js"
+import * as utils from "../utils/middleware.js"
+import { uuid, isValidUuid } from "../utils/uuid.js"
+import { removeNullProperties } from "../utils/utils.js"
 import jskos from "jskos-tools"
 import { validate } from "jskos-validate"
 import { cdk } from "cocoda-sdk"
@@ -424,9 +426,9 @@ export class MappingService extends Service {
         // Instead, count by building a pipeline without `annotatedFor`, then another pipeline with the opposite `annotatedFor`, count for both and calculate the difference
         const totalCountPipeline = buildPipeline({ query, annotatedWith, annotatedBy })
         const oppositeCountPipeline = buildPipeline({ query, annotatedWith, annotatedBy, annotatedFor: annotatedFor === "none" ? "any" : annotatedFor.slice(1) })
-        mappings.totalCount = await utils.count(totalCountPipeline.model, totalCountPipeline) - await utils.count(oppositeCountPipeline.model, oppositeCountPipeline)
+        mappings.totalCount = await Service.count(totalCountPipeline.model, totalCountPipeline) - await Service.count(oppositeCountPipeline.model, oppositeCountPipeline)
       } else {
-        mappings.totalCount = await utils.count(pipeline.model, pipeline.filter(p => !p.$sort))
+        mappings.totalCount = await Service.count(pipeline.model, pipeline.filter(p => !p.$sort))
       }
       return mappings
     }
@@ -644,14 +646,14 @@ export class MappingService extends Service {
         if (mapping.uri) {
           let uri = mapping.uri
           // URI already exists, use if it's valid, otherwise move to identifier
-          if (uri.startsWith(uriBase) && utils.isValidUuid(uri.slice(uriBase.length, uri.length))) {
+          if (uri.startsWith(uriBase) && isValidUuid(uri.slice(uriBase.length, uri.length))) {
             mapping._id = uri.slice(uriBase.length, uri.length)
           } else {
             mapping.identifier = (mapping.identifier || []).concat([uri])
           }
         }
         if (!mapping._id) {
-          mapping._id = utils.uuid()
+          mapping._id = uuid()
           mapping.uri = uriBase + mapping._id
         }
         // Make sure URI is a https URI when in production
@@ -772,7 +774,7 @@ export class MappingService extends Service {
     if (!mapping.type || !mapping.type.length) {
       mapping.type = ["http://www.w3.org/2004/02/skos/core#mappingRelation"]
     }
-    utils.removeNullProperties(newMapping)
+    removeNullProperties(newMapping)
 
     // Validate mapping after merge
     if (!validateMapping(newMapping)) {

@@ -3,13 +3,10 @@ import _ from "lodash"
 import jskos from "jskos-tools"
 import { DuplicateEntityError, EntityNotFoundError, CreatorDoesNotMatchError, DatabaseInconsistencyError, InvalidBodyError } from "../errors/index.js"
 
-import { v4 as uuid } from "uuid"
-
 import { Transform, Readable } from "node:stream"
 import JSONStream from "JSONStream"
 import * as anystream from "json-anystream"
 import express from "express"
-import * as searchHelper from "./searchHelper.js"
 
 import { services } from "../services/index.js"
 
@@ -72,7 +69,7 @@ const cleanJSON = (json, depth = 0, closedWorld = config.closedWorldAssumption) 
     _.forOwn(json, (value, key) => {
       if (
         // Remove top level empty arrays/objects if closedWorldAssumption is set to false
-        (depth === 0 && !closedWorld && (_.isEqual(value, {}) || _.isEqual(value, [])) )
+        (depth === 0 && !closedWorld && (_.isEqual(value, {}) || _.isEqual(value, [])))
         // Remove all fields started with _
         || key.startsWith("_")
       ) {
@@ -84,9 +81,6 @@ const cleanJSON = (json, depth = 0, closedWorld = config.closedWorldAssumption) 
   }
 }
 
-
-// remove object properties when its value is null
-const removeNullProperties = obj => Object.keys(obj).filter(key => obj[key] === null).forEach(key => delete obj[key])
 
 // Adjust data in req.data based on req.type (which is set by `addMiddlewareProperties`)
 const adjust = async (req, res, next) => {
@@ -280,20 +274,6 @@ adjust.schemes = (schemes) => {
   return schemes.map(scheme => adjust.scheme(scheme))
 }
 
-/**
- * Returns a random v4 UUID.
- */
-
-const uuidRegex = new RegExp(/^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i)
-/**
- * Checks a v4 UUID for validity.
- *
- * @param {*} uuid
- */
-const isValidUuid = (uuid) => {
-  return uuid.match(uuidRegex) != null
-}
-
 const getUrisForUser = (user) => {
   if (!user) {
     return []
@@ -389,7 +369,7 @@ const addDefaultHeaders = (req, res, next) => {
 const addMiddlewareProperties = (req, res, next) => {
 
   if (req.query) {
-    const query = {...req.query}
+    const query = { ...req.query }
 
     // Limit for pagination
     const defaultLimit = 100
@@ -421,9 +401,9 @@ const addMiddlewareProperties = (req, res, next) => {
 
   // req.path -> req.type
   let type = req.path.substring(1)
-  type = type.substring(0, type.indexOf("/") == -1 ? type.length : type.indexOf("/") )
+  type = type.substring(0, type.indexOf("/") == -1 ? type.length : type.indexOf("/"))
   if (type == "voc") {
-    if (req.path.includes("/top") || (req.path.includes("/concepts") && req.method !== "DELETE" )) {
+    if (req.path.includes("/top") || (req.path.includes("/concepts") && req.method !== "DELETE")) {
       type = "concepts"
     } else {
       type = "schemes"
@@ -629,7 +609,7 @@ const handleDownload = (filename) => (req, res) => {
       transform = new Transform({
         objectMode: true,
         transform(chunk, encoding, callback) {
-        // Small workaround to prepend a line to CSV
+          // Small workaround to prepend a line to CSV
           if (first) {
             this.push(`"fromScheme"${delimiter}"fromNotation"${delimiter}"toScheme"${delimiter}"toNotation"${delimiter}"toNotation2"${delimiter}"toNotation3"${delimiter}"toNotation4"${delimiter}"toNotation5"${delimiter}"type"${delimiter}"creator"\n`)
             first = false
@@ -868,27 +848,6 @@ const bodyParser = (req, res, next) => {
 }
 
 /**
- * Determines whether a query is actually empty (i.e. returns all documents).
- *
- * @param {*} query
- */
-const isQueryEmpty = (query) => {
-  const allowedProps = ["$and", "$or"]
-  let result = true
-  _.forOwn(query, (value, key) => {
-    if (!allowedProps.includes(key)) {
-      result = false
-    } else {
-      // for $and and $or, value is an array
-      _.forEach(value, (element) => {
-        result = result && isQueryEmpty(element)
-      })
-    }
-  })
-  return result
-}
-
-/**
  * Converts a MongoDB "find" query to an aggregation pipeline.
  *
  * In most cases, this will simply be a single $match stage, but there's special handling for
@@ -917,23 +876,6 @@ const queryToAggregation = (query) => {
     })
   }
   return pipeline
-}
-
-/**
- * Returns the document count for a certain aggregation pipeline.
- * Uses estimatedDocumentCount() if possible (i.e. if the query is empty).
- *
- * @param {*} model a mongoose model
- * @param {*} pipeline an aggregation pipeline
- */
-const count = async (model, pipeline) => {
-  if (pipeline.length === 1 && pipeline[0].$match && isQueryEmpty(pipeline[0].$match)) {
-    // It's an empty query, i.e. we can use estimatedDocumentCount()
-    return await model.estimatedDocumentCount()
-  } else {
-    // Use aggregation instead
-    return _.get(await model.aggregate(pipeline).count("count").exec(), "[0].count", 0)
-  }
 }
 
 const bulkOperationForEntities = ({ entities, replace = true }) => {
@@ -986,10 +928,7 @@ const addMappingSchemes = (mapping, options = {}) => {
 export {
   wrappers,
   cleanJSON,
-  removeNullProperties,
   adjust,
-  uuid,
-  isValidUuid,
   matchesCreator,
   addDefaultHeaders,
   supportDownloadFormats,
@@ -998,12 +937,9 @@ export {
   returnJSON,
   handleDownload,
   bodyParser,
-  searchHelper,
   getCreator,
   handleCreatorForObject,
-  isQueryEmpty,
   queryToAggregation,
-  count,
   bulkOperationForEntities,
   addMappingSchemes,
 }

@@ -1,6 +1,5 @@
-import { adjust } from "../utils/index.js"
+import { adjust } from "../utils/middleware.js"
 import { models } from "../models/index.js"
-
 import { Service } from "./service.js"
 
 export class DataService extends Service {

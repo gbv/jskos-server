@@ -1,9 +1,17 @@
-import * as utils from "./index.js"
+import * as utils from "./middleware.js"
+import { uuid } from "./uuid.js"
 import _ from "lodash"
 import yesno from "yesno"
 
 import { Scheme, Concordance, Mapping, Annotation } from "../models/index.js"
-import { schemeService, concordanceService, annotationService, mappingService, conceptService, registryService } from "../services/index.js"
+import { SchemeService } from "../services/schemes.js"
+import { ConcordanceService } from "../services/concordances.js"
+import { AnnotationService } from "../services/annotations.js"
+import { MappingService } from "../services/mappings.js"
+import { ConceptService } from "../services/concepts.js"
+import { RegistryService } from "../services/registries.js"
+
+import { addKeywords } from "../utils/searchHelper.js"
 
 export class Version {
 
@@ -47,10 +55,16 @@ export class Upgrader {
 
   constructor(config) {
     this.baseUrl = config.baseUrl
+    this.schemeService = new SchemeService(config)
+    this.concordanceService = new ConcordanceService(config)
+    this.annotationService = new AnnotationService(config)
+    this.mappingService = new MappingService(config)
+    this.conceptService = new ConceptService(config)
+    this.registryService = new RegistryService(config)
   }
 
   // Returns an array of version strings for which upgrades are necessary.
-  getUpgrades(fromVersion, { forceLatest = false })  {
+  getUpgrades(fromVersion, { forceLatest = false }) {
     const list = []
     fromVersion = Version.from(fromVersion)
 
@@ -69,17 +83,17 @@ export class Upgrader {
     console.log("Creating additional fields for schemes...")
     const schemes = await Scheme.find().lean()
     for (let scheme of schemes) {
-      utils.searchHelper.addKeywords(scheme)
+      addKeywords(scheme)
       await Scheme.findByIdAndUpdate(scheme._id, scheme)
     }
     console.log("... done.")
     // 2. Create indexes for concordances
     console.log("Creating indexes for concordances...")
-    await concordanceService.createIndexes()
+    await this.concordanceService.createIndexes()
     console.log("... done.")
     // 3. Create indexes for schemes
     console.log("Creating indexes for schemes...")
-    await schemeService.createIndexes()
+    await this.schemeService.createIndexes()
     console.log("... done.")
   }
   async "1.2.2"() {
@@ -87,7 +101,7 @@ export class Upgrader {
     console.log("Updating text search fields for schemes...")
     const schemes = await Scheme.find().lean()
     for (let scheme of schemes) {
-      utils.searchHelper.addKeywords(scheme)
+      addKeywords(scheme)
       // Also add modified if it doesn't exist
       scheme.modified = scheme.modified || scheme.created
       await Scheme.findByIdAndUpdate(scheme._id, scheme)
@@ -99,7 +113,7 @@ export class Upgrader {
     console.log("Updating text search fields for schemes...")
     const schemes = await Scheme.find().lean()
     for (let scheme of schemes) {
-      utils.searchHelper.addKeywords(scheme)
+      addKeywords(scheme)
       await Scheme.findByIdAndUpdate(scheme._id, scheme)
     }
     console.log("... done.")
@@ -109,18 +123,18 @@ export class Upgrader {
     console.log("Updating publisher keywords fields for schemes...")
     const schemes = await Scheme.find().lean()
     for (let scheme of schemes) {
-      utils.searchHelper.addKeywords(scheme)
+      addKeywords(scheme)
       await Scheme.findByIdAndUpdate(scheme._id, scheme)
     }
     console.log("... done.")
     // 2. Create indexes for schemes
     console.log("Creating indexes for schemes...")
-    await schemeService.createIndexes()
+    await this.schemeService.createIndexes()
     console.log("... done.")
   }
   async "1.3"() {
     console.log("Creating indexes for annotations...")
-    await annotationService.createIndexes()
+    await this.annotationService.createIndexes()
     console.log("... done.")
   }
   async "1.4"() {
@@ -149,7 +163,7 @@ export class Upgrader {
       }
       let _id = concordance.notation[0]
       if (!_id) {
-        _id = utils.uuid()
+        _id = uuid()
         concordance.notation = [_id].concat((concordance.notation || []).slice(1))
       }
       const identifier = []
@@ -190,7 +204,7 @@ export class Upgrader {
     console.log("Upgrades to annotations (see #173):")
 
     console.log("- Update indexes for annotations...")
-    await annotationService.createIndexes()
+    await this.annotationService.createIndexes()
     console.log("... done.")
 
     console.log("- Annotations will be updated to use an object for property `target` and to include mapping state if possible...")
@@ -227,20 +241,20 @@ export class Upgrader {
   async "1.5.3"() {
     // Create indexes for mappings with index for mappingRelevance
     console.log("Creating indexes for mappings...")
-    await mappingService.createIndexes()
+    await this.mappingService.createIndexes()
     console.log("... done.")
   }
   async "1.6.3"() {
     // Create compound indexes for mappings to create a stable sorting order
     console.log("Creating indexes for mappings...")
-    await mappingService.createIndexes()
+    await this.mappingService.createIndexes()
     console.log("... done.")
   }
   async "2.0.3"() {
     console.log("Adding missing `fromScheme`/`toScheme` fields to mappings...")
     const mappings = await Mapping.aggregate([
       {
-        $match: { $or: [{ "fromScheme.uri": { $exists: false } }, {"toScheme.uri": { $exists: false }}] },
+        $match: { $or: [{ "fromScheme.uri": { $exists: false } }, { "toScheme.uri": { $exists: false } }] },
       },
       {
         $lookup: {
@@ -268,8 +282,8 @@ export class Upgrader {
   }
   async "2.1.0"() {
     console.log("Creating indexes for concepts and annotations...")
-    await conceptService.createIndexes()
-    await annotationService.createIndexes()
+    await this.conceptService.createIndexes()
+    await this.annotationService.createIndexes()
     console.log("... done.")
   }
   async "2.1.6"() {
@@ -304,7 +318,7 @@ export class Upgrader {
   }
   async "2.4.0"() {
     console.log("Creating index for registries...")
-    await registryService.createIndexes()
+    await this.registryService.createIndexes()
     console.log("... done.")
   }
 }

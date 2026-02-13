@@ -6,7 +6,7 @@ import { exec as cpexec } from "node:child_process"
 import { promisify } from "node:util"
 import _ from "lodash"
 import { assertMongoDB, dropDatabaseBeforeAndAfter, setupInMemoryMongo, createCollectionsAndIndexes, teardownInMemoryMongo } from "./test-utils.js"
-import { isValidUuid } from "../utils/index.js"
+import { isValidUuid } from "../utils/uuid.js"
 
 // Prepare jwt
 import jwt from "jsonwebtoken"

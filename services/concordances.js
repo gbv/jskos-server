@@ -1,7 +1,9 @@
 import _ from "lodash"
-import * as utils from "../utils/index.js"
 import jskos from "jskos-tools"
 import { validate } from "jskos-validate"
+
+import { removeNullProperties } from "../utils/utils.js"
+import { uuid } from "../utils/uuid.js"
 
 import { Concordance } from "../models/concordances.js"
 import { Mapping } from "../models/mappings.js"
@@ -71,7 +73,7 @@ export class ConcordanceService extends Service {
     } else {
       // Otherwise, return results
       const concordances = await Concordance.find(mongoQuery).lean().skip(query.offset).limit(query.limit).exec()
-      concordances.totalCount = await utils.count(Concordance, [{ $match: mongoQuery }])
+      concordances.totalCount = await Service.count(Concordance, [{ $match: mongoQuery }])
       return concordances
     }
   }
@@ -163,7 +165,7 @@ export class ConcordanceService extends Service {
         }
       }
       if (!concordance._id) {
-        concordance._id = concordance.notation && concordance.notation[0] || utils.uuid()
+        concordance._id = concordance.notation && concordance.notation[0] || uuid()
         concordance.uri = this.uriBase + concordance._id
         concordance.notation = [concordance._id].concat((concordance.notation || []).slice(1))
       }
@@ -238,7 +240,7 @@ export class ConcordanceService extends Service {
     // Use lodash merge to merge concordance objects
     _.assign(existing, concordance)
 
-    utils.removeNullProperties(existing)
+    removeNullProperties(existing)
 
     // Validate concordance after merge
     if (!validateConcordance(existing)) {

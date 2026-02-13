@@ -1,5 +1,7 @@
 import _ from "lodash"
-import * as utils from "../utils/index.js"
+import * as utils from "../utils/middleware.js"
+import { uuid, isValidUuid } from "../utils/uuid.js"
+import { removeNullProperties } from "../utils/utils.js"
 import jskos from "jskos-tools"
 import { validate } from "jskos-validate"
 
@@ -92,7 +94,7 @@ export class AnnotationService extends Service {
 
     const mongoQuery = criteria.length ? { $and: criteria } : {}
     const annotations = await Annotation.find(mongoQuery).lean().skip(query.offset).limit(query.limit).exec()
-    annotations.totalCount = await utils.count(Annotation, [{ $match: mongoQuery }])
+    annotations.totalCount = await Service.count(Annotation, [{ $match: mongoQuery }])
     return annotations
 
   }
@@ -169,12 +171,12 @@ export class AnnotationService extends Service {
         if (annotation.id) {
           let id = annotation.id
           // ID already exists, use if it's valid, otherwise remove
-          if (id.startsWith(uriBase) && utils.isValidUuid(id.slice(uriBase.length, id.length))) {
+          if (id.startsWith(uriBase) && isValidUuid(id.slice(uriBase.length, id.length))) {
             annotation._id = id.slice(uriBase.length, id.length)
           }
         }
         if (!annotation._id) {
-          annotation._id = utils.uuid()
+          annotation._id = uuid()
           annotation.id = this.config.baseUrl + "annotations/" + annotation._id
         }
         // Make sure URI is a https URI when in production
@@ -266,7 +268,7 @@ export class AnnotationService extends Service {
       annotation.target = { id: annotation.target }
     }
 
-    utils.removeNullProperties(existing)
+    removeNullProperties(existing)
 
     // Validate annotation
     await this.validateAnnotation(existing)

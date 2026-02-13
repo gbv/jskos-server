@@ -2,7 +2,7 @@
 
 import yesno from "yesno"
 import * as db from "../utils/db.js"
-import { schemeService } from "../services/index.js"
+import { schemeService } from "../services/schemes.js"
 import jskos from "jskos-tools"
 import { Mapping } from "../models/mappings.js"
 

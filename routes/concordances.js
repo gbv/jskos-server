@@ -1,6 +1,6 @@
 import express from "express"
 import { ConcordanceService } from "../services/concordances.js"
-import * as utils from "../utils/index.js"
+import * as utils from "../utils/middleware.js"
 import * as auth from "../utils/auth.js"
 
 export default config => {

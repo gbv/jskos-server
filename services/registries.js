@@ -1,7 +1,10 @@
 import _ from "lodash"
-import * as utils from "../utils/index.js"
+import * as utils from "../utils/middleware.js"
+import { removeNullProperties } from "../utils/utils.js"
 import { validate } from "jskos-validate"
 import { Registry } from "../models/registries.js"
+
+import { toOpenSearchSuggestFormat, addKeywords } from "../utils/searchHelper.js"
 import {
   EntityNotFoundError,
   DatabaseAccessError,
@@ -85,13 +88,11 @@ export class RegistryService extends Service {
    */
   async getSuggestions(query) {
     const results = await this.searchRegistry(query)
-    return utils.searchHelper.toOpenSearchSuggestFormat({ query, results })
+    return toOpenSearchSuggestFormat({ query, results })
   }
 
   /**
    * Searches registry entries based on query params.
-   *
-   * Note: Search uses utils.searchHelper which typically builds a $text query.
    *
    * @param {Object} query - Query parameters.
    * @returns {Promise<Object[]>} Matching registries.
@@ -137,7 +138,7 @@ export class RegistryService extends Service {
       registry._id = registry.uri
 
       // Add index keywords
-      utils.searchHelper.addKeywords(registry)
+      addKeywords(registry)
 
       // Remove created for update action
       if (action === "update") {
@@ -299,7 +300,7 @@ export class RegistryService extends Service {
     // Merge existing with updates
     _.assign(existing, body)
 
-    utils.removeNullProperties(existing)
+    removeNullProperties(existing)
 
     // Validate merged object
     const ok = validate.registry

@@ -1,7 +1,7 @@
 import express from "express"
 import { SchemeService } from "../services/schemes.js"
 import { ConceptService } from "../services/concepts.js"
-import * as utils from "../utils/index.js"
+import * as utils from "../utils/middleware.js"
 import * as auth from "../utils/auth.js"
 import { MalformedRequestError } from "../errors/index.js"
 

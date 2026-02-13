@@ -1,8 +1,8 @@
 import _ from "lodash"
 import jskos from "jskos-tools"
 import { validate } from "jskos-validate"
-import * as utils from "../utils/index.js"
-
+import * as utils from "../utils/middleware.js"
+import { toOpenSearchSuggestFormat, addKeywords } from "../utils/searchHelper.js"
 import { Concept } from "../models/concepts.js"
 import { SchemeService } from "../services/schemes.js"
 import { MalformedBodyError, MalformedRequestError, EntityNotFoundError, InvalidBodyError, DatabaseAccessError } from "../errors/index.js"
@@ -72,7 +72,7 @@ export class ConceptService extends Service {
       criteria = { "topConceptOf.uri": { $type: 2 } }
     }
     const concepts = await this.conceptFind(criteria, query.offset, query.limit)
-    concepts.totalCount = await utils.count(Concept, [{ $match: criteria }])
+    concepts.totalCount = await Service.count(Concept, [{ $match: criteria }])
     return concepts
   }
 
@@ -127,7 +127,7 @@ export class ConceptService extends Service {
       return this.conceptFind(mongoQuery, null, null, false).cursor()
     }
     const concepts = await this.conceptFind(mongoQuery, query.offset, query.limit)
-    concepts.totalCount = await utils.count(Concept, utils.queryToAggregation(mongoQuery))
+    concepts.totalCount = await Service.count(Concept, utils.queryToAggregation(mongoQuery))
     return concepts
   }
 
@@ -190,10 +190,7 @@ export class ConceptService extends Service {
       // Return in JSKOS format
       return results.slice(query.offset, query.offset + query.limit)
     }
-    return utils.searchHelper.toOpenSearchSuggestFormat({
-      query,
-      results,
-    })
+    return toOpenSearchSuggestFormat({ query, results })
   }
 
   /**
@@ -462,7 +459,7 @@ export class ConceptService extends Service {
       concept.topConceptOf[0].uri = scheme.uri
     }
     // Add index keywords
-    utils.searchHelper.addKeywords(concept)
+    addKeywords(concept)
   }
 
   /**

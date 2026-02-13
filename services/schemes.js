@@ -1,7 +1,8 @@
 import _ from "lodash"
-import * as utils from "../utils/index.js"
+import * as utils from "../utils/middleware.js"
 import { validate } from "jskos-validate"
 
+import { toOpenSearchSuggestFormat, addKeywords } from "../utils/searchHelper.js"
 import { MalformedBodyError, MalformedRequestError, EntityNotFoundError, DatabaseAccessError, InvalidBodyError } from "../errors/index.js"
 import { Scheme } from "../models/schemes.js"
 import { Concept } from "../models/concepts.js"
@@ -108,7 +109,7 @@ export class SchemeService extends Service {
     }
 
     const schemes = await Scheme.aggregate(pipeline)
-    schemes.totalCount = await utils.count(Scheme, [{ $match: mongoQuery }])
+    schemes.totalCount = await Service.count(Scheme, [{ $match: mongoQuery }])
 
     return schemes
   }
@@ -155,7 +156,7 @@ export class SchemeService extends Service {
       // Return in JSKOS format
       return results.slice(query.offset, query.offset + query.limit)
     }
-    return utils.searchHelper.toOpenSearchSuggestFormat({
+    return toOpenSearchSuggestFormat({
       query,
       results,
     })
@@ -297,7 +298,7 @@ export class SchemeService extends Service {
       // Add _id
       scheme._id = scheme.uri
       // Add index keywords
-      utils.searchHelper.addKeywords(scheme)
+      addKeywords(scheme)
       // Remove created for update action
       if (action === "update") {
         delete scheme.created
