@@ -183,7 +183,7 @@
       "$ref": "#/definitions/capabilityAndForbidMappingOnlyProperties"
     },
     "registries": {
-      "$ref": "#/definitions/registriesCapabilityAndForbidMappingAndAnnotationOnlyProperties"
+      "$ref": "#/definitions/registries"
     }
   },
   "definitions": {
@@ -241,7 +241,7 @@
         }
       ]
     },
-    "registriesCapabilityAndForbidMappingAndAnnotationOnlyProperties": {
+    "registries": {
       "anyOf": [
         {
           "type": "boolean"
@@ -266,6 +266,21 @@
       "additionalProperties": false,
       "type": "object",
       "definitions": {
+        "registryTypeConfig": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "uriRequired": {
+              "type": "boolean"
+            },
+            "mustExist": {
+              "type": "boolean"
+            },
+            "ignoreErrors": {
+              "type": "boolean"
+            }
+          }
+        },
         "auth": {
           "description": "Indicates whether a certain action requires authentication.",
           "type": "boolean"
@@ -497,28 +512,16 @@
           "additionalProperties": false,
           "properties": {
             "concepts": {
-              "type": "boolean"
+              "$ref": "#/definitions/registriesCapability/definitions/registryTypeConfig"
             },
             "schemes": {
-              "type": "boolean"
+              "$ref": "#/definitions/registriesCapability/definitions/registryTypeConfig"
             },
             "concordances": {
-              "type": "boolean"
-            },
-            "occurrences": {
-              "type": "boolean"
-            },
-            "registries": {
-              "type": "boolean"
-            },
-            "types": {
-              "type": "boolean"
-            },
-            "properties": {
-              "type": "boolean"
+              "$ref": "#/definitions/registriesCapability/definitions/registryTypeConfig"
             },
             "annotations": {
-              "type": "boolean"
+              "$ref": "#/definitions/registriesCapability/definitions/registryTypeConfig"
             }
           }
         },

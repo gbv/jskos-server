@@ -3,11 +3,13 @@ import * as utils from "../utils/index.js"
 import { validate } from "jskos-validate"
 import config from "../config/index.js"
 import { Registry } from "../models/registries.js"
+import { Annotation, Concept, Concordance, Scheme } from "../models/index.js"
 import {
   EntityNotFoundError,
   DatabaseAccessError,
   InvalidBodyError,
   InvalidRegistryMembershipError,
+  InvalidRegistryMixedMembershipError,
   MalformedBodyError,
   MalformedRequestError,
 } from "../errors/index.js"
@@ -105,51 +107,6 @@ export class RegistryService {
   }
 
   /**
-   * Validates registry fields based on config.registries.types.
-   *
-   * @param {Object} registry registry object
-   * @throws {InvalidRegistryMembershipError} When a disallowed field is present.
-   */
-  validateMembershipFields(registry) {
-    const typesConfig = config?.registries?.types
-    if (!typesConfig || typeof typesConfig !== "object") {
-      return
-    }
-    const typeFields = Object.keys(typesConfig)
-
-    // Fields that are disallowed by config (typesConfig[field] === false)
-    const disallowedFields = Object.entries(typesConfig)
-      .filter(([, allowed]) => allowed === false)
-      .map(([field]) => field)
-
-    // Disallowed fields that are actually present on the registry object
-    const disallowed = disallowedFields.filter(field =>
-      registry?.[field] !== undefined && registry?.[field] !== null,
-    )
-
-    if (disallowed.length) {
-      throw new InvalidRegistryMembershipError(
-        `Registry validation failed: disallowed field(s): ${disallowed.join(", ")}`,
-      )
-    }
-
-    // If mixedTypes is not allowed, check that at most one type field is present
-    const mixedTypes = config?.registries?.mixedTypes
-    if (mixedTypes === true) {
-      const presentTypes = typeFields.filter(
-        (field) =>
-          registry?.[field] !== undefined && registry?.[field] !== null,
-      )
-      if (presentTypes.length > 1) {
-        throw new InvalidRegistryMembershipError(
-          `Registry validation failed: mixed types are not allowed (${presentTypes.join(", ")}).`,
-        )
-      }
-    }
-
-  }
-
-  /**
    * Prepares and checks a registry before inserting/updating:
    * - validates object, throws error if it doesn't (create/update)
    * - add `_id` property (create/update)
@@ -177,7 +134,7 @@ export class RegistryService {
       }
 
       // Validate membership fields
-      this.validateMembershipFields(registry)
+      await this.validateMembershipFields(registry)
 
       // Add _id
       registry._id = registry.uri
@@ -233,15 +190,45 @@ export class RegistryService {
     registries = await Promise.all(registries.map(registry => {
       return this.prepareAndCheckRegistryForAction(registry, "create")
         .catch(error => {
-          // Ignore errors for bulk
-          if (bulk) {
-            skipped.push({
-              uri: registry?.uri,
-              error: error?.name,
-              message: error?.message,
-            })
-            return null
+          const isAggregateError =
+            error instanceof AggregateError ||
+            (error?.name === "AggregateError" && Array.isArray(error?.errors))
+          const errors = isAggregateError ? error.errors : [error]
+          const membershipErrors = errors.filter(
+            err => err?.name === "InvalidRegistryMembershipError" && err?.field,
+          )
+          const otherErrors = errors.filter(
+            err => !(err?.name === "InvalidRegistryMembershipError" && err?.field),
+          )
+
+          if (otherErrors.length) {
+            throw otherErrors[0]
           }
+
+          // Check if config states to ignore errors for the fields in question, if so skip instead of throwing
+          const nonIgnorableMembershipErrors = membershipErrors.filter(
+            err => config?.registries?.types?.[err.field]?.ignoreErrors !== true,
+          )
+          if (nonIgnorableMembershipErrors.length) {
+            throw nonIgnorableMembershipErrors[0]
+          }
+
+          if (membershipErrors.length) {
+            if (bulk) {
+              skipped.push({
+                uri: registry?.uri,
+                error: "InvalidRegistryMembershipError",
+                message: membershipErrors.map(err => err.message).join("; "),
+                field: membershipErrors.map(err => err.field),
+              })
+              console.warn(
+                `[warn] ${membershipErrors.map(err => err.message).join("; ")} => skipping registry object.`,
+              )
+              return null
+            }
+            throw membershipErrors[0]
+          }
+
           throw error
         })
     }))
@@ -293,7 +280,7 @@ export class RegistryService {
     // Remove type property
     _.unset(body, "type")
 
-    this.validateMembershipFields(body)
+    await this.validateMembershipFields(body)
 
     // Validate registry
     const ok = validate.registry ? validate.registry(body) : validate(body)
@@ -365,7 +352,7 @@ export class RegistryService {
 
     utils.removeNullProperties(existing)
 
-    this.validateMembershipFields(existing)
+    await this.validateMembershipFields(existing)
 
     // Validate merged object
     const ok = validate.registry
@@ -471,6 +458,170 @@ export class RegistryService {
     await Registry.collection.dropIndexes()
     for (const [index, options] of indexes) {
       await Registry.collection.createIndex(index, options)
+    }
+  }
+
+  /**
+   * Validates registry membership fields based on config.
+   *
+   * @param {Object} registry registry object
+   * @throws {InvalidRegistryMembershipError} When a disallowed membership field is present.
+   */
+  async validateMembershipFields(registry) {
+    const typesConfig = config?.registries?.types
+    if (!typesConfig || typeof typesConfig !== "object") {
+      return
+    }
+    const typeFields = Object.keys(typesConfig)
+    const membershipErrorsByField = new Map()
+    const otherErrors = []
+
+    const recordMembershipError = (field, message) => {
+      if (membershipErrorsByField.has(field)) {
+        return
+      }
+      const error = new InvalidRegistryMembershipError(message)
+      error.field = field
+      membershipErrorsByField.set(field, error)
+    }
+
+    const recordMixedTypeError = (message) => {
+      otherErrors.push(new InvalidRegistryMixedMembershipError(message))
+    }
+
+    // If mixedTypes is not allowed, check that at most one type field is present
+    const mixedTypes = config?.registries?.mixedTypes
+    if (mixedTypes !== true) {
+      const presentTypes = typeFields.filter(
+        (field) =>
+          registry?.[field] !== undefined && registry?.[field] !== null,
+      )
+      if (presentTypes.length > 1) {
+        const presentTypesList = presentTypes.join(", ")
+        recordMixedTypeError(
+          `mixed types are not allowed (${presentTypesList}).`,
+        )
+      }
+    }
+
+    // Fields that are disallowed by config (typesConfig[field] === false)
+    const disallowedFields = Object.entries(typesConfig)
+      .filter(([, allowed]) => allowed === false)
+      .map(([field]) => field)
+
+    // Disallowed fields that are actually present on the registry object
+    const disallowed = disallowedFields.filter(field =>
+      registry?.[field] !== undefined && registry?.[field] !== null,
+    )
+
+    if (disallowed.length) {
+      for (const field of disallowed) {
+        recordMembershipError(
+          field,
+          `Registry membership field "${field}" is not allowed.`,
+        )
+      }
+    }
+
+    const uriRequiredFields = typeFields.filter(
+      field => typesConfig?.[field]?.uriRequired === true,
+    )
+    const membershipUris = this.collectMembershipUris(
+      registry,
+      uriRequiredFields,
+      recordMembershipError,
+    )
+
+    await this.validateMembershipExistence(
+      membershipUris,
+      typesConfig,
+      recordMembershipError,
+    )
+
+    const errors = [...membershipErrorsByField.values(), ...otherErrors]
+    if (errors.length === 1) {
+      throw errors[0]
+    }
+    if (errors.length > 1) {
+      throw new AggregateError(errors, "Registry membership validation failed")
+    }
+  }
+
+  /**
+   * Collects membership URIs for fields that require a uri.
+   *
+   * @param {Object} registry registry object
+   * @param {string[]} uriRequiredFields fields that require uri
+   * @returns {Object<string, string[]>} map of field -> uri list
+   * @param {Function} recordMembershipError callback for recording errors
+   */
+  collectMembershipUris(registry, uriRequiredFields, recordMembershipError) {
+    const membershipUris = {}
+    for (const field of uriRequiredFields) {
+      const value = registry?.[field]
+      if (value === undefined || value === null) {
+        continue
+      }
+      const entries = Array.isArray(value) ? value : [value]
+      membershipUris[field] = entries
+        .map(entry => (typeof entry?.uri === "string" ? entry.uri.trim() : ""))
+        .filter(Boolean)
+      const hasMissingUri = entries.some(entry => {
+        const uri = entry?.uri
+        return typeof uri !== "string" || !uri.trim()
+      })
+      if (hasMissingUri) {
+        recordMembershipError(
+          field,
+          `${field} must include a non-empty uri string.`,
+        )
+      }
+    }
+
+    return membershipUris
+  }
+
+  /**
+   * Checks if referenced membership entities exist in the database.
+   *
+   * @param {Object<string, string[]>} membershipUris map of field -> uri list
+   * @param {Object} typesConfig config for registry membership fields
+   * @param {Function} recordMembershipError callback for recording errors
+   */
+  async validateMembershipExistence(
+    membershipUris,
+    typesConfig,
+    recordMembershipError,
+  ) {
+    const modelMap = {
+      concepts: Concept,
+      schemes: Scheme,
+      concordances: Concordance,
+      registries: Registry,
+      annotations: Annotation,
+    }
+
+    for (const [field, uris] of Object.entries(membershipUris)) {
+      const fieldConfig = typesConfig?.[field]
+      if (!fieldConfig || fieldConfig.mustExist !== true) {
+        continue
+      }
+      const model = modelMap[field]
+      if (!model || !uris?.length) {
+        continue
+      }
+
+      const results = await Promise.all(uris.map(async uri => {
+        const doc = await model.findOne({ uri: uri }).lean()
+        return { uri, exists: !!doc }
+      }))
+      const missing = results.filter(result => !result.exists).map(result => result.uri)
+      if (missing.length) {
+        recordMembershipError(
+          field,
+          `${field} contains unknown uri(s): ${missing.join(", ")}`,
+        )
+      }
     }
   }
 }

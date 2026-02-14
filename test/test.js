@@ -7,6 +7,7 @@ import { promisify } from "node:util"
 import _ from "lodash"
 import { assertMongoDB, dropDatabaseBeforeAndAfter, setupInMemoryMongo, createCollectionsAndIndexes, teardownInMemoryMongo } from "./test-utils.js"
 import { isValidUuid } from "../utils/index.js"
+import config from "../config/index.js"
 
 // Prepare jwt
 import jwt from "jsonwebtoken"
@@ -2245,5 +2246,188 @@ describe("Express Server", () => {
       })
     })
 
+  })
+
+  describe("POST registries with memberships", () => {
+    const baseRegistry = {
+      uri: "http://example.org/registry/membership-base",
+      notation: ["MEMBERSHIP-BASE"],
+      prefLabel: { en: "Membership Base Registry" },
+      type: ["http://www.w3.org/ns/dcat#Catalog"],
+      concordances: [],
+      schemes: [],
+    }
+
+    const defaultRegistriesConfig = {
+      mixedTypes: false,
+      types: {
+        ..._.cloneDeep(config.registries.types),
+        concordances: {
+          ..._.cloneDeep(config.registries.types.concordances),
+          uriRequired: false,
+          mustExist: false,
+          ignoreErrors: false,
+        },
+      },
+    }
+
+    before(async function () {
+      this.timeout(15000)
+      await promisify(cpexec)(
+        "NODE_ENV=test ./bin/import.js concordances ./test/concordances/concordances.ndjson",
+      )
+    })
+
+    beforeEach(() => {
+      config.registries.mixedTypes = true
+      config.registries.types = _.cloneDeep(defaultRegistriesConfig.types)
+    })
+
+    after(() => {
+      config.registries.mixedTypes = true
+      config.registries.types = defaultRegistriesConfig.types
+    })
+
+    it("should reject registry with concordance missing uri", (done) => {
+      config.registries.types.concordances.uriRequired = true
+      config.registries.types.concordances.ignoreErrors = false
+
+      const registry = _.cloneDeep(baseRegistry)
+      registry.uri = "http://example.org/registry/membership-test"
+      registry.concordances = [{}]
+
+      chai.request
+        .execute(server.app)
+        .post("/registries")
+        .set("Authorization", `Bearer ${token}`)
+        .send(registry)
+        .end((err, res) => {
+          res.should.have.status(422)
+          res.body.error.should.be.eql("InvalidRegistryMembershipError")
+          done()
+        })
+    })
+
+    it("should reject registry with unknown concordance uri", (done) => {
+      config.registries.types.concordances.uriRequired = true
+      config.registries.types.concordances.mustExist = true
+      config.registries.types.concordances.ignoreErrors = false
+
+      const registry = _.cloneDeep(baseRegistry)
+      registry.uri = "http://example.org/registry/membership-test-unknown"
+      registry.concordances = [{ uri: "fake:uri-that-does-not-exist" }]
+
+      chai.request
+        .execute(server.app)
+        .post("/registries")
+        .set("Authorization", `Bearer ${token}`)
+        .send(registry)
+        .end((err, res) => {
+          res.should.have.status(422)
+          res.body.error.should.be.eql("InvalidRegistryMembershipError")
+          done()
+        })
+    })
+
+    it("should accept registry with existing concordance uri", (done) => {
+      config.registries.types.concordances.uriRequired = true
+      config.registries.types.concordances.mustExist = true
+      config.registries.types.concordances.ignoreErrors = false
+      config.registries.mixedTypes = true
+
+      const registry = _.cloneDeep(baseRegistry)
+      registry.uri = "http://example.org/registry/membership-test-known"
+      registry.concordances = [
+        { uri: "http://coli-conc.gbv.de/concordances/ddc_rvk_recht" },
+      ]
+
+      chai.request
+        .execute(server.app)
+        .post("/registries")
+        .set("Authorization", `Bearer ${token}`)
+        .send(registry)
+        .end((err, res) => {
+          res.should.have.status(201)
+          res.body.should.be.an("object")
+          res.body.uri.should.be.eql(registry.uri)
+          done()
+        })
+    })
+
+    it("should reject registry with mixed membership types when mixedTypes=false", (done) => {
+      config.registries.mixedTypes = false
+      config.registries.types.concordances.uriRequired = true
+      config.registries.types.concordances.ignoreErrors = true
+
+      const registry = _.cloneDeep(baseRegistry)
+      registry.uri = "http://example.org/registry/membership-mixed-types"
+      registry.concordances = [{ uri: "http://example.org/concordance/1" }]
+      registry.schemes = [{ uri: "http://example.org/scheme/1" }]
+
+      chai.request
+        .execute(server.app)
+        .post("/registries")
+        .set("Authorization", `Bearer ${token}`)
+        .send(registry)
+        .end((err, res) => {
+          res.should.have.status(422)
+          res.body.error.should.be.eql("InvalidRegistryMixedMembershipError")
+          done()
+        })
+    })
+
+    it("should allow mixed membership types when mixedTypes=true", (done) => {
+      config.registries.mixedTypes = true
+      config.registries.types.concordances.uriRequired = true
+      config.registries.types.concordances.ignoreErrors = true
+
+      const registry = _.cloneDeep(baseRegistry)
+      registry.uri = "http://example.org/registry/membership-mixed-types-allowed"
+      registry.concordances = [{ uri: "http://example.org/concordance/2" }]
+      registry.schemes = [{ uri: "http://example.org/scheme/2" }]
+
+      chai.request
+        .execute(server.app)
+        .post("/registries")
+        .set("Authorization", `Bearer ${token}`)
+        .send(registry)
+        .end((err, res) => {
+          res.should.have.status(201)
+          res.body.should.be.an("object")
+          res.body.uri.should.be.eql(registry.uri)
+          done()
+        })
+    })
+
+    it("should skip invalid registry object in multiple upload", (done) => {
+      config.registries.mixedTypes = true
+      config.registries.types.concordances.uriRequired = true
+      config.registries.types.concordances.mustExist = true
+      config.registries.types.concordances.ignoreErrors = true
+
+      const validRegistry = _.cloneDeep(baseRegistry)
+      validRegistry.uri = "http://example.org/registry/membership-valid"
+      validRegistry.concordances = [
+        { uri: "http://coli-conc.gbv.de/concordances/ddc_rvk_recht" },
+      ]
+
+      const invalidRegistry = _.cloneDeep(baseRegistry)
+      invalidRegistry.uri = "http://example.org/registry/membership-invalid-uri"
+      invalidRegistry.concordances = [{}]
+
+      chai.request
+        .execute(server.app)
+        .post("/registries")
+        .query({ bulk: true })
+        .set("Authorization", `Bearer ${token}`)
+        .send([validRegistry, invalidRegistry])
+        .end((err, res) => {
+          res.should.have.status(201)
+          res.body.should.be.an("object")
+          res.body.importedCount.should.be.eql(1)
+          res.body.skippedCount.should.be.eql(1)
+          done()
+        })
+    })
   })
 })

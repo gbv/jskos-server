@@ -83,14 +83,26 @@
       "crossUser": false
     },
     "types": {
-      "concepts": true,
-      "schemes": true,
-      "concordances": true,
-      "occurrences": true,
-      "registries": true,
-      "types": true,
-      "properties": true,
-      "annotations": true
+      "concepts": {
+        "uriRequired": false,
+        "mustExist": false,
+        "ignoreErrors": false
+      },
+      "schemes": {
+        "uriRequired": false,
+        "mustExist": false,
+        "ignoreErrors": false
+      },
+      "concordances": {
+        "uriRequired": false,
+        "mustExist": false,
+        "ignoreErrors": false
+      },
+      "annotations": {
+        "uriRequired": false,
+        "mustExist": false,
+        "ignoreErrors": false
+      }
     },
     "mixedTypes": false
   },

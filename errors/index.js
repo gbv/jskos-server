@@ -45,8 +45,22 @@ export class InvalidBodyError extends Error {
 }
 
 export class InvalidRegistryMembershipError extends Error {
+  constructor(message, field) {
+    super(
+      message ||
+        "Registry membership fields are not allowed.",
+    )
+    this.name = "InvalidRegistryMembershipError"
+    this.statusCode = 422
+    if (field !== undefined) {
+      this.field = field
+    }
+  }
+}
+
+export class InvalidRegistryMixedMembershipError extends Error {
   constructor(message) {
-    message = message || "Registry membership fields are not allowed by server configuration."
+    message = message || "Registry membership fields are not allowed in combination with other fields."
     super(message)
     this.statusCode = 422
   }

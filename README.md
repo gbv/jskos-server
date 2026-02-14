@@ -2342,11 +2342,11 @@ Returns registry suggestions.
   ```
 
 ### POST /registries
-Saves an annotation or multiple registries in the database.
+Saves one registry or multiple registries in the database.
 
 * **URL Params**
 
-  `bulk=[boolean]` `1` or `true` enable bulk mode for importing multiple registries into the database. Errors for individual registries will be ignored and existing registries will be overridden. The resulting set will only include the `id` for each registry that was written into the database.
+  `bulk=[boolean]` `1` or `true` enable bulk mode for importing multiple registries into the database. Existing registries will be overridden. The resulting set will only include the `id` for each registry that was written into the database.
 
 * **Success Response**
 
@@ -2354,7 +2354,8 @@ Saves an annotation or multiple registries in the database.
 
 * **Error Response**
 
-  When a single registry is provided, an error can be returned if there's something wrong with it (see [errors](#errors)). When multiple registries are provided, the first error will be returned, except if bulk mode is enabled in which errors for individual registries are ignored.
+  Bulk mode: invalid registries are skipped.
+  Non-bulk mode: the first error is thrown (see [errors](#errors)).
 
 ### PUT /registries/:_id
 Overwrites a registry in the database.
@@ -2473,6 +2474,12 @@ Status code 422. Will be returned for `POST` if an entity with the same ID/URI a
 
 #### InvalidBodyError
 Status code 422. Will be returned for `POST`/`PUT`/`PATCH` if the body was valid JSON, but could not be validated (e.g. does not pass the JSKOS Schema).
+
+#### InvalidRegistryMembershipError
+Status code 422. Will be returned for `POST`/`PUT`/`PATCH` when a registry contains a disallowed membership field or references unknown membership URIs.
+
+#### InvalidRegistryMixedMembershipError
+Status code 422. Will be returned when a registry uses mixed membership types while `registries.mixedTypes` is not allowed.
 
 #### CreatorDoesNotMatchError
 Status code 403. Will be returned by `PUT`/`PATCH`/`DELETE` endpoints if the authenticated creator does not match the creator of the entity that is being edited.
