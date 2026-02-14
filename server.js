@@ -1,10 +1,20 @@
 import config from "./config/index.js"
-import * as utils from "./utils/index.js"
+import * as utils from "./utils/middleware.js"
 import express from "express"
 import * as db from "./utils/db.js"
 import morgan from "morgan"
 import nocache from "nocache"
-import * as routers from "./routes/index.js"
+
+import createAnnotationRouter from "./routes/annotations.js"
+import createConceptRouter from "./routes/concepts.js"
+import createConcordanceRouter from "./routes/concordances.js"
+import createMappingRouter from "./routes/mappings.js"
+import createSchemeRouter from "./routes/schemes.js"
+import createRegistryRouter from "./routes/registries.js"
+import createStatusRouter from "./routes/status.js"
+import createDataRouter from "./routes/data.js"
+import createValidateRouter from "./routes/validate.js"
+
 import { ipcheck } from "./utils/ipcheck.js"
 import * as auth from "./utils/auth.js"
 import * as errors from "./errors/index.js"
@@ -59,7 +69,7 @@ const connect = async () => {
         config.warn("annotations.mismatchTagVocabulary is configured, but no data for that vocabulary could be found in the database. Import the vocabulary data into this instance for the setting to work.")
       }
     }
-  } catch(error) {
+  } catch (error) {
     config.warn("Error connecting to database, reconnect in a few seconds...")
   }
 }
@@ -98,7 +108,7 @@ app.get("/", (req, res) => {
 app.use("/status.schema.json", express.static(__dirname + "/status.schema.json"))
 
 // Status page /status
-app.use("/status", routers.statusRouter)
+app.use("/status", createStatusRouter(config))
 
 // Database check middleware
 app.use((req, res, next) => {
@@ -110,38 +120,36 @@ app.use((req, res, next) => {
   }
 })
 // IP check middleware
-app.use(ipcheck)
+app.use(ipcheck(config))
+
 // /checkAuth
 app.get("/checkAuth", auth.main, (req, res) => {
   res.sendStatus(204)
 })
-// Scheme related endpoints
+
+// Add conditional routes
 if (config.schemes) {
-  app.use("/voc", routers.schemeRouter)
+  app.use("/voc", createSchemeRouter(config))
 }
-// Mapping related endpoints
 if (config.mappings) {
-  app.use("/mappings", routers.mappingRouter)
+  app.use("/mappings", createMappingRouter(config))
 }
 if (config.concordances) {
-  app.use("/concordances", routers.concordanceRouter)
+  app.use("/concordances", createConcordanceRouter(config))
 }
-// Annotation related endpoints
 if (config.annotations) {
-  app.use("/annotations", routers.annotationRouter)
+  app.use("/annotations", createAnnotationRouter(config))
 }
-// Concept related endpoints
 if (config.concepts) {
-  app.use(routers.conceptRouter)
+  app.use(createConceptRouter(config))
 }
-// Registry related endpoints
 if (config.registries) {
-  app.use("/registries", routers.registryRouter)
+  app.use("/registries", createRegistryRouter(config))
 }
-// Data endpoint
-app.use(routers.dataRouter)
-// Validate endpoint
-app.use("/validate", routers.validateRouter)
+
+// These routes are always enabled
+app.use("/data", createDataRouter(config))
+app.use("/validate", createValidateRouter(config))
 
 // Error handling
 app.use((error, req, res, next) => {
@@ -157,8 +165,8 @@ app.use((error, req, res, next) => {
   }
 })
 
-//setup changes API
-await setupChangesApi(app)
+// Changes API
+await setupChangesApi(app, config)
 
 const start = async () => {
   if (config.env == "test") {

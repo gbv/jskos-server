@@ -15,7 +15,7 @@
     a:hover, a:active {
       text-decoration: underline;
     }
-    .ws-endpoint {
+    .badge {
       display: inline-block;
       background-color:#29517C ;
       color: white;
@@ -33,7 +33,6 @@
     <p>
       This service provides a subset of JSKOS API <%= config.version %>. All the following endpoints are available on this instance of jskos-server. See documentation <a href="https://github.com/gbv/jskos-server" target="_blank">on GitHub</a> for details.
     </p>
-
     <h3>General</h3>
     <ul>
       <li>GET <a href="status">/status</a> - Returns a status object (<a href="status.schema.json">JSON Schema</a>, <a href="https://github.com/gbv/jskos-server#get-status" target="_blank">documentation</a>)</li>
@@ -56,8 +55,8 @@
       <% if (config.concordances.delete) { %>
       <li>DELETE /concordances/:_id - Deletes a mapping from the database (<% if (config.concordances.delete.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#delete-concordances_id" target="_blank">documentation</a>)</li>
       <% } %>
-       <% if (isChangesApiAvailable) { %>
-        <li>WS /concordances/changes - Real-time updates for concordances via WebSocket (<a href="https://github.com/gbv/jskos-server#real-time-change-stream-endpoints" target="_blank">documentation</a>) <span class="ws-endpoint">WebSocket</span></li>
+       <% if (config.changes) { %>
+        <li>WS /concordances/changes - Real-time updates for concordances via WebSocket (<a href="https://github.com/gbv/jskos-server#change-stream-endpoints" target="_blank">documentation</a>)</li>
       <% } %>
     </ul>
     <% } %>
@@ -79,8 +78,8 @@
       <li>GET <a href="mappings/infer">/mappings/infer</a> - Returns mappings based on stored mappings and mappings derived by inference (<a href="https://github.com/gbv/jskos-server#get-mappingsinfer" target="_blank">documentation</a>)</li>
       <li>GET <a href="mappings/suggest">/mappings/suggest</a> - Suggests notations used in mappings (<a href="https://github.com/gbv/jskos-server#get-mappingssuggest" target="_blank">documentation</a>)</li>
       <li>GET <a href="mappings/voc">/mappings/voc</a> - Returns a list of concept schemes used in mappings (<a href="https://github.com/gbv/jskos-server#get-mappingsvoc" target="_blank">documentation</a>)</li>
-       <% if (isChangesApiAvailable) { %>
-        <li>WS /mappings/changes - Real-time updates for mappings via WebSocket (<a href="https://github.com/gbv/jskos-server#real-time-change-stream-endpoints" target="_blank">documentation</a>) <span class="ws-endpoint">WebSocket</span></li>
+       <% if (config.changes) { %>
+        <li>WS /mappings/changes - Real-time updates for mappings via WebSocket (<a href="https://github.com/gbv/jskos-server#change-stream-endpoints" target="_blank">documentation</a>)</li>
       <% } %>
     </ul>
     <% } %>
@@ -96,8 +95,8 @@
       <li>GET <a href="voc/search">/voc/search</a> - Concept scheme search
         (<a href="https://github.com/gbv/jskos-server#get-vocsearch" target="_blank">documentation</a>)</li>
 
-       <% if (isChangesApiAvailable) { %>
-        <li>WS /voc/changes - Real-time updates for concept schemes via WebSocket (<a href="https://github.com/gbv/jskos-server#real-time-change-stream-endpoints" target="_blank">documentation</a>) <span class="ws-endpoint">WebSocket</span></li>
+       <% if (config.changes) { %>
+        <li>WS /voc/changes - Real-time updates for concept schemes via WebSocket (<a href="https://github.com/gbv/jskos-server#change-stream-endpoints" target="_blank">documentation</a>)</li>
       <% } %>
 
       <% if (config.schemes.create) { %>
@@ -128,8 +127,8 @@
       <% if (config.concepts.delete) { %>
       <li>DELETE /concepts - Deletes a concept from the database (<% if (config.concepts.delete.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#delete-concepts" target="_blank">documentation</a>)</li>
       <% } %>
-     <% if (isChangesApiAvailable) { %>
-        <li>WS /concepts/changes - Real-time updates for concepts via WebSocket (<a href="https://github.com/gbv/jskos-server#real-time-change-stream-endpoints" target="_blank">documentation</a>) <span class="ws-endpoint">WebSocket</span> </li>
+     <% if (config.changes) { %>
+        <li>WS /concepts/changes - Real-time updates for concepts via WebSocket (<a href="https://github.com/gbv/jskos-server#change-stream-endpoints" target="_blank">documentation</a>) </li>
       <% } %>
     </ul>
     <% } %>
@@ -150,8 +149,8 @@
         <% if (config.annotations.delete) { %>
         <li>DELETE /annotations/:_id - Deletes an annotation from the database (<% if (config.annotations.delete.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#put-annotations_id" target="_blank">documentation</a>)</li>
         <% } %>
-         <% if (isChangesApiAvailable) { %>
-        <li>WS /annotations/changes - Real-time updates for annotations via WebSocket (<a href="https://github.com/gbv/jskos-server#real-time-change-stream-endpoints" target="_blank">documentation</a>) <span class="ws-endpoint">WebSocket</span></li>
+         <% if (config.changes) { %>
+        <li>WS /annotations/changes - Real-time updates for annotations via WebSocket (<a href="https://github.com/gbv/jskos-server#change-stream-endpoints" target="_blank">documentation</a>)</li>
       <% } %>
     </ul>
     <% } %>
@@ -165,8 +164,8 @@
       <li>PUT /registries/:_id - Overwrites a registry in the database (<a href="https://github.com/gbv/jskos-server#put-registries_id" target="_blank">documentation</a>)</li>
       <li>PATCH /registries/:_id - Adjusts a registry in the database (<a href="https://github.com/gbv/jskos-server#patch-registries_id" target="_blank">documentation</a>)</li>
       <li>DELETE /registries/:_id - Deletes a registry from the database (<a href="https://github.com/gbv/jskos-server#put-registries_id" target="_blank">documentation</a>)</li>
-      <% if (isChangesApiAvailable) { %>
-      <li>WS /registries/changes - Real-time updates for registries via WebSocket (<a href="https://github.com/gbv/jskos-server#real-time-change-stream-endpoints" target="_blank">documentation</a>) <span class="ws-endpoint">WebSocket</span> </li>
+      <% if (config.changes) { %>
+      <li>WS /registries/changes - Real-time updates for registries via WebSocket (<a href="https://github.com/gbv/jskos-server#change-stream-endpoints" target="_blank">documentation</a>) </li>
       <% } %>
     </ul>
     <% } %>

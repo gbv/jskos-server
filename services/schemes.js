@@ -1,13 +1,20 @@
 import _ from "lodash"
-import config from "../config/index.js"
-import * as utils from "../utils/index.js"
+import { bulkOperationForEntities } from "../utils/utils.js"
 import { validate } from "jskos-validate"
 
+import { toOpenSearchSuggestFormat, addKeywords } from "../utils/searchHelper.js"
 import { MalformedBodyError, MalformedRequestError, EntityNotFoundError, DatabaseAccessError, InvalidBodyError } from "../errors/index.js"
 import { Scheme } from "../models/schemes.js"
 import { Concept } from "../models/concepts.js"
 
-export class SchemeService {
+import { AbstractService } from "./abstract.js"
+
+export class SchemeService extends AbstractService {
+
+  constructor(config) {
+    super(config)
+    this.baseUrl = config.baseUrl
+  }
 
   /**
    * Return a Promise with an array of vocabularies.
@@ -81,10 +88,10 @@ export class SchemeService {
         $set: {
           _uriSuffixNumber: {
             $function: {
-              body: function(uri) {
+              body: function (uri) {
                 return parseInt(uri.substring(uri.lastIndexOf("/") + 1))
               },
-              args: [ "$uri" ],
+              args: ["$uri"],
               lang: "js",
             },
           },
@@ -100,10 +107,10 @@ export class SchemeService {
     if (_.isNumber(query.limit)) {
       pipeline.push({ $limit: query.limit })
     }
-    
+
     const schemes = await Scheme.aggregate(pipeline)
-    schemes.totalCount = await utils.count(Scheme, [{ $match: mongoQuery }])
-    
+    schemes.totalCount = await this._count(Scheme, [{ $match: mongoQuery }])
+
     return schemes
   }
 
@@ -116,7 +123,7 @@ export class SchemeService {
     if (!identifierOrNotation) {
       return null
     }
-    return await Scheme.findOne({ $or: [{ uri: identifierOrNotation }, { identifier: identifierOrNotation }, { notation: new RegExp(`^${_.escapeRegExp(identifierOrNotation)}$`, "i") }]}).lean().exec()
+    return await Scheme.findOne({ $or: [{ uri: identifierOrNotation }, { identifier: identifierOrNotation }, { notation: new RegExp(`^${_.escapeRegExp(identifierOrNotation)}$`, "i") }] }).lean().exec()
   }
 
   async replaceSchemeProperties(entity, propertyPaths, ignoreError = true) {
@@ -149,7 +156,7 @@ export class SchemeService {
       // Return in JSKOS format
       return results.slice(query.offset, query.offset + query.limit)
     }
-    return utils.searchHelper.toOpenSearchSuggestFormat({
+    return toOpenSearchSuggestFormat({
       query,
       results,
     })
@@ -167,7 +174,7 @@ export class SchemeService {
   }
 
   async searchScheme(search) {
-    return utils.searchHelper.searchItem({
+    return this._searchItem({
       search,
       queryFunction: (query) => {
         return Scheme.find(query).lean()
@@ -217,7 +224,7 @@ export class SchemeService {
 
     if (bulk) {
       // Use bulkWrite for most efficiency
-      schemes.length && await Scheme.bulkWrite(utils.bulkOperationForEntities({ entities: schemes, replace: bulkReplace }))
+      schemes.length && await Scheme.bulkWrite(bulkOperationForEntities({ entities: schemes, replace: bulkReplace }))
       schemes = await this.postAdjustmentsForScheme(schemes, { bulk })
       response = schemes.map(s => ({ uri: s.uri }))
     } else {
@@ -291,7 +298,7 @@ export class SchemeService {
       // Add _id
       scheme._id = scheme.uri
       // Add index keywords
-      utils.searchHelper.addKeywords(scheme)
+      addKeywords(scheme)
       // Remove created for update action
       if (action === "update") {
         delete scheme.created
@@ -341,12 +348,12 @@ export class SchemeService {
       }
       if (setApi) {
         let API = scheme.API || []
-        API = API.filter(entry => entry.url !== config.baseUrl)
+        API = API.filter(entry => entry.url !== this.baseUrl)
         if (hasConcepts) {
           API = [
             {
               type: "http://bartoc.org/api-type/jskos",
-              url: config.baseUrl,
+              url: this.baseUrl,
             },
           ].concat(API)
         }
@@ -409,7 +416,4 @@ export class SchemeService {
       await Scheme.collection.createIndex(index, options)
     }
   }
-
 }
-
-export const schemeService = new SchemeService()

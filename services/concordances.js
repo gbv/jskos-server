@@ -1,22 +1,25 @@
 import _ from "lodash"
-import config from "../config/index.js"
-import * as utils from "../utils/index.js"
 import jskos from "jskos-tools"
 import { validate } from "jskos-validate"
 
+import { removeNullProperties } from "../utils/utils.js"
+import { uuid } from "../utils/uuid.js"
+
 import { Concordance } from "../models/concordances.js"
 import { Mapping } from "../models/mappings.js"
-import { schemeService } from "./schemes.js"
+import { SchemeService } from "./schemes.js"
 
 const validateConcordance = validate.concordance
 
 import { MalformedRequestError, EntityNotFoundError, MalformedBodyError, InvalidBodyError, DatabaseAccessError } from "../errors/index.js"
 
-export class ConcordanceService {
+import { AbstractService } from "./abstract.js"
 
-  constructor() {
-    // TODOESM?
-    this.schemeService = schemeService
+export class ConcordanceService extends AbstractService {
+
+  constructor(config) {
+    super(config)
+    this.schemeService = new SchemeService(config)
     this.uriBase = config.baseUrl + "concordances/"
   }
 
@@ -70,7 +73,7 @@ export class ConcordanceService {
     } else {
       // Otherwise, return results
       const concordances = await Concordance.find(mongoQuery).lean().skip(query.offset).limit(query.limit).exec()
-      concordances.totalCount = await utils.count(Concordance, [{ $match: mongoQuery }])
+      concordances.totalCount = await this._count(Concordance, [{ $match: mongoQuery }])
       return concordances
     }
   }
@@ -162,7 +165,7 @@ export class ConcordanceService {
         }
       }
       if (!concordance._id) {
-        concordance._id = concordance.notation && concordance.notation[0] || utils.uuid()
+        concordance._id = concordance.notation && concordance.notation[0] || uuid()
         concordance.uri = this.uriBase + concordance._id
         concordance.notation = [concordance._id].concat((concordance.notation || []).slice(1))
       }
@@ -237,7 +240,7 @@ export class ConcordanceService {
     // Use lodash merge to merge concordance objects
     _.assign(existing, concordance)
 
-    utils.removeNullProperties(existing)
+    removeNullProperties(existing)
 
     // Validate concordance after merge
     if (!validateConcordance(existing)) {
@@ -278,7 +281,7 @@ export class ConcordanceService {
         await Concordance.updateOne({ _id: concordance._id }, { extent: `${count}`, modified: (new Date()).toISOString() })
       }
     } catch (error) {
-      config.error(error)
+      this.error(error)
     }
   }
 
@@ -303,5 +306,3 @@ export class ConcordanceService {
   }
 
 }
-
-export const concordanceService = new ConcordanceService()

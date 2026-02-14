@@ -1,9 +1,10 @@
 import _ from "lodash"
-import * as utils from "../utils/index.js"
+import { removeNullProperties, bulkOperationForEntities } from "../utils/utils.js"
 import { validate } from "jskos-validate"
 import config from "../config/index.js"
 import { Registry } from "../models/registries.js"
 import { Annotation, Concept, Concordance, Scheme } from "../models/index.js"
+import { toOpenSearchSuggestFormat, addKeywords } from "../utils/searchHelper.js"
 import {
   EntityNotFoundError,
   DatabaseAccessError,
@@ -14,7 +15,12 @@ import {
   MalformedRequestError,
 } from "../errors/index.js"
 
-export class RegistryService {
+import { AbstractService } from "./abstract.js"
+
+export class RegistryService extends AbstractService {
+  constructor(config) {
+    super(config)
+  }
   /**
    * Retrieves registry entries.
    *
@@ -84,13 +90,11 @@ export class RegistryService {
    */
   async getSuggestions(query) {
     const results = await this.searchRegistry(query)
-    return utils.searchHelper.toOpenSearchSuggestFormat({ query, results })
+    return toOpenSearchSuggestFormat({ query, results })
   }
 
   /**
    * Searches registry entries based on query params.
-   *
-   * Note: Search uses utils.searchHelper which typically builds a $text query.
    *
    * @param {Object} query - Query parameters.
    * @returns {Promise<Object[]>} Matching registries.
@@ -99,7 +103,7 @@ export class RegistryService {
     const search = query?.search || query?.q || ""
     const voc = query?.voc
 
-    return utils.searchHelper.searchItem({
+    return this._searchItem({
       search,
       voc,
       queryFunction: (mongoQuery) => Registry.find(mongoQuery).lean().exec(),
@@ -140,7 +144,7 @@ export class RegistryService {
       registry._id = registry.uri
 
       // Add index keywords
-      utils.searchHelper.addKeywords(registry)
+      addKeywords(registry)
 
       // Remove created for update action
       if (action === "update") {
@@ -236,8 +240,9 @@ export class RegistryService {
     registries = registries.filter(Boolean)
 
     if (bulk) {
+      // Use bulkWrite for most efficiency
       registries.length && await Registry.bulkWrite(
-        utils.bulkOperationForEntities({ entities: registries, replace: bulkReplace }),
+        Registry.bulkWrite(bulkOperationForEntities({ entities: registries, replace: bulkReplace }))
       )
       response = {
         imported: registries.map(r => ({ uri: r.uri })),
@@ -350,7 +355,7 @@ export class RegistryService {
     // Merge existing with updates
     _.assign(existing, body)
 
-    utils.removeNullProperties(existing)
+    removeNullProperties(existing)
 
     await this.validateMembershipFields(existing)
 
@@ -450,7 +455,7 @@ export class RegistryService {
     try {
       await Registry.createCollection()
     } catch (error) {
-      console.error("Error creating collection:", error)
+      this.error("Error creating collection:", error)
       // Ignore error
     }
 
@@ -625,5 +630,3 @@ export class RegistryService {
     }
   }
 }
-
-export const registryService = new RegistryService()

@@ -27,22 +27,28 @@ if (env !== "test" && !fs.existsSync(configFilePath)) {
 }
 
 // Load environment config
-let configEnv
-try {
-  configEnv = JSON.parse(fs.readFileSync(path.resolve(__dirname, `./config.${env}.json`)))
-} catch(error) {
-  configEnv = {}
+let configEnv = {}
+let configEnvFile = path.resolve(__dirname, `./config.${env}.json`)
+if (fs.existsSync(configEnvFile)) {
+  configEnv = JSON.parse(fs.readFileSync(configEnvFile))
+  console.log(`Read configuration from ${configEnvFile}`)
 }
 // Load user config
 let configUser = {}
-try {
+if (env !== "test") {
   configUser = JSON.parse(fs.readFileSync(configFilePath))
-} catch(error) {
-  if (env !== "test") {
-    console.error(`Warning: Could not load configuration file from ${configFilePath}. Please check whether it is valid JSON and restart the application.`)
+  console.log(`Read configuration from ${configFilePath}`)
+}
+
+// Validate
+Object.entries({ environment: configEnv, user: configUser }).forEach(([name, config]) => {
+  try {
+    validateConfig(config)
+  } catch(error) {
+    console.error(`Could not validate ${name} configuration: ${error}`)
     process.exit(1)
   }
-}
+})
 
 // Validate
 try {

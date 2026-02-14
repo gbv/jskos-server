@@ -8,6 +8,7 @@ import _ from "lodash"
 import { assertMongoDB, dropDatabaseBeforeAndAfter, setupInMemoryMongo, createCollectionsAndIndexes, teardownInMemoryMongo } from "./test-utils.js"
 import { isValidUuid } from "../utils/index.js"
 import config from "../config/index.js"
+import { isValidUuid } from "../utils/uuid.js"
 
 // Prepare jwt
 import jwt from "jsonwebtoken"
@@ -2196,7 +2197,7 @@ describe("Express Server", () => {
         })
     })
 
-    describe("after import", () => {
+    describe("POST /registries", () => {
       before(async function () {
         this.timeout(15000)
         await promisify(cpexec)(

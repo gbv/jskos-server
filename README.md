@@ -21,8 +21,9 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [Data Import](#data-import)
 - [Usage](#usage)
   - [Run Server](#run-server)
-  - [Run Tests](#run-tests)
-  - [Run Supplemental Scripts](#run-supplemental-scripts)
+  - [Supplemental Scripts](#supplemental-scripts)
+  - [Use as Module](#use-as-module)
+  - [Development and Testing](#development-and-testing)
 - [API](#api)
   - [General](#general)
   - [GET /status](#get-status)
@@ -75,8 +76,8 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [PUT /registries/:\_id](#put-registries_id)
   - [PATCH /registries/:\_id](#patch-registries_id)
   - [DELETE /registries/:\_id](#delete-registries_id)
-  - [Errors](#errors)
   - [Change Stream Endpoints](#change-stream-endpoints)
+  - [Errors](#errors)
 - [Deployment](#deployment)
   - [Notes about depolyment on Ubuntu](#notes-about-depolyment-on-ubuntu)
   - [Update an instances deployed with PM2](#update-an-instances-deployed-with-pm2)
@@ -100,7 +101,7 @@ To enable optional [Change Stream endpoints](#change-stream-endpoints) the Mongo
 rs.initiate({ _id: "rs0", members: [{ _id: 0, host: "localhost:27017" }] });
 ```
 
-If the replica set is initialized, JSKOS Server will detect it at startup (the `replSetGetStatus` command is retried up to `changesApi.rsMaxRetries` times). If Change Streams [are configured](#change-streams-configuration) but no replica set was detected, JSKOS Server will log an error during startup but continue running with Change Streams disabled.
+If the replica set is initialized, JSKOS Server will detect it at startup (the `replSetGetStatus` command is retried up to `changes.retries` times). If Change Streams [are configured](#change-streams-configuration) but no replica set was detected, JSKOS Server will log an error during startup but continue running with Change Streams disabled.
 
 ### Docker
 The easiest way to install and use JSKOS Server as stand-alone application is with Docker and Docker Compose. Please refer to [our Docker documentation](docker/README.md) for more information and instructions.
@@ -127,11 +128,6 @@ All missing keys will be defaulted from `config/config.default.json`:
   "version": null,
   "closedWorldAssumption": true,
   "port": 3000,
-  "changesApi" : {
-    "enableChangesApi": false,
-    "rsMaxRetries": 20,
-    "rsRetryInterval": 5000
-  },
   "proxies": [],
   "mongo": {
     "user": "",
@@ -205,6 +201,7 @@ All missing keys will be defaulted from `config/config.default.json`:
       "crossUser": false
     }
   },
+  "changes": false,
   "anonymous": false,
   "identityProviders": null,
   "identities": null,
@@ -259,15 +256,12 @@ Note that any properties not mentioned here are not allowed!
 
 #### Change Streams Configuration
 
-The `changesApi` section controls how JSKOS Server handles MongoDB Change Streams:
+[Change Stream Endpoints](#change-stream-endpoints) are only enabled if `changes` is set to `true` or to an object with the following optional keys:
 
-- **`enableChangesApi`** (boolean, default `false`)
-  Globally turn all `/…/changes` WebSocket endpoints on or off. When `false`, no change-stream routes are registered.
-
-- **`rsMaxRetries`** (integer, default `20`)
+- **`retries`** (integer, default `20`)
   How many times to retry the `replSetGetStatus` command while waiting for the replica set to initialise before giving up.
 
-- **`rsRetryInterval`** (integer, default `5000`)
+- **`interval`** (integer, default `5000`)
   Milliseconds to wait between each retry attempt when checking replica-set status.
 
 Only once the replica set is confirmed will the `/…/changes` endpoints become active, unless MongoDB does is not running with replica set.
@@ -548,6 +542,8 @@ For testing your authentication without a full-fledged solution using login-clie
 JSKOS Server provides scripts to import JSKOS data into the database or delete data from the database. Right now, mappings, terminologies (concept schemes), concepts, concordances, and annotations, in JSON (object or array of objects) or [NDJSON](http://ndjson.org) format are supported.
 
 #### Import Script
+By default the import script has enabled **bulk import** so invalid entities are filtered out and reported only.
+
 Examples of using the import script:
 ```bash
 
@@ -621,6 +617,7 @@ The import script uses the bulk write endpoints to import data. For concept sche
 ## Usage
 
 ### Run Server
+
 ```bash
 # Development server with hot reload and auto reconnect at localhost:3000 (default)
 npm run start
@@ -629,15 +626,28 @@ npm run start
 NODE_ENV=production node ./server.js
 ```
 
-### Run Tests
-Tests will use the real MongoDB with `-test-${namespace}` appended to the database name.
+### Supplemental Scripts
 
-```bash
-npm test
-```
+In addition to [data import](#data-import) there are some supplemental scripts that were added to deal with specific sitatuations. These can be called with `npm run extra name-of-script`. The following scripts are available:
 
-### Run Tests
-All of our tests—including the Change-Stream integration tests—now use an ephemeral, in-memory MongoDB server powered by [mongodb-memory-server](https://www.npmjs.com/package/mongodb-memory-server). No need for a local MongoDB instance running to execute the tests.
+- `supplementNotationsInMappings`: This will look for mappings where the field `notation` is missing for any of the concepts, and it will attempt to supplement those notations. This only works for vocabularies which are also imported into the same jskos-server instance and where either `uriPattern` or `namespace` are given.
+
+### Use as Module
+
+*Use as module is experimental and authentication is ignored!*
+
+~~~js
+import { validateConfig, createServices } from "jskos-server"
+
+validateConfig(config)
+const services = createServices(config)
+
+const scheme = await services.scheme.getScheme(schemeUri)
+~~~
+
+### Development and Testing
+
+Tests use an ephemeral, in-memory MongoDB server powered by [mongodb-memory-server](https://www.npmjs.com/package/mongodb-memory-server).
 
 ```bash
 npm test
@@ -651,10 +661,20 @@ This will:
 4. **Drop** the database before and after each test suite, ensuring full isolation.
 5. **Tear down** the in-memory server when the suite completes.
 
-### Run Supplemental Scripts
-There are some supplemental scripts that were added to deal with specific sitatuations. These can be called with `npm run extra name-of-script`. The following scripts are available:
+Code coverage can be calculated with `npm run coverage` but numbers should be taken with a grain of salt. By the way, lines of code can be calculated with `cloc $(git ls-files)`.
 
-- `supplementNotationsInMappings`: This will look for mappings where the field `notation` is missing for any of the concepts, and it will attempt to supplement those notations. This only works for vocabularies which are also imported into the same jskos-server instance and where either `uriPattern` or `namespace` are given.
+You can also start an in-memory MongoDB with local configuration:
+
+```bash
+npm run mongodb             # not verbose
+npm run mongodb -- --debug  # very verbose
+```
+
+And then start jskos-server:
+
+```bash
+npm run start
+```
 
 ## API
 

@@ -1,50 +1,52 @@
 import _ from "lodash"
 import jskos from "jskos-tools"
 import { validate } from "jskos-validate"
-import * as utils from "../utils/index.js"
 
+import { bulkOperationForEntities, queryToAggregation } from "../utils/utils.js"
+import { toOpenSearchSuggestFormat, addKeywords } from "../utils/searchHelper.js"
 import { Concept } from "../models/concepts.js"
-import { schemeService } from "../services/schemes.js"
+import { SchemeService } from "../services/schemes.js"
 import { MalformedBodyError, MalformedRequestError, EntityNotFoundError, InvalidBodyError, DatabaseAccessError } from "../errors/index.js"
-import config from "../config/index.js"
 
-function conceptFind(query, $skip, $limit, narrower = true) {
-  const pipeline = utils.queryToAggregation(query)
-  if (narrower) {
-    pipeline.push({
-      $lookup: {
-        from: Concept.collection.name,
-        localField: "uri",
-        foreignField: "broader.uri",
-        as: "narrower",
-      },
-    })
-    pipeline.push({
-      $addFields: {
-        narrower: {
-          $reduce: {
-            input: "$narrower",
-            initialValue: [],
-            in: [null],
+import { AbstractService } from "./abstract.js"
+
+export class ConceptService extends AbstractService {
+
+  constructor(config) {
+    super(config)
+    this.schemeService = new SchemeService(config)
+  }
+
+  conceptFind(query, $skip, $limit, narrower = true) {
+    const pipeline = queryToAggregation(query)
+    if (narrower) {
+      pipeline.push({
+        $lookup: {
+          from: Concept.collection.name,
+          localField: "uri",
+          foreignField: "broader.uri",
+          as: "narrower",
+        },
+      })
+      pipeline.push({
+        $addFields: {
+          narrower: {
+            $reduce: {
+              input: "$narrower",
+              initialValue: [],
+              in: [null],
+            },
           },
         },
-      },
-    })
-  }
-  if (_.isNumber($skip)) {
-    pipeline.push({ $skip })
-  }
-  if (_.isNumber($limit)) {
-    pipeline.push({ $limit })
-  }
-  return Concept.aggregate(pipeline)
-}
-
-export class ConceptService {
-
-  constructor() {
-    // TODOESM?
-    this.schemeService = schemeService
+      })
+    }
+    if (_.isNumber($skip)) {
+      pipeline.push({ $skip })
+    }
+    if (_.isNumber($limit)) {
+      pipeline.push({ $limit })
+    }
+    return Concept.aggregate(pipeline)
   }
 
   async get(uri) {
@@ -70,8 +72,8 @@ export class ConceptService {
       // Search for all top concepts in all vocabularies
       criteria = { "topConceptOf.uri": { $type: 2 } }
     }
-    const concepts = await conceptFind(criteria, query.offset, query.limit)
-    concepts.totalCount = await utils.count(Concept, [{ $match: criteria }])
+    const concepts = await this.conceptFind(criteria, query.offset, query.limit)
+    concepts.totalCount = await this._count(Concept, [{ $match: criteria }])
     return concepts
   }
 
@@ -123,10 +125,10 @@ export class ConceptService {
       }
     }
     if (query.download) {
-      return conceptFind(mongoQuery, null, null, false).cursor()
+      return this.conceptFind(mongoQuery, null, null, false).cursor()
     }
-    const concepts = await conceptFind(mongoQuery, query.offset, query.limit)
-    concepts.totalCount = await utils.count(Concept, utils.queryToAggregation(mongoQuery))
+    const concepts = await this.conceptFind(mongoQuery, query.offset, query.limit)
+    concepts.totalCount = await this._count(Concept, queryToAggregation(mongoQuery))
     return concepts
   }
 
@@ -137,7 +139,7 @@ export class ConceptService {
     if (!query.uri) {
       return []
     }
-    return await conceptFind({ broader: { $elemMatch: { uri: query.uri } } })
+    return await this.conceptFind({ broader: { $elemMatch: { uri: query.uri } } })
   }
 
   /**
@@ -149,7 +151,7 @@ export class ConceptService {
     }
     const uri = query.uri
     // First retrieve the concept object from database
-    const concept = (await conceptFind({ _id: uri }))[0]
+    const concept = (await this.conceptFind({ _id: uri }))[0]
     if (!concept) {
       return []
     }
@@ -189,10 +191,7 @@ export class ConceptService {
       // Return in JSKOS format
       return results.slice(query.offset, query.offset + query.limit)
     }
-    return utils.searchHelper.toOpenSearchSuggestFormat({
-      query,
-      results,
-    })
+    return toOpenSearchSuggestFormat({ query, results })
   }
 
   /**
@@ -207,11 +206,10 @@ export class ConceptService {
   }
 
   async searchConcept(search, voc) {
-    return utils.searchHelper.searchItem({
+    return this._searchItem({
       search,
       voc,
-      schemeService: this.schemeService,
-      queryFunction: conceptFind,
+      queryFunction: this.conceptFind,
     })
   }
 
@@ -239,7 +237,7 @@ export class ConceptService {
         let current = []
         const saveObjects = async (objects) => {
           const { concepts, errors, schemeUrisToAdjust } = await this.prepareAndCheckConcepts(objects, { scheme })
-          concepts.length && await Concept.bulkWrite(utils.bulkOperationForEntities({ entities: concepts, replace: bulkReplace }))
+          concepts.length && await Concept.bulkWrite(bulkOperationForEntities({ entities: concepts, replace: bulkReplace }))
           preparation.concepts = preparation.concepts.concat(concepts.map(c => ({ uri: c.uri })))
           preparation.errors = preparation.errors.concat(errors.map(c => ({ uri: c.uri })))
           preparation.schemeUrisToAdjust = _.uniq(preparation.schemeUrisToAdjust.concat(schemeUrisToAdjust))
@@ -255,7 +253,7 @@ export class ConceptService {
         bodyStream.on("end", async () => {
           promises.push(saveObjects(current))
           await Promise.all(promises)
-          preparation.errors.length && config.warn(`Warning on bulk import of concepts: ${preparation.errors.length} concepts were not imported due to validation errors.`)
+          preparation.errors.length && this.warn(`Warning on bulk import of concepts: ${preparation.errors.length} concepts were not imported due to validation errors.`)
           resolve(preparation)
         })
       })
@@ -404,7 +402,7 @@ export class ConceptService {
           schemeUrisToAdjust.push(scheme)
         }
         concepts.push(concept)
-      } catch(error) {
+      } catch (error) {
         errors.push(error)
       }
     }
@@ -440,14 +438,14 @@ export class ConceptService {
       throw new InvalidBodyError()
     }
     // Check concept scheme
-    const inScheme = _.get(concept, "inScheme[0]")
+    const inScheme = concept.inScheme?.[0]
     // Load scheme from database if necessary
     if (!schemes || !schemes.length) {
       schemes = await this.schemeService.getSchemes({ uri: inScheme.uri })
     }
     const scheme = schemes.find(s => jskos.compare(s, inScheme))
     if (!scheme) {
-    // Either no scheme at all or not found in database
+      // Either no scheme at all or not found in database
       let message = "Error when adding concept to database: "
       if (inScheme) {
         message += `Concept scheme with URI ${inScheme.uri} is not supported.`
@@ -462,7 +460,7 @@ export class ConceptService {
       concept.topConceptOf[0].uri = scheme.uri
     }
     // Add index keywords
-    utils.searchHelper.addKeywords(concept)
+    addKeywords(concept)
   }
 
   /**
@@ -517,5 +515,3 @@ export class ConceptService {
   }
 
 }
-
-export const conceptService = new ConceptService()

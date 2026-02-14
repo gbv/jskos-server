@@ -1,13 +1,15 @@
 import { validate } from "jskos-validate"
 import jskos from "jskos-tools"
-import { schemeService } from "./schemes.js"
+import { SchemeService } from "./schemes.js"
 const guessObjectType = jskos.guessObjectType
 
-export class ValidateService {
+import { AbstractService } from "./abstract.js"
 
-  constructor() {
-    // TODOESM?
-    this.schemeService = schemeService
+export class ValidateService extends AbstractService {
+
+  constructor(config) {
+    super(config)
+    this.schemeService = new SchemeService(config)
   }
 
   async validate(data, { unknownFields, type, knownSchemes = false } = {}) {
@@ -35,5 +37,3 @@ export class ValidateService {
   }
 
 }
-
-export const validateService = new ValidateService()

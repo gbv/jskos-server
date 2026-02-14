@@ -1,14 +1,20 @@
 import express from "express"
-import { statusService } from "../services/status.js"
-import * as utils from "../utils/index.js"
+import { wrapAsync, wrapDownload, returnJSON } from "../utils/middleware.js"
 
-const router = express.Router()
-export { router as statusRouter }
+import { connection } from "../utils/db.js"
 
-router.get(
-  "/",
-  utils.wrappers.async(async () => {
-    return await statusService.getStatus()
-  }),
-  utils.wrappers.download(utils.returnJSON, false),
-)
+export default config => {
+  const router = express.Router()
+
+  router.get(
+    "/",
+    wrapAsync(async () => {
+      const status = config.status
+      status.ok = connection.readyState === 1 ? 1 : 0
+      return status
+    }),
+    wrapDownload(returnJSON, false),
+  )
+
+  return router
+}

@@ -29,7 +29,7 @@ If you **do not need** real-time change notifications via WebSocket, you can run
 
 ##### Option 1: Without Replica Set (simpler setup)
 
-In this setup, the Change API (`changesApi.enabled`) must remain **disabled** (default). The server will run normally without real-time WebSocket updates.
+In this setup, the Change API must remain **disabled** (default). The server will run normally without real-time WebSocket updates.
 
 ```yaml
 version: "3"
@@ -60,7 +60,7 @@ services:
 
 ##### Option 2: With Replica Set (for Change Streams support)
 
-If you want to use the WebSocket API for Change Streams, MongoDB must be configured as a **replica set**. You can do this with an additional setup container. In this setup, you **can enable** `changesApi.enabled` in your `config.json` to use the `/changes` WebSocket endpoint.
+If you want to use the WebSocket API for Change Streams, MongoDB must be configured as a **replica set**. You can do this with an additional setup container. In this setup, you **can enable** `changes` in your `config.json` to use the `/changes` WebSocket endpoint.
 
 ```yaml
 version: "3"
@@ -96,7 +96,7 @@ services:
     image: mongo:7
     depends_on:
       - mongo
-    volumes: 
+    volumes:
       - ./mongo-initdb.d:/docker-entrypoint-initdb.d
     restart: "no"
 ```

@@ -30,3 +30,6 @@ docker/data/*
 
 # pm2 ecosystem file
 ecosystem.config.json
+
+# code coverage
+coverage/

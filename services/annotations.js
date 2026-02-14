@@ -1,41 +1,47 @@
 import _ from "lodash"
-import config from "../config/index.js"
-import * as utils from "../utils/index.js"
+import { uuid, isValidUuid } from "../utils/uuid.js"
+import { removeNullProperties, bulkOperationForEntities } from "../utils/utils.js"
 import jskos from "jskos-tools"
 import { validate } from "jskos-validate"
 
 import { Annotation, Mapping, Concept } from "../models/index.js"
 import { EntityNotFoundError, DatabaseAccessError, InvalidBodyError, MalformedBodyError, MalformedRequestError, ForbiddenAccessError } from "../errors/index.js"
 
-// Wrapper around validate.annotation that also checks the `body` field and throws errors if necessary.
-const validateAnnotation = async (data, options) => {
-  // TODO: Due to an issue with lax schemas in jskos-validate (see https://github.com/gbv/jskos-validate/issues/17), we need a workaround here.
-  const result = validate.annotation(_.omit(data, "body"), options)
-  if (!result || (data.body && !Array.isArray(data.body))) {
-    throw new InvalidBodyError()
-  }
-  // Check `body` property
-  if (data.body?.length) {
-    const mismatchTagConcepts = await Concept.find({ "inScheme.uri": config.annotations?.mismatchTagVocabulary?.uri })
-    if (data.bodyValue !== "-1") {
-      throw new InvalidBodyError("Property `body` is currently only allowed with when `bodyValue` is set to \"-1\".")
-    }
-    for (const tag of data.body) {
-      if (tag.type !== "SpecificResource") {
-        throw new InvalidBodyError("Currently, the only allowed `type` of body values in annotations is \"SpecificResource\".")
-      }
-      if (tag.purpose !== "tagging") {
-        throw new InvalidBodyError("Currently, the only allowed `purpose` of body values in annotations is \"tagging\".")
-      }
-      if (!mismatchTagConcepts.find(concept => jskos.compare(concept, { uri: tag.value }))) {
-        throw new InvalidBodyError(`Either \`annotations.mismatchTagVocabulary\` is not configured or tag mismatch URI "${tag.value}" is not a valid tag.`)
-      }
-    }
-  }
-  return true
-}
+import { AbstractService } from "./abstract.js"
 
-export class AnnotationService {
+export class AnnotationService extends AbstractService {
+
+  constructor(config) {
+    super(config)
+  }
+
+  // Wrapper around validate.annotation that also checks the `body` field and throws errors if necessary.
+  async validateAnnotation(data, options) {
+    // TODO: Due to an issue with lax schemas in jskos-validate (see https://github.com/gbv/jskos-validate/issues/17), we need a workaround here.
+    const result = validate.annotation(_.omit(data, "body"), options)
+    if (!result || (data.body && !Array.isArray(data.body))) {
+      throw new InvalidBodyError()
+    }
+    // Check `body` property
+    if (data.body?.length) {
+      const mismatchTagConcepts = await Concept.find({ "inScheme.uri": this.config.annotations?.mismatchTagVocabulary?.uri })
+      if (data.bodyValue !== "-1") {
+        throw new InvalidBodyError("Property `body` is currently only allowed with when `bodyValue` is set to \"-1\".")
+      }
+      for (const tag of data.body) {
+        if (tag.type !== "SpecificResource") {
+          throw new InvalidBodyError("Currently, the only allowed `type` of body values in annotations is \"SpecificResource\".")
+        }
+        if (tag.purpose !== "tagging") {
+          throw new InvalidBodyError("Currently, the only allowed `purpose` of body values in annotations is \"tagging\".")
+        }
+        if (!mismatchTagConcepts.find(concept => jskos.compare(concept, { uri: tag.value }))) {
+          throw new InvalidBodyError(`Either \`annotations.mismatchTagVocabulary\` is not configured or tag mismatch URI "${tag.value}" is not a valid tag.`)
+        }
+      }
+    }
+    return true
+  }
 
   /**
    * Returns a Promise with an array of annotations.
@@ -87,7 +93,7 @@ export class AnnotationService {
 
     const mongoQuery = criteria.length ? { $and: criteria } : {}
     const annotations = await Annotation.find(mongoQuery).lean().skip(query.offset).limit(query.limit).exec()
-    annotations.totalCount = await utils.count(Annotation, [{ $match: mongoQuery }])
+    annotations.totalCount = await this._count(Annotation, [{ $match: mongoQuery }])
     return annotations
 
   }
@@ -143,7 +149,7 @@ export class AnnotationService {
         // For type moderating, check if user is on the whitelist (except for admin=true).
         if (!admin && annotation.motivation == "moderating") {
           let uris = [user.uri].concat(Object.values(user.identities || {}).map(id => id.uri)).filter(uri => uri != null)
-          let whitelist = config.annotations.moderatingIdentities
+          let whitelist = this.config.annotations.moderatingIdentities
           if (whitelist && _.intersection(whitelist, uris).length == 0) {
             // Disallow
             throw new ForbiddenAccessError("Access forbidden, user is not allowed to create annotations of type \"moderating\".")
@@ -157,23 +163,23 @@ export class AnnotationService {
         // Remove type property
         _.unset(annotation, "type")
         // Validate annotation
-        await validateAnnotation(annotation)
+        await this.validateAnnotation(annotation)
         // Add _id and URI
         delete annotation._id
-        let uriBase = config.baseUrl + "annotations/"
+        let uriBase = this.config.baseUrl + "annotations/"
         if (annotation.id) {
           let id = annotation.id
           // ID already exists, use if it's valid, otherwise remove
-          if (id.startsWith(uriBase) && utils.isValidUuid(id.slice(uriBase.length, id.length))) {
+          if (id.startsWith(uriBase) && isValidUuid(id.slice(uriBase.length, id.length))) {
             annotation._id = id.slice(uriBase.length, id.length)
           }
         }
         if (!annotation._id) {
-          annotation._id = utils.uuid()
-          annotation.id = config.baseUrl + "annotations/" + annotation._id
+          annotation._id = uuid()
+          annotation.id = this.config.baseUrl + "annotations/" + annotation._id
         }
         // Make sure URI is a https URI when in production
-        if (config.env === "production") {
+        if (this.config.env === "production") {
           annotation.id = annotation.id.replace("http:", "https:")
         }
         // Change target to object and add mapping content identifier if possible
@@ -190,7 +196,7 @@ export class AnnotationService {
         }
 
         return annotation
-      } catch(error) {
+      } catch (error) {
         if (bulk) {
           return null
         }
@@ -201,7 +207,7 @@ export class AnnotationService {
 
     if (bulk) {
       // Use bulkWrite for most efficiency
-      annotations.length && await Annotation.bulkWrite(utils.bulkOperationForEntities({ entities: annotations, replace: bulkReplace }))
+      annotations.length && await Annotation.bulkWrite(bulkOperationForEntities({ entities: annotations, replace: bulkReplace }))
       response = annotations.map(a => ({ id: a.id }))
     } else {
       response = await Annotation.insertMany(annotations, { lean: true })
@@ -220,7 +226,7 @@ export class AnnotationService {
     // Remove type property
     _.unset(annotation, "type")
     // Validate annotation
-    await validateAnnotation(annotation)
+    await this.validateAnnotation(annotation)
 
     // Always preserve certain existing properties
     annotation.created = existing.created
@@ -261,10 +267,10 @@ export class AnnotationService {
       annotation.target = { id: annotation.target }
     }
 
-    utils.removeNullProperties(existing)
+    removeNullProperties(existing)
 
     // Validate annotation
-    await validateAnnotation(existing)
+    await this.validateAnnotation(existing)
 
     const result = await Annotation.replaceOne({ _id: existing._id }, existing)
     if (result.acknowledged) {
@@ -307,5 +313,3 @@ export class AnnotationService {
   }
 
 }
-
-export const annotationService = new AnnotationService()

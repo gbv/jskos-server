@@ -1,17 +1,21 @@
 import express from "express"
-import { dataService } from "../services/data.js"
-import * as utils from "../utils/index.js"
+import { DataService } from "../services/data.js"
+import { wrapAsync, supportDownloadFormats, returnJSON } from "../utils/middleware.js"
 import * as auth from "../utils/auth.js"
 
-const router = express.Router()
-export { router as dataRouter }
+export default config => {
+  const router = express.Router()
+  const dataService = new DataService(config)
 
-router.get(
-  "/data",
-  auth.optional,
-  utils.supportDownloadFormats([]),
-  utils.wrappers.async(async (req) => {
-    return await dataService.getData(req)
-  }),
-  utils.returnJSON,
-)
+  router.get(
+    "/",
+    auth.optional,
+    supportDownloadFormats([]),
+    wrapAsync(async (req) => {
+      return await dataService.getData(req)
+    }),
+    returnJSON,
+  )
+
+  return router
+}

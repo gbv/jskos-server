@@ -1,101 +1,106 @@
 import express from "express"
-import { concordanceService } from "../services/concordances.js"
-import config from "../config/index.js"
-import * as utils from "../utils/index.js"
+import { ConcordanceService } from "../services/concordances.js"
+import * as utils from "../utils/middleware.js"
+import { wrapAsync, wrapDownload } from "../utils/middleware.js"
 import * as auth from "../utils/auth.js"
 
-const router = express.Router()
-export { router as concordanceRouter }
+export default config => {
+  const router = express.Router()
+  const concordanceService = new ConcordanceService(config)
+  const { concordances } = config
 
-if (config.concordances.read) {
-  router.get(
-    "/",
-    config.concordances.read.auth ? auth.main : auth.optional,
-    utils.supportDownloadFormats(["json", "ndjson"]),
-    utils.wrappers.async(async (req) => {
-      return await concordanceService.getConcordances(req.query)
-    }),
-    utils.wrappers.download(utils.addPaginationHeaders, false),
-    utils.wrappers.download(utils.adjust, false),
-    utils.wrappers.download(utils.returnJSON, false),
-    utils.wrappers.download(utils.handleDownload("concordances"), true),
-  )
+  if (concordances.read) {
+    router.get(
+      "/",
+      concordances.read.auth ? auth.main : auth.optional,
+      utils.supportDownloadFormats(["json", "ndjson"]),
+      wrapAsync(async (req) => {
+        return await concordanceService.getConcordances(req.query)
+      }),
+      wrapDownload(utils.addPaginationHeaders, false),
+      wrapDownload(utils.adjust, false),
+      wrapDownload(utils.returnJSON, false),
+      wrapDownload(utils.handleDownload("concordances"), true),
+    )
 
-  router.get(
-    "/:_id",
-    config.concordances.read.auth ? auth.main : auth.optional,
-    utils.supportDownloadFormats(["json", "ndjson"]),
-    utils.wrappers.async(async (req) => {
-      return await concordanceService.get(req.params._id)
-    }),
-    utils.wrappers.download(utils.adjust, false),
-    utils.wrappers.download(utils.returnJSON, false),
-    utils.wrappers.download(utils.handleDownload("concordance"), true),
-  )
-}
+    router.get(
+      "/:_id",
+      concordances.read.auth ? auth.main : auth.optional,
+      utils.supportDownloadFormats(["json", "ndjson"]),
+      wrapAsync(async (req) => {
+        return await concordanceService.get(req.params._id)
+      }),
+      wrapDownload(utils.adjust, false),
+      wrapDownload(utils.returnJSON, false),
+      wrapDownload(utils.handleDownload("concordance"), true),
+    )
+  }
 
-if (config.concordances.create) {
-  router.post(
-    "/",
-    config.concordances.create.auth ? auth.main : auth.optional,
-    utils.bodyParser,
-    utils.wrappers.async(async (req) => {
-      return await concordanceService.postConcordance({
-        bodyStream: req.anystream,
-        user: req.user,
-      })
-    }),
-    utils.adjust,
-    utils.returnJSON,
-  )
-}
+  if (concordances.create) {
+    router.post(
+      "/",
+      concordances.create.auth ? auth.main : auth.optional,
+      utils.bodyParser,
+      wrapAsync(async (req) => {
+        return await concordanceService.postConcordance({
+          bodyStream: req.anystream,
+          user: req.user,
+        })
+      }),
+      utils.adjust,
+      utils.returnJSON,
+    )
+  }
 
-if (config.concordances.update) {
-  router.put(
-    "/:_id",
-    config.concordances.update.auth ? auth.main : auth.optional,
-    utils.bodyParser,
-    utils.wrappers.async(async (req) => {
-      return await concordanceService.putConcordance({
-        _id: req.params._id,
-        body: req.body,
-        user: req.user,
-        existing: req.existing,
-      })
-    }),
-    utils.adjust,
-    utils.returnJSON,
-  )
+  if (concordances.update) {
+    router.put(
+      "/:_id",
+      concordances.update.auth ? auth.main : auth.optional,
+      utils.bodyParser,
+      wrapAsync(async (req) => {
+        return await concordanceService.putConcordance({
+          _id: req.params._id,
+          body: req.body,
+          user: req.user,
+          existing: req.existing,
+        })
+      }),
+      utils.adjust,
+      utils.returnJSON,
+    )
 
-  router.patch(
-    "/:_id",
-    config.concordances.update.auth ? auth.main : auth.optional,
-    utils.bodyParser,
-    utils.wrappers.async(async (req) => {
-      return await concordanceService.patchConcordance({
-        _id: req.params._id,
-        body: req.body,
-        user: req.user,
-        existing: req.existing,
-      })
-    }),
-    utils.adjust,
-    utils.returnJSON,
-  )
-}
+    router.patch(
+      "/:_id",
+      concordances.update.auth ? auth.main : auth.optional,
+      utils.bodyParser,
+      wrapAsync(async (req) => {
+        return await concordanceService.patchConcordance({
+          _id: req.params._id,
+          body: req.body,
+          user: req.user,
+          existing: req.existing,
+        })
+      }),
+      utils.adjust,
+      utils.returnJSON,
+    )
+  }
 
-if (config.concordances.delete) {
-  router.delete(
-    "/:_id",
-    config.concordances.delete.auth ? auth.main : auth.optional,
-    utils.bodyParser,
-    utils.wrappers.async(async (req) => {
-      return await concordanceService.deleteConcordance({
-        _id: req.params._id,
-        user: req.user,
-        existing: req.existing,
-      })
-    }),
-    (req, res) => res.sendStatus(204),
-  )
+  if (concordances.delete) {
+    router.delete(
+      "/:_id",
+      concordances.delete.auth ? auth.main : auth.optional,
+      utils.bodyParser,
+      wrapAsync(async (req) => {
+        return await concordanceService.deleteConcordance({
+          _id: req.params._id,
+          user: req.user,
+          existing: req.existing,
+        })
+      }),
+      (req, res) => res.sendStatus(204),
+    )
+  }
+
+  return router
 }

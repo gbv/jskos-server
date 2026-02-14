@@ -123,7 +123,9 @@ if (cli.flags.scheme && cli.flags.concordance) {
   })
 }
 
-import { services } from "../services/index.js"
+import config from "../config/index.js"
+import { createServices } from "../services/index.js"
+const services = createServices(config)
 import { models } from "../models/index.js"
 
 ;

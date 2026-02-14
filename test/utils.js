@@ -1,7 +1,8 @@
 // Tests for utilities
 
 import assert from "node:assert"
-import * as utils from "../utils/index.js"
+import { getCreator, handleCreatorForObject } from "../utils/middleware.js"
+import { cleanJSON } from "../utils/utils.js"
 import config from "../config/index.js"
 
 describe("utils", () => {
@@ -134,7 +135,7 @@ describe("utils", () => {
     let index = 0
     for (let { req, creator: expected } of tests) {
       it(`should pass test[${index}]`, async () => {
-        const actual = utils.getCreator(Object.assign({ query: {} }, req))
+        const actual = getCreator(Object.assign({ query: {} }, req))
         // For non-annotations, creator should be an array if defined
         assert.deepStrictEqual(actual, expected)
       })
@@ -143,13 +144,13 @@ describe("utils", () => {
 
     it("should fail if req is undefined", async () => {
       assert.throws(() => {
-        utils.getCreator()
+        getCreator()
       })
     })
 
     it("should fail if req.query is undefined", async () => {
       assert.throws(() => {
-        utils.getCreator({})
+        getCreator({})
       })
     })
 
@@ -321,62 +322,28 @@ describe("utils", () => {
       },
       // Allow any kind of values if auth is false
       {
-        object: { creator: [{ uri: "abc "}], contributor: [] },
-        expected: { creator: [{ uri: "abc "}], contributor: [] },
+        object: { creator: [{ uri: "abc " }], contributor: [] },
+        expected: { creator: [{ uri: "abc " }], contributor: [] },
         req: Object.assign(reqWithMethod("POST"), { auth: false }),
         // Should be ignored
         creator: { uri: "test" },
       },
       // Always remove creator/contributor from payload when anonymous is true, but don't change existing values
       {
-        object: { creator: [{ uri: "abc "}], contributor: [] },
-        existing: { creator: [{ uri: "def" }], contributor: [{ uri: "ghj"}] },
-        expected: { creator: [{ uri: "def" }], contributor: [{ uri: "ghj"}] },
+        object: { creator: [{ uri: "abc " }], contributor: [] },
+        existing: { creator: [{ uri: "def" }], contributor: [{ uri: "ghj" }] },
+        expected: { creator: [{ uri: "def" }], contributor: [{ uri: "ghj" }] },
         req: Object.assign(reqWithMethod("PUT"), { anonymous: true }),
       },
     ]
     let index = 0
     for (let { expected, ...options } of tests) {
       it(`should pass test[${index}]`, async () => {
-        const actual = utils.handleCreatorForObject(Object.assign({ req: {} }, options))
+        const actual = handleCreatorForObject(Object.assign({ req: {} }, options))
         // Should return object reference
         assert.strictEqual(actual, options.object)
         // Check if content is correct as well
         assert.deepStrictEqual(actual, expected)
-      })
-      index += 1
-    }
-  })
-
-  describe("isQueryEmpty", () => {
-    const tests = [
-      {
-        query: {},
-        expected: true,
-      },
-      {
-        query: { $and: [{}, {}] },
-        expected: true,
-      },
-      {
-        query: { $or: [{}, { $and: [{}, { $or: [{}] }] }] },
-        expected: true,
-      },
-      {
-        query: { a: 1 },
-        expected: false,
-      },
-      {
-        query: { $or: [{ $and: [{}] }, { $and: [{ a: 0 }] }] },
-        expected: false,
-      },
-    ]
-    let index = 0
-    for (let { expected, query } of tests) {
-      it(`should pass test[${index}]`, async () => {
-        const actual = utils.isQueryEmpty(query)
-        // Should return object reference
-        assert.strictEqual(actual, expected)
       })
       index += 1
     }
@@ -446,8 +413,7 @@ describe("utils", () => {
     let index = 0
     for (let { closedWorldAssumption, input, output } of tests) {
       it(`should pass test[${index}]`, async () => {
-        config.closedWorldAssumption = closedWorldAssumption
-        utils.cleanJSON(input)
+        cleanJSON(input, 0, closedWorldAssumption)
         assert.deepEqual(input, output)
       })
       index += 1
