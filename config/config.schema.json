@@ -270,35 +270,21 @@
       "type": "object",
       "definitions": {
         "registryTypeConfig": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "uriRequired": {
-              "type": "boolean"
-            },
-            "mustExist": {
-              "type": "boolean"
-            },
-            "ignoreErrors": {
-              "type": "boolean"
-            }
-          }
-        },
-        "auth": {
-          "description": "Indicates whether a certain action requires authentication.",
-          "type": "boolean"
-        },
-        "crossUser": {
-          "description": "Indicates whether a certain action can be performed on items that were created by a different user (boolean or list of user URIs).",
           "anyOf": [
+            { "type": "boolean" },
             {
-              "type": "boolean"
-            },
-            {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "format": "uri"
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "uriRequired": {
+                  "type": "boolean"
+                },
+                "mustExist": {
+                  "type": "boolean"
+                },
+                "ignoreErrors": {
+                  "type": "boolean"
+                }
               }
             }
           ]
@@ -314,7 +300,7 @@
               "type": "object",
               "properties": {
                 "auth": {
-                  "$ref": "#/definitions/registriesCapability/definitions/auth"
+                  "$ref": "#/definitions/capability/definitions/auth"
                 },
                 "identityProviders": {
                   "$ref": "#/definitions/identityProviders"
@@ -339,7 +325,7 @@
               "type": "object",
               "properties": {
                 "auth": {
-                  "$ref": "#/definitions/registriesCapability/definitions/auth"
+                  "$ref": "#/definitions/capability/definitions/auth"
                 },
                 "anonymous": {
                   "$ref": "#/definitions/anonymous"
@@ -367,10 +353,10 @@
               "type": "object",
               "properties": {
                 "auth": {
-                  "$ref": "#/definitions/registriesCapability/definitions/auth"
+                  "$ref": "#/definitions/capability/definitions/auth"
                 },
                 "crossUser": {
-                  "$ref": "#/definitions/registriesCapability/definitions/crossUser"
+                  "$ref": "#/definitions/capability/definitions/crossUser"
                 },
                 "anonymous": {
                   "$ref": "#/definitions/anonymous"
@@ -398,10 +384,10 @@
               "type": "object",
               "properties": {
                 "auth": {
-                  "$ref": "#/definitions/registriesCapability/definitions/auth"
+                  "$ref": "#/definitions/capability/definitions/auth"
                 },
                 "crossUser": {
-                  "$ref": "#/definitions/registriesCapability/definitions/crossUser"
+                  "$ref": "#/definitions/capability/definitions/crossUser"
                 },
                 "anonymous": {
                   "$ref": "#/definitions/anonymous"
@@ -521,6 +507,12 @@
               "$ref": "#/definitions/registriesCapability/definitions/registryTypeConfig"
             },
             "concordances": {
+              "$ref": "#/definitions/registriesCapability/definitions/registryTypeConfig"
+            },
+            "registries": {
+              "$ref": "#/definitions/registriesCapability/definitions/registryTypeConfig"
+            },
+            "mappings": {
               "$ref": "#/definitions/registriesCapability/definitions/registryTypeConfig"
             },
             "annotations": {

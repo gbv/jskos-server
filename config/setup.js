@@ -32,6 +32,11 @@ export function validateConfig(data) {
   if (!ajv.validate(configSchema, data)) {
     throw new Error(ajvErrorsToString(ajv.errors))
   }
+  for (let type in (data.registries?.types || {})) {
+    if (data.registries.types[type].mustExist && data.registries.types[type].uriRequired === false) {
+      throw new Error(`Registry member type ${type} mustExist so uriRequired must not be false`)
+    }
+  }
   return data
 }
 
@@ -113,7 +118,8 @@ export function setupConfig(config) {
       crossUser: false,
     },
   }
-  for (let type of ["schemes", "concepts", "mappings", "concordances", "annotations", "registries"]) {
+  const allTypes = ["schemes", "concepts", "mappings", "concordances", "annotations", "registries"]
+  for (let type of allTypes) {
     if (config[type] === true) {
     // Default is read-only without authentication
       config[type] = {
@@ -139,14 +145,39 @@ export function setupConfig(config) {
           }
         }
       }
-      // If anonymous is given, assume crossUser for update and delete
-      if (type == "mappings" && config[type].anonymous) {
-        if (config[type].update) {
-          config[type].update.crossUser = true
+    }
+  }
+
+  // mappings: if anonymous is given, assume crossUser for update and delete
+  if (config.mappings?.anonymous) {
+    if (config.mappings.update) {
+      config.mappings.update.crossUser = true
+    }
+    if (config.mappings.delete) {
+      config.mappings.delete.crossUser = true
+    }
+  }
+
+  // registries: assume types as enabled above
+  if (config.registries) {
+    // default types
+    if (!config.registries.types) {
+      config.registries.types = Object.fromEntries(allTypes.map(type => [type, !!config[type]]))
+    }
+    const { types } = config.registries
+    for (let type in types) {
+      // default values
+      if (types[type] === true) {
+        types[type] = {
+          mustExist: false,
+          ignoreErrors: false,
         }
-        if (config[type].delete) {
-          config[type].delete.crossUser = true
-        }
+      }
+      if (types[type] && !("uriRequired" in types[type])) {
+        types[type].uriRequired = true
+      }
+      if (types[type]?.mustExist && !config[type]?.read) {
+        config.warn(`registry with member type ${type} require URI but config.${type}.read is not enabled!`)
       }
     }
   }

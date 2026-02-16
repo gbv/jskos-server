@@ -162,7 +162,7 @@ if (cli.flags.concordance && type != "mapping") {
   })
 }
 
-if (cli.flags.bulk && ["concordance","concordance"].find(type)) {
+if (cli.flags.bulk && ["concordance","concordance","registry"].find(type)) {
   logError({
     message: `The --nobulk option is not supported with type ${type}`,
     exit: true,
@@ -431,16 +431,9 @@ async function doImport({ input, format, type, concordance }) {
     log(`... done: ${Array.isArray(result) ? result.length : 1} annotations imported.`)
   } else if (type == "registry") {
     log("Importing registries...")
-    const result = await services.registry.postRegistry({
-      bodyStream: stream,
-      bulk: true,
-      bulkReplace: !cli.flags.noreplace,
-    })
-
+    const result = await services.registry.postRegistry({ bodyStream, bulk, bulkReplace })
     const imported = result?.importedCount ?? 0
     const skipped = result?.skippedCount ?? 0
-    log(
-      `... done: ${imported} registries imported${skipped > 0 ? ` (${skipped} skipped).` : "."}`,
-    )
+    log(`... done: ${imported} registries imported${skipped > 0 ? ` (${skipped} skipped).` : "."}`)
   }
 }

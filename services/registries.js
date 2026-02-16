@@ -225,12 +225,10 @@ export class RegistryService extends AbstractService {
                 message: membershipErrors.map(err => err.message).join("; "),
                 field: membershipErrors.map(err => err.field),
               })
-              console.warn(
-                `[warn] ${membershipErrors.map(err => err.message).join("; ")} => skipping registry object.`,
-              )
+              this.warn(`${membershipErrors.map(err => err.message).join("; ")} => skipping registry object`)
               return null
             }
-            throw membershipErrors[0]
+            error = membershipErrors[0]
           }
 
           throw error
@@ -242,8 +240,7 @@ export class RegistryService extends AbstractService {
     if (bulk) {
       // Use bulkWrite for most efficiency
       registries.length && await Registry.bulkWrite(
-        Registry.bulkWrite(bulkOperationForEntities({ entities: registries, replace: bulkReplace }))
-      )
+        bulkOperationForEntities({ entities: registries, replace: bulkReplace }))
       response = {
         imported: registries.map(r => ({ uri: r.uri })),
         skipped,
@@ -576,10 +573,7 @@ export class RegistryService extends AbstractService {
         return typeof uri !== "string" || !uri.trim()
       })
       if (hasMissingUri) {
-        recordMembershipError(
-          field,
-          `${field} must include a non-empty uri string.`,
-        )
+        recordMembershipError(field, `${field} must have an uri`)
       }
     }
 

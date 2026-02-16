@@ -11,7 +11,6 @@ import createConcordanceRouter from "./routes/concordances.js"
 import createMappingRouter from "./routes/mappings.js"
 import createSchemeRouter from "./routes/schemes.js"
 import createRegistryRouter from "./routes/registries.js"
-import createStatusRouter from "./routes/status.js"
 import createDataRouter from "./routes/data.js"
 import createValidateRouter from "./routes/validate.js"
 
@@ -108,7 +107,11 @@ app.get("/", (req, res) => {
 app.use("/status.schema.json", express.static(__dirname + "/status.schema.json"))
 
 // Status page /status
-app.use("/status", createStatusRouter(config))
+app.get("/status",
+  (req, res) => {
+    const data = { ...config.status, ok: connection.readyState === 1 ? 1 : 0 }
+    res.status(200).json(data)
+  })
 
 // Database check middleware
 app.use((req, res, next) => {

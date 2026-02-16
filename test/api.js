@@ -6,9 +6,8 @@ import { exec as cpexec } from "node:child_process"
 import { promisify } from "node:util"
 import _ from "lodash"
 import { assertMongoDB, dropDatabaseBeforeAndAfter, setupInMemoryMongo, createCollectionsAndIndexes, teardownInMemoryMongo } from "./test-utils.js"
-import { isValidUuid } from "../utils/index.js"
-import config from "../config/index.js"
 import { isValidUuid } from "../utils/uuid.js"
+import config from "../config/index.js"
 
 // Prepare jwt
 import jwt from "jsonwebtoken"
@@ -2421,7 +2420,7 @@ describe("Express Server", () => {
         .post("/registries")
         .query({ bulk: true })
         .set("Authorization", `Bearer ${token}`)
-        .send([validRegistry, invalidRegistry])
+        .send([invalidRegistry, validRegistry])
         .end((err, res) => {
           res.should.have.status(201)
           res.body.should.be.an("object")

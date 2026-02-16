@@ -63,12 +63,6 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [GET /concepts/ancestors](#get-conceptsancestors)
   - [GET /concepts/suggest](#get-conceptssuggest)
   - [GET /concepts/search](#get-conceptssearch)
-  - [GET /annotations](#get-annotations)
-  - [GET /annotations/:\_id](#get-annotations_id)
-  - [POST /annotations](#post-annotations)
-  - [PUT /annotations/:\_id](#put-annotations_id)
-  - [PATCH /annotations/:\_id](#patch-annotations_id)
-  - [DELETE /annotations/:\_id](#delete-annotations_id)
   - [GET /registries](#get-registries)
   - [GET /registries/:\_id](#get-registries_id)
   - [GET /registries/suggest](#get-registriessuggest)
@@ -76,6 +70,12 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [PUT /registries/:\_id](#put-registries_id)
   - [PATCH /registries/:\_id](#patch-registries_id)
   - [DELETE /registries/:\_id](#delete-registries_id)
+  - [GET /annotations](#get-annotations)
+  - [GET /annotations/:\_id](#get-annotations_id)
+  - [POST /annotations](#post-annotations)
+  - [PUT /annotations/:\_id](#put-annotations_id)
+  - [PATCH /annotations/:\_id](#patch-annotations_id)
+  - [DELETE /annotations/:\_id](#delete-annotations_id)
   - [Change Stream Endpoints](#change-stream-endpoints)
   - [Errors](#errors)
 - [Deployment](#deployment)
@@ -117,7 +117,25 @@ You can either provide the environment variables during the command to start the
 
 It is also possible to have more specific configuration based on the environment. These are set in `config/config.development.json` or `config/config.production.json`. Values from these files have precedent over the user configuration.
 
-All missing keys will be defaulted from `config/config.default.json`:
+#### Validation of configuration
+
+The provided configuration files (user config and environment config) will be validated with the provided [JSON Schema](https://json-schema.org) file under `config/config.schema.json` (public URI: https://gbv.github.io/jskos-server/status.schema.json). If validation fails, **JSON Server will refuse to start!** Please check whether your configuration is correct after each change. If there is something wrong, the console output will try to provide you with enough detail to fix the issue.
+
+Function `validateConfig` is exported for [used as module](#use-as-module):
+
+~~~
+import { validateConfig } from "jskos-server"
+
+try {
+  validateConfig(config)
+} catch(error) {
+  console.error(`Invalid configuration: ${error}`)
+}
+~~~
+
+#### Default configuration
+
+All missing keys will be defaulted from `config/config.default.json`. See [endpoint configuration](#endpoint-configuration) below for additional settings being merged into the configuration.
 
 ```json
 {
@@ -167,6 +185,23 @@ All missing keys will be defaulted from `config/config.default.json`:
     "cardinality": "1-to-n"
   },
   "concordances": true,
+  "registries": {
+    "read": {
+      "auth": false
+    },
+    "create": {
+      "auth": true
+    },
+    "update": {
+      "auth": true,
+      "crossUser": false
+    },
+    "delete": {
+      "auth": true,
+      "crossUser": false
+    },
+    "mixedTypes": false
+  },
   "annotations": {
     "read": {
       "auth": false
@@ -185,22 +220,6 @@ All missing keys will be defaulted from `config/config.default.json`:
     "moderatingIdentities": [],
     "mismatchTagVocabulary": null
   },
-  "registries": {
-    "read": {
-      "auth": false
-    },
-    "create": {
-      "auth": true
-    },
-    "update": {
-      "auth": true,
-      "crossUser": false
-    },
-    "delete": {
-      "auth": true,
-      "crossUser": false
-    }
-  },
   "changes": false,
   "anonymous": false,
   "identityProviders": null,
@@ -209,10 +228,10 @@ All missing keys will be defaulted from `config/config.default.json`:
 }
 ```
 
-The provided configuration files (user config and environment config) will be validated with the provided [JSON Schema](https://json-schema.org) file under `config/config.schema.json` (public URI: https://gbv.github.io/jskos-server/status.schema.json). If validation fails, **JSON Server will refuse to start!** Please check whether your configuration is correct after each change. If there is something wrong, the console output will try to provide you with enough detail to fix the issue.
+#### Server configuration
 
-If you are [running jskos-server behind a reverse proxy](#running-behind-a-reverse-proxy), it is necessary to provide the `baseUrl` key as well as the `proxies` key in your configuration (example for our production API):**
-See also:
+If you are [running jskos-server behind a reverse proxy](#running-behind-a-reverse-proxy), it is necessary to provide the `baseUrl` key as well as the `proxies` key in your configuration. For example:
+
 ```json
 {
   "baseUrl": "https://coli-conc.gbv.de/api/",
@@ -220,7 +239,9 @@ See also:
 }
 ```
 
-With the keys `schemes`, `concepts`, `mappings`, `concordances`, and `annotations`, you can configure whether endpoints related to the specific functionality should be available. A minimal configuration file to just server read-only vocabulary and concept information could look like this:
+#### Endpoint Configuration
+
+With the keys `schemes`, `concepts`, `mappings`, `concordances`, `registries`, and `annotations`, you can configure whether endpoints related to the specific functionality should be available. A minimal configuration file to just server read-only vocabulary and concept information could look like this:
 
 ```json
 {
@@ -230,7 +251,9 @@ With the keys `schemes`, `concepts`, `mappings`, `concordances`, and `annotation
 }
 ```
 
-Available actions for `schemes`, `concepts`, `mappings`, `annotations`, and `registries` are `read`, `create`, `update`, and `delete`. By default, all types can be read, while `mappings`, `annotations`, and `registries` can be created, updated, and deleted with authentication. Explanations for additional options:
+Available actions for each of these endpoints are `read`, `create`, `update`, and `delete`. By default, all types can be read, while `mappings`, `annotations`, and `registries` can be created, updated, and deleted with authentication.
+
+Explanations for additional options:
 
 - **`auth`**: Boolean. Can be defined only on actions. Defines whether access will require [authentication via JWT](#authentication). By default `false` for `read`, and `true` for all other actions.
 
@@ -254,6 +277,33 @@ Available actions for `schemes`, `concepts`, `mappings`, `annotations`, and `reg
 
 Note that any properties not mentioned here are not allowed!
 
+#### Registries configuration
+
+Endpoint configuration key `registries` can further contain key **`types`** to control object types collected in registries. By default it is set to `true` for every type with endpoint enabled in [endpoint configuration](#endpoint configuration). Setting a type to `false` will disallow creation and import of [registry](https://gbv.github.io/jskos/#registry) having this field. By default, a registry can only have one type of members. Registry configuration key **`mixedTypes`** can be set to true to allow registries to have multiple member types.
+
+Member types can further the configured with three Boolean keys:
+
+- **`uriRequired`** (default `true`) whether members must have a valid field `uri`
+- **`mustExist`** (default `false`) whether members must exist in the database (and have the right type)
+- **`ignoreErrors`** (default `false`) to filter out members that don't fulfill requirement or `uriRequired` or `mustExist`
+
+Setting `mustExist` to true and `uriRequired` to false results in an invalid configuration because URIs are required to check whether an item exists.
+
+**Example**:
+~~~json
+{
+  "types": {
+    "schemes": true,
+    "concepts": {
+      "uriRequired": true,
+      "mustExist": false,
+      "ignoreErrors": false
+    },
+  },
+  "mixedTypes": true
+}
+~~~
+
 #### Change Streams Configuration
 
 [Change Stream Endpoints](#change-stream-endpoints) are only enabled if `changes` is set to `true` or to an object with the following optional keys:
@@ -267,6 +317,7 @@ Note that any properties not mentioned here are not allowed!
 Only once the replica set is confirmed will the `/…/changes` endpoints become active, unless MongoDB does is not running with replica set.
 
 #### Mapping Mismatch Tagging for Negative Assessment Annotations
+
 To differentiate why a mapping was annotated with a negative assessment, a mismatch tagging vocabulary can now be configured under `annotations.mismatchTagVocabulary`. In theory, any vocabulary can be used, but [our instance](https://coli-conc.gbv.de/api/) will use a very small "mismatch" vocabulary available in https://github.com/gbv/jskos-data/tree/master/mismatch.
 
 To set up mapping mismatch tagging, add the vocabulary to the configuration:
@@ -312,8 +363,8 @@ Currently, this is the only supported format, i.e. `body` as an array containing
 
 To identify whether a JSKOS Server instance supports this kind of tagging, check the `/status` endpoint for the `config.annotations.mismatchTagVocabulary` key.
 
-
 ### Access control
+
 The rights to `read`, `create`, `update` and `delete` entities via API can be controlled via several configuration settings described above ([data import](#data-import) is not limited by these restrictions):
 
 * Restricted access via `ips` is always applied *in addition* to other settings
@@ -2127,122 +2178,6 @@ Currently the same as `/concepts/suggest` with parameter `format=jskos`. Additio
 
 **Note:** The old `/search` endpoint is deprecated as of version 2.0 and will be removed in version 3.0.
 
-### GET /annotations
-Returns an array of annotations. Each annotation has a property `id` under which the specific annotation can be accessed.
-
-* **URL Params**
-
-  `id=[id]` specify an annotation ID
-
-  `creator=[uriOrName]` only return annotations that have a certain creator (name or URI) (separated by `|`)
-
-  `target=[target]` only return annotations with a specific target URI (e.g. a mapping URI)
-
-  `bodyValue=[bodyValue]` only return annotations with a specific bodyValue (e.g. `+1`, `-1`)
-
-  `motivation=[motivation]` only return annotations with a specific motivation (e.g. `assessing`, `moderating`, `tagging`)
-
-* **Success Response**
-
-  Array of annotations in [Web Annotation Data Model] format
-
-* **Sample Call**
-
-  ```bash
-  curl https://coli-conc.gbv.de/api/annotations?bodyValue=+1&limit=1
-  ```
-
-  ```json
-  [
-    {
-      "target": {
-        "id": "https://coli-conc.gbv.de/api/mappings/f8eff4e2-a6df-4d2c-8382-523072c59af7"
-      },
-      "motivation": "assessing",
-      "bodyValue": "+1",
-      "creator": "https://orcid.org/0000-0002-4087-8227",
-      "created": "2019-01-31T09:44:12.699Z",
-      "id": "https://coli-conc.gbv.de/api/annotations/2575e276-29c6-4d36-8477-b21be1790e64",
-      "@context": "http://www.w3.org/ns/anno.jsonld",
-      "type": "Annotation"
-    }
-  ]
-  ```
-
-### GET /annotations/:_id
-Returns a specific annotation.
-
-* **Success Response**
-
-  Object for annotation in [Web Annotation Data Model] format.
-
-* **Error Response**
-
-  If no annotation with `_id` could be found, it will return a 404 not found error.
-
-* **Sample Call**
-
-  ```bash
-  curl https://coli-conc.gbv.de/api/annotations/5f23368f-a63b-4b69-acd6-b403110df97c
-  ```
-
-  ```json
-  {
-    "target": {
-      "id": "https://coli-conc.gbv.de/api/mappings/f0cc5f65-5712-4820-9638-e662c0c4314e"
-    },
-    "motivation": "assessing",
-    "bodyValue": "+1",
-    "creator": {
-      "id": "https://coli-conc.gbv.de/login/users/722cc9c5-2ce3-4ca0-b4fb-fef1f62236af",
-      "name": "Jakob Voß"
-    },
-    "created": "2019-03-11T09:11:10.665Z",
-    "id": "https://coli-conc.gbv.de/api/annotations/5f23368f-a63b-4b69-acd6-b403110df97c",
-    "@context": "http://www.w3.org/ns/anno.jsonld",
-    "type": "Annotation"
-  }
-  ```
-
-### POST /annotations
-Saves an annotation or multiple annotations in the database.
-
-* **URL Params**
-
-  `bulk=[boolean]` `1` or `true` enable bulk mode for importing multiple annotations into the database. Errors for individual annotations will be ignored and existing annotations will be overridden. The resulting set will only include the `id` for each annotation that was written into the database.
-
-* **Success Reponse**
-
-  Annotation object or array of object as was saved in the database in [Web Annotation Data Model] format, or array of annotation objects with only a `id` if bulk mode was used.
-
-* **Error Response**
-
-  When a single annotation is provided, an error can be returned if there's something wrong with it (see [errors](#errors)). When multiple annotations are provided, the first error will be returned, except if bulk mode is enabled in which errors for individual annotations are ignored.
-
-### PUT /annotations/:_id
-Overwrites an annotation in the database.
-
-* **Success Reponse**
-
-  Annotation object as it was saved in the database in [Web Annotation Data Model] format.
-
-Note that any changes to the `created` property will be ignored.
-
-### PATCH /annotations/:_id
-Adjusts an annotation in the database.
-
-* **Success Reponse**
-
-  Annotation object as it was saved in the database in [Web Annotation Data Model] format.
-
-Note that any changes to the `created` property will be ignored.
-
-### DELETE /annotations/:_id
-Deletes an annotation from the database.
-
-* **Success Reponse**
-  Status 204, no content.
-
 ### GET /registries
 Returns an array of registries. Each registry has a property `id` under which the specific registry can be accessed.
 
@@ -2401,6 +2336,123 @@ Deletes a registry from the database.
 * **Success Response**
 
   Status 204, no content.
+
+### GET /annotations
+Returns an array of annotations. Each annotation has a property `id` under which the specific annotation can be accessed.
+
+* **URL Params**
+
+  `id=[id]` specify an annotation ID
+
+  `creator=[uriOrName]` only return annotations that have a certain creator (name or URI) (separated by `|`)
+
+  `target=[target]` only return annotations with a specific target URI (e.g. a mapping URI)
+
+  `bodyValue=[bodyValue]` only return annotations with a specific bodyValue (e.g. `+1`, `-1`)
+
+  `motivation=[motivation]` only return annotations with a specific motivation (e.g. `assessing`, `moderating`, `tagging`)
+
+* **Success Response**
+
+  Array of annotations in [Web Annotation Data Model] format
+
+* **Sample Call**
+
+  ```bash
+  curl https://coli-conc.gbv.de/api/annotations?bodyValue=+1&limit=1
+  ```
+
+  ```json
+  [
+    {
+      "target": {
+        "id": "https://coli-conc.gbv.de/api/mappings/f8eff4e2-a6df-4d2c-8382-523072c59af7"
+      },
+      "motivation": "assessing",
+      "bodyValue": "+1",
+      "creator": "https://orcid.org/0000-0002-4087-8227",
+      "created": "2019-01-31T09:44:12.699Z",
+      "id": "https://coli-conc.gbv.de/api/annotations/2575e276-29c6-4d36-8477-b21be1790e64",
+      "@context": "http://www.w3.org/ns/anno.jsonld",
+      "type": "Annotation"
+    }
+  ]
+  ```
+
+### GET /annotations/:_id
+Returns a specific annotation.
+
+* **Success Response**
+
+  Object for annotation in [Web Annotation Data Model] format.
+
+* **Error Response**
+
+  If no annotation with `_id` could be found, it will return a 404 not found error.
+
+* **Sample Call**
+
+  ```bash
+  curl https://coli-conc.gbv.de/api/annotations/5f23368f-a63b-4b69-acd6-b403110df97c
+  ```
+
+  ```json
+  {
+    "target": {
+      "id": "https://coli-conc.gbv.de/api/mappings/f0cc5f65-5712-4820-9638-e662c0c4314e"
+    },
+    "motivation": "assessing",
+    "bodyValue": "+1",
+    "creator": {
+      "id": "https://coli-conc.gbv.de/login/users/722cc9c5-2ce3-4ca0-b4fb-fef1f62236af",
+      "name": "Jakob Voß"
+    },
+    "created": "2019-03-11T09:11:10.665Z",
+    "id": "https://coli-conc.gbv.de/api/annotations/5f23368f-a63b-4b69-acd6-b403110df97c",
+    "@context": "http://www.w3.org/ns/anno.jsonld",
+    "type": "Annotation"
+  }
+  ```
+
+### POST /annotations
+Saves an annotation or multiple annotations in the database.
+
+* **URL Params**
+
+  `bulk=[boolean]` `1` or `true` enable bulk mode for importing multiple annotations into the database. Errors for individual annotations will be ignored and existing annotations will be overridden. The resulting set will only include the `id` for each annotation that was written into the database.
+
+* **Success Reponse**
+
+  Annotation object or array of object as was saved in the database in [Web Annotation Data Model] format, or array of annotation objects with only a `id` if bulk mode was used.
+
+* **Error Response**
+
+  When a single annotation is provided, an error can be returned if there's something wrong with it (see [errors](#errors)). When multiple annotations are provided, the first error will be returned, except if bulk mode is enabled in which errors for individual annotations are ignored.
+
+### PUT /annotations/:_id
+Overwrites an annotation in the database.
+
+* **Success Reponse**
+
+  Annotation object as it was saved in the database in [Web Annotation Data Model] format.
+
+Note that any changes to the `created` property will be ignored.
+
+### PATCH /annotations/:_id
+Adjusts an annotation in the database.
+
+* **Success Reponse**
+
+  Annotation object as it was saved in the database in [Web Annotation Data Model] format.
+
+Note that any changes to the `created` property will be ignored.
+
+### DELETE /annotations/:_id
+Deletes an annotation from the database.
+
+* **Success Reponse**
+  Status 204, no content.
+
 
 ### Change Stream Endpoints
 

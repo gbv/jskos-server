@@ -77,28 +77,6 @@
       "auth": true,
       "crossUser": false
     },
-    "types": {
-      "concepts": {
-        "uriRequired": false,
-        "mustExist": false,
-        "ignoreErrors": false
-      },
-      "schemes": {
-        "uriRequired": false,
-        "mustExist": false,
-        "ignoreErrors": false
-      },
-      "concordances": {
-        "uriRequired": false,
-        "mustExist": false,
-        "ignoreErrors": false
-      },
-      "annotations": {
-        "uriRequired": false,
-        "mustExist": false,
-        "ignoreErrors": false
-      }
-    },
     "mixedTypes": false
   },
   "changes": false,

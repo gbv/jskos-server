@@ -1,0 +1,16 @@
+{
+  "registries": {
+    "mixedTypes": true,
+    "update": {
+      "crossUser": true
+    },
+    "types": {
+      "schemes": true,
+      "concepts": {
+        "uriRequired": false,
+        "mustExist": true,
+        "ignoreErrors": true
+      }
+    }
+  }
+}
