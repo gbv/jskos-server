@@ -14,6 +14,8 @@ import createRegistryRouter from "./routes/registries.js"
 import createDataRouter from "./routes/data.js"
 import createValidateRouter from "./routes/validate.js"
 
+import { serverStatus } from "./utils/status.js"
+
 import { ipcheck } from "./utils/ipcheck.js"
 import * as auth from "./utils/auth.js"
 import * as errors from "./errors/index.js"
@@ -109,8 +111,7 @@ app.use("/status.schema.json", express.static(__dirname + "/status.schema.json")
 // Status page /status
 app.get("/status",
   (req, res) => {
-    const data = { ...config.status, ok: connection.readyState === 1 ? 1 : 0 }
-    res.status(200).json(data)
+    res.status(200).json(serverStatus(config, connection.readyState === 1))
   })
 
 // Database check middleware
