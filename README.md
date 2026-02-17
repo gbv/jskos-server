@@ -123,7 +123,7 @@ The provided configuration files (user config and environment config) will be va
 
 Function `validateConfig` is exported for [used as module](#use-as-module):
 
-~~~
+~~~js
 import { validateConfig } from "jskos-server"
 
 try {
@@ -285,7 +285,7 @@ Member types can further the configured with three Boolean keys:
 
 - **`uriRequired`** (default `true`) whether members must have a valid field `uri`
 - **`mustExist`** (default `false`) whether members must exist in the database (and have the right type)
-- **`ignoreErrors`** (default `false`) to filter out members that don't fulfill requirement or `uriRequired` or `mustExist`
+- **`skipInvalid`** (default `false`) to filter out members that don't fulfill requirement or `uriRequired` or `mustExist`
 
 Setting `mustExist` to true and `uriRequired` to false results in an invalid configuration because URIs are required to check whether an item exists.
 
@@ -297,7 +297,7 @@ Setting `mustExist` to true and `uriRequired` to false results in an invalid con
     "concepts": {
       "uriRequired": true,
       "mustExist": false,
-      "ignoreErrors": false
+      "skipInvalid": false
     },
   },
   "mixedTypes": true
@@ -685,12 +685,17 @@ In addition to [data import](#data-import) there are some supplemental scripts t
 
 ### Use as Module
 
-*Use as module is experimental and authentication is ignored!*
+*Use as module is experimental. Authentication is ignored on direct access to services!*
 
 ~~~js
 import { validateConfig, createServices } from "jskos-server"
 
-validateConfig(config)
+try {
+  validateConfig(config)
+} catch(error) {
+  console.error(`Invalid configuration: ${error}`)
+}
+
 const services = createServices(config)
 
 const scheme = await services.scheme.getScheme(schemeUri)
@@ -2546,12 +2551,6 @@ Status code 422. Will be returned for `POST` if an entity with the same ID/URI a
 
 #### InvalidBodyError
 Status code 422. Will be returned for `POST`/`PUT`/`PATCH` if the body was valid JSON, but could not be validated (e.g. does not pass the JSKOS Schema).
-
-#### InvalidRegistryMembershipError
-Status code 422. Will be returned for `POST`/`PUT`/`PATCH` when a registry contains a disallowed membership field or references unknown membership URIs.
-
-#### InvalidRegistryMixedMembershipError
-Status code 422. Will be returned when a registry uses mixed membership types while `registries.mixedTypes` is not allowed.
 
 #### CreatorDoesNotMatchError
 Status code 403. Will be returned by `PUT`/`PATCH`/`DELETE` endpoints if the authenticated creator does not match the creator of the entity that is being edited.

@@ -26,7 +26,8 @@ export const models = {
 }
 
 Object.keys(models).forEach(type => {
-  Object.defineProperty(models, `${type}s`, {
+  const plural = type === "registry" ? "registries" : `${type}s`
+  Object.defineProperty(models, plural, {
     get: () => models[type],
   })
 })

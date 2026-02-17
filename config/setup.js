@@ -170,7 +170,7 @@ export function setupConfig(config) {
       if (types[type] === true) {
         types[type] = {
           mustExist: false,
-          ignoreErrors: false,
+          skipInvalid: false,
         }
       }
       if (types[type] && !("uriRequired" in types[type])) {

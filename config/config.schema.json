@@ -282,7 +282,7 @@
                 "mustExist": {
                   "type": "boolean"
                 },
-                "ignoreErrors": {
+                "skipInvalid": {
                   "type": "boolean"
                 }
               }

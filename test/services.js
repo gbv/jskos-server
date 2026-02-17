@@ -475,10 +475,9 @@ describe("Services Features", () => {
     it("should post a registry and return an id/uri", async () => {
       const result = await services.registry.postRegistry({
         bodyStream: await arrayToStream([registryExample]),
-        bulk: false,
       })
       assert.ok(result?.length === 1)
-      assert.ok(result[0]?.uri || result[0]?._id || result[0]?.id)
+      assert.ok(result[0]?.uri || result[0]?.id)
     })
 
     it("should get a registry by id/uri after posting", async () => {
@@ -515,7 +514,6 @@ describe("Services Features", () => {
       }
 
       const updated = await services.registry.putRegistry({ body, existing })
-      assert.strictEqual(updated._id, existing._id)
       assert.strictEqual(updated.id, existing.id)
       assert.strictEqual(updated.created, existing.created)
       assert.ok(updated.modified, "modified should be set")
@@ -534,15 +532,30 @@ describe("Services Features", () => {
     })
 
     it("should reject invalid registry bodies", async () => {
-      delete registryExample.uri
       try {
         await services.registry.postRegistry({
-          bodyStream: await arrayToStream([registryExample]),
+          bodyStream: await arrayToStream([{uri:42}]),
           bulk: false,
         })
         assert.fail("Expected postRegistry to fail")
       } catch (error) {
         assert.ok(error instanceof InvalidBodyError)
+      }
+    })
+
+    it("should filter out invalid registry bodies in bulk mode", async () => {
+      const items = [
+        { uri: "registry:1" },
+        { uri: 42 },
+      ]
+      try {
+        const res = await services.registry.postRegistry({
+          bodyStream: await arrayToStream(items),
+          bulk: true,
+        })
+        assert.deepStrictEqual(res, [ { uri: "registry:1" } ])
+      } catch (error) {
+        assert.fail("Should not fail")
       }
     })
 
