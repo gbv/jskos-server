@@ -1,7 +1,6 @@
 import _ from "lodash"
 import jskos from "jskos-tools"
 import { validate } from "jskos-validate"
-
 import { bulkOperationForEntities, queryToAggregation } from "../utils/utils.js"
 import { toOpenSearchSuggestFormat, addKeywords } from "../utils/searchHelper.js"
 import { Concept } from "../models/concepts.js"
@@ -184,12 +183,13 @@ export class ConceptService extends AbstractService {
    * Return a Promise with suggestions, either in OpenSearch Suggest Format or JSKOS (?format=jskos).
    */
   async getSuggestions(query) {
-    let search = query.search = query.search || ""
-    let format = query.format || ""
-    let results = await this.searchConcept(search, query.voc)
+    const search = query.search || ""
+    const format = query.format || ""
+    const results = await this.searchConcept(search, query.voc)
+    const { limit, offset } = this._getLimitAndOffset(query)
     if (format.toLowerCase() == "jskos") {
       // Return in JSKOS format
-      return results.slice(query.offset, query.offset + query.limit)
+      return results.slice(offset, offset + limit)
     }
     return toOpenSearchSuggestFormat({ query, results })
   }
@@ -200,7 +200,8 @@ export class ConceptService extends AbstractService {
   async search(query) {
     let search = query.query || query.search || ""
     let results = await this.searchConcept(search, query.voc)
-    const searchResults = results.slice(query.offset, query.offset + query.limit)
+    const { limit, offset } = this._getLimitAndOffset(query)
+    const searchResults = results.slice(offset, offset + limit)
     searchResults.totalCount = results.length
     return searchResults
   }
@@ -260,24 +261,15 @@ export class ConceptService extends AbstractService {
       response = preparation.concepts
     } else {
       // Fully assemble body for non-bulk operations
-      let concepts = await new Promise((resolve) => {
-        const body = []
-        bodyStream.on("data", concept => {
-          body.push(concept)
-        })
-        bodyStream.on("end", () => {
-          resolve(body)
-        })
-      })
+      let { items } = await this._readBodyStream(bodyStream)
       // Prepare
-      preparation = await this.prepareAndCheckConcepts(concepts, { scheme })
-      concepts = preparation.concepts
+      preparation = await this.prepareAndCheckConcepts(items, { scheme })
+      items = preparation.concepts
       if (preparation.errors.length) {
-        // Throw first error
         throw preparation.errors[0]
       }
       // Insert concepts
-      response = await Concept.insertMany(concepts, { lean: true })
+      response = await Concept.insertMany(items, { lean: true })
     }
 
     preparation.setApi = setApi
@@ -337,7 +329,7 @@ export class ConceptService extends AbstractService {
 
     await this.postAdjustmentsForConcepts({
       // Adjust scheme in case it was its last concept
-      schemeUrisToAdjust: [_.get(existing, "inScheme[0].uri")],
+      schemeUrisToAdjust: [existing?.inScheme?.[0]?.uri],
       conceptUrisWithNarrower: [],
       setApi,
     })
@@ -375,7 +367,7 @@ export class ConceptService extends AbstractService {
    * @returns {Object} preparation object with properties `concepts`, `errors`, `schemeUrisToAdjust`, and `conceptUrisWithNarrower`; needs to be provided to `postAdjustmentsForConcepts`
    */
   async prepareAndCheckConcepts(allConcepts, { scheme } = {}) {
-    const getSchemeUri = c => _.get(c, "inScheme[0].uri") || _.get(c, "topConceptOf[0].uri")
+    const getSchemeUri = c => c?.inScheme?.[0]?.uri || c?.topConceptOf?.[0]?.uri
     const schemeUrisToAdjust = []
     const concepts = []
     const errors = []
@@ -397,7 +389,7 @@ export class ConceptService extends AbstractService {
     for (let concept of allConcepts) {
       try {
         await this.prepareAndCheckConcept(concept, schemes)
-        let scheme = _.get(concept, "inScheme[0].uri")
+        let scheme = concept?.inScheme?.[0]?.uri
         if (scheme && !schemeUrisToAdjust.includes(scheme)) {
           schemeUrisToAdjust.push(scheme)
         }
@@ -501,17 +493,7 @@ export class ConceptService extends AbstractService {
         },
       },
     ])
-    // Create collection if necessary
-    try {
-      await Concept.createCollection()
-    } catch (error) {
-      // Ignore error
-    }
-    // Drop existing indexes
-    await Concept.collection.dropIndexes()
-    for (let [index, options] of indexes) {
-      await Concept.collection.createIndex(index, options)
-    }
+    await this._createIndexes({ model: Concept, indexes })
   }
 
 }

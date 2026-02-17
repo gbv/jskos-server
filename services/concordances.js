@@ -11,7 +11,7 @@ import { SchemeService } from "./schemes.js"
 
 const validateConcordance = validate.concordance
 
-import { MalformedRequestError, EntityNotFoundError, MalformedBodyError, InvalidBodyError, DatabaseAccessError } from "../errors/index.js"
+import { MalformedRequestError, EntityNotFoundError, InvalidBodyError, DatabaseAccessError } from "../errors/index.js"
 
 import { AbstractService } from "./abstract.js"
 
@@ -72,7 +72,8 @@ export class ConcordanceService extends AbstractService {
       return Concordance.find(mongoQuery).lean().cursor()
     } else {
       // Otherwise, return results
-      const concordances = await Concordance.find(mongoQuery).lean().skip(query.offset).limit(query.limit).exec()
+      const { limit, offset } = this._getLimitAndOffset(query)
+      const concordances = await Concordance.find(mongoQuery).lean().skip(offset).limit(limit).exec()
       concordances.totalCount = await this._count(Concordance, [{ $match: mongoQuery }])
       return concordances
     }
@@ -115,30 +116,11 @@ export class ConcordanceService extends AbstractService {
    * TODO: Implement bulk and bulkReplace, equivalent to postMapping
    */
   async postConcordance({ bodyStream, bulk = false }) {
-    if (!bodyStream) {
-      throw new MalformedBodyError()
-    }
-
-    let isMultiple = true
-
-    // As a workaround, build body from bodyStream
-    let concordances = await new Promise((resolve) => {
-      const body = []
-      bodyStream.on("data", concordance => {
-        body.push(concordance)
-      })
-      bodyStream.on("isSingleObject", () => {
-        isMultiple = false
-      })
-      bodyStream.on("end", () => {
-        resolve(body)
-      })
-    })
-
+    let { items, isMultiple } = await this._readBodyStream(bodyStream)
     let response
 
-    // Adjust all concordances
-    for (const concordance of concordances) {
+    // Adjust all items
+    for (const concordance of items) {
       // Add created and modified dates.
       const now = (new Date()).toISOString()
       if (!bulk || !concordance.created) {
@@ -172,9 +154,9 @@ export class ConcordanceService extends AbstractService {
       // Extent should be 0 when added; will be updated in postAdjustmentForConcordance whenever there are changes
       concordance.extent = "0"
     }
-    concordances = concordances.filter(m => m)
+    items = items.filter(Boolean)
 
-    response = await Concordance.insertMany(concordances, { lean: true })
+    response = await Concordance.insertMany(items, { lean: true })
 
     return isMultiple ? response : response[0]
   }
@@ -292,17 +274,7 @@ export class ConcordanceService extends AbstractService {
     indexes.push([{ notation: 1 }, {}])
     indexes.push([{ "fromScheme.uri": 1 }, {}])
     indexes.push([{ "toScheme.uri": 1 }, {}])
-    // Create collection if necessary
-    try {
-      await Concordance.createCollection()
-    } catch (error) {
-      // Ignore error
-    }
-    // Drop existing indexes
-    await Concordance.collection.dropIndexes()
-    for (let [index, options] of indexes) {
-      await Concordance.collection.createIndex(index, options)
-    }
+    await this._createIndexes({ model: Concordance, indexes })
   }
 
 }

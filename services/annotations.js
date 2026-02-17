@@ -1,11 +1,10 @@
-import _ from "lodash"
 import { uuid, isValidUuid } from "../utils/uuid.js"
 import { removeNullProperties, bulkOperationForEntities } from "../utils/utils.js"
 import jskos from "jskos-tools"
 import { validate } from "jskos-validate"
-
+import _ from "lodash"
 import { Annotation, Mapping, Concept } from "../models/index.js"
-import { EntityNotFoundError, DatabaseAccessError, InvalidBodyError, MalformedBodyError, MalformedRequestError, ForbiddenAccessError } from "../errors/index.js"
+import { EntityNotFoundError, DatabaseAccessError, InvalidBodyError, MalformedRequestError, ForbiddenAccessError } from "../errors/index.js"
 
 import { AbstractService } from "./abstract.js"
 
@@ -13,6 +12,8 @@ export class AnnotationService extends AbstractService {
 
   constructor(config) {
     super(config)
+    this.baseUri = config.baseUrl + "annotations/"
+    this.config = config.annotations || {}
   }
 
   // Wrapper around validate.annotation that also checks the `body` field and throws errors if necessary.
@@ -24,7 +25,7 @@ export class AnnotationService extends AbstractService {
     }
     // Check `body` property
     if (data.body?.length) {
-      const mismatchTagConcepts = await Concept.find({ "inScheme.uri": this.config.annotations?.mismatchTagVocabulary?.uri })
+      const mismatchTagConcepts = await Concept.find({ "inScheme.uri": this.config.mismatchTagVocabulary?.uri })
       if (data.bodyValue !== "-1") {
         throw new InvalidBodyError("Property `body` is currently only allowed with when `bodyValue` is set to \"-1\".")
       }
@@ -92,7 +93,8 @@ export class AnnotationService extends AbstractService {
     }
 
     const mongoQuery = criteria.length ? { $and: criteria } : {}
-    const annotations = await Annotation.find(mongoQuery).lean().skip(query.offset).limit(query.limit).exec()
+    const { limit, offset } = this._getLimitAndOffset(query)
+    const annotations = await Annotation.find(mongoQuery).lean().skip(offset).limit(limit).exec()
     annotations.totalCount = await this._count(Annotation, [{ $match: mongoQuery }])
     return annotations
 
@@ -120,36 +122,16 @@ export class AnnotationService extends AbstractService {
    * Save a new annotation or multiple annotations in the database. Adds created date if necessary.
    */
   async postAnnotation({ bodyStream, user, bulk = false, bulkReplace = true, admin = false }) {
-    if (!bodyStream) {
-      throw new MalformedBodyError()
-    }
-
-    let isMultiple = true
-
-    // As a workaround, build body from bodyStream
-    // TODO: Use actual stream
-    let annotations = await new Promise((resolve) => {
-      const body = []
-      bodyStream.on("data", annotation => {
-        body.push(annotation)
-      })
-      bodyStream.on("isSingleObject", () => {
-        isMultiple = false
-      })
-      bodyStream.on("end", () => {
-        resolve(body)
-      })
-    })
-
+    let { items, isMultiple } = await this._readBodyStream(bodyStream)
     let response
 
     // Adjust all annotations
-    annotations = await Promise.all(annotations.map(async annotation => {
+    items = await Promise.all(items.map(async annotation => {
       try {
         // For type moderating, check if user is on the whitelist (except for admin=true).
         if (!admin && annotation.motivation == "moderating") {
           let uris = [user.uri].concat(Object.values(user.identities || {}).map(id => id.uri)).filter(uri => uri != null)
-          let whitelist = this.config.annotations.moderatingIdentities
+          let whitelist = this.config.moderatingIdentities
           if (whitelist && _.intersection(whitelist, uris).length == 0) {
             // Disallow
             throw new ForbiddenAccessError("Access forbidden, user is not allowed to create annotations of type \"moderating\".")
@@ -166,25 +148,20 @@ export class AnnotationService extends AbstractService {
         await this.validateAnnotation(annotation)
         // Add _id and URI
         delete annotation._id
-        let uriBase = this.config.baseUrl + "annotations/"
         if (annotation.id) {
           let id = annotation.id
           // ID already exists, use if it's valid, otherwise remove
-          if (id.startsWith(uriBase) && isValidUuid(id.slice(uriBase.length, id.length))) {
-            annotation._id = id.slice(uriBase.length, id.length)
+          if (id.startsWith(this.baseUri) && isValidUuid(id.slice(this.baseUri.length, id.length))) {
+            annotation._id = id.slice(this.baseUri.length, id.length)
           }
         }
         if (!annotation._id) {
           annotation._id = uuid()
-          annotation.id = this.config.baseUrl + "annotations/" + annotation._id
-        }
-        // Make sure URI is a https URI when in production
-        if (this.config.env === "production") {
-          annotation.id = annotation.id.replace("http:", "https:")
+          annotation.id = this.baseUri + annotation._id
         }
         // Change target to object and add mapping content identifier if possible
         const target = _.get(annotation, "target.id", annotation.target)
-        if (!_.get(annotation, "target.state.id")) {
+        if (!annotation.target?.state?.id) {
           const mapping = await Mapping.findOne({ uri: target })
           const contentId = mapping && (mapping.identifier || []).find(id => id.startsWith("urn:jskos:mapping:content:"))
           annotation.target = contentId ? {
@@ -203,14 +180,14 @@ export class AnnotationService extends AbstractService {
         throw error
       }
     }))
-    annotations = annotations.filter(a => a)
+    items = items.filter(Boolean)
 
     if (bulk) {
       // Use bulkWrite for most efficiency
-      annotations.length && await Annotation.bulkWrite(bulkOperationForEntities({ entities: annotations, replace: bulkReplace }))
-      response = annotations.map(a => ({ id: a.id }))
+      items.length && await Annotation.bulkWrite(bulkOperationForEntities({ entities: items, replace: bulkReplace }))
+      response = items.map(a => ({ id: a.id }))
     } else {
-      response = await Annotation.insertMany(annotations, { lean: true })
+      response = await Annotation.insertMany(items, { lean: true })
     }
 
     return isMultiple ? response : response[0]
@@ -299,17 +276,7 @@ export class AnnotationService extends AbstractService {
       [{ motivation: 1 }, {}],
       [{ bodyValue: 1 }, {}],
     ]
-    // Create collection if necessary
-    try {
-      await Annotation.createCollection()
-    } catch (error) {
-      // Ignore error
-    }
-    // Drop existing indexes
-    await Annotation.collection.dropIndexes()
-    for (let [index, options] of indexes) {
-      await Annotation.collection.createIndex(index, options)
-    }
+    await this._createIndexes({ model: Annotation, indexes })
   }
 
 }

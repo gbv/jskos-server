@@ -101,11 +101,12 @@ export class SchemeService extends AbstractService {
     if (Object.keys(sort).length > 0) {
       pipeline.push({ $sort: sort })
     }
-    if (_.isNumber(query.offset)) {
-      pipeline.push({ $skip: query.offset })
+    const { limit, offset } = this._getLimitAndOffset(query)
+    if (_.isNumber(offset)) {
+      pipeline.push({ $skip: offset })
     }
-    if (_.isNumber(query.limit)) {
-      pipeline.push({ $limit: query.limit })
+    if (_.isNumber(limit)) {
+      pipeline.push({ $limit: limit })
     }
 
     const schemes = await Scheme.aggregate(pipeline)
@@ -185,27 +186,7 @@ export class SchemeService extends AbstractService {
   // Write endpoints start here
 
   async postScheme({ bodyStream, bulk = false, bulkReplace = true }) {
-    if (!bodyStream) {
-      throw new MalformedBodyError()
-    }
-
-    let isMultiple = true
-
-    // As a workaround, build body from bodyStream
-    // TODO: Use actual stream
-    let schemes = await new Promise((resolve) => {
-      const body = []
-      bodyStream.on("data", scheme => {
-        body.push(scheme)
-      })
-      bodyStream.on("isSingleObject", () => {
-        isMultiple = false
-      })
-      bodyStream.on("end", () => {
-        resolve(body)
-      })
-    })
-
+    let { items: schemes, isMultiple } = await this._readBodyStream(bodyStream)
     let response
 
     // Prepare
@@ -404,16 +385,6 @@ export class SchemeService extends AbstractService {
         },
       },
     ])
-    // Create collection if necessary
-    try {
-      await Scheme.createCollection()
-    } catch (error) {
-      // Ignore error
-    }
-    // Drop existing indexes
-    await Scheme.collection.dropIndexes()
-    for (let [index, options] of indexes) {
-      await Scheme.collection.createIndex(index, options)
-    }
+    await this._createIndexes({ model: Scheme, indexes })
   }
 }

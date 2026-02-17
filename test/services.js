@@ -472,12 +472,12 @@ describe("Services Features", () => {
       url: "https://example.org/registry/1",
     }
 
-    it("should post a registry and return an id/uri", async () => {
+    it("should post a registry and return with uri", async () => {
       const result = await services.registry.postRegistry({
         bodyStream: await arrayToStream([registryExample]),
       })
-      assert.ok(result?.length === 1)
-      assert.ok(result[0]?.uri || result[0]?.id)
+      assert.ok(result.length === 1)
+      assert.ok(result[0].uri)
     })
 
     it("should get a registry by id/uri after posting", async () => {

@@ -3,13 +3,7 @@ import { removeNullProperties, bulkOperationForEntities } from "../utils/utils.j
 import { validate } from "jskos-validate"
 import { Registry } from "../models/registries.js"
 import { toOpenSearchSuggestFormat, addKeywords } from "../utils/searchHelper.js"
-import {
-  EntityNotFoundError,
-  DatabaseAccessError,
-  InvalidBodyError,
-  MalformedBodyError,
-  MalformedRequestError,
-} from "../errors/index.js"
+import { EntityNotFoundError, DatabaseAccessError, InvalidBodyError, MalformedBodyError, MalformedRequestError } from "../errors/index.js"
 
 import { AbstractService } from "./abstract.js"
 
@@ -55,15 +49,9 @@ export class RegistryService extends AbstractService {
     return Registry.find({}).skip(offset).limit(limit).lean().exec()
   }
 
-  /**
-   * Retrieves a registry entry by its identifier.
-   *
-   * @param {string} _id - The unique identifier of the registry to fetch.
-   * @returns {Promise<Object>} Resolves with the registry data if found.
-   */
-  async get(_id) {
+  /*async get(_id) {
     return this.getRegistry(_id)
-  }
+  }*/
 
   /**
    * Retrieves a registry entry by its identifier.
@@ -135,7 +123,7 @@ export class RegistryService extends AbstractService {
    * @param {string} action one of "create" or "update"
    * @returns {Object} prepared registry
    */
-  async prepareAndCheckRegistryForAction(registry, action) {
+  async _prepareAndCheckRegistryForAction(registry, action) {
     if (typeof registry !== "object") {
       throw new MalformedBodyError("Invalid registry object")
     }
@@ -151,7 +139,6 @@ export class RegistryService extends AbstractService {
         throw new InvalidBodyError("Registry lacks uri")
       }
 
-      // Validate and filter member fields
       await this.processMembers(registry)
 
       // Add _id
@@ -180,44 +167,26 @@ export class RegistryService extends AbstractService {
    * @throws {InvalidBodyError} When validation fails in non-bulk mode.
    */
   async postRegistry({ bodyStream, bulk = true, bulkReplace = true }) {
-    if (!bodyStream) {
-      throw new MalformedBodyError()
-    }
+    let { items, isMultiple } = await this._readBodyStream(bodyStream)
 
-    let isMultiple = true
-    bodyStream.on("isSingleObject", () => {
-      isMultiple = false
-    })
-
-    // build body from bodyStream
-    let registries = await new Promise((resolve) => {
-      const body = []
-      bodyStream.on("data", registry => {
-        body.push(registry)
-        resolve(body)
-      })
-    })
-
-    let response
-
-    registries = await Promise.all(registries.map(registry => {
-      return this.prepareAndCheckRegistryForAction(registry, "create").catch(error => {
+    items = await Promise.all(items.map(registry => {
+      return this._prepareAndCheckRegistryForAction(registry, "create").catch(error => {
         if (!bulk) {
           throw error
         }
       })
     }))
-    // Filter out null
-    registries = registries.filter(Boolean)
+    items = items.filter(Boolean)
 
+    let response
     if (bulk) {
       // Use bulkWrite for most efficiency
-      registries.length && await Registry.bulkWrite(
-        bulkOperationForEntities({ entities: registries, replace: bulkReplace }))
-      response = registries.map(r => ({ uri: r.uri }))
+      items.length && await Registry.bulkWrite(
+        bulkOperationForEntities({ entities: items, replace: bulkReplace }))
+      response = items.map(r => ({ uri: r.uri }))
     } else {
       // TODO: what if registry already exists
-      response = await Registry.insertMany(registries, { lean: true })
+      response = await Registry.insertMany(items, { lean: true })
     }
 
     return isMultiple ? response : response[0]
@@ -237,14 +206,11 @@ export class RegistryService extends AbstractService {
   async putRegistry({ body, existing }) {
     if (!body) {
       throw new InvalidBodyError()
-
     }
 
-    // Add modified date.
     body.modified = new Date().toISOString()
 
-    // Remove type property
-    _.unset(body, "type")
+    delete body.type
 
     // Validate registry
     if (!validate.registry(body)) {
@@ -459,7 +425,7 @@ export class RegistryService extends AbstractService {
           }
         }
         if (error) {
-          if (skipInvalid) {
+          if (!skipInvalid) {
             throw new InvalidBodyError(error)
           }
         } else {

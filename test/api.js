@@ -2283,7 +2283,7 @@ describe("Express Server", () => {
     })
 
 
-    it("should accept missing concordance uri", done => {
+    it("should accept missing concordance uri (uriRequired=false)", done => {
       config.registries.types.concordances.uriRequired = false
 
       const uri = "http://example.org/registry/a"
@@ -2302,8 +2302,9 @@ describe("Express Server", () => {
         })
     })
 
-    it("should filter out member with missing concordance uri", (done) => {
+    it("should filter out member with missing uri (skipInvalid=true)", done => {
       config.registries.types.concordances.uriRequired = true
+      config.registries.types.concordances.skipInvalid = true
 
       const uri = "http://example.org/registry/b"
       const concordances = [{},{uri:"some:uri"}]
@@ -2321,10 +2322,25 @@ describe("Express Server", () => {
         })
     })
 
-    // TODO: check skipInvalid=false
+    it("should given an error on member with missing uri (skipInvalid=false)", done => {
+      config.registries.types.concordances.skipInvalid = false
 
-    it("should filter out member with unknown uri", (done) => {
+      const uri = "http://example.org/registry/c"
+      const registry = { uri, concordances: [ {} ] }
+
+      chai.request.execute(app)
+        .post("/registries")
+        .set("Authorization", `Bearer ${token}`)
+        .send(registry)
+        .end((err, res) => {
+          res.should.have.status(422)
+          done()
+        })
+    })
+
+    it("should filter out non-existing member (mustExist=true, skipInvalid=true)", done => {
       config.registries.types.concordances.mustExist = true
+      config.registries.types.concordances.skipInvalid = true
 
       const uri = "http://example.org/registry/c"
       const knownUri = "http://coli-conc.gbv.de/concordances/ddc_rvk_medizin"
@@ -2363,7 +2379,7 @@ describe("Express Server", () => {
         })
     })
 
-    it("should allow mixed membership types when mixedTypes=true", (done) => {
+    it("should allow mixed membership types (mixedTypes=true)", done => {
       config.registries.mixedTypes = true
 
       const registry = _.cloneDeep(baseRegistry)

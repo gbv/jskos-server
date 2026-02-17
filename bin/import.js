@@ -206,7 +206,6 @@ import config from "../config/index.js"
 import { v5 as uuidv5 } from "uuid"
 import path from "node:path"
 import * as anystream from "json-anystream"
-import _ from "lodash"
 import * as db from "../utils/db.js"
 
 import { createServices } from "../services/index.js"
@@ -357,7 +356,7 @@ async function doImport({ input, format, type, concordance }) {
       // Generate an identifier and a URI if necessary
       if (!object.uri) {
         const contentIdentifier = object.identifier.find(id => id && id.startsWith("urn:jskos:mapping:content:"))
-        const concordance = _.get(object, "partOf[0].uri") || ""
+        const concordance = object.partOf?.[0]?.uri || ""
         if (contentIdentifier) {
           object._id = uuidv5(contentIdentifier + concordance, config.namespace)
           object.uri = config.baseUrl + "mappings/" + object._id
