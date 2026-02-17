@@ -2,8 +2,8 @@
 
 [![GitHub release](https://img.shields.io/github/release/gbv/jskos-server.svg)](https://github.com/gbv/jskos-server/releases/latest)
 [![API Status](https://coli-conc-status.fly.dev/api/badge/2/status?label=API)](https://coli-conc.gbv.de/api/)
-[![License](https://img.shields.io/github/license/gbv/jskos-server.svg)](https://github.com/gbv/jskos-server/blob/master/LICENSE)
-[![Docker](https://img.shields.io/badge/Docker-ghcr.io%2Fgbv%2Fjskos--server-informational)](https://github.com/gbv/jskos-server/blob/master/docker/README.md)
+[![License](https://img.shields.io/github/license/gbv/jskos-server.svg)](https://github.com/gbv/jskos-server/blob/main/LICENSE)
+[![Docker](https://img.shields.io/badge/Docker-ghcr.io%2Fgbv%2Fjskos--server-informational)](https://github.com/gbv/jskos-server/blob/main/docker/README.md)
 [![Test](https://github.com/gbv/jskos-server/actions/workflows/test.yml/badge.svg)](https://github.com/gbv/jskos-server/actions/workflows/test.yml)
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg)](https://github.com/RichardLitt/standard-readme)
 
@@ -2685,7 +2685,7 @@ Small note: If editing the README, please conform to the [standard-readme](https
 ### Publish
 **For maintainers only**
 
-Never work on the master branch directly. Always make changes on `dev` and then run the release script:
+Never work on the main branch directly. Always make changes on a feature branch for specific issues or on the `dev` branch for small fixes and then run the release script:
 
 ```bash
 npm run release:patch # or minor or major
