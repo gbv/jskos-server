@@ -2,7 +2,7 @@ import _ from "lodash"
 import { removeNullProperties, bulkOperationForEntities } from "../utils/utils.js"
 import { validate } from "jskos-validate"
 import { Registry } from "../models/registries.js"
-import { toOpenSearchSuggestFormat, addKeywords } from "../utils/searchHelper.js"
+import { addKeywords } from "../utils/searchHelper.js"
 import { EntityNotFoundError, DatabaseAccessError, InvalidBodyError, MalformedBodyError, MalformedRequestError } from "../errors/index.js"
 
 import { AbstractService } from "./abstract.js"
@@ -17,6 +17,8 @@ export class RegistryService extends AbstractService {
     super(config)
     this.config = config.registries || {}
     this.types = {}
+
+    this.model = Registry
 
     // TODO: duplicated code in config.setup
     for (let type of RegistryService.allMemberTypes) {
@@ -38,15 +40,9 @@ export class RegistryService extends AbstractService {
    * @param {number|string} [query.offset=0] - Number of registries to skip before fetching.
    * @returns {Promise<Object[]>} A promise that resolves to the matching registries.
    */
-  async getRegistries(query) {
-    const limit = Number.isFinite(+query.limit)
-      ? Math.max(0, +query.limit)
-      : 100
-    const offset = Number.isFinite(+query.offset)
-      ? Math.max(0, +query.offset)
-      : 0
-
-    return Registry.find({}).skip(offset).limit(limit).lean().exec()
+  async queryItems(query) {
+    const { limit, offset } = this._getLimitAndOffset(query)
+    return this.model.find({}).skip(offset).limit(limit).lean().exec()
   }
 
   /*async get(_id) {
@@ -70,47 +66,19 @@ export class RegistryService extends AbstractService {
     let result
 
     // First look via ID
-    result = await Registry.findById(uriOrId).lean()
+    result = await this.model.findById(uriOrId).lean()
     if (result) {
       return result
     }
 
     // Then via URI
-    result = await Registry.findOne({ uri: uriOrId }).lean()
+    result = await this.model.findOne({ uri: uriOrId }).lean()
     if (result) {
       return result
     }
 
     // No registry found
     throw new EntityNotFoundError(`Registry not found: ${uriOrId}`)
-  }
-
-  /**
-   * Returns OpenSearch Suggest format for registries.
-   *
-   * @param {Object} query - Query parameters.
-   * @returns {Promise<Array>} OpenSearch Suggest array.
-   */
-  async getSuggestions(query) {
-    const results = await this.searchRegistry(query)
-    return toOpenSearchSuggestFormat({ query, results })
-  }
-
-  /**
-   * Searches registry entries based on query params.
-   *
-   * @param {Object} query - Query parameters.
-   * @returns {Promise<Object[]>} Matching registries.
-   */
-  async searchRegistry(query) {
-    const search = query?.search || query?.q || ""
-    const voc = query?.voc
-
-    return this._searchItem({
-      search,
-      voc,
-      queryFunction: (mongoQuery) => Registry.find(mongoQuery).lean().exec(),
-    })
   }
 
   /**
@@ -166,7 +134,7 @@ export class RegistryService extends AbstractService {
    * @throws {MalformedBodyError} When the body stream is missing.
    * @throws {InvalidBodyError} When validation fails in non-bulk mode.
    */
-  async postRegistry({ bodyStream, bulk = true, bulkReplace = true }) {
+  async createItem({ bodyStream, bulk = true, bulkReplace = true }) {
     let { items, isMultiple } = await this._readBodyStream(bodyStream)
 
     items = await Promise.all(items.map(registry => {
@@ -181,12 +149,12 @@ export class RegistryService extends AbstractService {
     let response
     if (bulk) {
       // Use bulkWrite for most efficiency
-      items.length && await Registry.bulkWrite(
+      items.length && await this.model.bulkWrite(
         bulkOperationForEntities({ entities: items, replace: bulkReplace }))
       response = items.map(r => ({ uri: r.uri }))
     } else {
       // TODO: what if registry already exists
-      response = await Registry.insertMany(items, { lean: true })
+      response = await this.model.insertMany(items, { lean: true })
     }
 
     return isMultiple ? response : response[0]
@@ -203,7 +171,7 @@ export class RegistryService extends AbstractService {
    * @throws {EntityNotFoundError} If the targeted registry is not found.
    * @throws {DatabaseAccessError} If the database operation fails.
    */
-  async putRegistry({ body, existing }) {
+  async updateItem({ body, existing }) {
     if (!body) {
       throw new InvalidBodyError()
     }
@@ -230,7 +198,7 @@ export class RegistryService extends AbstractService {
     body._id = existing._id
 
     // Replace in database
-    const result = await Registry.replaceOne({ _id: existing._id }, body)
+    const result = await this.model.replaceOne({ _id: existing._id }, body)
     if (!result.matchedCount) {
       throw new EntityNotFoundError(`Registry not found: ${existing._id}`)
     }
@@ -241,7 +209,7 @@ export class RegistryService extends AbstractService {
     }
 
     // Return the updated registry entry
-    const doc = await Registry.findById(existing._id).lean()
+    const doc = await this.model.findById(existing._id).lean()
     if (!doc) {
       throw new DatabaseAccessError()
     }
@@ -293,7 +261,7 @@ export class RegistryService extends AbstractService {
     }
 
     // Replace in database
-    const result = await Registry.replaceOne({ _id: existing._id }, existing)
+    const result = await this.model.replaceOne({ _id: existing._id }, existing)
     if (!result.matchedCount) {
       throw new EntityNotFoundError(`Registry not found: ${existing._id}`)
     }
@@ -304,7 +272,7 @@ export class RegistryService extends AbstractService {
     }
 
     // Return the updated registry entry
-    const doc = await Registry.findById(existing._id).lean()
+    const doc = await this.model.findById(existing._id).lean()
     if (!doc) {
       throw new DatabaseAccessError()
     }
@@ -314,16 +282,9 @@ export class RegistryService extends AbstractService {
 
   /**
    * Deletes a registry entry.
-   *
-   * @async
-   * @function deleteRegistry
-   * @param {Object} params - Parameters containing the registry to delete.
-   * @param {Object} params.existing - The existing registry document to be deleted.
-   * @throws {DatabaseAccessError} If no registry document was deleted.
-   * @returns {Promise<void>} Resolves when the registry has been successfully deleted.
    */
-  async deleteRegistry({ existing }) {
-    const result = await Registry.deleteOne({ _id: existing._id })
+  async deleteItem({ existing }) {
+    const result = await this.model.deleteOne({ _id: existing._id })
     if (!result.deletedCount) {
       throw new DatabaseAccessError()
     }
@@ -373,16 +334,16 @@ export class RegistryService extends AbstractService {
 
     // Create collection if necessary
     try {
-      await Registry.createCollection()
+      await this.model.createCollection()
     } catch (error) {
       this.error("Error creating collection:", error)
       // Ignore error
     }
 
     // Drop existing indexes
-    await Registry.collection.dropIndexes()
+    await this.model.collection.dropIndexes()
     for (const [index, options] of indexes) {
-      await Registry.collection.createIndex(index, options)
+      await this.model.collection.createIndex(index, options)
     }
   }
 

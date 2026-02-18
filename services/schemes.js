@@ -2,7 +2,7 @@ import _ from "lodash"
 import { bulkOperationForEntities } from "../utils/utils.js"
 import { validate } from "jskos-validate"
 
-import { toOpenSearchSuggestFormat, addKeywords } from "../utils/searchHelper.js"
+import { addKeywords } from "../utils/searchHelper.js"
 import { MalformedBodyError, MalformedRequestError, EntityNotFoundError, DatabaseAccessError, InvalidBodyError } from "../errors/index.js"
 import { Scheme } from "../models/schemes.js"
 import { Concept } from "../models/concepts.js"
@@ -14,12 +14,13 @@ export class SchemeService extends AbstractService {
   constructor(config) {
     super(config)
     this.baseUrl = config.baseUrl
+    this.model = Scheme
   }
 
   /**
    * Return a Promise with an array of vocabularies.
    */
-  async getSchemes(query) {
+  async queryItems(query) {
     let mongoQuery = {}
     if (query.uri) {
       mongoQuery = {
@@ -102,14 +103,10 @@ export class SchemeService extends AbstractService {
       pipeline.push({ $sort: sort })
     }
     const { limit, offset } = this._getLimitAndOffset(query)
-    if (_.isNumber(offset)) {
-      pipeline.push({ $skip: offset })
-    }
-    if (_.isNumber(limit)) {
-      pipeline.push({ $limit: limit })
-    }
+    pipeline.push({ $skip: offset })
+    pipeline.push({ $limit: limit })
 
-    const schemes = await Scheme.aggregate(pipeline)
+    const schemes = await this.model.aggregate(pipeline)
     schemes.totalCount = await this._count(Scheme, [{ $match: mongoQuery }])
 
     return schemes
@@ -124,7 +121,7 @@ export class SchemeService extends AbstractService {
     if (!identifierOrNotation) {
       return null
     }
-    return await Scheme.findOne({ $or: [{ uri: identifierOrNotation }, { identifier: identifierOrNotation }, { notation: new RegExp(`^${_.escapeRegExp(identifierOrNotation)}$`, "i") }] }).lean().exec()
+    return await this.model.findOne({ $or: [{ uri: identifierOrNotation }, { identifier: identifierOrNotation }, { notation: new RegExp(`^${_.escapeRegExp(identifierOrNotation)}$`, "i") }] }).lean().exec()
   }
 
   async replaceSchemeProperties(entity, propertyPaths, ignoreError = true) {
@@ -147,45 +144,19 @@ export class SchemeService extends AbstractService {
   }
 
   /**
-   * Return a Promise with suggestions, either in OpenSearch Suggest Format or JSKOS (?format=jskos).
-   */
-  async getSuggestions(query) {
-    let search = query.search = query.search || ""
-    let format = query.format || ""
-    let results = await this.searchScheme(search, query.voc)
-    if (format.toLowerCase() == "jskos") {
-      // Return in JSKOS format
-      return results.slice(query.offset, query.offset + query.limit)
-    }
-    return toOpenSearchSuggestFormat({
-      query,
-      results,
-    })
-  }
-
-  /**
    * Return a Promise with an array of suggestions in JSKOS format.
    */
   async search(query) {
     let search = query.query || query.search || ""
-    let results = await this.searchScheme(search)
+    let results = await this._searchItems({ search })
     const searchResults = results.slice(query.offset, query.offset + query.limit)
     searchResults.totalCount = results.length
     return searchResults
   }
 
-  async searchScheme(search) {
-    return this._searchItem({
-      search,
-      queryFunction: (query) => {
-        return Scheme.find(query).lean()
-      },
-    })
-  }
-
   // Write endpoints start here
 
-  async postScheme({ bodyStream, bulk = false, bulkReplace = true }) {
+  async createItem({ bodyStream, bulk = false, bulkReplace = true }) {
     let { items: schemes, isMultiple } = await this._readBodyStream(bodyStream)
     let response
 
@@ -205,18 +176,18 @@ export class SchemeService extends AbstractService {
 
     if (bulk) {
       // Use bulkWrite for most efficiency
-      schemes.length && await Scheme.bulkWrite(bulkOperationForEntities({ entities: schemes, replace: bulkReplace }))
+      schemes.length && await this.model.bulkWrite(bulkOperationForEntities({ entities: schemes, replace: bulkReplace }))
       schemes = await this.postAdjustmentsForScheme(schemes, { bulk })
       response = schemes.map(s => ({ uri: s.uri }))
     } else {
-      schemes = await Scheme.insertMany(schemes, { lean: true })
+      schemes = await this.model.insertMany(schemes, { lean: true })
       response = await this.postAdjustmentsForScheme(schemes, { bulk })
     }
 
     return isMultiple ? response : response[0]
   }
 
-  async putScheme({ body, existing, setApi }) {
+  async updateItem({ body, existing, setApi }) {
     let scheme = body
 
     // Prepare
@@ -228,7 +199,7 @@ export class SchemeService extends AbstractService {
     scheme.created = existing.created
 
     // Write scheme to database
-    const result = await Scheme.replaceOne({ _id: scheme.uri }, scheme)
+    const result = await this.model.replaceOne({ _id: scheme.uri }, scheme)
     if (!result.acknowledged) {
       throw new DatabaseAccessError()
     }
@@ -241,7 +212,7 @@ export class SchemeService extends AbstractService {
     return scheme
   }
 
-  async deleteScheme({ uri, existing }) {
+  async deleteItem({ uri, existing }) {
     if (!uri) {
       throw new MalformedRequestError()
     }
@@ -250,7 +221,7 @@ export class SchemeService extends AbstractService {
       // ? Which error type?
       throw new MalformedRequestError(`Concept scheme ${uri} still has concepts in the database and therefore can't be deleted.`)
     }
-    const result = await Scheme.deleteOne({ _id: existing._id })
+    const result = await this.model.deleteOne({ _id: existing._id })
     if (!result.deletedCount) {
       throw new DatabaseAccessError()
     }
@@ -272,20 +243,15 @@ export class SchemeService extends AbstractService {
       throw new MalformedBodyError()
     }
     if (["create", "update"].includes(action)) {
-      // Validate scheme
       if (!validate.scheme(scheme) || !scheme.uri) {
         throw new InvalidBodyError()
       }
-      // Add _id
       scheme._id = scheme.uri
-      // Add index keywords
       addKeywords(scheme)
-      // Remove created for update action
       if (action === "update") {
         delete scheme.created
       }
     }
-
     return scheme
   }
 
@@ -301,9 +267,9 @@ export class SchemeService extends AbstractService {
    */
   async postAdjustmentsForScheme(schemes, { bulk = false, setApi = false } = {}) {
     // Get schemes from database instead
-    schemes = await Scheme.find({ _id: { $in: schemes.map(s => s.uri) } }).lean().exec()
+    schemes = await this.model.find({ _id: { $in: schemes.map(s => s.uri) } }).lean().exec()
     // First, set created field if necessary
-    await Scheme.updateMany(
+    await this.model.updateMany(
       {
         _id: { $in: schemes.map(s => s.uri) },
         $or: [
@@ -347,44 +313,43 @@ export class SchemeService extends AbstractService {
       if (bulk) {
         delete update.$set.modified
       }
-      await Scheme.updateOne({ _id: scheme.uri }, update)
-      result.push(await Scheme.findById(scheme.uri))
+      await this.model.updateOne({ _id: scheme.uri }, update)
+      result.push(await this.model.findById(scheme.uri))
     }
     return result
   }
 
   async createIndexes() {
-    const indexes = []
-    indexes.push([{ uri: 1 }, {}])
-    indexes.push([{ identifier: 1 }, {}])
-    indexes.push([{ notation: 1 }, {}])
-    indexes.push([{ created: 1 }, {}])
-    indexes.push([{ modified: 1 }, {}])
-    indexes.push([{ "subject.uri": 1 }, {}])
-    indexes.push([{ "license.uri": 1 }, {}])
-    indexes.push([{ "partOf.uri": 1 }, {}])
-    indexes.push([{ _keywordsLabels: 1 }, {}])
-    indexes.push([{ _keywordsPublisher: 1 }, {}])
-    // Add additional index for first entry which is used for sorting
-    indexes.push([{ "_keywordsLabels.0": 1 }, {}])
-    indexes.push([
-      {
-        _keywordsNotation: "text",
-        _keywordsLabels: "text",
-        _keywordsOther: "text",
-        _keywordsPublisher: "text",
-      },
-      {
-        name: "text",
-        default_language: "german",
-        weights: {
-          _keywordsNotation: 10,
-          _keywordsLabels: 6,
-          _keywordsOther: 3,
-          _keywordsPublisher: 3,
+    return this._createIndexes([
+      [{ uri: 1 }, {}],
+      [{ identifier: 1 }, {}],
+      [{ notation: 1 }, {}],
+      [{ created: 1 }, {}],
+      [{ modified: 1 }, {}],
+      [{ "subject.uri": 1 }, {}],
+      [{ "license.uri": 1 }, {}],
+      [{ "partOf.uri": 1 }, {}],
+      [{ _keywordsLabels: 1 }, {}],
+      [{ _keywordsPublisher: 1 }, {}],
+      // Add additional index for first entry which is used for sorting
+      [{ "_keywordsLabels.0": 1 }, {}],
+      [
+        {
+          _keywordsNotation: "text",
+          _keywordsLabels: "text",
+          _keywordsOther: "text",
+          _keywordsPublisher: "text",
         },
-      },
-    ])
-    await this._createIndexes({ model: Scheme, indexes })
+        {
+          name: "text",
+          default_language: "german",
+          weights: {
+            _keywordsNotation: 10,
+            _keywordsLabels: 6,
+            _keywordsOther: 3,
+            _keywordsPublisher: 3,
+          },
+        },
+      ]])
   }
 }

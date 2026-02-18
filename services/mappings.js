@@ -31,6 +31,7 @@ export class MappingService extends AbstractService {
     super(config)
     this.baseUri = config.baseUrl + "mappings/"
     this.config = config.mappings || {}
+    this.model = Mapping
     this.schemeService = new SchemeService(config)
     this.concordanceService = new ConcordanceService(config)
     this.loadWhitelists()
@@ -70,7 +71,7 @@ export class MappingService extends AbstractService {
     }
   }
 
-  async getMappings({ uri, identifier, from, to, fromScheme, toScheme, mode, direction, type, partOf, creator, sort, order, limit, offset, download, annotatedWith, annotatedFor, annotatedBy, cardinality }) {
+  async queryItems({ uri, identifier, from, to, fromScheme, toScheme, mode, direction, type, partOf, creator, sort, order, limit, offset, download, annotatedWith, annotatedFor, annotatedBy, cardinality }) {
     direction = direction || "forward"
 
     let count = 0
@@ -227,7 +228,7 @@ export class MappingService extends AbstractService {
         for (const uri of uris) {
           // Get concordance from database, then add all its identifiers
           try {
-            const concordance = await this.concordanceService.get(uri)
+            const concordance = await this.concordanceService.getItem(uri)
             allUris = allUris.concat(concordance.uri, concordance.identifier || [])
           } catch (error) {
             // Ignore error and push URI only
@@ -376,7 +377,7 @@ export class MappingService extends AbstractService {
           ] : []),
           { $project: { annotations: 0, _assessmentSum: 0 } },
         ]
-        pipeline.model = Mapping
+        pipeline.model = this.model
       } else {
         // 3. Filter by annotation, and none of the properties is given
         // We'll first filter the annotations, then get the associated mappings, remove duplicates, and filter those
@@ -436,7 +437,7 @@ export class MappingService extends AbstractService {
     }
   }
 
-  async get(_id) {
+  async getItem(_id) {
     return this.getMapping(_id)
   }
 
@@ -447,7 +448,7 @@ export class MappingService extends AbstractService {
     if (!_id) {
       throw new MalformedRequestError()
     }
-    const result = await Mapping.findById(_id).lean()
+    const result = await this.model.findById(_id).lean()
     if (!result) {
       throw new EntityNotFoundError(null, _id)
     }
@@ -478,8 +479,8 @@ export class MappingService extends AbstractService {
       return []
     }
 
-    // Try getMappings first; return if there are results
-    let mappings = await this.getMappings(query)
+    // Try queryItems first; return if there are results
+    let mappings = await this.queryItems(query)
     if (mappings.length) {
       return mappings
     }
@@ -538,7 +539,7 @@ export class MappingService extends AbstractService {
         ancestors = ancestors.slice(0, depth)
       }
       for (const uri of ancestors.map(a => a && a.uri).filter(Boolean)) {
-        mappings = await this.getMappings(Object.assign({}, query, { from: uri, type: types.join("|") }))
+        mappings = await this.queryItems(Object.assign({}, query, { from: uri, type: types.join("|") }))
         if (mappings.length) {
           return mappings.map(m => {
             const mapping = {
@@ -587,7 +588,7 @@ export class MappingService extends AbstractService {
   /**
    * Save a single mapping or multiple mappings in the database. Adds created date, validates the mapping, and adds identifiers.
    */
-  async postMapping({ bodyStream, bulk = false, bulkReplace = true }) {
+  async createItem({ bodyStream, bulk = false, bulkReplace = true }) {
     let { items, isMultiple } = await this._readBodyStream(bodyStream)
 
     // Adjust all mappings
@@ -660,10 +661,10 @@ export class MappingService extends AbstractService {
     let response
     if (bulk) {
       // Use bulkWrite for most efficiency
-      items.length && await Mapping.bulkWrite(bulkOperationForEntities({ entities: items, replace: bulkReplace }))
+      items.length && await this.model.bulkWrite(bulkOperationForEntities({ entities: items, replace: bulkReplace }))
       response = items.map(c => ({ uri: c.uri }))
     } else {
-      response = await Mapping.insertMany(items, { lean: true })
+      response = await this.model.insertMany(items, { lean: true })
     }
 
     return isMultiple ? response : response[0]
@@ -702,7 +703,7 @@ export class MappingService extends AbstractService {
       mapping.type = ["http://www.w3.org/2004/02/skos/core#mappingRelation"]
     }
 
-    const result = await Mapping.replaceOne({ _id: existing._id }, mapping)
+    const result = await this.model.replaceOne({ _id: existing._id }, mapping)
     if (result.acknowledged && result.matchedCount) {
       // Update concordances if necessary
       if (existing.partOf && existing.partOf[0]) {
@@ -766,7 +767,7 @@ export class MappingService extends AbstractService {
     }
     this.checkWhitelists(mapping)
 
-    const result = await Mapping.replaceOne({ _id: newMapping._id }, newMapping)
+    const result = await this.model.replaceOne({ _id: newMapping._id }, newMapping)
     if (result.acknowledged) {
       // Update concordances if necessary
       if (existing.partOf && existing.partOf[0]) {
@@ -781,8 +782,8 @@ export class MappingService extends AbstractService {
     }
   }
 
-  async deleteMapping({ existing }) {
-    const result = await Mapping.deleteOne({ _id: existing._id })
+  async deleteItem({ existing }) {
+    const result = await this.model.deleteOne({ _id: existing._id })
     if (!result.deletedCount) {
       throw new DatabaseAccessError()
     }
@@ -830,7 +831,7 @@ export class MappingService extends AbstractService {
     }
     match = { $match: { [`$${mode}`]: match } }
     let promises = [
-      Mapping.aggregate([
+      this.model.aggregate([
         match,
         {
           $group: {
@@ -839,7 +840,7 @@ export class MappingService extends AbstractService {
           },
         },
       ]).exec(),
-      Mapping.aggregate([
+      this.model.aggregate([
         match,
         {
           $group: {
@@ -900,7 +901,7 @@ export class MappingService extends AbstractService {
     }
     and.push({ $or: or })
     mongoQuery = { $and: and }
-    let mappings = await Mapping.find(mongoQuery).lean().exec()
+    let mappings = await this.model.find(mongoQuery).lean().exec()
     let results = []
     let descriptions = []
     for (let mapping of mappings) {
@@ -988,14 +989,14 @@ export class MappingService extends AbstractService {
     indexes.push([{ "creator.prefLabel.en": 1 }, {}])
     // Create collection if necessary
     try {
-      await Mapping.createCollection()
+      await this.model.createCollection()
     } catch (error) {
       // Ignore error
     }
     // Drop existing indexes
-    await Mapping.collection.dropIndexes()
+    await this.model.collection.dropIndexes()
     for (let [index, options] of indexes) {
-      await Mapping.collection.createIndex(index, options)
+      await this.model.collection.createIndex(index, options)
     }
   }
 

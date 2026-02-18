@@ -13,8 +13,7 @@
           "type": "null"
         },
         {
-          "type": "string",
-          "format": "uri"
+          "$ref": "#/definitions/uri"
         }
       ]
     },
@@ -190,6 +189,15 @@
     }
   },
   "definitions": {
+    "uri": {
+      "type": "string",
+      "format": "uri"
+    },
+    "uriList": {
+      "type": "array",
+      "items": {
+      }
+    },
     "capabilityAndForbidMappingOnlyProperties": {
       "anyOf": [
         {
@@ -338,6 +346,16 @@
                 },
                 "ips": {
                   "$ref": "#/definitions/ips"
+                },
+                "uriBase": {
+                  "$ref": "#/definitions/uri"
+                },
+                "uriOrigin": {
+                  "type": "string",
+                  "enum": [
+                    "external",
+                    "uuid"
+                  ]
                 }
               },
               "additionalProperties": false
@@ -442,15 +460,10 @@
                 ],
                 "properties": {
                   "uri": {
-                    "type": "string",
-                    "format": "uri"
+                    "$ref": "#/definitions/uri"
                   },
                   "identifier": {
-                    "type": "array",
-                    "items": {
-                      "type": "string",
-                      "format": "uri"
-                    }
+                    "$ref": "#/definitions/uriList"
                   }
                 }
               }
@@ -471,15 +484,10 @@
                 ],
                 "properties": {
                   "uri": {
-                    "type": "string",
-                    "format": "uri"
+                    "$ref": "#/definitions/uri"
                   },
                   "identifier": {
-                    "type": "array",
-                    "items": {
-                      "type": "string",
-                      "format": "uri"
-                    }
+                    "$ref": "#/definitions/uriList"
                   }
                 }
               }
@@ -541,11 +549,7 @@
               "type": "boolean"
             },
             {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "format": "uri"
-              }
+              "$ref": "#/definitions/uriList"
             }
           ]
         }
@@ -598,6 +602,16 @@
                 },
                 "ips": {
                   "$ref": "#/definitions/ips"
+                },
+                "uriBase": {
+                  "$ref": "#/definitions/uri"
+                },
+                "uriOrigin": {
+                  "type": "string",
+                  "enum": [
+                    "external",
+                    "uuid"
+                  ]
                 }
               },
               "additionalProperties": false
@@ -702,15 +716,10 @@
                 ],
                 "properties": {
                   "uri": {
-                    "type": "string",
-                    "format": "uri"
+                    "$ref": "#/definitions/uri"
                   },
                   "identifier": {
-                    "type": "array",
-                    "items": {
-                      "type": "string",
-                      "format": "uri"
-                    }
+                    "$ref": "#/definitions/uriList"
                   }
                 }
               }
@@ -731,15 +740,10 @@
                 ],
                 "properties": {
                   "uri": {
-                    "type": "string",
-                    "format": "uri"
+                    "$ref": "#/definitions/uri"
                   },
                   "identifier": {
-                    "type": "array",
-                    "items": {
-                      "type": "string",
-                      "format": "uri"
-                    }
+                    "$ref": "#/definitions/uriList"
                   }
                 }
               }
@@ -779,11 +783,7 @@
           "type": "null"
         },
         {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "format": "uri"
-          }
+          "$ref": "#/definitions/uriList"
         }
       ]
     },

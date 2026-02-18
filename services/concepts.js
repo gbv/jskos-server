@@ -2,7 +2,7 @@ import _ from "lodash"
 import jskos from "jskos-tools"
 import { validate } from "jskos-validate"
 import { bulkOperationForEntities, queryToAggregation } from "../utils/utils.js"
-import { toOpenSearchSuggestFormat, addKeywords } from "../utils/searchHelper.js"
+import { addKeywords } from "../utils/searchHelper.js"
 import { Concept } from "../models/concepts.js"
 import { SchemeService } from "../services/schemes.js"
 import { MalformedBodyError, MalformedRequestError, EntityNotFoundError, InvalidBodyError, DatabaseAccessError } from "../errors/index.js"
@@ -14,9 +14,10 @@ export class ConceptService extends AbstractService {
   constructor(config) {
     super(config)
     this.schemeService = new SchemeService(config)
+    this.model = Concept
   }
 
-  conceptFind(query, $skip, $limit, narrower = true) {
+  retrieveItems(query, $skip, $limit, narrower = true) {
     const pipeline = queryToAggregation(query)
     if (narrower) {
       pipeline.push({
@@ -48,10 +49,6 @@ export class ConceptService extends AbstractService {
     return Concept.aggregate(pipeline)
   }
 
-  async get(uri) {
-    return (await this.getConcepts({ uri, limit: 1, offset: 0 }))[0]
-  }
-
   /**
    * Return a Promise with an array of concept data.
    */
@@ -71,7 +68,7 @@ export class ConceptService extends AbstractService {
       // Search for all top concepts in all vocabularies
       criteria = { "topConceptOf.uri": { $type: 2 } }
     }
-    const concepts = await this.conceptFind(criteria, query.offset, query.limit)
+    const concepts = await this.retrieveItems(criteria, query.offset, query.limit)
     concepts.totalCount = await this._count(Concept, [{ $match: criteria }])
     return concepts
   }
@@ -79,7 +76,7 @@ export class ConceptService extends AbstractService {
   /**
    * Return a Promise with an array of concepts.
    */
-  async getConcepts(query) {
+  async queryItems(query) {
     if (!_.intersection(Object.keys(query), ["uri", "notation", "voc", "near"]).length) {
       return []
     }
@@ -124,9 +121,9 @@ export class ConceptService extends AbstractService {
       }
     }
     if (query.download) {
-      return this.conceptFind(mongoQuery, null, null, false).cursor()
+      return this.retrieveItems(mongoQuery, null, null, false).cursor()
     }
-    const concepts = await this.conceptFind(mongoQuery, query.offset, query.limit)
+    const concepts = await this.retrieveItems(mongoQuery, query.offset, query.limit)
     concepts.totalCount = await this._count(Concept, queryToAggregation(mongoQuery))
     return concepts
   }
@@ -138,7 +135,7 @@ export class ConceptService extends AbstractService {
     if (!query.uri) {
       return []
     }
-    return await this.conceptFind({ broader: { $elemMatch: { uri: query.uri } } })
+    return await this.retrieveItems({ broader: { $elemMatch: { uri: query.uri } } })
   }
 
   /**
@@ -150,7 +147,7 @@ export class ConceptService extends AbstractService {
     }
     const uri = query.uri
     // First retrieve the concept object from database
-    const concept = (await this.conceptFind({ _id: uri }))[0]
+    const concept = await this.getItem(uri)
     if (!concept) {
       return []
     }
@@ -180,43 +177,20 @@ export class ConceptService extends AbstractService {
   }
 
   /**
-   * Return a Promise with suggestions, either in OpenSearch Suggest Format or JSKOS (?format=jskos).
-   */
-  async getSuggestions(query) {
-    const search = query.search || ""
-    const format = query.format || ""
-    const results = await this.searchConcept(search, query.voc)
-    const { limit, offset } = this._getLimitAndOffset(query)
-    if (format.toLowerCase() == "jskos") {
-      // Return in JSKOS format
-      return results.slice(offset, offset + limit)
-    }
-    return toOpenSearchSuggestFormat({ query, results })
-  }
-
-  /**
    * Return a Promise with an array of suggestions in JSKOS format.
    */
   async search(query) {
     let search = query.query || query.search || ""
-    let results = await this.searchConcept(search, query.voc)
+    let results = await this.searchItems({ search, voc: query.voc })
     const { limit, offset } = this._getLimitAndOffset(query)
     const searchResults = results.slice(offset, offset + limit)
     searchResults.totalCount = results.length
     return searchResults
   }
 
-  async searchConcept(search, voc) {
-    return this._searchItem({
-      search,
-      voc,
-      queryFunction: this.conceptFind,
-    })
-  }
-
   // Write endpoints start here
 
-  async postConcept({ bodyStream, bulk = false, setApi = false, bulkReplace = true, scheme }) {
+  async createItem({ bodyStream, bulk = false, setApi = false, bulkReplace = true, scheme }) {
     if (!bodyStream) {
       throw new MalformedBodyError()
     }
@@ -278,7 +252,7 @@ export class ConceptService extends AbstractService {
     return isMultiple ? response : response[0]
   }
 
-  async putConcept({ body, existing }) {
+  async updateItem({ body, existing }) {
     if (!body) {
       throw new MalformedBodyError()
     }
@@ -317,7 +291,7 @@ export class ConceptService extends AbstractService {
     return concept
   }
 
-  async deleteConcept({ uri, existing, setApi = false }) {
+  async deleteItem({ uri, existing, setApi = false }) {
     if (!uri) {
       throw new MalformedRequestError()
     }
@@ -380,7 +354,7 @@ export class ConceptService extends AbstractService {
       })
     }
     // Load all schemes for concepts
-    const schemes = await this.schemeService.getSchemes({
+    const schemes = await this.schemeService.queryItems({
       uri: allConcepts
         .map(c => getSchemeUri(c))
         .filter(s => s != null)
@@ -433,7 +407,7 @@ export class ConceptService extends AbstractService {
     const inScheme = concept.inScheme?.[0]
     // Load scheme from database if necessary
     if (!schemes || !schemes.length) {
-      schemes = await this.schemeService.getSchemes({ uri: inScheme.uri })
+      schemes = await this.schemeService.queryItems({ uri: inScheme.uri })
     }
     const scheme = schemes.find(s => jskos.compare(s, inScheme))
     if (!scheme) {
@@ -468,32 +442,30 @@ export class ConceptService extends AbstractService {
   }
 
   async createIndexes() {
-    const indexes = []
-    indexes.push([{ "broader.uri": 1 }, {}])
-    indexes.push([{ "topConceptOf.uri": 1 }, {}])
-    indexes.push([{ "inScheme.uri": 1 }, {}])
-    indexes.push([{ uri: 1 }, {}])
-    indexes.push([{ notation: 1 }, {}])
-    indexes.push([{ identifier: 1 }, {}])
-    indexes.push([{ _keywordsLabels: 1 }, {}])
-    indexes.push([{ location: "2dsphere" }, {}])
-    indexes.push([
-      {
-        _keywordsNotation: "text",
-        _keywordsLabels: "text",
-        _keywordsOther: "text",
-      },
-      {
-        name: "text",
-        default_language: "german",
-        weights: {
-          _keywordsNotation: 10,
-          _keywordsLabels: 6,
-          _keywordsOther: 3,
+    await this._createIndexes([
+      [{ "broader.uri": 1 }, {}],
+      [{ "topConceptOf.uri": 1 }, {}],
+      [{ "inScheme.uri": 1 }, {}],
+      [{ uri: 1 }, {}],
+      [{ notation: 1 }, {}],
+      [{ identifier: 1 }, {}],
+      [{ _keywordsLabels: 1 }, {}],
+      [{ location: "2dsphere" }, {}],
+      [
+        {
+          _keywordsNotation: "text",
+          _keywordsLabels: "text",
+          _keywordsOther: "text",
         },
-      },
-    ])
-    await this._createIndexes({ model: Concept, indexes })
+        {
+          name: "text",
+          default_language: "german",
+          weights: {
+            _keywordsNotation: 10,
+            _keywordsLabels: 6,
+            _keywordsOther: 3,
+          },
+        },
+      ]])
   }
-
 }

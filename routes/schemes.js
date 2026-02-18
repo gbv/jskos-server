@@ -5,76 +5,22 @@ import * as utils from "../utils/middleware.js"
 import { wrapAsync, wrapDownload } from "../utils/middleware.js"
 import * as auth from "../utils/auth.js"
 import { MalformedRequestError } from "../errors/index.js"
+import { readRoute, createRoute, updateRoute, deleteRoute, suggestRoute } from "./common.js"
 
 export default config => {
   const router = express.Router()
-  const schemeService = new SchemeService(config)
-  const conceptService = new ConceptService(config)
+  const service = new SchemeService(config)
   const { schemes, concepts } = config
 
-  if (schemes.read) {
-    router.get(
-      "/",
-      schemes.read.auth ? auth.main : auth.optional,
-      utils.supportDownloadFormats([]),
-      wrapAsync(async (req) => {
-        return await schemeService.getSchemes(req.query)
-      }),
-      utils.addPaginationHeaders,
-      utils.adjust,
-      utils.returnJSON,
-    )
-  }
+  readRoute(router, "/", schemes.read, service, "schemes")
+  createRoute(router, "/", schemes.create, service)
+  updateRoute(router, "/", schemes.update, service)
+  deleteRoute(router, "/", schemes.delete, service)
 
-  if (schemes.create) {
-    router.post(
-      "/",
-      schemes.create.auth ? auth.main : auth.optional,
-      utils.bodyParser,
-      wrapAsync(async (req) => {
-        return await schemeService.postScheme({
-          bodyStream: req.anystream,
-          bulk: req.query.bulk,
-        })
-      }),
-      utils.adjust,
-      utils.returnJSON,
-    )
-  }
-
-  if (schemes.update) {
-    router.put(
-      "/",
-      schemes.update.auth ? auth.main : auth.optional,
-      utils.bodyParser,
-      wrapAsync(async (req) => {
-        return await schemeService.putScheme({
-          body: req.body,
-          existing: req.existing,
-          setApi: req.query.setApi,
-        })
-      }),
-      utils.adjust,
-      utils.returnJSON,
-    )
-  }
-
-  if (schemes.delete) {
-    router.delete(
-      "/",
-      schemes.delete.auth ? auth.main : auth.optional,
-      utils.bodyParser,
-      wrapAsync(async (req) => {
-        return await schemeService.deleteScheme({
-          uri: req.query.uri,
-          existing: req.existing,
-        })
-      }),
-      (req, res) => res.sendStatus(204),
-    )
-  }
+  suggestRoute(router, "/suggest", schemes.read, service)
 
   if (concepts) {
+    const conceptService = new ConceptService(config)
 
     router.get(
       "/top",
@@ -98,7 +44,7 @@ export default config => {
         }
         const query = { ...req.query, voc: req.query.uri }
         delete query.uri
-        return await conceptService.getConcepts(query)
+        return await conceptService.queryItems(query)
       }),
       wrapDownload(utils.addPaginationHeaders, false),
       wrapDownload(utils.adjust, false),
@@ -120,32 +66,6 @@ export default config => {
         (req, res) => res.sendStatus(204),
       )
     }
-
-  }
-
-  if (schemes.read) {
-    router.get(
-      "/suggest",
-      schemes.read.auth ? auth.main : auth.optional,
-      utils.supportDownloadFormats([]),
-      wrapAsync(async (req) => {
-        return await schemeService.getSuggestions(req.query)
-      }),
-      utils.addPaginationHeaders,
-      utils.returnJSON,
-    )
-
-    router.get(
-      "/search",
-      schemes.read.auth ? auth.main : auth.optional,
-      utils.supportDownloadFormats([]),
-      wrapAsync(async (req) => {
-        return await schemeService.search(req.query)
-      }),
-      utils.addPaginationHeaders,
-      utils.adjust,
-      utils.returnJSON,
-    )
   }
 
   return router

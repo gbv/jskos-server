@@ -7,6 +7,7 @@ export class DataService extends AbstractService {
     super(config)
     this.adjust = createAdjuster(config)
   }
+
   async getData(req) {
     const uris = req.query.uri?.split("|") ?? []
     return [].concat(...await Promise.all(Object.keys(models).map(async type => {

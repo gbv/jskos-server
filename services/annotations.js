@@ -4,7 +4,7 @@ import jskos from "jskos-tools"
 import { validate } from "jskos-validate"
 import _ from "lodash"
 import { Annotation, Mapping, Concept } from "../models/index.js"
-import { EntityNotFoundError, DatabaseAccessError, InvalidBodyError, MalformedRequestError, ForbiddenAccessError } from "../errors/index.js"
+import { DatabaseAccessError, InvalidBodyError, ForbiddenAccessError } from "../errors/index.js"
 
 import { AbstractService } from "./abstract.js"
 
@@ -14,6 +14,7 @@ export class AnnotationService extends AbstractService {
     super(config)
     this.baseUri = config.baseUrl + "annotations/"
     this.config = config.annotations || {}
+    this.model = Annotation
   }
 
   // Wrapper around validate.annotation that also checks the `body` field and throws errors if necessary.
@@ -47,9 +48,13 @@ export class AnnotationService extends AbstractService {
   /**
    * Returns a Promise with an array of annotations.
    *
+   * Can filter by:
+   *
+   * id, creator, target, bodyValue, motivation.
+   *
    * TODO: Add sorting.
    */
-  async getAnnotations(query) {
+  async queryItems(query) {
     let criteria = []
     if (query.id) {
       criteria.push({
@@ -100,28 +105,10 @@ export class AnnotationService extends AbstractService {
 
   }
 
-  async get(_id) {
-    return this.getAnnotation(_id)
-  }
-
-  /**
-   * Returns a promise with a single annotation with id in req.params._id.
-   */
-  async getAnnotation(_id) {
-    if (!_id) {
-      throw new MalformedRequestError()
-    }
-    const result = await Annotation.findById(_id).lean()
-    if (!result) {
-      throw new EntityNotFoundError(null, _id)
-    }
-    return result
-  }
-
   /**
    * Save a new annotation or multiple annotations in the database. Adds created date if necessary.
    */
-  async postAnnotation({ bodyStream, user, bulk = false, bulkReplace = true, admin = false }) {
+  async createItem({ bodyStream, user, bulk = false, bulkReplace = true, admin = false }) {
     let { items, isMultiple } = await this._readBodyStream(bodyStream)
     let response
 
@@ -143,7 +130,7 @@ export class AnnotationService extends AbstractService {
           annotation.created = date
         }
         // Remove type property
-        _.unset(annotation, "type")
+        delete annotation.type
         // Validate annotation
         await this.validateAnnotation(annotation)
         // Add _id and URI
@@ -193,7 +180,7 @@ export class AnnotationService extends AbstractService {
     return isMultiple ? response : response[0]
   }
 
-  async putAnnotation({ body, existing }) {
+  async updateItem({ body, existing }) {
     let annotation = body
     if (!annotation) {
       throw new InvalidBodyError()
@@ -257,7 +244,7 @@ export class AnnotationService extends AbstractService {
     }
   }
 
-  async deleteAnnotation({ existing }) {
+  async deleteItem({ existing }) {
     const result = await Annotation.deleteOne({ _id: existing._id })
     if (!result.deletedCount) {
       throw new DatabaseAccessError()
@@ -276,7 +263,7 @@ export class AnnotationService extends AbstractService {
       [{ motivation: 1 }, {}],
       [{ bodyValue: 1 }, {}],
     ]
-    await this._createIndexes({ model: Annotation, indexes })
+    await this._createIndexes(indexes)
   }
 
 }

@@ -1,7 +1,8 @@
 import _ from "lodash"
 import jskos from "jskos-tools"
 
-import { MalformedBodyError } from "../errors/index.js"
+import { MalformedRequestError, MalformedBodyError, EntityNotFoundError } from "../errors/index.js"
+import { toOpenSearchSuggestFormat } from "../utils/searchHelper.js"
 
 export class AbstractService {
   constructor(config) {
@@ -11,9 +12,32 @@ export class AbstractService {
     this.error = config.error
   }
 
-  async _searchItem({ search, voc, queryFunction }) {
+  // Low-level database lookup an item by its id
+  async retrieveItem(id) {
+    return this.model.findById(id).lean()
+  }
+
+  // Low-level database query for items
+  async retrieveItems(query) {
+    return this.model.find(query).lean()
+  }
+
+  // High-level lookup an item. Throws an error on failure
+  async getItem(id) {
+    if (!id) {
+      throw new MalformedRequestError()
+    }
+    const item = await this.retrieveItem(id)
+    if (!item) {
+      throw new EntityNotFoundError(null, id)
+    }
+    return item
+  }
+
+  // high level access
+  async searchItems({ search, voc }) {
     // Don't try to search for an empty query
-    if (!search.length) {
+    if (!search) {
       return []
     }
     // Prepare search query for use in regex
@@ -57,7 +81,7 @@ export class AbstractService {
       }
       query = { $and: [query, { $or: uris.map(uri => ({ "inScheme.uri": uri })) }] }
     }
-    let results = await queryFunction(query)
+    let results = await this.retrieveItems(query)
     let _search = search.toUpperCase()
     // Prioritize results
     for (let result of results) {
@@ -141,6 +165,20 @@ export class AbstractService {
   }
 
   /**
+   * Returns a Promise with suggestions, either in OpenSearch Suggest Format or JSKOS (?format=jskos).
+   */
+  async getSuggestions(query) {
+    const format = query.format || ""
+    const results = await this.searchItems(query)
+    if (format.toLowerCase() == "jskos") {
+      // Return in JSKOS format with pagination
+      const { limit, offset } = this._getLimitAndOffset(query)
+      return results.slice(offset, offset + limit)
+    }
+    return toOpenSearchSuggestFormat({ query, results })
+  }
+
+  /**
    * Returns the document count for a certain aggregation pipeline.
    * Uses estimatedDocumentCount() if possible (i.e. if the query is empty).
    *
@@ -190,11 +228,11 @@ export class AbstractService {
    * Initializes a collection by creating it if absent, removing any existing indexes,
    * and establishing the full set of required indexes.
    *
-   * @param {Object} params - The parameters.
-   * @param {Object} params.model - The mongoose model.
-   * @param {Array} params.indexes - An array of [index, options] pairs.
+   * @param {Array} indexes - An array of [index, options] pairs.
    */
-  async _createIndexes({ model, indexes }) {
+  async _createIndexes(indexes) {
+    const model = this.model
+
     // Create collection if necessary
     try {
       await model.createCollection()

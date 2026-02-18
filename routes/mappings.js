@@ -3,17 +3,18 @@ import { MappingService } from "../services/mappings.js"
 import * as utils from "../utils/middleware.js"
 import { wrapAsync, wrapDownload } from "../utils/middleware.js"
 import * as auth from "../utils/auth.js"
+import { readRoute, createRoute } from "./common.js"
 
 export default config => {
   const router = express.Router()
-  const mappingService = new MappingService(config)
+  const service = new MappingService(config)
 
   // /mappings/suggest and /mappings/voc need to come before /mappings/:_id!
   router.get(
     "/suggest",
     config.concepts && config.concepts.read?.auth ? auth.main : auth.optional,
     wrapAsync(async (req) => {
-      return await mappingService.getNotationSuggestions(req.query)
+      return await service.getNotationSuggestions(req.query)
     }),
     utils.addPaginationHeaders,
     utils.returnJSON,
@@ -22,33 +23,21 @@ export default config => {
     "/voc",
     config.schemes && config.schemes.read?.auth ? auth.main : auth.optional,
     wrapAsync(async (req) => {
-      return await mappingService.getMappingSchemes(req.query)
+      return await service.getMappingSchemes(req.query)
     }),
     utils.addPaginationHeaders,
     utils.adjust,
     utils.returnJSON,
   )
 
-  if (config.mappings.read) {
-    router.get(
-      "/",
-      config.mappings.read.auth ? auth.main : auth.optional,
-      utils.supportDownloadFormats(["json", "ndjson", "csv", "tsv"]),
-      wrapAsync(async (req) => {
-        return await mappingService.getMappings(req.query)
-      }),
-      wrapDownload(utils.addPaginationHeaders, false),
-      wrapDownload(utils.adjust, false),
-      wrapDownload(utils.returnJSON, false),
-      wrapDownload(utils.handleDownload("mappings"), true),
-    )
+  readRoute(router, "/", config.mappings.read, service, "mappings", ["json", "ndjson", "csv", "tsv"])
+  createRoute(router, "/", config.mappings.create, service)
 
+  if (config.mappings.read) {
     router.get(
       "/infer",
       config.mappings.read.auth ? auth.main : auth.optional,
-      wrapAsync(async (req) => {
-        return await mappingService.inferMappings(req.query)
-      }),
+      wrapAsync(async req => service.inferMappings(req.query)),
       utils.addPaginationHeaders,
       utils.adjust,
       utils.returnJSON,
@@ -58,29 +47,10 @@ export default config => {
       "/:_id",
       config.mappings.read.auth ? auth.main : auth.optional,
       utils.supportDownloadFormats(["json", "ndjson", "csv", "tsv"]),
-      wrapAsync(async (req) => {
-        return await mappingService.getMapping(req.params._id)
-      }),
+      wrapAsync(async req => service.getMapping(req.params._id)),
       wrapDownload(utils.adjust, false),
       wrapDownload(utils.returnJSON, false),
       wrapDownload(utils.handleDownload("mapping"), true),
-    )
-  }
-
-  if (config.mappings.create) {
-    router.post(
-      "/",
-      config.mappings.create.auth ? auth.main : auth.optional,
-      utils.bodyParser,
-      wrapAsync(async (req) => {
-        return await mappingService.postMapping({
-          bodyStream: req.anystream,
-          user: req.user,
-          bulk: req.query.bulk,
-        })
-      }),
-      utils.adjust,
-      utils.returnJSON,
     )
   }
 
@@ -90,7 +60,7 @@ export default config => {
       config.mappings.update.auth ? auth.main : auth.optional,
       utils.bodyParser,
       wrapAsync(async (req) => {
-        return await mappingService.putMapping({
+        return await service.putMapping({
           _id: req.params._id,
           body: req.body,
           user: req.user,
@@ -106,7 +76,7 @@ export default config => {
       config.mappings.update.auth ? auth.main : auth.optional,
       utils.bodyParser,
       wrapAsync(async (req) => {
-        return await mappingService.patchMapping({
+        return await service.patchMapping({
           _id: req.params._id,
           body: req.body,
           user: req.user,
@@ -124,7 +94,7 @@ export default config => {
       config.mappings.delete.auth ? auth.main : auth.optional,
       utils.bodyParser,
       wrapAsync(async (req) => {
-        return await mappingService.deleteMapping({
+        return await service.deleteItem({
           _id: req.params._id,
           user: req.user,
           existing: req.existing,

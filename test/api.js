@@ -2399,14 +2399,11 @@ describe("Express Server", () => {
         })
     })
 
-    /*
-     // TODO
     it("should skip invalid registry object in bulk upload", done => {
       const items = [
         { uri: "http://example.org/registry/1" },
         { uri: 42 },
         { uri: "http://example.org/registry/2" },
-        { uri: "http://example.org/registry/1" },
       ]
       chai.request.execute(app)
         .post("/registries")
@@ -2420,7 +2417,6 @@ describe("Express Server", () => {
           done()
         })
     })
-      */
 
   })
 })

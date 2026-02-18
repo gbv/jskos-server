@@ -145,6 +145,18 @@ export function setupConfig(config) {
           }
         }
       }
+      // Fill in origin of URIs
+      if (config[type].create) {
+        const { uriBase, uriOrigin } = config[type].create
+        if (!uriOrigin) {
+          config[type].create.uriOrigin = "external"
+        } else if (uriOrigin !== "external" && uriBase === false) {
+          throw new Error(`uriBase of ${type}.create must not be false if uriOrigin is not external`)
+        }
+
+        //if (type
+        // TODO: hard-coded settings for mappings, concordances, and annotations
+      }
     }
   }
 

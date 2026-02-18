@@ -49,7 +49,7 @@
       <li>POST /concordances - Saves a concordance in the database (<% if (config.concordances.create.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#post-concordances" target="_blank">documentation</a>)</li>
       <% } %>
       <% if (config.concordances.update) { %>
-      <li>PUT /concordances/:_id - Overwrites a concordance in the database (<% if (config.concordances.update.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#put-concordances_id" target="_blank">documentation</a>)</li>
+      <li>PUT /concordances/:_id - Updates a concordance in the database (<% if (config.concordances.update.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#put-concordances_id" target="_blank">documentation</a>)</li>
       <li>PATCH /concordances/:_id - Adjusts a mapping in the database (<% if (config.concordances.update.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#patch-concordances_id" target="_blank">documentation</a>)</li>
       <% } %>
       <% if (config.concordances.delete) { %>
@@ -69,7 +69,7 @@
       <li>POST /mappings - Saves a mapping in the database (<% if (config.mappings.create.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#post-mappings" target="_blank">documentation</a>)</li>
       <% } %>
       <% if (config.mappings.update) { %>
-      <li>PUT /mappings/:_id - Overwrites a mapping in the database (<% if (config.mappings.update.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#put-mappings_id" target="_blank">documentation</a>)</li>
+      <li>PUT /mappings/:_id - Updates a mapping in the database (<% if (config.mappings.update.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#put-mappings_id" target="_blank">documentation</a>)</li>
       <li>PATCH /mappings/:_id - Adjusts a mapping in the database (<% if (config.mappings.update.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#patch-mappings_id" target="_blank">documentation</a>)</li>
       <% } %>
       <% if (config.mappings.delete) { %>
@@ -103,7 +103,7 @@
       <li>POST /voc - Saves a concept scheme or multiple concept schemes in the database (<% if (config.schemes.create.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#post-voc" target="_blank">documentation</a>)</li>
       <% } %>
       <% if (config.schemes.update) { %>
-      <li>PUT /voc - Overwrites a concept scheme in the database (<% if (config.schemes.update.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#put-voc" target="_blank">documentation</a>)</li>
+      <li>PUT /voc - Updates a concept scheme in the database (<% if (config.schemes.update.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#put-voc" target="_blank">documentation</a>)</li>
       <% } %>
       <% if (config.schemes.delete) { %>
       <li>DELETE /voc - Deletes a concept scheme from the database (<% if (config.schemes.delete.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#delete-voc" target="_blank">documentation</a>)</li>
@@ -122,7 +122,7 @@
       <li>POST /concepts - Saves a concept or multiple concepts in the database (<% if (config.concepts.create.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#post-concepts" target="_blank">documentation</a>)</li>
       <% } %>
       <% if (config.concepts.update) { %>
-      <li>PUT /concepts - Overwrites a concept in the database (<% if (config.concepts.update.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#put-concepts" target="_blank">documentation</a>)</li>
+      <li>PUT /concepts - Updates a concept in the database (<% if (config.concepts.update.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#put-concepts" target="_blank">documentation</a>)</li>
       <% } %>
       <% if (config.concepts.delete) { %>
       <li>DELETE /concepts - Deletes a concept from the database (<% if (config.concepts.delete.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#delete-concepts" target="_blank">documentation</a>)</li>
@@ -143,7 +143,7 @@
         <li>POST /annotations - Saves an annotation in the database (<% if (config.annotations.create.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#post-annotations" target="_blank">documentation</a>)</li>
         <% } %>
         <% if (config.annotations.update) { %>
-        <li>PUT /annotations/:_id - Overwrites an annotation in the database (<% if (config.annotations.update.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#put-annotations_id" target="_blank">documentation</a>)</li>
+        <li>PUT /annotations/:_id - Updates an annotation in the database (<% if (config.annotations.update.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#put-annotations_id" target="_blank">documentation</a>)</li>
         <li>PATCH /annotations/:_id - Adjusts an annotation in the database (<% if (config.annotations.update.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#patch-annotations_id" target="_blank">documentation</a>)</li>
         <% } %>
         <% if (config.annotations.delete) { %>
@@ -160,10 +160,10 @@
       <li>GET <a href="registries">/registries</a> - Returns a list of registries (<a href="https://github.com/gbv/jskos-server#get-registries" target="_blank">documentation</a>)</li>
       <li>GET /registries/:_id - Returns a specific registry (<a href="https://github.com/gbv/jskos-server#get-registries_id" target="_blank">documentation</a>)</li>
       <li>GET <a href="registries/suggest">/registries/suggest</a> - Returns registry suggestions (<a href="https://github.com/gbv/jskos-server#get-registriessuggest" target="_blank">documentation</a>)</li>
-      <li>POST /registries - Saves a registry in the database (<a href="https://github.com/gbv/jskos-server#post-registries" target="_blank">documentation</a>)</li>
-      <li>PUT /registries/:_id - Overwrites a registry in the database (<a href="https://github.com/gbv/jskos-server#put-registries_id" target="_blank">documentation</a>)</li>
-      <li>PATCH /registries/:_id - Adjusts a registry in the database (<a href="https://github.com/gbv/jskos-server#patch-registries_id" target="_blank">documentation</a>)</li>
-      <li>DELETE /registries/:_id - Deletes a registry from the database (<a href="https://github.com/gbv/jskos-server#put-registries_id" target="_blank">documentation</a>)</li>
+      <li>POST /registries - Saves registries in the database (<a href="https://github.com/gbv/jskos-server#post-registries" target="_blank">documentation</a>)</li>
+      <li>PUT /registries - Updates a registry in the database (<a href="https://github.com/gbv/jskos-server#put-registries" target="_blank">documentation</a>)</li>
+      <!--li>PATCH /registries/:_id - Adjusts a registry in the database (<a href="https://github.com/gbv/jskos-server#patch-registries_id" target="_blank">documentation</a>)</li-->
+      <li>DELETE /registries - Deletes registries from the database (<a href="https://github.com/gbv/jskos-server#delete-registries" target="_blank">documentation</a>)</li>
       <% if (config.changes) { %>
       <li>WS /registries/changes - Real-time updates for registries via WebSocket (<a href="https://github.com/gbv/jskos-server#change-stream-endpoints" target="_blank">documentation</a>) </li>
       <% } %>

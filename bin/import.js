@@ -243,7 +243,7 @@ import { bulkOperationForEntities, addMappingSchemes} from "../utils/utils.js"
     let concordance
     if (cli.flags.concordance) {
       // Query concordance from database
-      concordance = await services.concordance.get(cli.flags.concordance)
+      concordance = await services.concordance.retrieveItem(cli.flags.concordance)
       if (!concordance) {
         logError({
           message: `Concordance with URI ${cli.flags.concordance} not found, aborting...`,
@@ -270,12 +270,12 @@ async function doImport({ input, format, type, concordance }) {
 
   if (type == "scheme") {
     log("Importing schemes...")
-    const result = await services.scheme.postScheme({ bodyStream, bulk, bulkReplace })
+    const result = await services.scheme.createItem({ bodyStream, bulk, bulkReplace })
     log(`... done: ${Array.isArray(result) ? result.length : 1} schemes imported.`)
   } else if (type == "concept") {
     log("Importing concepts...")
     // TODO: Find way to output progress.
-    const result = await services.concept.postConcept({
+    const result = await services.concept.createItem({
       bodyStream, bulk, bulkReplace,
       scheme: cli.flags.scheme,
       setApi: cli.flags.setApi,
@@ -426,11 +426,11 @@ async function doImport({ input, format, type, concordance }) {
   } else if (type == "annotation") {
     log("Importing annotations...")
     // TODO: Find way to output progress.
-    const result = await services.annotation.postAnnotation({ bodyStream, bulk, bulkReplace, admin: true })
+    const result = await services.annotation.createItem({ bodyStream, bulk, bulkReplace, admin: true })
     log(`... done: ${Array.isArray(result) ? result.length : 1} annotations imported.`)
   } else if (type == "registry") {
     log("Importing registries...")
-    const result = await services.registry.postRegistry({ bodyStream, bulk, bulkReplace })
+    const result = await services.registry.createItem({ bodyStream, bulk, bulkReplace })
     const imported = result?.importedCount ?? 0
     const skipped = result?.skippedCount ?? 0
     log(`... done: ${imported} registries imported${skipped > 0 ? ` (${skipped} skipped).` : "."}`)

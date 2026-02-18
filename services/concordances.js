@@ -21,12 +21,13 @@ export class ConcordanceService extends AbstractService {
     super(config)
     this.schemeService = new SchemeService(config)
     this.uriBase = config.baseUrl + "concordances/"
+    this.model = Concordance
   }
 
   /**
    * Return a Promise with an array of concordances.
    */
-  async getConcordances(query) {
+  async queryItems(query) {
     let conditions = []
     // Search by URI
     if (query.uri) {
@@ -69,17 +70,17 @@ export class ConcordanceService extends AbstractService {
 
     if (query.download) {
       // For a download, return a stream
-      return Concordance.find(mongoQuery).lean().cursor()
+      return this.model.find(mongoQuery).lean().cursor()
     } else {
       // Otherwise, return results
       const { limit, offset } = this._getLimitAndOffset(query)
-      const concordances = await Concordance.find(mongoQuery).lean().skip(offset).limit(limit).exec()
-      concordances.totalCount = await this._count(Concordance, [{ $match: mongoQuery }])
+      const concordances = await this.model.find(mongoQuery).lean().skip(offset).limit(limit).exec()
+      concordances.totalCount = await this._count(this.model, [{ $match: mongoQuery }])
       return concordances
     }
   }
 
-  async get(_id) {
+  async getItem(_id) {
     return this.getConcordance(_id)
   }
 
@@ -92,17 +93,17 @@ export class ConcordanceService extends AbstractService {
     }
     let result
     // First look via ID
-    result = await Concordance.findById(uriOrId).lean()
+    result = await this.model.findById(uriOrId).lean()
     if (result) {
       return result
     }
     // Then via URI
-    result = await Concordance.findOne({ uri: uriOrId }).lean()
+    result = await this.model.findOne({ uri: uriOrId }).lean()
     if (result) {
       return result
     }
     // Then via identifier
-    result = await Concordance.findOne({ identifier: uriOrId }).lean()
+    result = await this.model.findOne({ identifier: uriOrId }).lean()
     if (result) {
       return result
     }
@@ -113,9 +114,9 @@ export class ConcordanceService extends AbstractService {
   /**
    * Save a single concordance or multiple concordances in the database. Adds created date, validates the concordance, and adds identifiers.
    *
-   * TODO: Implement bulk and bulkReplace, equivalent to postMapping
+   * TODO: Implement bulk and bulkReplace
    */
-  async postConcordance({ bodyStream, bulk = false }) {
+  async createItem({ bodyStream, bulk = false }) {
     let { items, isMultiple } = await this._readBodyStream(bodyStream)
     let response
 
@@ -156,7 +157,7 @@ export class ConcordanceService extends AbstractService {
     }
     items = items.filter(Boolean)
 
-    response = await Concordance.insertMany(items, { lean: true })
+    response = await this.model.insertMany(items, { lean: true })
 
     return isMultiple ? response : response[0]
   }
@@ -177,19 +178,19 @@ export class ConcordanceService extends AbstractService {
     if (existing.extent) {
       concordance.extent = existing.extent
     } else {
-      _.unset(concordance, "extent")
+      delete concordance.extent
     }
     if (existing.distributions) {
       concordance.distributions = existing.distributions
     } else {
-      _.unset(concordance, "distributions")
+      delete concordance.distributions
     }
     // Validate concordance
     if (!validateConcordance(concordance)) {
       throw new InvalidBodyError()
     }
 
-    const result = await Concordance.replaceOne({ _id: existing._id }, concordance)
+    const result = await this.model.replaceOne({ _id: existing._id }, concordance)
     if (result.acknowledged && result.matchedCount) {
       await this.postAdjustmentForConcordance(existing._id)
       return concordance
@@ -229,7 +230,7 @@ export class ConcordanceService extends AbstractService {
       throw new InvalidBodyError()
     }
 
-    const result = await Concordance.replaceOne({ _id: existing._id }, existing)
+    const result = await this.model.replaceOne({ _id: existing._id }, existing)
     if (result.acknowledged) {
       await this.postAdjustmentForConcordance(existing._id)
       return existing
@@ -238,12 +239,12 @@ export class ConcordanceService extends AbstractService {
     }
   }
 
-  async deleteConcordance({ existing }) {
+  async deleteItem({ existing }) {
     const count = await this.getMappingsCountForConcordance(existing)
     if (count > 0) {
       throw new MalformedRequestError(`Can't delete a concordance that still has mappings associated with it (${count} mappings).`)
     }
-    const result = await Concordance.deleteOne({ _id: existing._id })
+    const result = await this.model.deleteOne({ _id: existing._id })
     if (!result.deletedCount) {
       throw new DatabaseAccessError()
     }
@@ -256,11 +257,11 @@ export class ConcordanceService extends AbstractService {
 
   async postAdjustmentForConcordance(uriOrId) {
     try {
-      const concordance = await this.get(uriOrId)
+      const concordance = await this.getItem(uriOrId)
       const count = await this.getMappingsCountForConcordance(concordance)
       if (`${count}` !== concordance.extent) {
         // Update extent with new count
-        await Concordance.updateOne({ _id: concordance._id }, { extent: `${count}`, modified: (new Date()).toISOString() })
+        await this.model.updateOne({ _id: concordance._id }, { extent: `${count}`, modified: (new Date()).toISOString() })
       }
     } catch (error) {
       this.error(error)
@@ -268,13 +269,13 @@ export class ConcordanceService extends AbstractService {
   }
 
   async createIndexes() {
-    const indexes = []
-    indexes.push([{ uri: 1 }, {}])
-    indexes.push([{ identifier: 1 }, {}])
-    indexes.push([{ notation: 1 }, {}])
-    indexes.push([{ "fromScheme.uri": 1 }, {}])
-    indexes.push([{ "toScheme.uri": 1 }, {}])
-    await this._createIndexes({ model: Concordance, indexes })
+    await this._createIndexes([
+      [{ uri: 1 }, {}],
+      [{ identifier: 1 }, {}],
+      [{ notation: 1 }, {}],
+      [{ "fromScheme.uri": 1 }, {}],
+      [{ "toScheme.uri": 1 }, {}],
+    ])
   }
 
 }

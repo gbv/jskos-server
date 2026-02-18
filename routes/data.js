@@ -11,9 +11,7 @@ export default config => {
     "/",
     auth.optional,
     supportDownloadFormats([]),
-    wrapAsync(async (req) => {
-      return await dataService.getData(req)
-    }),
+    wrapAsync(async req => dataService.getData(req)),
     returnJSON,
   )
 

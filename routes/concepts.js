@@ -1,78 +1,23 @@
 import express from "express"
 import { ConceptService } from "../services/concepts.js"
 import * as utils from "../utils/middleware.js"
-import { wrapAsync, wrapDownload } from "../utils/middleware.js"
+import { wrapAsync } from "../utils/middleware.js"
 import * as auth from "../utils/auth.js"
+import { readRoute, createRoute, updateRoute, deleteRoute, suggestRoute } from "./common.js"
 
 export default config => {
   const router = express.Router()
-  const conceptService = new ConceptService(config)
   const { concepts } = config
-
-  if (concepts.read) {
-    router.get(
-      "/concepts",
-      concepts.read.auth ? auth.main : auth.optional,
-      utils.supportDownloadFormats(["json", "ndjson"]),
-      wrapAsync(async (req) => {
-        return await conceptService.getConcepts(req.query)
-      }),
-      wrapDownload(utils.addPaginationHeaders, false),
-      wrapDownload(utils.adjust, false),
-      wrapDownload(utils.returnJSON, false),
-      wrapDownload(utils.handleDownload("concepts"), true),
-    )
+  if (!concepts) {
+    return concepts
   }
 
-  if (concepts.create) {
-    router.post(
-      "/concepts",
-      concepts.create.auth ? auth.main : auth.optional,
-      utils.bodyParser,
-      wrapAsync(async (req) => {
-        return await conceptService.postConcept({
-          bodyStream: req.anystream,
-          bulk: req.query.bulk,
-          scheme: req.query.scheme,
-          setApi: req.query.setApi,
-        })
-      }),
-      utils.adjust,
-      utils.returnJSON,
-    )
-  }
+  const service = new ConceptService(config)
 
-  if (concepts.update) {
-    router.put(
-      "/concepts",
-      concepts.update.auth ? auth.main : auth.optional,
-      utils.bodyParser,
-      wrapAsync(async (req) => {
-        return await conceptService.putConcept({
-          body: req.body,
-          existing: req.existing,
-        })
-      }),
-      utils.adjust,
-      utils.returnJSON,
-    )
-  }
-
-  if (concepts.delete) {
-    router.delete(
-      "/concepts",
-      concepts.delete.auth ? auth.main : auth.optional,
-      utils.bodyParser,
-      wrapAsync(async (req) => {
-        return await conceptService.deleteConcept({
-          uri: req.query.uri,
-          existing: req.existing,
-          setApi: req.query.setApi,
-        })
-      }),
-      (req, res) => res.sendStatus(204),
-    )
-  }
+  readRoute(router, "/concepts", concepts.read, service, "concepts", ["json", "ndjson"])
+  createRoute(router, "/concepts", concepts.create, service)
+  updateRoute(router, "/concepts", concepts.update, service)
+  deleteRoute(router, "/concepts", concepts.delete, service)
 
   if (concepts.read) {
     // Add these routes both with and without the /concepts prefix.
@@ -85,9 +30,7 @@ export default config => {
         prefix + "/narrower",
         concepts.read.auth ? auth.main : auth.optional,
         utils.supportDownloadFormats([]),
-        wrapAsync(async (req) => {
-          return await conceptService.getNarrower(req.query)
-        }),
+        wrapAsync(async req => service.getNarrower(req.query)),
         utils.addPaginationHeaders,
         utils.adjust,
         utils.returnJSON,
@@ -97,39 +40,24 @@ export default config => {
         prefix + "/ancestors",
         concepts.read.auth ? auth.main : auth.optional,
         utils.supportDownloadFormats([]),
-        wrapAsync(async (req) => {
-          return await conceptService.getAncestors(req.query)
-        }),
+        wrapAsync(async req => service.getAncestors(req.query)),
         utils.addPaginationHeaders,
         utils.adjust,
         utils.returnJSON,
       )
 
-      router.get(
-        prefix + "/suggest",
-        concepts.read.auth ? auth.main : auth.optional,
-        utils.supportDownloadFormats([]),
-        wrapAsync(async (req) => {
-          return await conceptService.getSuggestions(req.query)
-        }),
-        utils.addPaginationHeaders,
-        utils.returnJSON,
-      )
+      suggestRoute(router, prefix + "/suggest", concepts.read, service)
 
       router.get(
         prefix + "/search",
         concepts.read.auth ? auth.main : auth.optional,
         utils.supportDownloadFormats([]),
-        wrapAsync(async (req) => {
-          return await conceptService.search(req.query)
-        }),
+        wrapAsync(async req => await service.search(req.query)),
         utils.addPaginationHeaders,
         utils.adjust,
         utils.returnJSON,
       )
-
     }
-
   }
 
   return router

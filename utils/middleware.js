@@ -563,7 +563,7 @@ const bodyParser = (req, res, next) => {
       const uri = req.params._id || (req.body || {}).uri || req.query.uri
       let existing
       try {
-        existing = await services[req.type].get(uri)
+        existing = await services[req.type].getItem(uri)
       } catch (error) {
         // Ignore
       }
@@ -584,7 +584,7 @@ const bodyParser = (req, res, next) => {
         if (req.type === "mappings" && existing.partOf && existing.partOf[0]) {
           // Get concordance via service
           try {
-            const concordance = await services.concordances.get(existing.partOf[0].uri)
+            const concordance = await services.concordances.getItem(existing.partOf[0].uri)
             superordinated.existing = concordance
           } catch (error) {
             const message = `Existing concordance with URI ${existing.partOf[0].uri} could not be found in database.`
@@ -596,7 +596,7 @@ const bodyParser = (req, res, next) => {
         if (req.type === "mappings" && req.body && req.body.partOf && req.body.partOf[0]) {
           // Get concordance via service
           try {
-            const concordance = await services.concordances.get(req.body.partOf[0].uri)
+            const concordance = await services.concordances.getItem(req.body.partOf[0].uri)
             superordinated.payload = concordance
           } catch (error) {
             next(new InvalidBodyError(`Concordance with URI ${req.body.partOf[0].uri} could not be found.`))

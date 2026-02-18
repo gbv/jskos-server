@@ -67,9 +67,8 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [GET /registries/:\_id](#get-registries_id)
   - [GET /registries/suggest](#get-registriessuggest)
   - [POST /registries](#post-registries)
-  - [PUT /registries/:\_id](#put-registries_id)
-  - [PATCH /registries/:\_id](#patch-registries_id)
-  - [DELETE /registries/:\_id](#delete-registries_id)
+  - [PUT /registries](#put-registries)
+  - [DELETE /registries](#delete-registries)
   - [GET /annotations](#get-annotations)
   - [GET /annotations/:\_id](#get-annotations_id)
   - [POST /annotations](#post-annotations)
@@ -276,6 +275,15 @@ Explanations for additional options:
 \* Only applies to actions `create`, `update`, and `delete`.
 
 Note that any properties not mentioned here are not allowed!
+
+#### Origin of URIs
+
+**This fields are ignored in the current version!**
+
+The `create` field of configuration can have two field that control where URIs of newly created URIs come from:
+
+- **`uriBase`**: a string or Boolean (false by default). Value true is replaced by the baseUrl of the server. URIs of newly created items must start with this string.
+- **`uriOrigin`**: where URIs of new items orgin from. Default value `external` requires clients to provide an URI. Value `uuid` can be used when `uriBase` is set to generate URIs based on UUIDs.
 
 #### Registries configuration
 
@@ -2228,41 +2236,6 @@ Returns an array of registries. Each registry has a property `id` under which th
   ]
   ```
 
-### GET /registries/:_id
-Returns a specific registry.
-
-* **Success Response**
-
-  Object for registry in [JSKOS Registry] format.
-
-* **Error Response**
-
-  If no registry with `_id` could be found, it will return a 404 not found error.
-
-* **Sample Call**
-
-  ```bash
-  curl "http://localhost:3000/registries/http%3A%2F%2Fbartoc.org%2Fen%2Fnode%2F18927"
-  ```
-
-  ```json
-  {
-    "definition": {
-      "en": [
-        "This Agrisemantics Map of Data Standards is the continuation of the VEST Registry started on the FAO AIMS website (now superseded by tis Map) and it includes metadata from the AgroPortal ontology repository managed by University of Montpelier and Stanford University."
-      ]
-    },
-    "prefLabel": {
-      "en": "VEST Registry"
-    },
-    "type": [
-      "http://www.w3.org/ns/dcat#Catalog"
-    ],
-    "uri": "http://bartoc.org/en/node/18927",
-    "url": "http://aims.fao.org/vest-registry"
-  }
-  ```
-
 ### GET /registries/suggest
 Returns registry suggestions.
 
@@ -2317,26 +2290,19 @@ Saves one registry or multiple registries in the database.
   Bulk mode: invalid registries are skipped.
   Non-bulk mode: the first error is thrown (see [errors](#errors)).
 
-### PUT /registries/:_id
-Overwrites a registry in the database.
+### PUT /registries
+Overwrites a registry in the database, identfied by its `uri` fiel.
 
 * **Success Response**
 
   Registry object as it was saved in the database in [JSKOS Registry] format.
 
-Note that any changes to the `created` property will be ignored.
-
-### PATCH /registries/:_id
-Adjusts a registry in the database.
-
-* **Success Response**
-
-  Registry object as it was saved in the database in [JSKOS Registry] format.
-
-Note that any changes to the `created` property will be ignored.
-
-### DELETE /registries/:_id
+### DELETE /registries
 Deletes a registry from the database.
+
+* **URL Params**
+
+  `uri=URI` URI for registry to be deleted.
 
 * **Success Response**
 

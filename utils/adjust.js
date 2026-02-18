@@ -99,7 +99,7 @@ function createAdjuster(config) {
       }
       // Add properties (annotations)
       if (config.annotations && properties.includes("annotations") && concept.uri) {
-        concept.annotations = (await services.annotations.getAnnotations({ target: concept.uri })).map(annotation => adjust.annotation(annotation))
+        concept.annotations = (await services.annotations.queryItems({ target: concept.uri })).map(annotation => adjust.annotation(annotation))
       }
     }
     return concept
@@ -139,7 +139,7 @@ function createAdjuster(config) {
       mapping["@context"] = "https://gbv.github.io/jskos/context.json"
       // Add properties (annotations)
       if (config.annotations && properties.includes("annotations") && mapping.uri) {
-        mapping.annotations = (await services.annotations.getAnnotations({ target: mapping.uri })).map(annotation => adjust.annotation(annotation))
+        mapping.annotations = (await services.annotations.queryItems({ target: mapping.uri })).map(annotation => adjust.annotation(annotation))
       }
     }
     return mapping
