@@ -1,5 +1,4 @@
 import _ from "lodash"
-import { bulkOperationForEntities } from "../utils/utils.js"
 import { validate } from "jskos-validate"
 
 import { addKeywords } from "../utils/searchHelper.js"
@@ -156,50 +155,19 @@ export class SchemeService extends AbstractService {
 
   // Write endpoints start here
 
-  async createItem({ bodyStream, bulk = false, bulkReplace = true }) {
-    let { items: schemes, isMultiple } = await this._readBodyStream(bodyStream)
-    let response
+  async updateItem({ body, existing, ...args }) {
+    let item = body
 
     // Prepare
-    schemes = await Promise.all(schemes.map(scheme => {
-      return this.prepareAndCheckSchemeForAction(scheme, "create")
-        .catch(error => {
-          // Ignore errors for bulk
-          if (bulk) {
-            return null
-          }
-          throw error
-        })
-    }))
-    // Filter out null
-    schemes = schemes.filter(s => s)
-
-    if (bulk) {
-      // Use bulkWrite for most efficiency
-      schemes.length && await this.model.bulkWrite(bulkOperationForEntities({ entities: schemes, replace: bulkReplace }))
-      schemes = await this.postAdjustmentsForScheme(schemes, { bulk })
-      response = schemes.map(s => ({ uri: s.uri }))
-    } else {
-      schemes = await this.model.insertMany(schemes, { lean: true })
-      response = await this.postAdjustmentsForScheme(schemes, { bulk })
-    }
-
-    return isMultiple ? response : response[0]
-  }
-
-  async updateItem({ body, existing, setApi }) {
-    let scheme = body
-
-    // Prepare
-    scheme = await this.prepareAndCheckSchemeForAction(scheme, "update")
+    item = await this.prepareAndCheckItemForAction(item, "update")
 
     // Override _id, uri, and created properties
-    scheme._id = existing._id
-    scheme.uri = existing.uri
-    scheme.created = existing.created
+    item._id = existing._id
+    item.uri = existing.uri
+    item.created = existing.created
 
-    // Write scheme to database
-    const result = await this.model.replaceOne({ _id: scheme.uri }, scheme)
+    // Write item to database
+    const result = await this.model.replaceOne({ _id: item.uri }, item)
     if (!result.acknowledged) {
       throw new DatabaseAccessError()
     }
@@ -207,9 +175,7 @@ export class SchemeService extends AbstractService {
       throw new EntityNotFoundError()
     }
 
-    scheme = (await this.postAdjustmentsForScheme([scheme], { setApi }))[0]
-
-    return scheme
+    return (await this.postAdjustmentsForItems([item], args))[0]
   }
 
   async deleteItem({ uri, existing }) {
@@ -221,10 +187,7 @@ export class SchemeService extends AbstractService {
       // ? Which error type?
       throw new MalformedRequestError(`Concept scheme ${uri} still has concepts in the database and therefore can't be deleted.`)
     }
-    const result = await this.model.deleteOne({ _id: existing._id })
-    if (!result.deletedCount) {
-      throw new DatabaseAccessError()
-    }
+    super.deleteItem({ existing })
   }
 
   /**
@@ -238,7 +201,7 @@ export class SchemeService extends AbstractService {
    * @param {string} action one of "create", "update", and "delete"
    * @returns {Object} prepared concept scheme
    */
-  async prepareAndCheckSchemeForAction(scheme, action) {
+  async prepareAndCheckItemForAction(scheme, action) {
     if (!_.isObject(scheme)) {
       throw new MalformedBodyError()
     }
@@ -265,7 +228,7 @@ export class SchemeService extends AbstractService {
    * @param {Boolean} options.bulk indicates whether the adjustments are performaned as part of a bulk operation
    * @returns {[Object]} array of adjusted concept schemes
    */
-  async postAdjustmentsForScheme(schemes, { bulk = false, setApi = false } = {}) {
+  async postAdjustmentsForItems(schemes, { bulk = false, setApi = false } = {}) {
     // Get schemes from database instead
     schemes = await this.model.find({ _id: { $in: schemes.map(s => s.uri) } }).lean().exec()
     // First, set created field if necessary

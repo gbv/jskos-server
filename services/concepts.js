@@ -247,7 +247,7 @@ export class ConceptService extends AbstractService {
     }
 
     preparation.setApi = setApi
-    await this.postAdjustmentsForConcepts(preparation)
+    await this.postAdjustmentsForItems(preparation)
 
     return isMultiple ? response : response[0]
   }
@@ -286,7 +286,7 @@ export class ConceptService extends AbstractService {
     }
 
     // ? Can we return the request without waiting for this step?
-    await this.postAdjustmentsForConcepts(preparation)
+    await this.postAdjustmentsForItems(preparation)
 
     return concept
   }
@@ -296,12 +296,9 @@ export class ConceptService extends AbstractService {
       throw new MalformedRequestError()
     }
 
-    const result = await Concept.deleteOne({ _id: existing._id })
-    if (!result.deletedCount) {
-      throw new DatabaseAccessError()
-    }
+    super.deleteItem({ existing })
 
-    await this.postAdjustmentsForConcepts({
+    await this.postAdjustmentsForItems({
       // Adjust scheme in case it was its last concept
       schemeUrisToAdjust: [existing?.inScheme?.[0]?.uri],
       conceptUrisWithNarrower: [],
@@ -327,7 +324,7 @@ export class ConceptService extends AbstractService {
     if (!result.deletedCount) {
       throw new EntityNotFoundError("No concepts found to delete.")
     }
-    await this.postAdjustmentsForConcepts({
+    await this.postAdjustmentsForItems({
       schemeUrisToAdjust: [uri],
       conceptUrisWithNarrower: [],
       setApi,
@@ -338,7 +335,7 @@ export class ConceptService extends AbstractService {
    * Prepares and checks a list of concepts before inserting/updating (see `prepareAndCheckConcept`).
    *
    * @param {Object} allConcept concept objects
-   * @returns {Object} preparation object with properties `concepts`, `errors`, `schemeUrisToAdjust`, and `conceptUrisWithNarrower`; needs to be provided to `postAdjustmentsForConcepts`
+   * @returns {Object} preparation object with properties `concepts`, `errors`, `schemeUrisToAdjust`, and `conceptUrisWithNarrower`; needs to be provided to `postAdjustmentsForItems`
    */
   async prepareAndCheckConcepts(allConcepts, { scheme } = {}) {
     const getSchemeUri = c => c?.inScheme?.[0]?.uri || c?.topConceptOf?.[0]?.uri
@@ -355,10 +352,7 @@ export class ConceptService extends AbstractService {
     }
     // Load all schemes for concepts
     const schemes = await this.schemeService.queryItems({
-      uri: allConcepts
-        .map(c => getSchemeUri(c))
-        .filter(s => s != null)
-        .join("|"),
+      uri: allConcepts.map(c => getSchemeUri(c)).filter(Boolean).join("|"),
     })
     for (let concept of allConcepts) {
       try {
@@ -429,16 +423,10 @@ export class ConceptService extends AbstractService {
     addKeywords(concept)
   }
 
-  /**
-   * Post-adjustments for concepts:
-   * - runs `postAdjustmentsForScheme` for relevant schemes in `preparation.schemeUrisToAdjust`
-   * - adds `narrower: [null]` for concepts in `preparation.conceptUrisWithNarrower`
-   *
-   * @param {Object} preparation preparation object that is returned by `prepareAndCheckConcepts`
-   */
-  async postAdjustmentsForConcepts(preparation) {
-    // Adjust scheme after adding concept
-    await this.schemeService.postAdjustmentsForScheme(preparation.schemeUrisToAdjust.map(uri => ({ uri })), { setApi: preparation.setApi })
+  async postAdjustmentsForItems(preparation) {
+    // runs `postAdjustmentsForItems` for relevant schemes in `preparation.schemeUrisToAdjust`
+    // adds `narrower: [null]` for concepts in `preparation.conceptUrisWithNarrower`
+    await this.schemeService.postAdjustmentsForItems(preparation.schemeUrisToAdjust.map(uri => ({ uri })), { setApi: preparation.setApi })
   }
 
   async createIndexes() {

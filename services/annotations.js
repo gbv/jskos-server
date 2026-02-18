@@ -1,5 +1,5 @@
 import { uuid, isValidUuid } from "../utils/uuid.js"
-import { removeNullProperties, bulkOperationForEntities } from "../utils/utils.js"
+import { removeNullProperties } from "../utils/utils.js"
 import jskos from "jskos-tools"
 import { validate } from "jskos-validate"
 import _ from "lodash"
@@ -101,83 +101,59 @@ export class AnnotationService extends AbstractService {
     const { limit, offset } = this._getLimitAndOffset(query)
     const annotations = await Annotation.find(mongoQuery).lean().skip(offset).limit(limit).exec()
     annotations.totalCount = await this._count(Annotation, [{ $match: mongoQuery }])
-    return annotations
 
+    return annotations
   }
 
-  /**
-   * Save a new annotation or multiple annotations in the database. Adds created date if necessary.
-   */
-  async createItem({ bodyStream, user, bulk = false, bulkReplace = true, admin = false }) {
-    let { items, isMultiple } = await this._readBodyStream(bodyStream)
-    let response
-
-    // Adjust all annotations
-    items = await Promise.all(items.map(async annotation => {
-      try {
-        // For type moderating, check if user is on the whitelist (except for admin=true).
-        if (!admin && annotation.motivation == "moderating") {
-          let uris = [user.uri].concat(Object.values(user.identities || {}).map(id => id.uri)).filter(uri => uri != null)
-          let whitelist = this.config.moderatingIdentities
-          if (whitelist && _.intersection(whitelist, uris).length == 0) {
-            // Disallow
-            throw new ForbiddenAccessError("Access forbidden, user is not allowed to create annotations of type \"moderating\".")
-          }
-        }
-        // Add created and modified dates.
-        let date = (new Date()).toISOString()
-        if (!bulk || !annotation.created) {
-          annotation.created = date
-        }
-        // Remove type property
-        delete annotation.type
-        // Validate annotation
-        await this.validateAnnotation(annotation)
-        // Add _id and URI
-        delete annotation._id
-        if (annotation.id) {
-          let id = annotation.id
-          // ID already exists, use if it's valid, otherwise remove
-          if (id.startsWith(this.baseUri) && isValidUuid(id.slice(this.baseUri.length, id.length))) {
-            annotation._id = id.slice(this.baseUri.length, id.length)
-          }
-        }
-        if (!annotation._id) {
-          annotation._id = uuid()
-          annotation.id = this.baseUri + annotation._id
-        }
-        // Change target to object and add mapping content identifier if possible
-        const target = _.get(annotation, "target.id", annotation.target)
-        if (!annotation.target?.state?.id) {
-          const mapping = await Mapping.findOne({ uri: target })
-          const contentId = mapping && (mapping.identifier || []).find(id => id.startsWith("urn:jskos:mapping:content:"))
-          annotation.target = contentId ? {
-            id: target,
-            state: {
-              id: contentId,
-            },
-          } : { id: target }
-        }
-
-        return annotation
-      } catch (error) {
-        if (bulk) {
-          return null
-        }
-        throw error
+  async prepareAndCheckItemForAction(item, action, { admin, user, bulk }) {
+    if (action !== "create") {
+      return item
+    }
+    // For type moderating, check if user is on the whitelist (except for admin=true).
+    if (!admin && item.motivation == "moderating") {
+      let uris = [user.uri].concat(Object.values(user.identities || {}).map(id => id.uri)).filter(uri => uri != null)
+      let whitelist = this.config.moderatingIdentities
+      if (whitelist && _.intersection(whitelist, uris).length == 0) {
+        // Disallow
+        throw new ForbiddenAccessError("Access forbidden, user is not allowed to create items of type \"moderating\".")
       }
-    }))
-    items = items.filter(Boolean)
-
-    if (bulk) {
-      // Use bulkWrite for most efficiency
-      items.length && await Annotation.bulkWrite(bulkOperationForEntities({ entities: items, replace: bulkReplace }))
-      response = items.map(a => ({ id: a.id }))
-    } else {
-      response = await Annotation.insertMany(items, { lean: true })
+    }
+    // Add created and modified dates.
+    let date = (new Date()).toISOString()
+    if (!bulk || !item.created) {
+      item.created = date
+    }
+    // Remove type property
+    delete item.type
+    // Validate item
+    await this.validateAnnotation(item)
+    // Add _id and URI
+    delete item._id
+    if (item.id) {
+      let id = item.id
+      // ID already exists, use if it's valid, otherwise remove
+      if (id.startsWith(this.baseUri) && isValidUuid(id.slice(this.baseUri.length, id.length))) {
+        item._id = id.slice(this.baseUri.length, id.length)
+      }
+    }
+    if (!item._id) {
+      item._id = uuid()
+      item.id = this.baseUri + item._id
+    }
+    // Change target to object and add mapping content identifier if possible
+    const target = _.get(item, "target.id", item.target)
+    if (!item.target?.state?.id) {
+      const mapping = await Mapping.findOne({ uri: target })
+      const contentId = mapping && (mapping.identifier || []).find(id => id.startsWith("urn:jskos:mapping:content:"))
+      item.target = contentId ? {
+        id: target,
+        state: {
+          id: contentId,
+        },
+      } : { id: target }
     }
 
-    return isMultiple ? response : response[0]
+    return item
   }
 
   async updateItem({ body, existing }) {
@@ -244,13 +220,6 @@ export class AnnotationService extends AbstractService {
     }
   }
 
-  async deleteItem({ existing }) {
-    const result = await Annotation.deleteOne({ _id: existing._id })
-    if (!result.deletedCount) {
-      throw new DatabaseAccessError()
-    }
-  }
-
   async createIndexes() {
     const indexes = [
       [{ id: 1 }, {}],
@@ -265,5 +234,4 @@ export class AnnotationService extends AbstractService {
     ]
     await this._createIndexes(indexes)
   }
-
 }

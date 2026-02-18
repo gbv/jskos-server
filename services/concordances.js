@@ -80,14 +80,10 @@ export class ConcordanceService extends AbstractService {
     }
   }
 
-  async getItem(_id) {
-    return this.getConcordance(_id)
-  }
-
   /**
    * Returns a promise with a single concordance with ObjectId in req.params._id.
    */
-  async getConcordance(uriOrId) {
+  async getItem(uriOrId) {
     if (!uriOrId) {
       throw new MalformedRequestError()
     }
@@ -111,55 +107,45 @@ export class ConcordanceService extends AbstractService {
     throw new EntityNotFoundError(null, uriOrId)
   }
 
-  /**
-   * Save a single concordance or multiple concordances in the database. Adds created date, validates the concordance, and adds identifiers.
-   *
-   * TODO: Implement bulk and bulkReplace
-   */
-  async createItem({ bodyStream, bulk = false }) {
-    let { items, isMultiple } = await this._readBodyStream(bodyStream)
-    let response
-
-    // Adjust all items
-    for (const concordance of items) {
-      // Add created and modified dates.
-      const now = (new Date()).toISOString()
-      if (!bulk || !concordance.created) {
-        concordance.created = now
-      }
-      concordance.modified = now
-      // Validate concordance
-      if (!validateConcordance(concordance)) {
-        throw new InvalidBodyError()
-      }
-      // Check if schemes are available and replace them with URI/notation only
-      await this.schemeService.replaceSchemeProperties(concordance, ["fromScheme", "toScheme"], false)
-
-      // _id and URI
-      delete concordance._id
-      if (concordance.uri) {
-        let uri = concordance.uri
-        // URI already exists, use if it's valid, otherwise move to identifier
-        if (uri.startsWith(this.uriBase)) {
-          concordance._id = uri.slice(this.uriBase.length, uri.length)
-          concordance.notation = [concordance._id].concat((concordance.notation || []).slice(1))
-        } else {
-          concordance.identifier = (concordance.identifier || []).concat([uri])
-        }
-      }
-      if (!concordance._id) {
-        concordance._id = concordance.notation && concordance.notation[0] || uuid()
-        concordance.uri = this.uriBase + concordance._id
-        concordance.notation = [concordance._id].concat((concordance.notation || []).slice(1))
-      }
-      // Extent should be 0 when added; will be updated in postAdjustmentForConcordance whenever there are changes
-      concordance.extent = "0"
+  async prepareAndCheckItemForAction(concordance, action, { bulk }) {
+    if (action !== "create") {
+      return concordance
     }
-    items = items.filter(Boolean)
 
-    response = await this.model.insertMany(items, { lean: true })
+    // Add created and modified dates.
+    const now = (new Date()).toISOString()
+    if (!bulk || !concordance.created) {
+      concordance.created = now
+    }
+    concordance.modified = now
+    // Validate concordance
+    if (!validateConcordance(concordance)) {
+      throw new InvalidBodyError()
+    }
+    // Check if schemes are available and replace them with URI/notation only
+    await this.schemeService.replaceSchemeProperties(concordance, ["fromScheme", "toScheme"], false)
 
-    return isMultiple ? response : response[0]
+    // _id and URI
+    delete concordance._id
+    if (concordance.uri) {
+      let uri = concordance.uri
+      // URI already exists, use if it's valid, otherwise move to identifier
+      if (uri.startsWith(this.uriBase)) {
+        concordance._id = uri.slice(this.uriBase.length, uri.length)
+        concordance.notation = [concordance._id].concat((concordance.notation || []).slice(1))
+      } else {
+        concordance.identifier = (concordance.identifier || []).concat([uri])
+      }
+    }
+    if (!concordance._id) {
+      concordance._id = concordance.notation && concordance.notation[0] || uuid()
+      concordance.uri = this.uriBase + concordance._id
+      concordance.notation = [concordance._id].concat((concordance.notation || []).slice(1))
+    }
+    // Extent should be 0 when added; will be updated in postAdjustmentForConcordance whenever there are changes
+    concordance.extent = "0"
+
+    return concordance
   }
 
   async putConcordance({ body, existing }) {
@@ -244,10 +230,7 @@ export class ConcordanceService extends AbstractService {
     if (count > 0) {
       throw new MalformedRequestError(`Can't delete a concordance that still has mappings associated with it (${count} mappings).`)
     }
-    const result = await this.model.deleteOne({ _id: existing._id })
-    if (!result.deletedCount) {
-      throw new DatabaseAccessError()
-    }
+    super.deleteItem({ existing })
   }
 
   async getMappingsCountForConcordance(concordance) {

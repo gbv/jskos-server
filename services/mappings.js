@@ -1,6 +1,6 @@
 import _ from "lodash"
 import { uuid, isValidUuid } from "../utils/uuid.js"
-import { removeNullProperties, bulkOperationForEntities, addMappingSchemes } from "../utils/utils.js"
+import { removeNullProperties, addMappingSchemes } from "../utils/utils.js"
 import jskos from "jskos-tools"
 import { validate } from "jskos-validate"
 import { cdk } from "cocoda-sdk"
@@ -585,89 +585,66 @@ export class MappingService extends AbstractService {
 
   }
 
-  /**
-   * Save a single mapping or multiple mappings in the database. Adds created date, validates the mapping, and adds identifiers.
-   */
-  async createItem({ bodyStream, bulk = false, bulkReplace = true }) {
-    let { items, isMultiple } = await this._readBodyStream(bodyStream)
-
-    // Adjust all mappings
-    items = await Promise.all(items.map(async mapping => {
-      try {
-        // Add created and modified dates.
-        const now = (new Date()).toISOString()
-        if (!bulk || !mapping.created) {
-          mapping.created = now
-        }
-        mapping.modified = now
-        // Validate mapping
-        if (!validateMapping(mapping)) {
-          throw new InvalidBodyError()
-        }
-        if (mapping.partOf) {
-          throw new InvalidBodyError("Property `partOf` is currently not allowed.")
-        }
-        // Check cardinality for 1-to-1
-        if (this.config.cardinality == "1-to-1" && jskos.conceptsOfMapping(mapping, "to").length > 1) {
-          throw new InvalidBodyError("Only 1-to-1 items are supported.")
-        }
-        // Add mapping schemes if necessary (e.g. from concepts' `inScheme` property)
-        addMappingSchemes(mapping)
-        // Check if schemes are available and replace them with URI/notation only
-        await this.schemeService.replaceSchemeProperties(mapping, ["fromScheme", "toScheme"])
-        // Reject mapping if either fromScheme or toScheme is missing
-        for (let field of ["fromScheme", "toScheme"]) {
-          if (!mapping[field]) {
-            throw new InvalidBodyError(`Property \`${field}\` is missing.`)
-          }
-        }
-        this.checkWhitelists(mapping)
-        // _id and URI
-        delete mapping._id
-        if (mapping.uri) {
-          let uri = mapping.uri
-          // URI already exists, use if it's valid, otherwise move to identifier
-          if (uri.startsWith(this.baseUri) && isValidUuid(uri.slice(this.baseUri.length, uri.length))) {
-            mapping._id = uri.slice(this.baseUri.length, uri.length)
-          } else {
-            mapping.identifier = (mapping.identifier || []).concat([uri])
-          }
-        }
-        if (!mapping._id) {
-          mapping._id = uuid()
-          mapping.uri = this.baseUri + mapping._id
-        }
-        // Make sure URI is a https URI when in production
-        if (this.config.env === "production") {
-          mapping.uri.replace("http:", "https:")
-        }
-        // Set mapping identifier
-        mapping.identifier = jskos.addMappingIdentifiers(mapping).identifier
-        // Set mapping type to mappingRelation if not set
-        if (!mapping.type || !mapping.type.length) {
-          mapping.type = ["http://www.w3.org/2004/02/skos/core#mappingRelation"]
-        }
-
-        return mapping
-      } catch (error) {
-        if (bulk) {
-          return null
-        }
-        throw error
-      }
-    }))
-    items = items.filter(m => m)
-
-    let response
-    if (bulk) {
-      // Use bulkWrite for most efficiency
-      items.length && await this.model.bulkWrite(bulkOperationForEntities({ entities: items, replace: bulkReplace }))
-      response = items.map(c => ({ uri: c.uri }))
-    } else {
-      response = await this.model.insertMany(items, { lean: true })
+  async prepareAndCheckItemForAction(mapping, action, { bulk }) {
+    if (action !== "create") {
+      return mapping
     }
 
-    return isMultiple ? response : response[0]
+    // Add created and modified dates.
+    const now = (new Date()).toISOString()
+    if (!bulk || !mapping.created) {
+      mapping.created = now
+    }
+    mapping.modified = now
+    // Validate mapping
+    if (!validateMapping(mapping)) {
+      throw new InvalidBodyError()
+    }
+    if (mapping.partOf) {
+      throw new InvalidBodyError("Property `partOf` is currently not allowed.")
+    }
+    // Check cardinality for 1-to-1
+    if (this.config.cardinality == "1-to-1" && jskos.conceptsOfMapping(mapping, "to").length > 1) {
+      throw new InvalidBodyError("Only 1-to-1 items are supported.")
+    }
+    // Add mapping schemes if necessary (e.g. from concepts' `inScheme` property)
+    addMappingSchemes(mapping)
+    // Check if schemes are available and replace them with URI/notation only
+    await this.schemeService.replaceSchemeProperties(mapping, ["fromScheme", "toScheme"])
+    // Reject mapping if either fromScheme or toScheme is missing
+    for (let field of ["fromScheme", "toScheme"]) {
+      if (!mapping[field]) {
+        throw new InvalidBodyError(`Property \`${field}\` is missing.`)
+      }
+    }
+    this.checkWhitelists(mapping)
+    // _id and URI
+    delete mapping._id
+    if (mapping.uri) {
+      let uri = mapping.uri
+      // URI already exists, use if it's valid, otherwise move to identifier
+      if (uri.startsWith(this.baseUri) && isValidUuid(uri.slice(this.baseUri.length, uri.length))) {
+        mapping._id = uri.slice(this.baseUri.length, uri.length)
+      } else {
+        mapping.identifier = (mapping.identifier || []).concat([uri])
+      }
+    }
+    if (!mapping._id) {
+      mapping._id = uuid()
+      mapping.uri = this.baseUri + mapping._id
+    }
+    // Make sure URI is a https URI when in production
+    if (this.config.env === "production") {
+      mapping.uri = mapping.uri.replace("http:", "https:")
+    }
+    // Set mapping identifier
+    mapping.identifier = jskos.addMappingIdentifiers(mapping).identifier
+    // Set mapping type to mappingRelation if not set
+    if (!mapping.type || !mapping.type.length) {
+      mapping.type = ["http://www.w3.org/2004/02/skos/core#mappingRelation"]
+    }
+
+    return mapping
   }
 
   async putMapping({ body, existing }) {
@@ -783,10 +760,8 @@ export class MappingService extends AbstractService {
   }
 
   async deleteItem({ existing }) {
-    const result = await this.model.deleteOne({ _id: existing._id })
-    if (!result.deletedCount) {
-      throw new DatabaseAccessError()
-    }
+    super.deleteItem({ existing })
+
     // Update concordance if necessary
     if (existing.partOf && existing.partOf[0]) {
       await this.concordanceService.postAdjustmentForConcordance(existing.partOf[0].uri)

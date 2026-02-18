@@ -1,9 +1,9 @@
 import _ from "lodash"
-import { removeNullProperties, bulkOperationForEntities } from "../utils/utils.js"
+import { removeNullProperties } from "../utils/utils.js"
 import { validate } from "jskos-validate"
 import { Registry } from "../models/registries.js"
 import { addKeywords } from "../utils/searchHelper.js"
-import { EntityNotFoundError, DatabaseAccessError, InvalidBodyError, MalformedBodyError, MalformedRequestError } from "../errors/index.js"
+import { EntityNotFoundError, DatabaseAccessError, InvalidBodyError, MalformedBodyError } from "../errors/index.js"
 
 import { AbstractService } from "./abstract.js"
 
@@ -45,42 +45,6 @@ export class RegistryService extends AbstractService {
     return this.model.find({}).skip(offset).limit(limit).lean().exec()
   }
 
-  /*async get(_id) {
-    return this.getRegistry(_id)
-  }*/
-
-  /**
-   * Retrieves a registry entry by its identifier.
-   *
-   * @async
-   * @function getRegistry
-   * @param {string} _id - The unique identifier of the registry to fetch.
-   * @returns {Promise<Object>} Resolves with the registry data if found.
-   * @throws {MalformedRequestError} If no identifier is provided.
-   * @throws {EntityNotFoundError} If no registry exists for the given identifier.
-   */
-  async getRegistry(uriOrId) {
-    if (!uriOrId) {
-      throw new MalformedRequestError()
-    }
-    let result
-
-    // First look via ID
-    result = await this.model.findById(uriOrId).lean()
-    if (result) {
-      return result
-    }
-
-    // Then via URI
-    result = await this.model.findOne({ uri: uriOrId }).lean()
-    if (result) {
-      return result
-    }
-
-    // No registry found
-    throw new EntityNotFoundError(`Registry not found: ${uriOrId}`)
-  }
-
   /**
    * Prepares and checks a registry before inserting/updating:
    * - validates object, throws error if it doesn't (create/update)
@@ -91,10 +55,11 @@ export class RegistryService extends AbstractService {
    * @param {string} action one of "create" or "update"
    * @returns {Object} prepared registry
    */
-  async _prepareAndCheckRegistryForAction(registry, action) {
+  async prepareAndCheckItemForAction(registry, action) {
     if (typeof registry !== "object") {
       throw new MalformedBodyError("Invalid registry object")
     }
+
     if (["create", "update"].includes(action)) {
       // Validate registry
       if (!validate.registry(registry)) {
@@ -123,42 +88,6 @@ export class RegistryService extends AbstractService {
     return registry
   }
 
-  /**
-   * Handles insertion of registry items.
-   *
-   * @param {Object} options - Options for the registry import.
-   * @param {NodeJS.ReadableStream} options.bodyStream - Stream emitting registry items.
-   * @param {boolean} [options.bulk=true] - Whether to perform a bulk write operation.
-   * @param {boolean} [options.bulkReplace=true] - For bulk operations, whether to replace existing documents.
-   * @returns {Promise<Object[]|Object|undefined>} Imported registries or a single registry when a single object is sent; undefined when no valid single item exists.
-   * @throws {MalformedBodyError} When the body stream is missing.
-   * @throws {InvalidBodyError} When validation fails in non-bulk mode.
-   */
-  async createItem({ bodyStream, bulk = true, bulkReplace = true }) {
-    let { items, isMultiple } = await this._readBodyStream(bodyStream)
-
-    items = await Promise.all(items.map(registry => {
-      return this._prepareAndCheckRegistryForAction(registry, "create").catch(error => {
-        if (!bulk) {
-          throw error
-        }
-      })
-    }))
-    items = items.filter(Boolean)
-
-    let response
-    if (bulk) {
-      // Use bulkWrite for most efficiency
-      items.length && await this.model.bulkWrite(
-        bulkOperationForEntities({ entities: items, replace: bulkReplace }))
-      response = items.map(r => ({ uri: r.uri }))
-    } else {
-      // TODO: what if registry already exists
-      response = await this.model.insertMany(items, { lean: true })
-    }
-
-    return isMultiple ? response : response[0]
-  }
 
   /**
    * Updates an existing registry entry, while preserving immutable fields.
@@ -278,16 +207,6 @@ export class RegistryService extends AbstractService {
     }
 
     return doc
-  }
-
-  /**
-   * Deletes a registry entry.
-   */
-  async deleteItem({ existing }) {
-    const result = await this.model.deleteOne({ _id: existing._id })
-    if (!result.deletedCount) {
-      throw new DatabaseAccessError()
-    }
   }
 
   /**

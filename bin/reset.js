@@ -154,7 +154,7 @@ import { models } from "../models/index.js"
       filterUris = [cli.flags.scheme]
     }
   } else if (cli.flags.concordance) {
-    const concordance = await services.concordance.getConcordance(cli.flags.concordance)
+    const concordance = await services.concordance.getItem(cli.flags.concordance)
     if (concordance) {
       filterUris = [concordance.uri].concat(concordance.identifier || [])
     } else {
@@ -241,7 +241,7 @@ import { models } from "../models/index.js"
       // Adjust schemes
       if (schemeUrisToAdjust.length) {
         log(`- adjusting ${schemeUrisToAdjust.length} schemes...`)
-        await services.scheme.postAdjustmentsForScheme(schemeUrisToAdjust.map(uri => ({ uri })), { setApi: cli.flags.setApi })
+        await services.scheme.postAdjustmentsForItems(schemeUrisToAdjust.map(uri => ({ uri })), { setApi: cli.flags.setApi })
       }
       // Adjust concordances
       if (concordanceUrisToAdjust.length) {

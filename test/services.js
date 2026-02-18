@@ -474,12 +474,12 @@ describe("Services Features", () => {
     })
 
     it("should get a registry by id/uri after posting", async () => {
-      const doc = await services.registry.getRegistry(registryExample.uri)
+      const doc = await services.registry.getItem(registryExample.uri)
       assert.strictEqual(doc?.uri, registryExample.uri)
     })
 
     it("should patch a registry and remove a field when set to null", async () => {
-      const existing = await services.registry.getRegistry(registryExample.uri)
+      const existing = await services.registry.getItem(registryExample.uri)
 
       // Add a field and verify it exists
       const patched1 = await services.registry.patchRegistry({
@@ -497,7 +497,7 @@ describe("Services Features", () => {
     })
 
     it("should put a registry and preserve immutable fields while updating", async () => {
-      const existing = await services.registry.getRegistry(registryExample.uri)
+      const existing = await services.registry.getItem(registryExample.uri)
 
       const body = {
         // intentionally omit _id/id/created; service should preserve/override them
@@ -514,11 +514,11 @@ describe("Services Features", () => {
     })
 
     it("should delete a registry", async () => {
-      const existing = await services.registry.getRegistry(registryExample.uri)
+      const existing = await services.registry.getItem(registryExample.uri)
       await services.registry.deleteItem({ existing })
       try {
-        await services.registry.getRegistry(registryExample.uri)
-        assert.fail("Expected getRegistry to fail after delete")
+        await services.registry.getItem(registryExample.uri)
+        assert.fail("Expected getItem to fail after delete")
       } catch (error) {
         assert.ok(error)
       }

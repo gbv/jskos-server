@@ -1,7 +1,8 @@
 import _ from "lodash"
 import jskos from "jskos-tools"
 
-import { MalformedRequestError, MalformedBodyError, EntityNotFoundError } from "../errors/index.js"
+import { bulkOperationForEntities } from "../utils/utils.js"
+import { MalformedRequestError, MalformedBodyError, EntityNotFoundError, DatabaseAccessError } from "../errors/index.js"
 import { toOpenSearchSuggestFormat } from "../utils/searchHelper.js"
 
 export class AbstractService {
@@ -28,10 +29,19 @@ export class AbstractService {
       throw new MalformedRequestError()
     }
     const item = await this.retrieveItem(id)
+    // TODO: find via identifier?
     if (!item) {
       throw new EntityNotFoundError(null, id)
     }
     return item
+  }
+
+  // Low-level database delete an item by its id
+  async deleteItem({ existing }) {
+    const result = await this.model.deleteOne({ _id: existing._id })
+    if (!result.deletedCount) {
+      throw new DatabaseAccessError()
+    }
   }
 
   // high level access
@@ -176,6 +186,44 @@ export class AbstractService {
       return results.slice(offset, offset + limit)
     }
     return toOpenSearchSuggestFormat({ query, results })
+  }
+
+  // to be implemented by subclasses
+  async prepareAndCheckItemForAction(item, _action) {
+    return item
+  }
+
+  // to be implemented by subclasses
+  async postAdjustmentsForItems(items) {
+    return items
+  }
+
+  async createItem({ bodyStream, bulk = false, bulkReplace = true, user, admin = false }) {
+    let { items, isMultiple } = await this._readBodyStream(bodyStream)
+
+    items = await Promise.all(items.map(item => {
+      return this.prepareAndCheckItemForAction(item, "create", { admin, user, bulk })
+        .catch(error => {
+          if (bulk) {
+            return null
+          }
+          throw error
+        })
+    }))
+    items = items.filter(Boolean)
+
+    let response
+    if (bulk) {
+      // Use bulkWrite for most efficiency
+      items.length && await this.model.bulkWrite(bulkOperationForEntities({ entities: items, replace: bulkReplace }))
+      items = await this.postAdjustmentsForItems(items, { bulk })
+      response = items.map(s => ({ uri: s.uri }))
+    } else {
+      items = await this.model.insertMany(items, { lean: true })
+      response = await this.postAdjustmentsForItems(items, { bulk })
+    }
+
+    return isMultiple ? response : response[0]
   }
 
   /**
