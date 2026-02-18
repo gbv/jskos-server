@@ -84,6 +84,24 @@
       "minimum": 0,
       "maximum": 65535
     },
+    "groups": {
+      "description": "Groups of identities",
+      "type": "object",
+      "patternProperties": {
+        "^([a-z0-9+.-]+):.*": {
+          "type": "object",
+          "properties": {
+            "identities": {
+              "$ref": "#/definitions/identities"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "changesApi": {
+      "description": "Ignored but allowed for backwards compatibility"
+    },
     "changes" : {
       "description": "Configuration of change stream endpoints",
       "anyOf": [
