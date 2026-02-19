@@ -65,7 +65,6 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [GET /concepts/suggest](#get-conceptssuggest)
   - [GET /concepts/search](#get-conceptssearch)
   - [GET /registries](#get-registries)
-  - [GET /registries/:\_id](#get-registries_id)
   - [GET /registries/suggest](#get-registriessuggest)
   - [POST /registries](#post-registries)
   - [PUT /registries](#put-registries)
