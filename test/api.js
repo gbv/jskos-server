@@ -1474,11 +1474,12 @@ describe("Express Server", () => {
           res.should.have.header("Link")
           res.should.have.header("X-Total-Count")
           res.headers["x-total-count"].should.be.eql("1")
-          res.body.should.be.a("array")
-          res.body.length.should.be.eql(4) // OpenSearch Suggest Format
-          res.body[0].should.be.a("string")
-          res.body[1].should.be.a("array")
-          res.body[1].length.should.be.eql(1)
+          assert.deepStrictEqual(res.body, [
+            "dd",
+            [ "DDC Dewey Decimal Classification" ],
+            [ "" ],
+            [ "http://dewey.info/scheme/edition/e23/" ],
+          ])
           done()
         })
     })
@@ -1752,6 +1753,16 @@ describe("Express Server", () => {
   })
 
   describe("GET /concepts/suggest", () => {
+
+    it("should GET no results without search", done => {
+      chai.request.execute(app)
+        .get("/concepts/suggest")
+        .end((err, res) => {
+          res.should.have.status(200)
+          assert.deepEqual(res.body, ["",[],[],[]])
+          done()
+        })
+    })
 
     it("should GET correct results for notation", done => {
       chai.request.execute(app)

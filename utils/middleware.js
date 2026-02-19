@@ -303,11 +303,11 @@ const returnJSON = (req, res) => {
   // Convert Mongoose documents into plain objects
   let data
   if (Array.isArray(req.data)) {
-    data = req.data.map(doc => doc.toObject ? doc.toObject() : doc)
+    data = req.data.map(doc => doc?.toObject ? doc.toObject() : doc)
     // Preserve totalCount
     data.totalCount = req.data.totalCount
   } else {
-    data = req.data.toObject ? req.data.toObject() : req.data
+    data = req.data?.toObject ? req.data?.toObject() : req.data
   }
   cleanJSON(data, 0, config.closedWorldAssumption)
   let statusCode = 200
