@@ -1,7 +1,7 @@
 import express from "express"
 import { MappingService } from "../services/mappings.js"
-import * as utils from "../utils/middleware.js"
-import { wrapAsync, wrapDownload } from "../utils/middleware.js"
+import { adjust, addPaginationHeaders, bodyParser } from "../utils/middleware.js"
+import { wrapAsync, wrapDownload, supportDownloadFormats, returnJSON, handleDownload } from "./utils.js"
 import { useAuth } from "../utils/auth.js"
 import { readRoute, createRoute } from "./common.js"
 
@@ -16,8 +16,8 @@ export default config => {
     wrapAsync(async (req) => {
       return await service.getNotationSuggestions(req.query)
     }),
-    utils.addPaginationHeaders,
-    utils.returnJSON,
+    addPaginationHeaders,
+    returnJSON,
   )
   router.get(
     "/voc",
@@ -25,9 +25,9 @@ export default config => {
     wrapAsync(async (req) => {
       return await service.getMappingSchemes(req.query)
     }),
-    utils.addPaginationHeaders,
-    utils.adjust,
-    utils.returnJSON,
+    addPaginationHeaders,
+    adjust,
+    returnJSON,
   )
 
   readRoute(router, "/", config.mappings.read, service, "mappings", ["json", "ndjson", "csv", "tsv"])
@@ -38,19 +38,19 @@ export default config => {
       "/infer",
       useAuth(config.mappings.read.auth),
       wrapAsync(async req => service.inferMappings(req.query)),
-      utils.addPaginationHeaders,
-      utils.adjust,
-      utils.returnJSON,
+      addPaginationHeaders,
+      adjust,
+      returnJSON,
     )
 
     router.get(
       "/:_id",
       useAuth(config.mappings.read.auth),
-      utils.supportDownloadFormats(["json", "ndjson", "csv", "tsv"]),
+      supportDownloadFormats(["json", "ndjson", "csv", "tsv"]),
       wrapAsync(async req => service.getMapping(req.params._id)),
-      wrapDownload(utils.adjust, false),
-      wrapDownload(utils.returnJSON, false),
-      wrapDownload(utils.handleDownload("mapping"), true),
+      wrapDownload(adjust, false),
+      wrapDownload(returnJSON, false),
+      wrapDownload(handleDownload("mapping"), true),
     )
   }
 
@@ -58,7 +58,7 @@ export default config => {
     router.put(
       "/:_id",
       useAuth(config.mappings.update.auth),
-      utils.bodyParser,
+      bodyParser,
       wrapAsync(async (req) => {
         return await service.putMapping({
           _id: req.params._id,
@@ -67,14 +67,14 @@ export default config => {
           existing: req.existing,
         })
       }),
-      utils.adjust,
-      utils.returnJSON,
+      adjust,
+      returnJSON,
     )
 
     router.patch(
       "/:_id",
       useAuth(config.mappings.update.auth),
-      utils.bodyParser,
+      bodyParser,
       wrapAsync(async (req) => {
         return await service.patchMapping({
           _id: req.params._id,
@@ -83,8 +83,8 @@ export default config => {
           existing: req.existing,
         })
       }),
-      utils.adjust,
-      utils.returnJSON,
+      adjust,
+      returnJSON,
     )
   }
 
@@ -92,7 +92,7 @@ export default config => {
     router.delete(
       "/:_id",
       useAuth(config.mappings.delete.auth),
-      utils.bodyParser,
+      bodyParser,
       wrapAsync(async (req) => {
         return await service.deleteItem({
           _id: req.params._id,

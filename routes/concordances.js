@@ -1,7 +1,7 @@
 import express from "express"
 import { ConcordanceService } from "../services/concordances.js"
-import * as utils from "../utils/middleware.js"
-import { wrapAsync, wrapDownload } from "../utils/middleware.js"
+import { adjust, bodyParser } from "../utils/middleware.js"
+import { wrapAsync, wrapDownload, supportDownloadFormats, returnJSON, handleDownload } from "./utils.js"
 import { useAuth } from "../utils/auth.js"
 import { readRoute, createRoute, updateRoute, deleteRoute } from "./common.js"
 
@@ -20,11 +20,11 @@ export default config => {
     router.get(
       "/:_id",
       useAuth(concordances.read.auth),
-      utils.supportDownloadFormats(["json", "ndjson"]),
+      supportDownloadFormats(["json", "ndjson"]),
       wrapAsync(async req => service.getItem(req.params._id)),
-      wrapDownload(utils.adjust, false),
-      wrapDownload(utils.returnJSON, false),
-      wrapDownload(utils.handleDownload("concordance"), true),
+      wrapDownload(adjust, false),
+      wrapDownload(returnJSON, false),
+      wrapDownload(handleDownload("concordance"), true),
     )
   }
 
@@ -36,7 +36,7 @@ export default config => {
     router.put(
       "/:_id",
       useAuth(concordances.update.auth),
-      utils.bodyParser,
+      bodyParser,
       wrapAsync(async (req) => {
         return await service.putConcordance({
           _id: req.params._id,
@@ -45,14 +45,14 @@ export default config => {
           existing: req.existing,
         })
       }),
-      utils.adjust,
-      utils.returnJSON,
+      adjust,
+      returnJSON,
     )
 
     router.patch(
       "/:_id",
       useAuth(concordances.update.auth),
-      utils.bodyParser,
+      bodyParser,
       wrapAsync(async (req) => {
         return await service.patchConcordance({
           _id: req.params._id,
@@ -61,8 +61,8 @@ export default config => {
           existing: req.existing,
         })
       }),
-      utils.adjust,
-      utils.returnJSON,
+      adjust,
+      returnJSON,
     )
   }
 
@@ -70,7 +70,7 @@ export default config => {
     router.delete(
       "/:_id",
       useAuth(concordances.delete.auth),
-      utils.bodyParser,
+      bodyParser,
       wrapAsync(async (req) => {
         return await service.deleteItem({
           _id: req.params._id,

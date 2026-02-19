@@ -1,7 +1,7 @@
 import express from "express"
 import { AnnotationService } from "../services/annotations.js"
-import * as utils from "../utils/middleware.js"
-import { wrapAsync } from "../utils/middleware.js"
+import { adjust, bodyParser } from "../utils/middleware.js"
+import { wrapAsync, returnJSON } from "./utils.js"
 import { useAuth } from "../utils/auth.js"
 import { readRoute, createRoute, updateRoute, deleteRoute } from "./common.js"
 
@@ -24,8 +24,8 @@ export default config => {
       "/:_id",
       useAuth(annotations.read.auth),
       wrapAsync(async req => service.getItem(req.params._id)),
-      utils.adjust,
-      utils.returnJSON,
+      adjust,
+      returnJSON,
     )
   }
 
@@ -33,7 +33,7 @@ export default config => {
     router.put(
       "/:_id",
       useAuth(annotations.update.auth),
-      utils.bodyParser,
+      bodyParser,
       wrapAsync(async (req) => {
         return await service.updateItem({
           _id: req.params._id,
@@ -42,14 +42,14 @@ export default config => {
           existing: req.existing,
         })
       }),
-      utils.adjust,
-      utils.returnJSON,
+      adjust,
+      returnJSON,
     )
 
     router.patch(
       "/:_id",
       useAuth(annotations.update.auth),
-      utils.bodyParser,
+      bodyParser,
       wrapAsync(async (req) => {
         return await service.patchAnnotation({
           _id: req.params._id,
@@ -58,8 +58,8 @@ export default config => {
           existing: req.existing,
         })
       }),
-      utils.adjust,
-      utils.returnJSON,
+      adjust,
+      returnJSON,
     )
   }
 
@@ -67,7 +67,7 @@ export default config => {
     router.delete(
       "/:_id",
       useAuth(annotations.delete.auth),
-      utils.bodyParser,
+      bodyParser,
       wrapAsync(async (req) => {
         return await service.deleteItem({
           uri: req.params._id,

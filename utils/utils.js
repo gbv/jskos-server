@@ -14,20 +14,15 @@ export function removeNullProperties(obj) {
  * @param {(Object|Object[])} json JSON object or array of objects
  * @param {number} [depth=0] Should not be set when called from outside
  */
-export function cleanJSON(json, depth = 0, closedWorld = true) {
+export function cleanJSON(json, depth = 0) {
   if (Array.isArray(json)) {
-    json.forEach(value => cleanJSON(value, depth, closedWorld))
+    json.forEach(value => cleanJSON(value, depth))
   } else if (_.isObject(json)) {
     _.forOwn(json, (value, key) => {
-      if (
-        // Remove top level empty arrays/objects if closedWorldAssumption is set to false
-        (depth === 0 && !closedWorld && (_.isEqual(value, {}) || _.isEqual(value, [])))
-        // Remove all fields started with _
-        || key.startsWith("_")
-      ) {
+      if (key.startsWith("_")) {
         _.unset(json, key)
       } else {
-        cleanJSON(value, depth + 1, closedWorld)
+        cleanJSON(value, depth + 1)
       }
     })
   }

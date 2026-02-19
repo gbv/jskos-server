@@ -1,5 +1,6 @@
 import config from "./config/index.js"
-import * as utils from "./utils/middleware.js"
+import { addDefaultHeaders } from "./utils/middleware.js"
+import { addMiddlewareProperties } from "./utils/defaults.js"
 import express from "express"
 import { createDatabase } from "./utils/db.js"
 import morgan from "morgan"
@@ -84,7 +85,7 @@ if (config.verbosity === true || config.verbosity === "log") {
 }
 
 // Add default headers
-app.use(utils.addDefaultHeaders)
+app.use(addDefaultHeaders)
 
 // Disable client side caching
 app.use(nocache())
@@ -94,7 +95,7 @@ app.set("etag", false)
 app.use(express.urlencoded({ extended: false }))
 
 // Set some properties on req that will be used by other middleware
-app.use(utils.addMiddlewareProperties)
+app.use(addMiddlewareProperties(config))
 
 // Add routes
 

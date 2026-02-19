@@ -1,4 +1,8 @@
-## 2.4.0 (draft)
+## 2.4.1
+
+- Remove option "closedWorldAssumption" (always true)
+
+## 2.4.0
 
 - update to JSKOS specification 0.7.1
 - extend documentation

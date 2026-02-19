@@ -1,7 +1,8 @@
 import { useAuth } from "../utils/auth.js"
-import { bodyParser, wrapAsync, supportDownloadFormats, returnJSON, addPaginationHeaders, handleDownload, wrapDownload, adjust } from "../utils/middleware.js"
+import { bodyParser, addPaginationHeaders, adjust } from "../utils/middleware.js"
+import { wrapAsync, supportDownloadFormats, returnJSON, handleDownload, wrapDownload } from "./utils.js"
 
-export function readRoute(router, path, config, service, name, formats=[]) {
+export function readRoute(router, path, config, service, name, formats = []) {
   if (config) {
     router.get(
       path,

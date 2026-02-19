@@ -55,7 +55,7 @@
       ]
     },
     "closedWorldAssumption": {
-      "description": "If false, empty JSKOS closed world statements (see specs) will be removed from returned entities",
+      "description": "DEPRECATED",
       "type": "boolean"
     },
     "namespace": {

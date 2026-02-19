@@ -1,6 +1,6 @@
 import express from "express"
 import { DataService } from "../services/data.js"
-import { wrapAsync, supportDownloadFormats, returnJSON } from "../utils/middleware.js"
+import { wrapAsync, supportDownloadFormats, returnJSON } from "./utils.js"
 import { useAuth } from "../utils/auth.js"
 
 export default config => {

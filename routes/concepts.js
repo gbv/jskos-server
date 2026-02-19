@@ -1,7 +1,7 @@
 import express from "express"
 import { ConceptService } from "../services/concepts.js"
-import * as utils from "../utils/middleware.js"
-import { wrapAsync } from "../utils/middleware.js"
+import { adjust, addPaginationHeaders } from "../utils/middleware.js"
+import { wrapAsync, supportDownloadFormats, returnJSON } from "./utils.js"
 import { useAuth } from "../utils/auth.js"
 import { readRoute, createRoute, updateRoute, deleteRoute, suggestRoute } from "./common.js"
 
@@ -29,21 +29,21 @@ export default config => {
       router.get(
         prefix + "/narrower",
         useAuth(concepts.read.auth),
-        utils.supportDownloadFormats([]),
+        supportDownloadFormats([]),
         wrapAsync(async req => service.getNarrower(req.query)),
-        utils.addPaginationHeaders,
-        utils.adjust,
-        utils.returnJSON,
+        addPaginationHeaders,
+        adjust,
+        returnJSON,
       )
 
       router.get(
         prefix + "/ancestors",
         useAuth(concepts.read.auth),
-        utils.supportDownloadFormats([]),
+        supportDownloadFormats([]),
         wrapAsync(async req => service.getAncestors(req.query)),
-        utils.addPaginationHeaders,
-        utils.adjust,
-        utils.returnJSON,
+        addPaginationHeaders,
+        adjust,
+        returnJSON,
       )
 
       suggestRoute(router, prefix + "/suggest", concepts.read, service)
@@ -51,11 +51,11 @@ export default config => {
       router.get(
         prefix + "/search",
         useAuth(concepts.read.auth),
-        utils.supportDownloadFormats([]),
+        supportDownloadFormats([]),
         wrapAsync(async req => await service.search(req.query)),
-        utils.addPaginationHeaders,
-        utils.adjust,
-        utils.returnJSON,
+        addPaginationHeaders,
+        adjust,
+        returnJSON,
       )
     }
   }

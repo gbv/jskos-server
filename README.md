@@ -146,7 +146,6 @@ All missing keys will be defaulted from `config/config.default.json`. See [endpo
   "env": "development",
   "title": "JSKOS Server",
   "version": null,
-  "closedWorldAssumption": true,
   "port": 3000,
   "proxies": [],
   "mongo": {

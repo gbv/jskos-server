@@ -1,56 +1,17 @@
 import config from "../config/index.js"
 import _ from "lodash"
-import jskos from "jskos-tools"
-import { DuplicateEntityError, EntityNotFoundError, CreatorDoesNotMatchError, DatabaseInconsistencyError, InvalidBodyError } from "../errors/index.js"
+import { EntityNotFoundError, CreatorDoesNotMatchError, DatabaseInconsistencyError, InvalidBodyError } from "../errors/index.js"
 
-import { Transform, Readable } from "node:stream"
-import JSONStream from "JSONStream"
 import * as anystream from "json-anystream"
 import express from "express"
 
-import { cleanJSON } from "./utils.js"
-import { getUrisOfUser } from "./users.js"
 import { createServices } from "../services/index.js"
 import { createAdjuster } from "./adjust.js"
 
+import { matchesCreator, getCreator, handleCreatorForObject } from "../routes/utils.js"
+
 const services = createServices(config)
 const adjust = createAdjuster(config, services)
-
-/**
- * Wraps an async middleware function that returns data in the Promise.
- * The result of the Promise will be written into req.data for access by following middlewaren.
- * A rejected Promise will be caught and relayed to the Express error handling.
- *
- * adjusted from: https://thecodebarbarian.com/80-20-guide-to-express-error-handling
- */
-const wrapAsync = (fn) => {
-  return (req, res, next) => {
-    fn(req, res, next).then(data => {
-      // On success, save the result of the Promise in req.data.
-      req.data = data
-      next()
-    }).catch(error => {
-      // Catch and change certain errors
-      if (error.code === 11000) {
-        const _id = _.get(error, "keyValue._id") || _.get(error, "writeErrors[0].err.op._id")
-        error = new DuplicateEntityError(null, `${_id} (${req.type})`)
-      }
-      // Pass error to the next error middleware.
-      next(error)
-    })
-  }
-}
-
-// Middleware wrapper that calls the middleware depending on req.query.download
-const wrapDownload = (fn, isDownload = true) => {
-  return (req, res, next) => {
-    if (!!req.query.download === isDownload) {
-      fn(req, res, next)
-    } else {
-      next()
-    }
-  }
-}
 
 const buildUrlForLinkHeader = ({ query, rel, req }) => {
   let url = config.baseUrl.substring(0, config.baseUrl.length - 1) + req.path
@@ -63,44 +24,6 @@ const buildUrlForLinkHeader = ({ query, rel, req }) => {
     index += 1
   })
   return `<${url}>; rel="${rel}"`
-}
-
-/**
- * Returns `true` if the creator of `object` matches `user`, `false` if not.
- * `object.creator` can be
- * - an array of objects
- * - an object
- * - a string
- * The object for a creator will be checked for properties `uri` (e.g. JSKOS mapping) and `id` (e.g. annotations).
- *
- * If config.auth.allowCrossUserEditing is enabled, this returns true as long as a user and object are given.
- *
- * @param {object} options.req the request object (that includes req.user, req.crossUser, and req.auth)
- * @param {object} options.object any object that has the property `creator`
- * @param {boolean} options.withContributors allow contributors to be matched (for object with superordinated object)
- */
-const matchesCreator = ({ req = {}, object, withContributors = false }) => {
-  const { user, crossUser, auth } = req
-  if (!auth) {
-    return true
-  }
-  if (!object || !user) {
-    return false
-  }
-  const userUris = getUrisOfUser(user)
-  if (crossUser === true || _.intersection(crossUser || [], userUris).length) {
-    return true
-  }
-  // Support arrays, objects, and strings as creators
-  let creators = Array.isArray(object.creator) ? object.creator : (_.isObject(object.creator) ? [object.creator] : [{ uri: object.creator }])
-  // Also check contributors if requested
-  let contributors = withContributors ? (object.contributor || []) : []
-  for (let creator of creators.concat(contributors)) {
-    if (userUris.includes(creator.uri) || userUris.includes(creator.id)) {
-      return true
-    }
-  }
-  return false
 }
 
 /**
@@ -127,110 +50,6 @@ const addDefaultHeaders = (req, res, next) => {
     links[0] = links[0].replace(req.path, `/concepts${req.path}`)
     links.push("<https://github.com/gbv/jskos-server/releases/tag/v2.0.0>; rel=\"deprecation\"")
     res.set("Link", links.join(","))
-  }
-  next()
-}
-
-/**
- * Middleware that adds default properties:
- *
- * - If req.query exists, make sure req.query.limit and req.query.offset are set as numbers and make req.bulk a Boolean.
- * - If possible, set req.type depending on the endpoint (one of concepts, schemes, mappings, annotations, suggest).
- */
-const addMiddlewareProperties = (req, res, next) => {
-
-  if (req.query) {
-    const query = { ...req.query }
-
-    // Limit for pagination
-    const defaultLimit = 100
-    query.limit = parseInt(req.query.limit)
-    if (isNaN(query.limit) || req.query.limit <= 0) {
-      query.limit = defaultLimit
-    }
-    // Offset for pagination
-    const defaultOffset = 0
-    query.offset = parseInt(req.query.offset)
-    if (isNaN(query.offset) || req.query.offset < 0) {
-      query.offset = defaultOffset
-    }
-    // Bulk option for POST endpoints
-    query.bulk = query.bulk === "true" || query.bulk === "1"
-
-    // req.query is read-only since Express 5, so this is a hack.
-    // better create a custom query parser instead
-    // See <https://stackoverflow.com/questions/79597051/is-there-any-way-to-modify-req-query-in-express-v5>
-    Object.defineProperty(
-      req,
-      "query",
-      {
-        ...Object.getOwnPropertyDescriptor(req, "query"),
-        writable: false,
-        value: query,
-      })
-  }
-
-  // req.path -> req.type
-  let type = req.path.substring(1)
-  type = type.substring(0, type.indexOf("/") == -1 ? type.length : type.indexOf("/"))
-  if (type == "voc") {
-    if (req.path.includes("/top") || (req.path.includes("/concepts") && req.method !== "DELETE")) {
-      type = "concepts"
-    } else {
-      type = "schemes"
-    }
-  }
-  if (type == "mappings") {
-    if (req.path.includes("/suggest")) {
-      type = "suggest"
-    } else if (req.path.includes("/voc")) {
-      type = "schemes"
-    }
-  }
-  if (["concepts", "narrower", "ancestors", "search"].includes(type)) {
-    if (req.path.includes("/suggest")) {
-      type = "suggest"
-    } else {
-      type = "concepts"
-    }
-  }
-  if (type == "suggest" && _.get(req, "query.format", "").toLowerCase() == "jskos") {
-    type = "concepts"
-  }
-  req.type = type
-
-  // Add req.action
-  const action = {
-    GET: "read",
-    POST: "create",
-    PUT: "update",
-    PATCH: "update",
-    DELETE: "delete",
-  }[req.method]
-  req.action = action
-  // Add req.anonymous, req.crossUser, and req.auth if necessary
-  if (config[type] && config[type].anonymous) {
-    req.anonymous = true
-  }
-  if (["PUT", "PATCH", "DELETE"].includes(req.method)) {
-    if (config[type] && config[type][action] && config[type][action].crossUser) {
-      req.crossUser = config[type][action].crossUser
-    }
-  }
-  if (config[type] && config[type][action] && config[type][action].auth) {
-    req.auth = true
-  }
-  next()
-}
-
-/**
- * Middleware that receives a list of supported download formats and overrides req.query.download if the requested format is not supported.
- *
- * @param {Array} formats
- */
-const supportDownloadFormats = (formats) => (req, res, next) => {
-  if (req.query.download && !formats.includes(req.query.download)) {
-    req.query.download = null
   }
   next()
 }
@@ -294,232 +113,6 @@ const addPaginationHeaders = (req, res, next) => {
   // Set Link header
   res.set("Link", links.join(","))
   next()
-}
-
-/**
- * Middleware that returns JSON given in req.data.
- */
-const returnJSON = (req, res) => {
-  // Convert Mongoose documents into plain objects
-  let data
-  if (Array.isArray(req.data)) {
-    data = req.data.map(doc => doc?.toObject ? doc.toObject() : doc)
-    // Preserve totalCount
-    data.totalCount = req.data.totalCount
-  } else {
-    data = req.data?.toObject ? req.data?.toObject() : req.data
-  }
-  cleanJSON(data, 0, config.closedWorldAssumption)
-  let statusCode = 200
-  if (req.method == "POST") {
-    statusCode = 201
-  }
-  res.status(statusCode).json(data)
-}
-
-/**
- * Middleware that handles download streaming.
- * Requires a database cursor in req.data.
- *
- * @param {String} filename - resulting filename without extension
- */
-const handleDownload = (filename) => (req, res) => {
-  let results = req.data, single = false
-  // Convert to stream if necessary
-  if (!(results instanceof Readable)) {
-    if (!Array.isArray(results)) {
-      single = true
-    }
-    results = new Readable({ objectMode: true })
-    results.push(req.data)
-    results.push(null)
-  }
-  /**
-   * Transformation object to remove _id parameter from objects in a stream.
-   */
-  const removeIdTransform = new Transform({
-    objectMode: true,
-    transform(chunk, encoding, callback) {
-      cleanJSON(chunk)
-      this.push(chunk)
-      callback()
-    },
-  })
-  // Default transformation: JSON
-  let transform = JSONStream.stringify(single ? "" : "[\n\t", ",\n\t", single ? "\n" : "\n]\n")
-  let fileEnding = "json"
-  let first = true, delimiter = ","
-  let csv
-  switch (req.query.download) {
-    case "ndjson":
-      fileEnding = "ndjson"
-      res.set("Content-Type", "application/x-ndjson; charset=utf-8")
-      transform = new Transform({
-        objectMode: true,
-        transform(chunk, encoding, callback) {
-          this.push(JSON.stringify(chunk) + "\n")
-          callback()
-        },
-      })
-      break
-    case "csv":
-    case "tsv":
-      fileEnding = req.query.download
-      if (req.query.download == "csv") {
-        delimiter = ","
-        res.set("Content-Type", "text/csv; charset=utf-8")
-      } else {
-        delimiter = "\t"
-        res.set("Content-Type", "text/tab-separated-values; charset=utf-8")
-      }
-      csv = jskos.mappingCSV({
-        lineTerminator: "\r\n",
-        creator: true,
-        schemes: true,
-        delimiter,
-      })
-      transform = new Transform({
-        objectMode: true,
-        transform(chunk, encoding, callback) {
-          // Small workaround to prepend a line to CSV
-          if (first) {
-            this.push(`"fromScheme"${delimiter}"fromNotation"${delimiter}"toScheme"${delimiter}"toNotation"${delimiter}"toNotation2"${delimiter}"toNotation3"${delimiter}"toNotation4"${delimiter}"toNotation5"${delimiter}"type"${delimiter}"creator"\n`)
-            first = false
-          }
-          this.push(csv.fromMapping(chunk, { fromCount: 1, toCount: 5 }))
-          callback()
-        },
-      })
-      break
-  }
-  // Add file header
-  res.set("Content-disposition", `attachment; filename=${filename}.${fileEnding}`)
-  // results is a database cursor
-  results
-    .pipe(removeIdTransform)
-    .pipe(transform)
-    .pipe(res)
-}
-
-/**
- * Extracts a creator objects from a request.
- *
- * @param {*} req request object
- */
-const getCreator = (req) => {
-  let creator = {}
-  const creatorUriPath = req.type === "annotations" ? "id" : "uri"
-  const creatorNamePath = req.type === "annotations" ? "name" : "prefLabel.en"
-  const userUris = getUrisOfUser(req.user)
-  if (req.user && !userUris.includes(req.query.identity)) {
-    _.set(creator, creatorUriPath, req.user.uri)
-  } else if (req.query.identity) {
-    _.set(creator, creatorUriPath, req.query.identity)
-  }
-  if (req.query.identityName) {
-    _.set(creator, creatorNamePath, req.query.identityName)
-  } else if (req.query.identityName !== "") {
-    const name = _.get(Object.values(_.get(req, "user.identities", [])).find(i => i.uri === _.get(creator, creatorUriPath)) || req.user, "name")
-    if (name) {
-      _.set(creator, creatorNamePath, name)
-    }
-  }
-  if (!_.get(creator, creatorUriPath) && !_.get(creator, creatorNamePath)) {
-    creator = null
-  }
-  return creator
-}
-
-/**
- * See https://github.com/gbv/jskos-server/issues/153#issuecomment-997847433
- *
- * @param {Object} options.object JSKOS object
- * @param {Object} [options.existing] existing object from database for PUT/PATCH
- * @param {Object} [options.creator] creator object, usually extracted via `getCreator` above
- * @param {Object} options.req request object (necessary for `type`, `user`, `method`, `anonymous`, and `auth`)
- */
-const handleCreatorForObject = ({ object, existing, creator, req }) => {
-  if (!object) {
-    return object
-  }
-
-  if (req.type === "annotations") {
-    // No "contributor" for annotations
-    delete object.contributor
-  } else if (creator) {
-    // JSKOS creator has to be an array
-    creator = [creator]
-  }
-
-  const userUris = getUrisOfUser(req.user)
-  const anonymous = req.anonymous
-  const auth = req.auth
-
-  if (req.method === "POST") {
-    if (anonymous) {
-      delete object.creator
-      delete object.contributor
-    } else if (auth) {
-      if (creator) {
-        object.creator = creator
-      } else {
-        delete object.creator
-      }
-    }
-  } else if (req.method === "PUT" || req.method === "PATCH") {
-    if (anonymous) {
-      if (req.method === "PUT") {
-        object.creator = existing && existing.creator
-        object.contributor = existing && existing.contributor
-      } else {
-        delete object.creator
-        delete object.contributor
-      }
-    } else if (auth) {
-      if (existing && existing.creator) {
-        // Don't allow overriding existing creator
-        if (req.method === "PUT") {
-          object.creator = existing.creator
-        } else {
-          delete object.creator
-        }
-      } else if (object.creator && creator) {
-        // If creator is overridden, it can only be the user
-        object.creator = creator
-      }
-      // Update creator and/or add to contributor
-      if (creator) {
-        if (req.type === "annotations") {
-          // Only update creator if it's the user
-          if (userUris.includes((object.creator || existing && existing.creator || {}).id)) {
-            object.creator = creator
-          }
-        } else {
-          const findUserPredicate = c => jskos.compare(c, { identifier: userUris })
-          const objectCreatorIndex = (object.creator || []).findIndex(findUserPredicate)
-          const existingCreatorIndex = (existing && existing.creator || []).findIndex(findUserPredicate)
-          const objectContributorIndex = (object.contributor || []).findIndex(findUserPredicate)
-          const existingContributorIndex = (existing && existing.contributor || []).findIndex(findUserPredicate)
-          if (objectCreatorIndex !== -1) {
-            object.creator[objectCreatorIndex] = creator[0]
-          } else if (objectContributorIndex !== -1) {
-            object.contributor.splice(objectContributorIndex, 1)
-            object.contributor.push(creator[0])
-          } else if (existingCreatorIndex !== -1 && !object.creator) {
-            object.creator = existing.creator
-            object.creator[existingCreatorIndex] = creator[0]
-          } else if (existingContributorIndex !== -1 && !object.contributor) {
-            object.contributor = existing.contributor
-            object.contributor.splice(existingContributorIndex, 1)
-            object.contributor.push(creator[0])
-          } else {
-            object.contributor = (object.contributor || existing.contributor || []).concat(creator)
-          }
-        }
-      }
-    }
-  }
-  return object
 }
 
 /**
@@ -620,17 +213,8 @@ const bodyParser = (req, res, next) => {
 }
 
 export {
-  wrapAsync,
-  wrapDownload,
   adjust,
-  matchesCreator,
   addDefaultHeaders,
-  supportDownloadFormats,
-  addMiddlewareProperties,
   addPaginationHeaders,
-  returnJSON,
-  handleDownload,
   bodyParser,
-  getCreator,
-  handleCreatorForObject,
 }

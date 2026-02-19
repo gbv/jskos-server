@@ -1,6 +1,6 @@
 import express from "express"
 import { ValidateService } from "../services/validate.js"
-import { wrapAsync, returnJSON } from "../utils/middleware.js"
+import { wrapAsync, returnJSON } from "./utils.js"
 import axios from "axios"
 import { MalformedRequestError } from "../errors/index.js"
 
