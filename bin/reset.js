@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
-import * as db from "../utils/db.js"
+import config from "../config/index.js"
+import { createDatabase } from "../utils/db.js"
+const db = createDatabase(config)
 import yesno from "yesno"
 import jskos from "jskos-tools"
 import _ from "lodash"
@@ -123,7 +125,7 @@ if (cli.flags.scheme && cli.flags.concordance) {
   })
 }
 
-import config from "../config/index.js"
+
 import { createServices } from "../services/index.js"
 const services = createServices(config)
 import { models } from "../models/index.js"

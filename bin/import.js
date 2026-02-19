@@ -162,7 +162,7 @@ if (cli.flags.concordance && type != "mapping") {
   })
 }
 
-if (cli.flags.bulk && ["concordance","concordance","registry"].find(type)) {
+if (cli.flags.bulk && ["concordance", "concordance", "registry"].find(type)) {
   logError({
     message: `The --nobulk option is not supported with type ${type}`,
     exit: true,
@@ -206,7 +206,8 @@ import config from "../config/index.js"
 import { v5 as uuidv5 } from "uuid"
 import path from "node:path"
 import * as anystream from "json-anystream"
-import * as db from "../utils/db.js"
+import { createDatabase } from "../utils/db.js"
+const db = createDatabase(config)
 
 import { createServices } from "../services/index.js"
 const services = createServices(config)
@@ -215,9 +216,9 @@ const allTypes = Object.keys(services)
 // Also import models for Mapping and Concordance
 // TODO: This won't be needed if these are imported through the service as well.
 import { Mapping, Concordance } from "../models/index.js"
-import { bulkOperationForEntities, addMappingSchemes} from "../utils/utils.js"
+import { bulkOperationForEntities, addMappingSchemes } from "../utils/utils.js"
 
-;(async () => {
+; (async () => {
   try {
     await db.connect()
   } catch (error) {

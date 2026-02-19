@@ -4,17 +4,20 @@ import assert from "assert"
 import config from "../config/index.js"
 import { app } from "../server.js"
 import { setupChangesApi } from "../utils/changes.js"
+import { createDatabase } from "../utils/db.js"
 import { objectTypes } from "jskos-tools"
 import mongoose from "mongoose"
 
+const db = createDatabase(config)
+
 // Map each route to its collection name and expected JSKOS type
 const routes = {
-  voc:          { coll: "terminologies", type: "ConceptScheme"  },
-  concepts:     { coll: "concepts",       type: "Concept"        },
-  mappings:     { coll: "mappings",       type: "ConceptMapping" },
-  concordances: { coll: "concordances",   type: "Concordance"    },
-  annotations:  { coll: "annotations",    type: "Annotation"     },
-  registries:   { coll: "registries",     type: "Registry"       },
+  voc: { coll: "terminologies", type: "ConceptScheme" },
+  concepts: { coll: "concepts", type: "Concept" },
+  mappings: { coll: "mappings", type: "ConceptMapping" },
+  concordances: { coll: "concordances", type: "Concordance" },
+  annotations: { coll: "annotations", type: "Annotation" },
+  registries: { coll: "registries", type: "Registry" },
 }
 
 describe("Change‐Streams API setup", () => {
@@ -35,7 +38,7 @@ describe("Change‐Streams API setup", () => {
     config.changes = false
 
     // call the exported setup function
-    await setupChangesApi(app, config)
+    await setupChangesApi(app, config, db)
 
     // assert our early‐return message was logged
     loggedMessages.includes("Change API is disabled by configuration.")
@@ -48,7 +51,7 @@ describe("WebSocket Change‐Streams (integration)", function () {
   before(async () => {
     await setupInMemoryMongo({ replSet: true })
     config.changes = true
-    await setupChangesApi(app, config)
+    await setupChangesApi(app, config, db)
     await createCollectionsAndIndexes()
     // optionally spin up your HTTP+WS server here
   })
@@ -73,15 +76,15 @@ describe("WebSocket Change‐Streams (integration)", function () {
 
 function lifecycleTests(route, { coll, type }) {
   const uriBase = `urn:test:${route}`
-  const typeUri  = objectTypes[type].type?.[0]
+  const typeUri = objectTypes[type].type?.[0]
 
   describe(`${route}/changes`, () => {
     it("emits create", done => {
       const ws = new WebSocket(`ws://localhost:${config.port}/${route}/changes`)
       ws.on("open", async () => {
         await mongoose.connection.db.collection(coll).insertOne({
-          uri:       `${uriBase}:1`,
-          type:      typeUri,
+          uri: `${uriBase}:1`,
+          type: typeUri,
           prefLabel: { en: ["A"] },
         })
       })
@@ -108,8 +111,8 @@ function lifecycleTests(route, { coll, type }) {
       const ws = new WebSocket(`ws://localhost:${config.port}/${route}/changes`)
       ws.on("open", async () => {
         const { insertedId } = await mongoose.connection.db.collection(coll).insertOne({
-          uri:       `${uriBase}:2`,
-          type:      typeUri,
+          uri: `${uriBase}:2`,
+          type: typeUri,
           prefLabel: { en: ["B"] },
         })
         await mongoose.connection.db.collection(coll).updateOne(
@@ -139,8 +142,8 @@ function lifecycleTests(route, { coll, type }) {
       const ws = new WebSocket(`ws://localhost:${config.port}/${route}/changes`)
       ws.on("open", async () => {
         const { insertedId } = await mongoose.connection.db.collection(coll).insertOne({
-          uri:       `${uriBase}:3`,
-          type:      typeUri,
+          uri: `${uriBase}:3`,
+          type: typeUri,
           prefLabel: { en: ["C"] },
         })
         await mongoose.connection.db.collection(coll).deleteOne({ _id: insertedId })

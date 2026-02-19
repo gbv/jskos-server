@@ -1,106 +1,109 @@
-import config from "../config/index.js"
 import { Upgrader } from "../utils/version.js"
 
-const upgrader = new Upgrader(config)
-
-import mongoose from "mongoose"
-const connection = mongoose.connection
 import { Meta } from "../models/meta.js"
+import mongoose from "mongoose"
 
 // Set mongoose buffering options
 mongoose.set("bufferCommands", true)
 mongoose.set("bufferTimeoutMS", 30000)
 mongoose.set("strictQuery", false)
 
-connection.on("connected", () => {
-  config.warn("Connected to database")
-})
-const onDisconnected = () => {
-  config.warn("Disconnected from database, waiting for automatic reconnect...")
-}
 
-export {
-  mongoose,
-  connection,
-}
+export function createDatabase(config) {
+  const upgrader = new Upgrader(config)
+  const connection = mongoose.connection
 
-export async function connect(retry = false) {
-  connection.on("disconnected", onDisconnected)
-  function addErrorHandler() {
-    connection.on("error", (error) => {
-      config.error("Database error", error)
-    })
+  connection.on("connected", () => {
+    config.warn("Connected to database")
+  })
+  const onDisconnected = () => {
+    config.warn("Disconnected from database, waiting for automatic reconnect...")
   }
-  // If retry === false, add error handler before connecting
-  !retry && addErrorHandler()
-  async function _connect() {
-    const mongoUri = process.env.MONGO_URI || `${config.mongo.url}/${config.mongo.db}`
-    return await mongoose.connect(mongoUri, config.mongo.options)
-  }
-  let result
-  while (!result) {
-    try {
-      result = await _connect()
-    } catch (error) {
-      if (!retry) {
-        throw error
+
+  async function connect(retry = false) {
+    connection.on("disconnected", onDisconnected)
+    function addErrorHandler() {
+      connection.on("error", (error) => {
+        config.error("Database error", error)
+      })
+    }
+    // If retry === false, add error handler before connecting
+    !retry && addErrorHandler()
+    async function _connect() {
+      const mongoUri = process.env.MONGO_URI || `${config.mongo.url}/${config.mongo.db}`
+      return await mongoose.connect(mongoUri, config.mongo.options)
+    }
+    let result
+    while (!result) {
+      try {
+        result = await _connect()
+      } catch (error) {
+        if (!retry) {
+          throw error
+        }
+        config.error(error)
       }
-      config.error(error)
+      if (!result) {
+        config.error("Error connecting to database, trying again in 10 seconds...")
+        await new Promise(resolve => setTimeout(resolve, 10000))
+      }
     }
-    if (!result) {
-      config.error("Error connecting to database, trying again in 10 seconds...")
-      await new Promise(resolve => setTimeout(resolve, 10000))
-    }
-  }
-  // If retry === true, add error handler after connecting
-  retry && addErrorHandler()
-  let collections, meta
-  try {
-    // Check meta collection whether upgrade script is necessary.
-    collections = (await connection.db.listCollections().toArray()).map(c => c.name)
-    if (!collections.length) {
-      // no collections = first launch of jskos-server
-      meta = new Meta({ version: config.serverVersion })
-      await meta.save()
-    } else if (!collections.includes("meta")) {
-      // meta does not exist = upgrade from <= 1.1.9
-      meta = new Meta({ version: "1.1.9" })
-      await meta.save()
-    } else {
-      // get version from meta
-      meta = await Meta.findOne()
-    }
-    if (meta && upgrader.getUpgrades(meta.version).length) {
-      console.warn("Info: jskos-server was updated. Please run \"npm run upgrade\" to perform necessary upgrades to ensure full functionalities of all features.")
-    }
-  } catch (error) {
-    // do nothing
-  }
-  return result
-}
-
-export function disconnect() {
-  connection.removeListener("disconnected", onDisconnected)
-  config.log("Disconnected from database (on purpose)")
-  return mongoose.disconnect()
-}
-
-/**
- * Waits for the MongoDB replica set to become available
- * by retrying replSetGetStatus until success or timeout.
- */
-export async function waitForReplicaSet({ retries = 10, interval = 3000 } = {}) {
-  for (let i = 0; i < retries; i++) {
+    // If retry === true, add error handler after connecting
+    retry && addErrorHandler()
+    let collections, meta
     try {
-      await connection.db.admin().command({ replSetGetStatus: 1 })
-      return true
-    } catch (err) {
-      console.log(
-        `Replica set not yet ready (attempt ${i + 1}/${retries}), retrying in ${interval}ms...`,
-      )
-      await new Promise(resolve => setTimeout(resolve, interval))
+      // Check meta collection whether upgrade script is necessary.
+      collections = (await connection.db.listCollections().toArray()).map(c => c.name)
+      if (!collections.length) {
+        // no collections = first launch of jskos-server
+        meta = new Meta({ version: config.serverVersion })
+        await meta.save()
+      } else if (!collections.includes("meta")) {
+        // meta does not exist = upgrade from <= 1.1.9
+        meta = new Meta({ version: "1.1.9" })
+        await meta.save()
+      } else {
+        // get version from meta
+        meta = await Meta.findOne()
+      }
+      if (meta && upgrader.getUpgrades(meta.version).length) {
+        console.warn("Info: jskos-server was updated. Please run \"npm run upgrade\" to perform necessary upgrades to ensure full functionalities of all features.")
+      }
+    } catch (error) {
+      // do nothing
     }
+    return result
   }
-  return false
-}
 
+  function disconnect() {
+    connection.removeListener("disconnected", onDisconnected)
+    config.log("Disconnected from database (on purpose)")
+    return mongoose.disconnect()
+  }
+
+  /**
+   * Waits for the MongoDB replica set to become available
+   * by retrying replSetGetStatus until success or timeout.
+   */
+  async function waitForReplicaSet({ retries = 10, interval = 3000 } = {}) {
+    for (let i = 0; i < retries; i++) {
+      try {
+        await connection.db.admin().command({ replSetGetStatus: 1 })
+        return true
+      } catch (err) {
+        console.log(
+          `Replica set not yet ready (attempt ${i + 1}/${retries}), retrying in ${interval}ms...`,
+        )
+        await new Promise(resolve => setTimeout(resolve, interval))
+      }
+    }
+    return false
+  }
+
+  return {
+    connection,
+    connect,
+    disconnect,
+    waitForReplicaSet,
+  }
+}

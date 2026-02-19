@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 
 import yesno from "yesno"
-import * as db from "../utils/db.js"
+import config from "../config/index.js"
+import { createDatabase } from "../utils/db.js"
+const db = createDatabase(config)
 import { schemeService } from "../services/schemes.js"
 import jskos from "jskos-tools"
 import { Mapping } from "../models/mappings.js"
@@ -74,7 +76,7 @@ if (!scripts[scriptName]) {
   process.exit(1)
 }
 
-(async function() {
+(async function () {
   await db.connect(false)
   await scripts[scriptName]()
   await db.disconnect()

@@ -1,7 +1,7 @@
 import config from "./config/index.js"
 import * as utils from "./utils/middleware.js"
 import express from "express"
-import * as db from "./utils/db.js"
+import { createDatabase } from "./utils/db.js"
 import morgan from "morgan"
 import nocache from "nocache"
 
@@ -24,6 +24,7 @@ import expressWs from "express-ws"
 import { setupChangesApi, isChangesApiAvailable } from "./utils/changes.js"
 
 const __dirname = import.meta.dirname
+const db = createDatabase(config)
 const connection = db.connection
 
 config.log(`Running in ${config.env} mode.`)
@@ -170,7 +171,7 @@ app.use((error, req, res, next) => {
 })
 
 // Changes API
-await setupChangesApi(app, config)
+await setupChangesApi(app, config, db)
 
 const start = async () => {
   if (config.env == "test") {
