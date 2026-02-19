@@ -84,21 +84,6 @@
       "minimum": 0,
       "maximum": 65535
     },
-    "groups": {
-      "description": "Groups of identities",
-      "type": "object",
-      "patternProperties": {
-        "^([a-z0-9+.-]+):.*": {
-          "type": "object",
-          "properties": {
-            "identities": {
-              "$ref": "#/definitions/identities"
-            }
-          }
-        }
-      },
-      "additionalProperties": false
-    },
     "changesApi": {
       "description": "Ignored but allowed for backwards compatibility"
     },
@@ -154,7 +139,7 @@
       }
     },
     "auth": {
-      "description": "Describes authentication capabilities",
+      "description": "Describes authentication capabilities and groups of identities",
       "type": "object",
       "additionalProperties": false,
       "properties": {
@@ -177,6 +162,32 @@
     },
     "identityProviders": {
       "$ref": "#/definitions/identityProviders"
+    },
+    "identityGroups": {
+      "description": "Groups of identities",
+      "type": "object",
+      "patternProperties": {
+        "^([a-z0-9+.-]+):.*": {
+          "type": "object",
+          "properties": {
+            "identities": {
+              "$ref": "#/definitions/identities"
+            },
+            "claims": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "patternProperties": {
+                  "^.*$": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
     },
     "identities": {
       "$ref": "#/definitions/identities"

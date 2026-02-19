@@ -17,7 +17,7 @@ import createValidateRouter from "./routes/validate.js"
 import { serverStatus } from "./utils/status.js"
 
 import { ipcheck } from "./utils/ipcheck.js"
-import * as auth from "./utils/auth.js"
+import { useAuth } from "./utils/auth.js"
 import * as errors from "./errors/index.js"
 import portfinder from "portfinder"
 import expressWs from "express-ws"
@@ -127,7 +127,7 @@ app.use((req, res, next) => {
 app.use(ipcheck(config))
 
 // /checkAuth
-app.get("/checkAuth", auth.main, (req, res) => {
+app.get("/checkAuth", useAuth(true), (req, res) => {
   res.sendStatus(204)
 })
 

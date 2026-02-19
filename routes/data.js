@@ -1,7 +1,7 @@
 import express from "express"
 import { DataService } from "../services/data.js"
 import { wrapAsync, supportDownloadFormats, returnJSON } from "../utils/middleware.js"
-import * as auth from "../utils/auth.js"
+import { useAuth } from "../utils/auth.js"
 
 export default config => {
   const router = express.Router()
@@ -9,7 +9,7 @@ export default config => {
 
   router.get(
     "/",
-    auth.optional,
+    useAuth(false),
     supportDownloadFormats([]),
     wrapAsync(async req => dataService.getData(req)),
     returnJSON,

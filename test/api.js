@@ -32,6 +32,14 @@ const userWithModerating = {
 }
 const tokenWithModerating = jwt.sign({ user: userWithModerating }, "test")
 
+const userInGroup = {
+  uri: "http://in-group.user",
+  identities: {
+    test: {},
+  },
+}
+const tokenWithGroup = jwt.sign({ user: userInGroup }, "test")
+
 const userNotOnWhitelist = {
   uri: "http://test2.user",
   name: "Test User",
@@ -163,6 +171,17 @@ describe("Express Server", () => {
         })
     })
 
+    it("should be authorized for user in group", done => {
+      chai.request.execute(app)
+        .get("/checkAuth")
+        .query({ type: "concepts", action: "delete" })
+        .set("Authorization", `Bearer ${tokenWithGroup}`)
+        .end((err, res) => {
+          res.should.have.status(204)
+          done()
+        })
+    })
+
     it("should not be authorized for userNotOnWhitelist", done => {
       chai.request.execute(app)
         .get("/checkAuth")
@@ -190,10 +209,7 @@ describe("Express Server", () => {
     it("should not be authorized for userMissingIdentity for create annotations", done => {
       chai.request.execute(app)
         .get("/checkAuth")
-        .query({
-          type: "annotations",
-          action: "create",
-        })
+        .query({ type: "annotations", action: "create" })
         .set("Authorization", `Bearer ${tokenMissingIdentity}`)
         .end((err, res) => {
           res.should.have.status(403)
@@ -2419,4 +2435,36 @@ describe("Express Server", () => {
     })
 
   })
+
+  describe("DELETE /concepts", () => {
+
+    const concept = {
+      uri: "http://example.org/42",
+    }
+
+    it("should disallow with wrong identity", done => {
+      chai.request.execute(app)
+        .delete("/concepts")
+        .set("Authorization", `Bearer ${token}`)
+        .query(concept)
+        .end((err, res) => {
+          assert.equal(res.status, 403)
+          done()
+        })
+    })
+
+    it("should allow with identity in group", done => {
+      chai.request.execute(app)
+        .delete("/concepts")
+        .set("Authorization", `Bearer ${tokenWithGroup}`)
+        .query(concept)
+        .end((err, res) => {
+          // TODO: use another concept that exist
+          assert.equal(res.status, 404)
+          done()
+        })
+    })
+
+  })
+
 })

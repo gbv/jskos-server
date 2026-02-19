@@ -1,11 +1,11 @@
-import * as auth from "../utils/auth.js"
+import { useAuth } from "../utils/auth.js"
 import { bodyParser, wrapAsync, supportDownloadFormats, returnJSON, addPaginationHeaders, handleDownload, wrapDownload, adjust } from "../utils/middleware.js"
 
 export function readRoute(router, path, config, service, name, formats=[]) {
   if (config) {
     router.get(
       path,
-      config.auth ? auth.main : auth.optional,
+      useAuth(config.auth),
       supportDownloadFormats(formats),
       wrapAsync(async req => service.queryItems(req.query)),
       wrapDownload(addPaginationHeaders, false),
@@ -20,7 +20,7 @@ export function createRoute(router, path, config, service) {
   if (config) {
     router.post(
       path,
-      config.auth ? auth.main : auth.optional,
+      useAuth(config.auth),
       bodyParser,
       wrapAsync(async (req) => {
         return await service.createItem({
@@ -41,7 +41,7 @@ export function updateRoute(router, path, config, service) {
   if (config) {
     router.put(
       path,
-      config.auth ? auth.main : auth.optional,
+      useAuth(config.auth),
       bodyParser,
       wrapAsync(async req => service.updateItems({
         body: req.body,
@@ -58,7 +58,7 @@ export function deleteRoute(router, path, config, service) {
   if (config) {
     router.delete(
       path,
-      config.auth ? auth.main : auth.optional,
+      useAuth(config.auth),
       bodyParser,
       wrapAsync(async (req) => {
         return await service.deleteItem({
@@ -76,7 +76,7 @@ export function suggestRoute(router, path, config, service) {
   if (config) {
     router.get(
       path,
-      config.auth ? auth.main : auth.optional,
+      useAuth(config.auth),
       supportDownloadFormats([]),
       wrapAsync(async req => service.getSuggestions(req.query)),
       addPaginationHeaders,

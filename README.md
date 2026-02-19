@@ -16,6 +16,7 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [Requirements](#requirements)
   - [Docker](#docker)
   - [Configuration](#configuration)
+  - [User accounts](#user-accounts)
   - [Access control](#access-control)
   - [Authentication](#authentication)
   - [Data Import](#data-import)
@@ -92,6 +93,7 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
 ## Install
 
 ### Requirements
+
 You need Node.js 22 or higher and access to a [MongoDB database](https://docs.mongodb.com/manual/installation/) (minimun v4; v6 or v7 recommended).
 
 To enable optional [Change Stream endpoints](#change-stream-endpoints) the MongoDB database must be configured as a replica set. When using Docker please refer to [our Docker documentation](docker/README.md) for instructions on setting up a replica set. For a non‐Docker setup, start `mongod` with the `--replSet` flag, then once connect with the [MongoDB Shell](https://www.mongodb.com/docs/mongodb-shell/) and execute:
@@ -103,9 +105,11 @@ rs.initiate({ _id: "rs0", members: [{ _id: 0, host: "localhost:27017" }] });
 If the replica set is initialized, JSKOS Server will detect it at startup (the `replSetGetStatus` command is retried up to `changes.retries` times). If Change Streams [are configured](#change-streams-configuration) but no replica set was detected, JSKOS Server will log an error during startup but continue running with Change Streams disabled.
 
 ### Docker
+
 The easiest way to install and use JSKOS Server as stand-alone application is with Docker and Docker Compose. Please refer to [our Docker documentation](docker/README.md) for more information and instructions.
 
 ### Configuration
+
 You can customize the application settings via a configuration file. By default, this configuration file resides in `config/config.json`. However, it is possible to adjust this path via the `CONFIG_FILE` environment variable. Note that the given path has to be either absolute (i.e. starting with `/`) or relative to the `config/` folder (i.e. it defaults to `./config.json`). **Note** that the path to the configuration file needs to be valid and writable because a `namespace` key will be generated and written to the file if it doesn't currently exist. **Note** that if the file exists and contains invalid JSON data, JSKOS Server will refuse to start.
 
 Currently, there are only two environment variables:
@@ -222,6 +226,7 @@ All missing keys will be defaulted from `config/config.default.json`. See [endpo
   "changes": false,
   "anonymous": false,
   "identityProviders": null,
+  "identityGroups": {},
   "identities": null,
   "ips": null
 }
@@ -266,6 +271,8 @@ Explanations for additional options:
 
 - **`identityProviders`**: List of strings. Can be defined on any level (deeper levels will take the values from higher levels if necessary\*). If set, an action can only be used by users who have that identity associated with them. `null` by default (no restrictions).
 
+- **`identityGroups`**: Object mapping URIs to objects with only field `identities`. Keys of this option can be used in field `identities` elsewhere in the configuration to refer to a group of identities.
+
 - **`ips`**: List of strings. Strings can be IPv4 addresses (e.g. `127.0.0.1`, `123.234.123.234`) or CIDR ranges (e.g. `192.168.0.1/24`). Can be defined on any level (deeper levels will take the values from higher levels if necessary\*). If set, an action can only be used by clients with a whitelisted IP address. `null` by default (no restrictions). Note: An empty array will allow all IPs. Note: This property will be removed for security reasons when accessing [GET /status](#get-status) (meaning that clients will not be able to see the whitelisted IP addresses).
 
 - **`fromSchemeWhitelist`/`toSchemeWhitelist`**: Can be defined only on type `mappings`. List of scheme objects that are allowed for `fromScheme`/`toScheme` respectively. `null` allows all schemes.
@@ -278,7 +285,7 @@ Note that any properties not mentioned here are not allowed!
 
 #### Origin of URIs
 
-**This fields are ignored in the current version!**
+**This fields are hardcoded in the current version so they don't affect configuration yet!**
 
 The `create` field of configuration can have two field that control where URIs of newly created URIs come from:
 
@@ -370,6 +377,43 @@ After restarting JSKOS Server, mapping mismatch tagging is available for annotat
 Currently, this is the only supported format, i.e. `body` as an array containing an object with `type` of "SpecificResource", `purpose` of "tagging", and the tag concept's URI as `value`.
 
 To identify whether a JSKOS Server instance supports this kind of tagging, check the `/status` endpoint for the `config.annotations.mismatchTagVocabulary` key.
+
+### User accounts
+
+jskos-server does not store user accounts but refers to external identity providers and JSON Web Tokens (JWT) for [authentication](#authentication). Users are identified from field `user` of a valid JWT passed to jskos-server with a request, having the following subfields:
+
+- **`uri`** primary identity of the user.
+- **`name`** optional name of the user for display (must be a string)
+- **`identities`** optional object mapping names of identity providers to identities, each having field
+  - **`uri`** additional identities of the user
+  - **`name`** optional name of the user for display
+  - optional arbitrary fields
+- optional arbitrary fields
+
+Optional arbitrary fields don't have semantics in jskos-server and their values are never written into the database but they can be used for extended access control.
+
+So a user can have multiple identities, each being an URI. For example, the following user has ORCID `https://orcid.org/0000-0002-2771-9344` and the fictitious GitHub account `https://github.com/account`. Both can be used interchangeably for [access control](#access-control), but the ORCID is stored (as part of field `creator` or `contributor`) when entities are written into the database.
+
+~~~json
+{
+  "uri": "https://orcid.org/0000-0002-2771-9344",
+  "name": "Sofia",
+  "affiliation": "http://example.org/university",
+  "identities": {
+    "github": {
+      "uri": "https://github.com/account",
+      "name": "Sofia Coding"
+    }
+  ]
+}
+~~~
+
+User names are not unique and not mandatory. Identity and user name can also be passed with query parameters `identity` and `identityName`, respectively. The latter can be set to any string, including the empty string to avoid any user name being written to the database. Query parameter `identity` is ignored if authentication is enabled and its value does not match any of the identities listed in the JWT used for authentication.
+
+User groups are not fully supported yet (see [this issue](https://github.com/gbv/jskos-server/issues/232)) but
+
+- identities can be grouped in configuration of access control with `identityGroups`.
+- access control can be limited to identity providers with `identityProviders`.
 
 ### Access control
 
@@ -906,15 +950,17 @@ Note that certain properties from the actual configuration will not be shown in 
   In case of an error, for instance a failed database connection, the value of response property `ok` is set to `0`.
 
 ### GET /checkAuth
-Endpoint to check whether a user is authorized. If `type` or `action` are not set, it will use `identities`/`identityProviders` that are defined directly under config.
+
+Endpoint to check whether a user is authorized (see [user accounts](#user-accounts) and [access control](#access-control)). If `type` or `action` are not set, it will use `identities`, `identityProviders`, and `identityGroups` that are defined directly under config.
 
 * **URL Params**
 
-  `type=[type]` one of "schemes", "concepts", "mappings", "annotations" (optional)
+  `type=[type]` one of "schemes", "concepts", "mappings", "concordances, "registries", "annotations" (optional)
 
   `action=[action]` one of "read", "create", "update", "delete" (optional)
 
 ### POST /validate
+
 Endpoint to validate JSKOS objects via [jskos-validate].
 
 * **URL Params**

@@ -3,7 +3,7 @@ import { SchemeService } from "../services/schemes.js"
 import { ConceptService } from "../services/concepts.js"
 import * as utils from "../utils/middleware.js"
 import { wrapAsync, wrapDownload } from "../utils/middleware.js"
-import * as auth from "../utils/auth.js"
+import { useAuth } from "../utils/auth.js"
 import { MalformedRequestError } from "../errors/index.js"
 import { readRoute, createRoute, updateRoute, deleteRoute, suggestRoute } from "./common.js"
 
@@ -24,7 +24,7 @@ export default config => {
 
     router.get(
       "/top",
-      concepts.read.auth ? auth.main : auth.optional,
+      useAuth(concepts.read.auth),
       utils.supportDownloadFormats([]),
       wrapAsync(async (req) => {
         return await conceptService.getTop(req.query)
@@ -36,7 +36,7 @@ export default config => {
 
     router.get(
       "/concepts",
-      concepts.read.auth ? auth.main : auth.optional,
+      useAuth(concepts.read.auth),
       utils.supportDownloadFormats(["json", "ndjson"]),
       wrapAsync(async (req) => {
         if (!req.query.uri) {
@@ -55,7 +55,7 @@ export default config => {
     if (concepts.delete) {
       router.delete(
         "/concepts",
-        concepts.delete.auth ? auth.main : auth.optional,
+        useAuth(concepts.delete.auth),
         utils.bodyParser,
         wrapAsync(async (req) => {
           return await conceptService.deleteConceptsFromScheme({

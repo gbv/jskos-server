@@ -82,6 +82,7 @@
   "changes": false,
   "anonymous": false,
   "identityProviders": null,
+  "identityGroups": {},
   "identities": null,
   "ips": null
 }

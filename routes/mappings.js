@@ -2,7 +2,7 @@ import express from "express"
 import { MappingService } from "../services/mappings.js"
 import * as utils from "../utils/middleware.js"
 import { wrapAsync, wrapDownload } from "../utils/middleware.js"
-import * as auth from "../utils/auth.js"
+import { useAuth } from "../utils/auth.js"
 import { readRoute, createRoute } from "./common.js"
 
 export default config => {
@@ -12,7 +12,7 @@ export default config => {
   // /mappings/suggest and /mappings/voc need to come before /mappings/:_id!
   router.get(
     "/suggest",
-    config.concepts && config.concepts.read?.auth ? auth.main : auth.optional,
+    useAuth(config.concepts?.read?.auth),
     wrapAsync(async (req) => {
       return await service.getNotationSuggestions(req.query)
     }),
@@ -21,7 +21,7 @@ export default config => {
   )
   router.get(
     "/voc",
-    config.schemes && config.schemes.read?.auth ? auth.main : auth.optional,
+    useAuth(config.schemes?.read?.auth),
     wrapAsync(async (req) => {
       return await service.getMappingSchemes(req.query)
     }),
@@ -36,7 +36,7 @@ export default config => {
   if (config.mappings.read) {
     router.get(
       "/infer",
-      config.mappings.read.auth ? auth.main : auth.optional,
+      useAuth(config.mappings.read.auth),
       wrapAsync(async req => service.inferMappings(req.query)),
       utils.addPaginationHeaders,
       utils.adjust,
@@ -45,7 +45,7 @@ export default config => {
 
     router.get(
       "/:_id",
-      config.mappings.read.auth ? auth.main : auth.optional,
+      useAuth(config.mappings.read.auth),
       utils.supportDownloadFormats(["json", "ndjson", "csv", "tsv"]),
       wrapAsync(async req => service.getMapping(req.params._id)),
       wrapDownload(utils.adjust, false),
@@ -57,7 +57,7 @@ export default config => {
   if (config.mappings.update) {
     router.put(
       "/:_id",
-      config.mappings.update.auth ? auth.main : auth.optional,
+      useAuth(config.mappings.update.auth),
       utils.bodyParser,
       wrapAsync(async (req) => {
         return await service.putMapping({
@@ -73,7 +73,7 @@ export default config => {
 
     router.patch(
       "/:_id",
-      config.mappings.update.auth ? auth.main : auth.optional,
+      useAuth(config.mappings.update.auth),
       utils.bodyParser,
       wrapAsync(async (req) => {
         return await service.patchMapping({
@@ -91,7 +91,7 @@ export default config => {
   if (config.mappings.delete) {
     router.delete(
       "/:_id",
-      config.mappings.delete.auth ? auth.main : auth.optional,
+      useAuth(config.mappings.delete.auth),
       utils.bodyParser,
       wrapAsync(async (req) => {
         return await service.deleteItem({

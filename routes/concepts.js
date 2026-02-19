@@ -2,7 +2,7 @@ import express from "express"
 import { ConceptService } from "../services/concepts.js"
 import * as utils from "../utils/middleware.js"
 import { wrapAsync } from "../utils/middleware.js"
-import * as auth from "../utils/auth.js"
+import { useAuth } from "../utils/auth.js"
 import { readRoute, createRoute, updateRoute, deleteRoute, suggestRoute } from "./common.js"
 
 export default config => {
@@ -28,7 +28,7 @@ export default config => {
 
       router.get(
         prefix + "/narrower",
-        concepts.read.auth ? auth.main : auth.optional,
+        useAuth(concepts.read.auth),
         utils.supportDownloadFormats([]),
         wrapAsync(async req => service.getNarrower(req.query)),
         utils.addPaginationHeaders,
@@ -38,7 +38,7 @@ export default config => {
 
       router.get(
         prefix + "/ancestors",
-        concepts.read.auth ? auth.main : auth.optional,
+        useAuth(concepts.read.auth),
         utils.supportDownloadFormats([]),
         wrapAsync(async req => service.getAncestors(req.query)),
         utils.addPaginationHeaders,
@@ -50,7 +50,7 @@ export default config => {
 
       router.get(
         prefix + "/search",
-        concepts.read.auth ? auth.main : auth.optional,
+        useAuth(concepts.read.auth),
         utils.supportDownloadFormats([]),
         wrapAsync(async req => await service.search(req.query)),
         utils.addPaginationHeaders,

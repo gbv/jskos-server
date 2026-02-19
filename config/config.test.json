@@ -32,8 +32,8 @@
       "crossUser": true
     },
     "delete": {
-      "auth": false,
-      "crossUser": true
+      "auth": true,
+      "identities": ["a:group"]
     }
   },
   "concordances": {
@@ -94,5 +94,14 @@
   },
   "identities": ["http://test.user", "http://test-moderating.user"],
   "identityProviders": ["test"],
+  "identityGroups": {
+    "a:group": {
+      "identities": [
+        "http://in-group.user"
+      ],
+      "claims": [
+      ]
+    }
+  },
   "namespace": "f06ab008-a909-40a2-b8e7-643e955b522d"
 }

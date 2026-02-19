@@ -9,7 +9,7 @@ import * as anystream from "json-anystream"
 import express from "express"
 
 import { cleanJSON } from "./utils.js"
-
+import { getUrisOfUser } from "./users.js"
 import { createServices } from "../services/index.js"
 import { createAdjuster } from "./adjust.js"
 
@@ -52,13 +52,6 @@ const wrapDownload = (fn, isDownload = true) => {
   }
 }
 
-const getUrisForUser = (user) => {
-  if (!user) {
-    return []
-  }
-  return [user.uri].concat(Object.values(user.identities || {}).map(identity => identity.uri)).filter(uri => uri != null)
-}
-
 const buildUrlForLinkHeader = ({ query, rel, req }) => {
   let url = config.baseUrl.substring(0, config.baseUrl.length - 1) + req.path
   if (!query && req) {
@@ -94,7 +87,7 @@ const matchesCreator = ({ req = {}, object, withContributors = false }) => {
   if (!object || !user) {
     return false
   }
-  const userUris = getUrisForUser(user)
+  const userUris = getUrisOfUser(user)
   if (crossUser === true || _.intersection(crossUser || [], userUris).length) {
     return true
   }
@@ -417,7 +410,7 @@ const getCreator = (req) => {
   let creator = {}
   const creatorUriPath = req.type === "annotations" ? "id" : "uri"
   const creatorNamePath = req.type === "annotations" ? "name" : "prefLabel.en"
-  const userUris = getUrisForUser(req.user)
+  const userUris = getUrisOfUser(req.user)
   if (req.user && !userUris.includes(req.query.identity)) {
     _.set(creator, creatorUriPath, req.user.uri)
   } else if (req.query.identity) {
@@ -458,7 +451,7 @@ const handleCreatorForObject = ({ object, existing, creator, req }) => {
     creator = [creator]
   }
 
-  const userUris = getUrisForUser(req.user)
+  const userUris = getUrisOfUser(req.user)
   const anonymous = req.anonymous
   const auth = req.auth
 

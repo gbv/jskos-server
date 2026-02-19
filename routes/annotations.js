@@ -2,7 +2,7 @@ import express from "express"
 import { AnnotationService } from "../services/annotations.js"
 import * as utils from "../utils/middleware.js"
 import { wrapAsync } from "../utils/middleware.js"
-import * as auth from "../utils/auth.js"
+import { useAuth } from "../utils/auth.js"
 import { readRoute, createRoute, updateRoute, deleteRoute } from "./common.js"
 
 export default config => {
@@ -22,7 +22,7 @@ export default config => {
   if (annotations.read) {
     router.get(
       "/:_id",
-      annotations.read.auth ? auth.main : auth.optional,
+      useAuth(annotations.read.auth),
       wrapAsync(async req => service.getItem(req.params._id)),
       utils.adjust,
       utils.returnJSON,
@@ -32,7 +32,7 @@ export default config => {
   if (annotations.update) {
     router.put(
       "/:_id",
-      annotations.update.auth ? auth.main : auth.optional,
+      useAuth(annotations.update.auth),
       utils.bodyParser,
       wrapAsync(async (req) => {
         return await service.updateItem({
@@ -48,7 +48,7 @@ export default config => {
 
     router.patch(
       "/:_id",
-      annotations.update.auth ? auth.main : auth.optional,
+      useAuth(annotations.update.auth),
       utils.bodyParser,
       wrapAsync(async (req) => {
         return await service.patchAnnotation({
@@ -66,7 +66,7 @@ export default config => {
   if (annotations.delete) {
     router.delete(
       "/:_id",
-      annotations.delete.auth ? auth.main : auth.optional,
+      useAuth(annotations.delete.auth),
       utils.bodyParser,
       wrapAsync(async (req) => {
         return await service.deleteItem({
