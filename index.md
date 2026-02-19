@@ -2,8 +2,8 @@
 
 [![GitHub release](https://img.shields.io/github/release/gbv/jskos-server.svg)](https://github.com/gbv/jskos-server/releases/latest)
 [![API Status](https://coli-conc-status.fly.dev/api/badge/2/status?label=API)](https://coli-conc.gbv.de/api/)
-[![License](https://img.shields.io/github/license/gbv/jskos-server.svg)](https://github.com/gbv/jskos-server/blob/master/LICENSE)
-[![Docker](https://img.shields.io/badge/Docker-ghcr.io%2Fgbv%2Fjskos--server-informational)](https://github.com/gbv/jskos-server/blob/master/docker/README.md)
+[![License](https://img.shields.io/github/license/gbv/jskos-server.svg)](https://github.com/gbv/jskos-server/blob/main/LICENSE)
+[![Docker](https://img.shields.io/badge/Docker-ghcr.io%2Fgbv%2Fjskos--server-informational)](https://github.com/gbv/jskos-server/blob/main/docker/README.md)
 [![Test](https://github.com/gbv/jskos-server/actions/workflows/test.yml/badge.svg)](https://github.com/gbv/jskos-server/actions/workflows/test.yml)
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg)](https://github.com/RichardLitt/standard-readme)
 
@@ -13,17 +13,18 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
 
 ## Table of Contents <!-- omit in toc -->
 - [Install](#install)
+  - [Requirements](#requirements)
   - [Docker](#docker)
-  - [Dependencies](#dependencies)
-  - [Clone and Install](#clone-and-install)
   - [Configuration](#configuration)
+  - [User accounts](#user-accounts)
   - [Access control](#access-control)
   - [Authentication](#authentication)
   - [Data Import](#data-import)
 - [Usage](#usage)
   - [Run Server](#run-server)
-  - [Run Tests](#run-tests)
-  - [Run Supplemental Scripts](#run-supplemental-scripts)
+  - [Supplemental Scripts](#supplemental-scripts)
+  - [Use as Module](#use-as-module)
+  - [Development and Testing](#development-and-testing)
 - [API](#api)
   - [General](#general)
   - [GET /status](#get-status)
@@ -63,14 +64,20 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [GET /concepts/ancestors](#get-conceptsancestors)
   - [GET /concepts/suggest](#get-conceptssuggest)
   - [GET /concepts/search](#get-conceptssearch)
+  - [GET /registries](#get-registries)
+  - [GET /registries/:\_id](#get-registries_id)
+  - [GET /registries/suggest](#get-registriessuggest)
+  - [POST /registries](#post-registries)
+  - [PUT /registries](#put-registries)
+  - [DELETE /registries](#delete-registries)
   - [GET /annotations](#get-annotations)
   - [GET /annotations/:\_id](#get-annotations_id)
   - [POST /annotations](#post-annotations)
   - [PUT /annotations/:\_id](#put-annotations_id)
   - [PATCH /annotations/:\_id](#patch-annotations_id)
   - [DELETE /annotations/:\_id](#delete-annotations_id)
+  - [Change Stream Endpoints](#change-stream-endpoints)
   - [Errors](#errors)
-  - [Real-time Change Stream Endpoints](#real-time-change-stream-endpoints)
 - [Deployment](#deployment)
   - [Notes about depolyment on Ubuntu](#notes-about-depolyment-on-ubuntu)
   - [Update an instances deployed with PM2](#update-an-instances-deployed-with-pm2)
@@ -85,40 +92,24 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
 
 ## Install
 
-### Docker
-The easiest way to install and use JSKOS Server is with Docker and Docker Compose. Please refer to [our Docker documentation](https://github.com/gbv/jskos-server/blob/master/docker/README.md) for more information and instructions.
+### Requirements
 
-### Dependencies
-You need Node.js 18 or Node.js 20 (recommended) to run JSKOS Server. You need to have access to a [MongoDB database](https://docs.mongodb.com/manual/installation/) (minimun v4; v6 or v7 recommended).
+You need Node.js 22 or higher and access to a [MongoDB database](https://docs.mongodb.com/manual/installation/) (minimun v4; v6 or v7 recommended).
 
-> **Change-Streams (WebSocket API) – Optional Feature**
-> JSKOS Server supports a /…/changes WebSocket API based on MongoDB Change Streams, which allows clients to receive live updates when data changes. This feature is **disabled by default**. To enable it, set `changesApi.enabled` to `true` in the configuration file.
-> If `changesApi.enabled` is `true` but MongoDB is `not` running as a replica set, JSKOS Server will log an error during startup and `skip registering` the Change-Streams endpoints — but the server `will continue running` normally for all other features.
-
-### Running MongoDB as a Replica Set
-> MongoDB must be configured as a **replica set** to support Change Streams. Standalone MongoDB deployments are not compatible.
-> To use the **Change-Streams** (`/changes`) WebSocket API, MongoDB **must** be configured as a **replica set**.
-If you want to use the Change-Streams API and you're using Docker, please refer to [our Docker documentation](https://github.com/gbv/jskos-server/blob/master/docker/README.md) for instructions on setting up a replica set.
-
-
-For a non‐Docker setup, start `mongod` with the `--replSet` flag, then connect with the shell and run:
+To enable optional [Change Stream endpoints](#change-stream-endpoints) the MongoDB database must be configured as a replica set. When using Docker please refer to [our Docker documentation](docker/README.md) for instructions on setting up a replica set. For a non‐Docker setup, start `mongod` with the `--replSet` flag, then once connect with the [MongoDB Shell](https://www.mongodb.com/docs/mongodb-shell/) and execute:
 
 ```js
 rs.initiate({ _id: "rs0", members: [{ _id: 0, host: "localhost:27017" }] });
 ```
 
-Once the replica set is initialized, JSKOS Server will detect it at startup (the `replSetGetStatus` command is retried up to `changesApi.rsMaxRetries` times). 
+If the replica set is initialized, JSKOS Server will detect it at startup (the `replSetGetStatus` command is retried up to `changes.retries` times). If Change Streams [are configured](#change-streams-configuration) but no replica set was detected, JSKOS Server will log an error during startup but continue running with Change Streams disabled.
 
-The [Change-Streams endpoints](#real-time-change-stream-endpoints) will only be registered if a replica set is confirmed.
+### Docker
 
-### Clone and Install
-```bash
-git clone https://github.com/gbv/jskos-server.git
-cd jskos-server
-npm ci
-```
+The easiest way to install and use JSKOS Server as stand-alone application is with Docker and Docker Compose. Please refer to [our Docker documentation](docker/README.md) for more information and instructions.
 
 ### Configuration
+
 You can customize the application settings via a configuration file. By default, this configuration file resides in `config/config.json`. However, it is possible to adjust this path via the `CONFIG_FILE` environment variable. Note that the given path has to be either absolute (i.e. starting with `/`) or relative to the `config/` folder (i.e. it defaults to `./config.json`). **Note** that the path to the configuration file needs to be valid and writable because a `namespace` key will be generated and written to the file if it doesn't currently exist. **Note** that if the file exists and contains invalid JSON data, JSKOS Server will refuse to start.
 
 Currently, there are only two environment variables:
@@ -129,7 +120,25 @@ You can either provide the environment variables during the command to start the
 
 It is also possible to have more specific configuration based on the environment. These are set in `config/config.development.json` or `config/config.production.json`. Values from these files have precedent over the user configuration.
 
-All missing keys will be defaulted from `config/config.default.json`:
+#### Validation of configuration
+
+The provided configuration files (user config and environment config) will be validated with the provided [JSON Schema](https://json-schema.org) file under `config/config.schema.json` (public URI: https://gbv.github.io/jskos-server/status.schema.json). If validation fails, **JSON Server will refuse to start!** Please check whether your configuration is correct after each change. If there is something wrong, the console output will try to provide you with enough detail to fix the issue.
+
+Function `validateConfig` is exported for [used as module](#use-as-module):
+
+~~~js
+import { validateConfig } from "jskos-server"
+
+try {
+  validateConfig(config)
+} catch(error) {
+  console.error(`Invalid configuration: ${error}`)
+}
+~~~
+
+#### Default configuration
+
+All missing keys will be defaulted from `config/config.default.json`. See [endpoint configuration](#endpoint-configuration) below for additional settings being merged into the configuration.
 
 ```json
 {
@@ -140,11 +149,6 @@ All missing keys will be defaulted from `config/config.default.json`:
   "version": null,
   "closedWorldAssumption": true,
   "port": 3000,
-  "changesApi" : {
-    "enableChangesApi": false,
-    "rsMaxRetries": 20,
-    "rsRetryInterval": 5000
-  },
   "proxies": [],
   "mongo": {
     "user": "",
@@ -184,6 +188,23 @@ All missing keys will be defaulted from `config/config.default.json`:
     "cardinality": "1-to-n"
   },
   "concordances": true,
+  "registries": {
+    "read": {
+      "auth": false
+    },
+    "create": {
+      "auth": true
+    },
+    "update": {
+      "auth": true,
+      "crossUser": false
+    },
+    "delete": {
+      "auth": true,
+      "crossUser": false
+    },
+    "mixedTypes": false
+  },
   "annotations": {
     "read": {
       "auth": false
@@ -202,17 +223,19 @@ All missing keys will be defaulted from `config/config.default.json`:
     "moderatingIdentities": [],
     "mismatchTagVocabulary": null
   },
+  "changes": false,
   "anonymous": false,
   "identityProviders": null,
+  "identityGroups": {},
   "identities": null,
   "ips": null
 }
 ```
 
-The provided configuration files (user config and environment config) will be validated with the provided [JSON Schema](https://json-schema.org) file under `config/config.schema.json` (public URI: https://gbv.github.io/jskos-server/status.schema.json). If validation fails, **JSON Server will refuse to start!** Please check whether your configuration is correct after each change. If there is something wrong, the console output will try to provide you with enough detail to fix the issue.
+#### Server configuration
 
-If you are [running jskos-server behind a reverse proxy](#running-behind-a-reverse-proxy), it is necessary to provide the `baseUrl` key as well as the `proxies` key in your configuration (example for our production API):**
-See also:
+If you are [running jskos-server behind a reverse proxy](#running-behind-a-reverse-proxy), it is necessary to provide the `baseUrl` key as well as the `proxies` key in your configuration. For example:
+
 ```json
 {
   "baseUrl": "https://coli-conc.gbv.de/api/",
@@ -220,7 +243,9 @@ See also:
 }
 ```
 
-With the keys `schemes`, `concepts`, `mappings`, `concordances`, and `annotations`, you can configure whether endpoints related to the specific functionality should be available. A minimal configuration file to just server read-only vocabulary and concept information could look like this:
+#### Endpoint Configuration
+
+With the keys `schemes`, `concepts`, `mappings`, `concordances`, `registries`, and `annotations`, you can configure whether endpoints related to the specific functionality should be available. A minimal configuration file to just server read-only vocabulary and concept information could look like this:
 
 ```json
 {
@@ -230,7 +255,9 @@ With the keys `schemes`, `concepts`, `mappings`, `concordances`, and `annotation
 }
 ```
 
-Available actions for `schemes`, `concepts`, `mappings`, and `annotations` are `read`, `create`, `update`, and `delete`. By default, all types can be read, while `mappings` and `annotations` can be created, updated, and deleted with authentication. Explanantions for additional options:
+Available actions for each of these endpoints are `read`, `create`, `update`, and `delete`. By default, all types can be read, while `mappings`, `annotations`, and `registries` can be created, updated, and deleted with authentication.
+
+Explanations for additional options:
 
 - **`auth`**: Boolean. Can be defined only on actions. Defines whether access will require [authentication via JWT](#authentication). By default `false` for `read`, and `true` for all other actions.
 
@@ -244,6 +271,8 @@ Available actions for `schemes`, `concepts`, `mappings`, and `annotations` are `
 
 - **`identityProviders`**: List of strings. Can be defined on any level (deeper levels will take the values from higher levels if necessary\*). If set, an action can only be used by users who have that identity associated with them. `null` by default (no restrictions).
 
+- **`identityGroups`**: Object mapping URIs to objects with only field `identities`. Keys of this option can be used in field `identities` elsewhere in the configuration to refer to a group of identities.
+
 - **`ips`**: List of strings. Strings can be IPv4 addresses (e.g. `127.0.0.1`, `123.234.123.234`) or CIDR ranges (e.g. `192.168.0.1/24`). Can be defined on any level (deeper levels will take the values from higher levels if necessary\*). If set, an action can only be used by clients with a whitelisted IP address. `null` by default (no restrictions). Note: An empty array will allow all IPs. Note: This property will be removed for security reasons when accessing [GET /status](#get-status) (meaning that clients will not be able to see the whitelisted IP addresses).
 
 - **`fromSchemeWhitelist`/`toSchemeWhitelist`**: Can be defined only on type `mappings`. List of scheme objects that are allowed for `fromScheme`/`toScheme` respectively. `null` allows all schemes.
@@ -254,23 +283,56 @@ Available actions for `schemes`, `concepts`, `mappings`, and `annotations` are `
 
 Note that any properties not mentioned here are not allowed!
 
-#### Change-Streams API Configuration
+#### Origin of URIs
 
-The `changesApi` section controls how JSKOS Server handles MongoDB Change Streams:
+**This fields are hardcoded in the current version so they don't affect configuration yet!**
 
-- **`enableChangesApi`** (boolean, default `false`)  
-  Globally turn all `/…/changes` WebSocket endpoints on or off. When `false`, no change-stream routes are registered.
+The `create` field of configuration can have two field that control where URIs of newly created URIs come from:
 
-- **`rsMaxRetries`** (integer, default `20`)  
+- **`uriBase`**: a string or Boolean (false by default). Value true is replaced by the baseUrl of the server. URIs of newly created items must start with this string.
+- **`uriOrigin`**: where URIs of new items orgin from. Default value `external` requires clients to provide an URI. Value `uuid` can be used when `uriBase` is set to generate URIs based on UUIDs.
+
+#### Registries configuration
+
+Endpoint configuration key `registries` can further contain key **`types`** to control object types collected in registries. By default it is set to `true` for every type with endpoint enabled in [endpoint configuration](#endpoint configuration). Setting a type to `false` will disallow creation and import of [registry](https://gbv.github.io/jskos/#registry) having this field. By default, a registry can only have one type of members. Registry configuration key **`mixedTypes`** can be set to true to allow registries to have multiple member types.
+
+Member types can further the configured with three Boolean keys:
+
+- **`uriRequired`** (default `true`) whether members must have a valid field `uri`
+- **`mustExist`** (default `false`) whether members must exist in the database (and have the right type)
+- **`skipInvalid`** (default `false`) to filter out members that don't fulfill requirement or `uriRequired` or `mustExist`
+
+Setting `mustExist` to true and `uriRequired` to false results in an invalid configuration because URIs are required to check whether an item exists.
+
+**Example**:
+~~~json
+{
+  "types": {
+    "schemes": true,
+    "concepts": {
+      "uriRequired": true,
+      "mustExist": false,
+      "skipInvalid": false
+    },
+  },
+  "mixedTypes": true
+}
+~~~
+
+#### Change Streams Configuration
+
+[Change Stream Endpoints](#change-stream-endpoints) are only enabled if `changes` is set to `true` or to an object with the following optional keys:
+
+- **`retries`** (integer, default `20`)
   How many times to retry the `replSetGetStatus` command while waiting for the replica set to initialise before giving up.
 
-- **`rsRetryInterval`** (integer, default `5000`)  
+- **`interval`** (integer, default `5000`)
   Milliseconds to wait between each retry attempt when checking replica-set status.
 
-Only once the replica set is confirmed will the `/…/changes` endpoints become active.
-
+Only once the replica set is confirmed will the `/…/changes` endpoints become active, unless MongoDB does is not running with replica set.
 
 #### Mapping Mismatch Tagging for Negative Assessment Annotations
+
 To differentiate why a mapping was annotated with a negative assessment, a mismatch tagging vocabulary can now be configured under `annotations.mismatchTagVocabulary`. In theory, any vocabulary can be used, but [our instance](https://coli-conc.gbv.de/api/) will use a very small "mismatch" vocabulary available in https://github.com/gbv/jskos-data/tree/master/mismatch.
 
 To set up mapping mismatch tagging, add the vocabulary to the configuration:
@@ -316,8 +378,45 @@ Currently, this is the only supported format, i.e. `body` as an array containing
 
 To identify whether a JSKOS Server instance supports this kind of tagging, check the `/status` endpoint for the `config.annotations.mismatchTagVocabulary` key.
 
+### User accounts
+
+jskos-server does not store user accounts but refers to external identity providers and JSON Web Tokens (JWT) for [authentication](#authentication). Users are identified from field `user` of a valid JWT passed to jskos-server with a request, having the following subfields:
+
+- **`uri`** primary identity of the user.
+- **`name`** optional name of the user for display (must be a string)
+- **`identities`** optional object mapping names of identity providers to identities, each having field
+  - **`uri`** additional identities of the user
+  - **`name`** optional name of the user for display
+  - optional arbitrary fields
+- optional arbitrary fields
+
+Optional arbitrary fields don't have semantics in jskos-server and their values are never written into the database but they can be used for extended access control.
+
+So a user can have multiple identities, each being an URI. For example, the following user has ORCID `https://orcid.org/0000-0002-2771-9344` and the fictitious GitHub account `https://github.com/account`. Both can be used interchangeably for [access control](#access-control), but the ORCID is stored (as part of field `creator` or `contributor`) when entities are written into the database.
+
+~~~json
+{
+  "uri": "https://orcid.org/0000-0002-2771-9344",
+  "name": "Sofia",
+  "affiliation": "http://example.org/university",
+  "identities": {
+    "github": {
+      "uri": "https://github.com/account",
+      "name": "Sofia Coding"
+    }
+  ]
+}
+~~~
+
+User names are not unique and not mandatory. Identity and user name can also be passed with query parameters `identity` and `identityName`, respectively. The latter can be set to any string, including the empty string to avoid any user name being written to the database. Query parameter `identity` is ignored if authentication is enabled and its value does not match any of the identities listed in the JWT used for authentication.
+
+User groups are not fully supported yet (see [this issue](https://github.com/gbv/jskos-server/issues/232)) but
+
+- identities can be grouped in configuration of access control with `identityGroups`.
+- access control can be limited to identity providers with `identityProviders`.
 
 ### Access control
+
 The rights to `read`, `create`, `update` and `delete` entities via API can be controlled via several configuration settings described above ([data import](#data-import) is not limited by these restrictions):
 
 * Restricted access via `ips` is always applied *in addition* to other settings
@@ -335,7 +434,7 @@ The second control is only checked when the first control cannot be applied and 
 
 For authenticated actions with `anonymous` being `false` creation of a new object will always set its initial `creator` to the autenticated user and `update` of an object will always add the user to `contributor` unless it is already included as `creator` or `contributor`. Further modification of `creator` and `contributor` (removal and addition of entries) is limited to vocabularies and concordance by authenticated users listed as `creator` of the object.
 
-Here are some helpful example presets for configuration of "concordances, "mappings", or "annotations".
+Here are some helpful example presets for configuration of "concordances, "mappings", "annotations", or "registries".
 
 **Read-only access (does not make sense for annotations):**
 ```json
@@ -482,9 +581,7 @@ It is possible to limit certain actions to authenticated users, indicated by the
 }
 ```
 
-The JWT has to be provided as a Bearer token in the authorization header, e.g. `Authorization: Bearer <token>`. Currently, all authorized endpoints will be accessible (although `PUT`/`PATCH`/`DELETE` are limited to the user who created the object by default), but later it will be possible to set scopes for certain users (see [#47](https://github.com/gbv/jskos-server/issues/47)).
-
-The authentication is designed to be used together with an instance of [login-server], but it is also possible to use your own JWTs.
+The JWT has to be provided as a Bearer token in the authorization header, e.g. `Authorization: Bearer <token>`. The authentication is designed to be used together with an instance of [login-server], but it is also possible to use your own JWTs.
 
 #### JWT Example
 The recommended Node.js library for creating JWTs is [jsonwebtoken](https://github.com/auth0/node-jsonwebtoken). Note that for simplicity, we are using the HS256 algorithm which is symmetrical. In most cases, it would be better to use RS256 with a libarary like [node-rsa](https://github.com/rzcoder/node-rsa) instead.
@@ -544,44 +641,12 @@ After that, you can use [login-client](https://github.com/gbv/login-client) to i
 
 For testing your authentication without a full-fledged solution using login-client, you can use http://localhost:3004/token (where `localhost:3004` is your instance of login-server) to request a JWT.
 
----
-
-Note about previous additional options for `auth`:
-- `postAuthRequired`: now covered by `mappings.create.auth`
-- `whitelist`: now covered by `identities`
-- `allowCrossUserEditing`: now covered by `mappings.update.crossUser` and `mappings.delete.crossUser`
-
 ### Data Import
 JSKOS Server provides scripts to import JSKOS data into the database or delete data from the database. Right now, mappings, terminologies (concept schemes), concepts, concordances, and annotations, in JSON (object or array of objects) or [NDJSON](http://ndjson.org) format are supported.
 
-#### Import Notes
-**About hierarchies within concepts:** Hierarchies are supported. However, only the `broader` field will be used during import. Both `ancestors` and `narrower` will be removed and the respective endpoints ([GET /concepts/ancestors](#get-conceptsancestors) and [GET /concepts/narrower](#get-conceptsnarrower)) will dynamically rebuild these properties. That means that when converting your data, please normalize it so that the hierarchy is expressed via the `broader` field in JSKOS.
-
-Example scheme (as JSON object) with concepts in a hierarchy (as NDJSON):
-```json
-{
-  "uri": "urn:test:scheme",
-  "notation": [
-    "TEST"
-  ],
-  "uriPattern": "^urn:test:concept-(.+)$"
-}
-```
-```json
-{ "topConceptOf": [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-a" }
-{ "inScheme":     [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-a.1",    "broader": [{ "uri": "urn:test:concept-a" }] }
-{ "inScheme":     [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-a.2",    "broader": [{ "uri": "urn:test:concept-a" }] }
-{ "topConceptOf": [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-b" }
-{ "inScheme":     [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-b.1",    "broader": [{ "uri": "urn:test:concept-b" }] }
-{ "inScheme":     [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-b.1.1",  "broader": [{ "uri": "urn:test:concept-b.1" }] }
-{ "inScheme":     [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-b.1.2",  "broader": [{ "uri": "urn:test:concept-b.1" }] }
-```
-
-(Note that a notation for the concepts can be omitted because we have defined `uriPattern` on the concept scheme. Also, we don't need to define `inScheme` for concepts with `topConceptOf`.)
-
-**About the `created` property for concept schemes:** The import script uses the bulk write endpoints to import data. For concept schemes, this means that any existing data for imported schemes will be **overwritten** and replaced with the new data. This includes especially the `created` property which might not exist in your source data and will be set on import if necessary. If you need a consistent `created` date, make sure that your source data already includes this field.
-
 #### Import Script
+By default the import script has enabled **bulk import** so invalid entities are filtered out and reported only.
+
 Examples of using the import script:
 ```bash
 
@@ -623,9 +688,39 @@ npm run reset -- --help
 
 For scripting, you can use the `yes` command to skip confirmation. **Make sure you know what you're doing!** Example: `yes | npm run reset -- urn:test:uri`.
 
+#### Specifics of importing concepts
+Only the `broader` field will be used during import of concepts: both `ancestors` and `narrower` will be removed and the respective endpoints ([GET /concepts/ancestors](#get-conceptsancestors) and [GET /concepts/narrower](#get-conceptsnarrower)) will dynamically rebuild these properties. That means that when converting your data, please normalize it so that the hierarchy is expressed via the `broader` field in JSKOS.
+
+Example scheme (as JSON object) with concepts in a hierarchy (as NDJSON):
+```json
+{
+  "uri": "urn:test:scheme",
+  "notation": [
+    "TEST"
+  ],
+  "uriPattern": "^urn:test:concept-(.+)$"
+}
+```
+```json
+{ "topConceptOf": [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-a" }
+{ "inScheme":     [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-a.1",    "broader": [{ "uri": "urn:test:concept-a" }] }
+{ "inScheme":     [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-a.2",    "broader": [{ "uri": "urn:test:concept-a" }] }
+{ "topConceptOf": [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-b" }
+{ "inScheme":     [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-b.1",    "broader": [{ "uri": "urn:test:concept-b" }] }
+{ "inScheme":     [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-b.1.1",  "broader": [{ "uri": "urn:test:concept-b.1" }] }
+{ "inScheme":     [{ "uri": "urn:test:scheme" }], "uri": "urn:test:concept-b.1.2",  "broader": [{ "uri": "urn:test:concept-b.1" }] }
+```
+
+(Note that a notation for the concepts can be omitted because we have defined `uriPattern` on the concept scheme. Also, we don't need to define `inScheme` for concepts with `topConceptOf`.)
+
+#### Specifics of importing concept schemes
+The import script uses the bulk write endpoints to import data. For concept schemes, this means that any existing data for imported schemes will be **overwritten** and replaced with the new data. This includes especially the `created` property which might not exist in your source data and will be set on import if necessary. If you need a consistent `created` date, make sure that your source data already includes this field.
+
+
 ## Usage
 
 ### Run Server
+
 ```bash
 # Development server with hot reload and auto reconnect at localhost:3000 (default)
 npm run start
@@ -634,15 +729,33 @@ npm run start
 NODE_ENV=production node ./server.js
 ```
 
-### Run Tests
-Tests will use the real MongoDB with `-test-${namespace}` appended to the database name.
+### Supplemental Scripts
 
-```bash
-npm test
-```
+In addition to [data import](#data-import) there are some supplemental scripts that were added to deal with specific sitatuations. These can be called with `npm run extra name-of-script`. The following scripts are available:
 
-### Run Tests
-All of our tests—including the Change-Stream integration tests—now use an ephemeral, in-memory MongoDB server powered by [mongodb-memory-server](https://www.npmjs.com/package/mongodb-memory-server). No need for a local MongoDB instance running to execute the tests.
+- `supplementNotationsInMappings`: This will look for mappings where the field `notation` is missing for any of the concepts, and it will attempt to supplement those notations. This only works for vocabularies which are also imported into the same jskos-server instance and where either `uriPattern` or `namespace` are given.
+
+### Use as Module
+
+*Use as module is experimental. Authentication is ignored on direct access to services!*
+
+~~~js
+import { validateConfig, createServices } from "jskos-server"
+
+try {
+  validateConfig(config)
+} catch(error) {
+  console.error(`Invalid configuration: ${error}`)
+}
+
+const services = createServices(config)
+
+const scheme = await services.scheme.getScheme(schemeUri)
+~~~
+
+### Development and Testing
+
+Tests use an ephemeral, in-memory MongoDB server powered by [mongodb-memory-server](https://www.npmjs.com/package/mongodb-memory-server).
 
 ```bash
 npm test
@@ -656,10 +769,20 @@ This will:
 4. **Drop** the database before and after each test suite, ensuring full isolation.
 5. **Tear down** the in-memory server when the suite completes.
 
-### Run Supplemental Scripts
-There are some supplemental scripts that were added to deal with specific sitatuations. These can be called with `npm run extra name-of-script`. The following scripts are available:
+Code coverage can be calculated with `npm run coverage` but numbers should be taken with a grain of salt. By the way, lines of code can be calculated with `cloc $(git ls-files)`.
 
-- `supplementNotationsInMappings`: This will look for mappings where the field `notation` is missing for any of the concepts, and it will attempt to supplement those notations. This only works for vocabularies which are also imported into the same jskos-server instance and where either `uriPattern` or `namespace` are given.
+You can also start an in-memory MongoDB with local configuration:
+
+```bash
+npm run mongodb             # not verbose
+npm run mongodb -- --debug  # very verbose
+```
+
+And then start jskos-server:
+
+```bash
+npm run start
+```
 
 ## API
 
@@ -773,6 +896,21 @@ Note that certain properties from the actual configuration will not be shown in 
           "auth": true,
           "crossUser": false
         },
+        "registries": {
+          "read": {
+            "auth": false
+          },
+          "create": {
+            "auth": true
+          },
+          "update": {
+            "auth": true,
+            "crossUser": false
+          },
+          "delete": {
+            "auth": true,
+            "crossUser": false
+        },
         "mismatchTagVocabulary": {
           "uri": "https://uri.gbv.de/terminology/mismatch/",
           "API": [
@@ -800,6 +938,7 @@ Note that certain properties from the actual configuration will not be shown in 
     "mappings": "http://localhost:3000/mappings",
     "concordances": "http://localhost:3000/concordances",
     "annotations": "http://localhost:3000/annotations",
+    "registries": "http://localhost:3000/registries",
     "types": null,
     "validate": "http://localhost:3000/validate",
     "ok": 1
@@ -811,15 +950,17 @@ Note that certain properties from the actual configuration will not be shown in 
   In case of an error, for instance a failed database connection, the value of response property `ok` is set to `0`.
 
 ### GET /checkAuth
-Endpoint to check whether a user is authorized. If `type` or `action` are not set, it will use `identities`/`identityProviders` that are defined directly under config.
+
+Endpoint to check whether a user is authorized (see [user accounts](#user-accounts) and [access control](#access-control)). If `type` or `action` are not set, it will use `identities`, `identityProviders`, and `identityGroups` that are defined directly under config.
 
 * **URL Params**
 
-  `type=[type]` one of "schemes", "concepts", "mappings", "annotations" (optional)
+  `type=[type]` one of "schemes", "concepts", "mappings", "concordances, "registries", "annotations" (optional)
 
   `action=[action]` one of "read", "create", "update", "delete" (optional)
 
 ### POST /validate
+
 Endpoint to validate JSKOS objects via [jskos-validate].
 
 * **URL Params**
@@ -938,7 +1079,7 @@ Same as [POST /validate](#post-validate) but JSKOS data to be validated is passe
   `knownSchemes=[boolean]` see [POST /validate](#post-validate)
 
 ### GET /data
-Returns data for a certain URI or URIs. Can return concept schemes, concepts, concordances, mappings, and annotations. This endpoint does not offer pagination via `limit` and `offset`. It will always return all results. Furthermore, there is no certain order to the result set (but it should be consistent across requests). If a certain type of data requires authentication and the user is not authenticated, that type of data will simply not be returned.
+Returns data for a certain URI or URIs. Can return concept schemes, concepts, concordances, mappings, annotations, and registries. This endpoint does not offer pagination via `limit` and `offset`. It will always return all results. Furthermore, there is no certain order to the result set (but it should be consistent across requests). If a certain type of data requires authentication and the user is not authenticated, that type of data will simply not be returned.
 
 **Note:** As of version 2.0, this endpoint was adjusted to return all types of items that are available in the database, instead of just concepts and concept schemes. The additional parameters, apart from `uri`, were also removed. For the previous behavior (only without returning concept schemes), see [GET /concepts](#get-concepts).
 
@@ -2096,6 +2237,123 @@ Currently the same as `/concepts/suggest` with parameter `format=jskos`. Additio
 
 **Note:** The old `/search` endpoint is deprecated as of version 2.0 and will be removed in version 3.0.
 
+### GET /registries
+Returns an array of registries. Each registry has a property `id` under which the specific registry can be accessed.
+
+* **URL Params**
+
+  `id=[id]` specify a registry ID
+
+* **Success Response**
+
+  Array of registries in [JSKOS Registry] format
+
+* **Sample Call**
+
+  ```bash
+  curl https://coli-conc.gbv.de/api/registries?limit=1
+  ```
+
+  ```json
+  [
+    {
+      "API": [
+        {
+          "type": "http://bartoc.org/api-type/jskos",
+          "url": "https://api.dante.gbv.de/"
+        }
+      ],
+      "startDate": "2017",
+      "definition": {
+        "en": [
+          "DANTE (Datendrehscheibe für Normdaten und Terminologien) is a vocabulary server hosted by VZG based on easyDB. Its vocabularies are mainly from museums and related organizations."
+        ]
+      },
+      "prefLabel": {
+        "en": "DANTE"
+      },
+      "type": [
+        "http://www.w3.org/ns/dcat#Catalog",
+        "http://bartoc.org/full-repository"
+      ],
+      "uri": "http://bartoc.org/en/node/19999",
+      "url": "https://api.dante.gbv.de/"
+    }
+  ]
+  ```
+
+### GET /registries/suggest
+Returns registry suggestions.
+
+* **URL Params**
+
+  `search=[keyword|notation]` specifies the keyword or notation (prefix) to search for
+
+* **Success Response**
+
+  JSON array of suggestions.
+
+* **Sample Calls**
+
+  ```bash
+  curl https://coli-conc.gbv.de/api/registries/suggest?search=Stanford
+  ```
+
+  ```json
+  [
+    "Stanford",
+    [
+      "ERMS VEST Registry"
+    ],
+    [
+      "",
+      "",
+      ""
+    ],
+    [
+      "http://bartoc.org/en/node/18927"
+    ]
+  ]
+  ```
+
+  ```bash
+  curl https://coli-conc.gbv.de/api/concepts/suggest?search=Krebs&limit=2&format=jskos
+  ```
+
+### POST /registries
+Saves one registry or multiple registries in the database.
+
+* **URL Params**
+
+  `bulk=[boolean]` `1` or `true` enable bulk mode for importing multiple registries into the database. Existing registries will be overridden. The resulting set will only include the `id` for each registry that was written into the database.
+
+* **Success Response**
+
+  Registry object or array of object as was saved in the database in [JSKOS Registry] format, or array of registry objects with only a `id` if bulk mode was used.
+
+* **Error Response**
+
+  Bulk mode: invalid registries are skipped.
+  Non-bulk mode: the first error is thrown (see [errors](#errors)).
+
+### PUT /registries
+Overwrites a registry in the database, identfied by its `uri` fiel.
+
+* **Success Response**
+
+  Registry object as it was saved in the database in [JSKOS Registry] format.
+
+### DELETE /registries
+Deletes a registry from the database.
+
+* **URL Params**
+
+  `uri=URI` URI for registry to be deleted.
+
+* **Success Response**
+
+  Status 204, no content.
+
 ### GET /annotations
 Returns an array of annotations. Each annotation has a property `id` under which the specific annotation can be accessed.
 
@@ -2210,10 +2468,10 @@ Note that any changes to the `created` property will be ignored.
 Deletes an annotation from the database.
 
 * **Success Reponse**
-
   Status 204, no content.
 
-### Real-time Change Stream Endpoints
+
+### Change Stream Endpoints
 
 JSKOS-Server provides WebSocket endpoints that push live notifications whenever data changes. Available routes:
 
@@ -2222,6 +2480,7 @@ JSKOS-Server provides WebSocket endpoints that push live notifications whenever 
 * **`/mappings/changes`** — broadcasts events for **Mappings**
 * **`/concordances/changes`** — broadcasts events for **Concordances**
 * **`/annotations/changes`** — broadcasts events for **Annotations**
+* **`/registries/changes`** — broadcasts events for **Registries**
 
 #### Connection to websocket
 
@@ -2230,15 +2489,16 @@ JSKOS-Server provides WebSocket endpoints that push live notifications whenever 
 wscat -c ws://<host>:<port>/voc/changes
 ```
 
-## Messages
+#### Messages
 
 Each message is a JSON object with the following fields:
 
 | Field        | Type                   | Description                                                                                                                             |
 | ------------ | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `objectType` | `string`               | The JSKOS object type. One of: `ConceptScheme`, `Concept`, `ConceptMapping`, `Concordance`, `Annotation`.                               |
+| `objectType` | `string`               | The JSKOS object type. One of: `ConceptScheme`, `Concept`, `ConceptMapping`, `Concordance`, `Annotation`, `Registry`.                               |
 | `type`       | `string`               | Change type, derived from the MongoDB operation:<br>• `insert` → `create`<br>• `update` / `replace` → `update`<br>• `delete` → `delete` |
 | `id`         | `string` or `ObjectId` | The `_id` of the changed MongoDB document.                                                                                              |
+| `timestamp`  | `string`               | The ISO 8601 timestamp of the change event, derived from the MongoDB change stream `clusterTime` (available since MongoDB 3.6).         |
 | `document`   | `object` *(optional)*  | The full JSKOS record as stored in MongoDB. Present only for `create` and `update`.                                                     |
 
 <details>
@@ -2274,21 +2534,18 @@ Each message is a JSON object with the following fields:
 
 </details>
 
-
-
-
-
-
 ### Errors
 If possible, errors will be returned as a JSON object in the following format (example):
 
 ```json
 {
-  error: "EntityNotFoundError",
-  status: 404,
-  message: "The requested entity ABC could not be found.",
+  "error": "EntityNotFoundError",
+  "status": 404,
+  "message": "The requested entity ABC could not be found.",
 }
 ```
+
+Validation errors reported from [/validate endpoint](#post-validate) are no API errors (unless validation could not be executed for some reason).
 
 The following errors are currently caught and returned as JSON:
 
@@ -2357,7 +2614,9 @@ If you'd like to run the import script daily to refresh current mappings, you ca
 [JSKOS Concept Schemes]: https://gbv.github.io/jskos/#concept-schemes
 [JSKOS Concepts]: https://gbv.github.io/jskos/#concept
 [JSKOS Items]: https://gbv.github.io/jskos/#item
+[JSKOS Registry]: https://gbv.github.io/jskos/#registry
 [Web Annotation Data Model]: https://www.w3.org/TR/annotation-model/
+
 
 ### Running Behind a Reverse Proxy
 There are certain things to consider when running `jskos-server` behind a reverse proxy:
@@ -2438,7 +2697,7 @@ Small note: If editing the README, please conform to the [standard-readme](https
 ### Publish
 **For maintainers only**
 
-Never work on the master branch directly. Always make changes on `dev` and then run the release script:
+Never work on the main branch directly. Always make changes on a feature branch for specific issues or on the `dev` branch for small fixes and then run the release script:
 
 ```bash
 npm run release:patch # or minor or major

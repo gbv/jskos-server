@@ -13,8 +13,7 @@
           "type": "null"
         },
         {
-          "type": "string",
-          "format": "uri"
+          "$ref": "#/definitions/uri"
         }
       ]
     },
@@ -85,25 +84,31 @@
       "minimum": 0,
       "maximum": 65535
     },
-    "changesApi" : {
-      "description": "Configuration specs about ChangesApi",
-      "type": "object",
-      "additionalProperties": false,
-       "properties": { 
-          "enableChangesApi": {
-            "description": "Enabling the changes api",
-            "type": "boolean"
-          },
-          "rsMaxRetries": {
-            "description": "Maximum number of retries",
-            "type": "number"
-          },
-          "rsRetryInterval": {
-            "description": "Retry interval in milliseconds",
-            "type": "number"
+    "changesApi": {
+      "description": "Ignored but allowed for backwards compatibility"
+    },
+    "changes" : {
+      "description": "Configuration of change stream endpoints",
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "retries": {
+              "description": "Maximum number of retries",
+              "type": "number"
+            },
+            "interval": {
+              "description": "Retry interval in milliseconds",
+              "type": "number"
+            }
           }
-       }
-  },
+        }
+      ]
+    },
     "proxies": {
       "description": "A list of proxy IP addresses or ranges",
       "$ref": "#/definitions/ips"
@@ -134,7 +139,7 @@
       }
     },
     "auth": {
-      "description": "Describes authentication capabilities",
+      "description": "Describes authentication capabilities and groups of identities",
       "type": "object",
       "additionalProperties": false,
       "properties": {
@@ -157,6 +162,32 @@
     },
     "identityProviders": {
       "$ref": "#/definitions/identityProviders"
+    },
+    "identityGroups": {
+      "description": "Groups of identities",
+      "type": "object",
+      "patternProperties": {
+        "^([a-z0-9+.-]+):.*": {
+          "type": "object",
+          "properties": {
+            "identities": {
+              "$ref": "#/definitions/identities"
+            },
+            "claims": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "patternProperties": {
+                  "^.*$": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
     },
     "identities": {
       "$ref": "#/definitions/identities"
@@ -181,9 +212,21 @@
     },
     "annotations": {
       "$ref": "#/definitions/capabilityAndForbidMappingOnlyProperties"
+    },
+    "registries": {
+      "$ref": "#/definitions/registries"
     }
   },
   "definitions": {
+    "uri": {
+      "type": "string",
+      "format": "uri"
+    },
+    "uriList": {
+      "type": "array",
+      "items": {
+      }
+    },
     "capabilityAndForbidMappingOnlyProperties": {
       "anyOf": [
         {
@@ -238,26 +281,47 @@
         }
       ]
     },
-    "capability": {
-      "description": "Describes capabilities for a certain item type.",
+    "registries": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/definitions/registriesCapability"
+            },
+            {
+              "$ref": "#/definitions/forbidMappingOnlyProperties"
+            },
+            {
+              "$ref": "#/definitions/forbidAnnotationOnlyProperties"
+            }
+          ]
+        }
+      ]
+    },
+    "registriesCapability": {
+      "description": "Describes capabilities for registries with additional registry-specific options.",
       "additionalProperties": false,
       "type": "object",
       "definitions": {
-        "auth": {
-          "description": "Indicates whether a certain action requires authentication.",
-          "type": "boolean"
-        },
-        "crossUser": {
-          "description": "Indicates whether a certain action can be performed on items that were created by a different user (boolean or list of user URIs).",
+        "registryTypeConfig": {
           "anyOf": [
+            { "type": "boolean" },
             {
-              "type": "boolean"
-            },
-            {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "format": "uri"
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "uriRequired": {
+                  "type": "boolean"
+                },
+                "mustExist": {
+                  "type": "boolean"
+                },
+                "skipInvalid": {
+                  "type": "boolean"
+                }
               }
             }
           ]
@@ -311,6 +375,16 @@
                 },
                 "ips": {
                   "$ref": "#/definitions/ips"
+                },
+                "uriBase": {
+                  "$ref": "#/definitions/uri"
+                },
+                "uriOrigin": {
+                  "type": "string",
+                  "enum": [
+                    "external",
+                    "uuid"
+                  ]
                 }
               },
               "additionalProperties": false
@@ -415,15 +489,10 @@
                 ],
                 "properties": {
                   "uri": {
-                    "type": "string",
-                    "format": "uri"
+                    "$ref": "#/definitions/uri"
                   },
                   "identifier": {
-                    "type": "array",
-                    "items": {
-                      "type": "string",
-                      "format": "uri"
-                    }
+                    "$ref": "#/definitions/uriList"
                   }
                 }
               }
@@ -444,15 +513,266 @@
                 ],
                 "properties": {
                   "uri": {
-                    "type": "string",
-                    "format": "uri"
+                    "$ref": "#/definitions/uri"
                   },
                   "identifier": {
-                    "type": "array",
-                    "items": {
-                      "type": "string",
-                      "format": "uri"
-                    }
+                    "$ref": "#/definitions/uriList"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "mismatchTagVocabulary": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object"
+            }
+          ]
+        },
+        "types": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "concepts": {
+              "$ref": "#/definitions/registriesCapability/definitions/registryTypeConfig"
+            },
+            "schemes": {
+              "$ref": "#/definitions/registriesCapability/definitions/registryTypeConfig"
+            },
+            "concordances": {
+              "$ref": "#/definitions/registriesCapability/definitions/registryTypeConfig"
+            },
+            "registries": {
+              "$ref": "#/definitions/registriesCapability/definitions/registryTypeConfig"
+            },
+            "mappings": {
+              "$ref": "#/definitions/registriesCapability/definitions/registryTypeConfig"
+            },
+            "annotations": {
+              "$ref": "#/definitions/registriesCapability/definitions/registryTypeConfig"
+            }
+          }
+        },
+        "mixedTypes": {
+          "type": "boolean"
+        }
+      }
+    },
+    "capability": {
+      "description": "Describes capabilities for a certain item type.",
+      "additionalProperties": false,
+      "type": "object",
+      "definitions": {
+        "auth": {
+          "description": "Indicates whether a certain action requires authentication.",
+          "type": "boolean"
+        },
+        "crossUser": {
+          "description": "Indicates whether a certain action can be performed on items that were created by a different user (boolean or list of user URIs).",
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/definitions/uriList"
+            }
+          ]
+        }
+      },
+      "properties": {
+        "read": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "auth": {
+                  "$ref": "#/definitions/capability/definitions/auth"
+                },
+                "identityProviders": {
+                  "$ref": "#/definitions/identityProviders"
+                },
+                "identities": {
+                  "$ref": "#/definitions/identities"
+                },
+                "ips": {
+                  "$ref": "#/definitions/ips"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "create": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "auth": {
+                  "$ref": "#/definitions/capability/definitions/auth"
+                },
+                "anonymous": {
+                  "$ref": "#/definitions/anonymous"
+                },
+                "identityProviders": {
+                  "$ref": "#/definitions/identityProviders"
+                },
+                "identities": {
+                  "$ref": "#/definitions/identities"
+                },
+                "ips": {
+                  "$ref": "#/definitions/ips"
+                },
+                "uriBase": {
+                  "$ref": "#/definitions/uri"
+                },
+                "uriOrigin": {
+                  "type": "string",
+                  "enum": [
+                    "external",
+                    "uuid"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "update": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "auth": {
+                  "$ref": "#/definitions/capability/definitions/auth"
+                },
+                "crossUser": {
+                  "$ref": "#/definitions/capability/definitions/crossUser"
+                },
+                "anonymous": {
+                  "$ref": "#/definitions/anonymous"
+                },
+                "identityProviders": {
+                  "$ref": "#/definitions/identityProviders"
+                },
+                "identities": {
+                  "$ref": "#/definitions/identities"
+                },
+                "ips": {
+                  "$ref": "#/definitions/ips"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "delete": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "auth": {
+                  "$ref": "#/definitions/capability/definitions/auth"
+                },
+                "crossUser": {
+                  "$ref": "#/definitions/capability/definitions/crossUser"
+                },
+                "anonymous": {
+                  "$ref": "#/definitions/anonymous"
+                },
+                "identityProviders": {
+                  "$ref": "#/definitions/identityProviders"
+                },
+                "identities": {
+                  "$ref": "#/definitions/identities"
+                },
+                "ips": {
+                  "$ref": "#/definitions/ips"
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "identityProviders": {
+          "$ref": "#/definitions/identityProviders"
+        },
+        "identities": {
+          "$ref": "#/definitions/identities"
+        },
+        "ips": {
+          "$ref": "#/definitions/ips"
+        },
+        "moderatingIdentities": {
+          "$ref": "#/definitions/identities"
+        },
+        "anonymous": {
+          "$ref": "#/definitions/anonymous"
+        },
+        "cardinality": {
+          "type": "string",
+          "enum": [
+            "1-to-1",
+            "1-to-n"
+          ]
+        },
+        "fromSchemeWhitelist": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "uri"
+                ],
+                "properties": {
+                  "uri": {
+                    "$ref": "#/definitions/uri"
+                  },
+                  "identifier": {
+                    "$ref": "#/definitions/uriList"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "toSchemeWhitelist": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "uri"
+                ],
+                "properties": {
+                  "uri": {
+                    "$ref": "#/definitions/uri"
+                  },
+                  "identifier": {
+                    "$ref": "#/definitions/uriList"
                   }
                 }
               }
@@ -492,11 +812,7 @@
           "type": "null"
         },
         {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "format": "uri"
-          }
+          "$ref": "#/definitions/uriList"
         }
       ]
     },
