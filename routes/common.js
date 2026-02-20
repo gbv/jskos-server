@@ -23,15 +23,13 @@ export function createRoute(router, path, config, service) {
       path,
       useAuth(config.auth),
       bodyParser,
-      wrapAsync(async (req) => {
-        return await service.createItem({
-          bodyStream: req.anystream,
-          user: req.user,
-          bulk: req.query?.bulk,
-          scheme: req.query?.scheme,
-          setApi: req.query?.setApi, // TODO: this is not documented
-        })
-      }),
+      wrapAsync(async req => service.createItem({
+        bodyStream: req.anystream,
+        user: req.user,
+        bulk: req.query?.bulk,
+        scheme: req.query?.scheme,
+        setApi: req.query?.setApi, // TODO: this is not documented
+      })),
       adjust,
       returnJSON,
     )
@@ -61,13 +59,11 @@ export function deleteRoute(router, path, config, service) {
       path,
       useAuth(config.auth),
       bodyParser,
-      wrapAsync(async (req) => {
-        return await service.deleteItem({
-          uri: req.query.uri,
-          existing: req.existing,
-          setApi: req.query?.setApi, // TODO: this is not documented
-        })
-      }),
+      wrapAsync(async req => service.deleteItem({
+        uri: req.query.uri,
+        existing: req.existing,
+        setApi: req.query?.setApi, // TODO: this is not documented
+      })),
       (req, res) => res.sendStatus(204),
     )
   }

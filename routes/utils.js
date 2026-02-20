@@ -200,40 +200,11 @@ const handleDownload = (filename) => (req, res) => {
 }
 
 /**
- * Extracts a creator objects from a request.
- *
- * @param {*} req request object
- */
-const getCreator = (req) => {
-  let creator = {}
-  const creatorUriPath = req.type === "annotations" ? "id" : "uri"
-  const creatorNamePath = req.type === "annotations" ? "name" : "prefLabel.en"
-  const userUris = getUrisOfUser(req.user)
-  if (req.user && !userUris.includes(req.query.identity)) {
-    _.set(creator, creatorUriPath, req.user.uri)
-  } else if (req.query.identity) {
-    _.set(creator, creatorUriPath, req.query.identity)
-  }
-  if (req.query.identityName) {
-    _.set(creator, creatorNamePath, req.query.identityName)
-  } else if (req.query.identityName !== "") {
-    const name = _.get(Object.values(_.get(req, "user.identities", [])).find(i => i.uri === _.get(creator, creatorUriPath)) || req.user, "name")
-    if (name) {
-      _.set(creator, creatorNamePath, name)
-    }
-  }
-  if (!_.get(creator, creatorUriPath) && !_.get(creator, creatorNamePath)) {
-    creator = null
-  }
-  return creator
-}
-
-/**
  * See https://github.com/gbv/jskos-server/issues/153#issuecomment-997847433
  *
  * @param {Object} options.object JSKOS object
  * @param {Object} [options.existing] existing object from database for PUT/PATCH
- * @param {Object} [options.creator] creator object, usually extracted via `getCreator` above
+ * @param {Object} [options.creator] creator object, usually extracted via `getCreator`
  * @param {Object} options.req request object (necessary for `type`, `user`, `method`, `anonymous`, and `auth`)
  */
 const handleCreatorForObject = ({ object, existing, creator, req }) => {
@@ -327,6 +298,5 @@ export {
   supportDownloadFormats,
   returnJSON,
   handleDownload,
-  getCreator,
   handleCreatorForObject,
 }

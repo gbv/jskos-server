@@ -1,7 +1,8 @@
 // Tests for utilities
 
 import assert from "node:assert"
-import { getCreator, handleCreatorForObject } from "../routes/utils.js"
+import { handleCreatorForObject } from "../routes/utils.js"
+import { getCreator } from "../utils/users.js"
 import { cleanJSON } from "../utils/utils.js"
 
 describe("utils", () => {

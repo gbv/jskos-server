@@ -957,6 +957,14 @@ Endpoint to check whether a user is authorized (see [user accounts](#user-accoun
 
   `action=[action]` one of "read", "create", "update", "delete" (optional)
 
+  `identity` optional identity URI (must be valid if authentication is required)
+
+  `identityName` optional identity name
+
+* **Success Response**
+
+  JSON Object with [user data](#user-acounts) that can be written into the database (`uri` and/or `name`).
+
 ### POST /validate
 
 Endpoint to validate JSKOS objects via [jskos-validate].

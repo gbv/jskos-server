@@ -19,6 +19,7 @@ import { serverStatus } from "./utils/status.js"
 
 import { ipcheck } from "./utils/ipcheck.js"
 import { useAuth } from "./utils/auth.js"
+import { getUser } from "./utils/users.js"
 import * as errors from "./errors/index.js"
 import portfinder from "portfinder"
 import expressWs from "express-ws"
@@ -130,7 +131,7 @@ app.use(ipcheck(config))
 
 // /checkAuth
 app.get("/checkAuth", useAuth(true), (req, res) => {
-  res.sendStatus(204)
+  res.json(getUser(req))
 })
 
 // Add conditional routes

@@ -1,6 +1,7 @@
 ## 2.4.1
 
 - Remove option "closedWorldAssumption" (always true)
+- Extend /checkAuth endpoint to return user data
 
 ## 2.4.0
 

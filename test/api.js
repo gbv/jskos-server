@@ -40,21 +40,6 @@ const userInGroup = {
 }
 const tokenWithGroup = jwt.sign({ user: userInGroup }, "test")
 
-const userNotOnWhitelist = {
-  uri: "http://test2.user",
-  name: "Test User",
-  identities: {
-    test: {},
-  },
-}
-const tokenNotOnWhitelist = jwt.sign({ user: userNotOnWhitelist }, "test")
-
-const userMissingIdentity = {
-  uri: "http://test.user",
-  name: "Test User",
-}
-const tokenMissingIdentity = jwt.sign({ user: userMissingIdentity }, "test")
-
 // Hide UnhandledPromiseRejectionWarning on output
 process.on("unhandledRejection", () => {})
 
@@ -105,6 +90,84 @@ let mapping = {
   ],
 }
 
+const userNotOnWhitelist = {
+  uri: "http://test2.user",
+  name: "Test User",
+  identities: {
+    test: {},
+  },
+}
+const tokenNotOnWhitelist = jwt.sign({ user: userNotOnWhitelist }, "test")
+
+const userMissingIdentity = {
+  uri: "http://test.user",
+  name: "Test User",
+}
+const tokenMissingIdentity = jwt.sign({ user: userMissingIdentity }, "test")
+
+// no database connection required for /checkAuth
+describe("GET /checkAuth", () => {
+  const tests = [
+    {
+      test: "",
+      token,
+      body: {
+        name: "Test User",
+        uri: "http://test.user",
+      },
+    },
+    {
+      test: "user in group",
+      token: tokenWithGroup,
+      query: { type: "concepts", action: "delete", identityName: "42" },
+      body: {
+        name: "42",
+        uri: "http://in-group.user",
+      },
+    },
+    {
+      test: "user not on whitelist",
+      token: tokenNotOnWhitelist,
+    },
+    {
+      test: "missing identity",
+      token: tokenMissingIdentity,
+    },
+    {
+      // identityProviders is set to null for annotations.delete
+      test: "userMissingIdentity for delete annotations",
+      query: { type: "annotations", action: "delete" },
+      token: tokenMissingIdentity,
+      body: { uri: "http://test.user", name: "Test User" },
+    },
+    {
+      test: "missing identity for create annotations",
+      query: { type: "annotations", action: "create" },
+      tokenMissingIdentity,
+    },
+  ]
+
+  for (let { test, token, query, body } of tests) {
+    it(`${body ? "" : "not "}authorized ${test}`, done => {
+      chai.request.execute(app)
+        .get("/checkAuth")
+        .query(query || {})
+        .set("Authorization", `Bearer ${token}`)
+        .end((err, res) => {
+          if (body) {
+            res.should.have.status(200)
+            res.body.should.deep.equal(body)
+          } else {
+            res.should.have.status(403)
+            res.body.should.be.an("object")
+            res.body.error.should.be.eql("ForbiddenAccessError")
+          }
+          done()
+        })
+    })
+  }
+})
+
 describe("Express Server", () => {
   before(async () => {
     const mongoUri = await setupInMemoryMongo({ replSet: false })
@@ -153,83 +216,6 @@ describe("Express Server", () => {
         .get("/status.schema.json")
         .end((err, res) => {
           res.should.have.status(200)
-          done()
-        })
-    })
-
-  })
-
-  describe("GET /checkAuth", () => {
-
-    it("should be authorized for user", done => {
-      chai.request.execute(app)
-        .get("/checkAuth")
-        .set("Authorization", `Bearer ${token}`)
-        .end((err, res) => {
-          res.should.have.status(204)
-          done()
-        })
-    })
-
-    it("should be authorized for user in group", done => {
-      chai.request.execute(app)
-        .get("/checkAuth")
-        .query({ type: "concepts", action: "delete" })
-        .set("Authorization", `Bearer ${tokenWithGroup}`)
-        .end((err, res) => {
-          res.should.have.status(204)
-          done()
-        })
-    })
-
-    it("should not be authorized for userNotOnWhitelist", done => {
-      chai.request.execute(app)
-        .get("/checkAuth")
-        .set("Authorization", `Bearer ${tokenNotOnWhitelist}`)
-        .end((err, res) => {
-          res.should.have.status(403)
-          res.body.should.be.an("object")
-          res.body.error.should.be.eql("ForbiddenAccessError")
-          done()
-        })
-    })
-
-    it("should be not be authorized for userMissingIdentity", done => {
-      chai.request.execute(app)
-        .get("/checkAuth")
-        .set("Authorization", `Bearer ${tokenMissingIdentity}`)
-        .end((err, res) => {
-          res.should.have.status(403)
-          res.body.should.be.an("object")
-          res.body.error.should.be.eql("ForbiddenAccessError")
-          done()
-        })
-    })
-
-    it("should not be authorized for userMissingIdentity for create annotations", done => {
-      chai.request.execute(app)
-        .get("/checkAuth")
-        .query({ type: "annotations", action: "create" })
-        .set("Authorization", `Bearer ${tokenMissingIdentity}`)
-        .end((err, res) => {
-          res.should.have.status(403)
-          res.body.should.be.an("object")
-          res.body.error.should.be.eql("ForbiddenAccessError")
-          done()
-        })
-    })
-
-    // identityProviders is set to null for annotations.delete
-    it("should be authorized for userMissingIdentity for delete annotations", done => {
-      chai.request.execute(app)
-        .get("/checkAuth")
-        .query({
-          type: "annotations",
-          action: "delete",
-        })
-        .set("Authorization", `Bearer ${tokenMissingIdentity}`)
-        .end((err, res) => {
-          res.should.have.status(204)
           done()
         })
     })

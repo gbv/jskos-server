@@ -84,6 +84,22 @@ function expandWhiteList(whitelist, identityGroups) {
   return whitelist
 }
 
+function jwtStrategy({ key, algorithm }) {
+  const strategy = new JwtStrategy({
+    jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+    secretOrKey: key,
+    algorithms: [algorithm],
+  }, (jwt_payload, done) => done(null, jwt_payload.user))
+
+  // unique name derived from configuration, so strategy can be registered globally
+  const hash = `${algorithm}${key}`.split("").reduce((a,b) => (((a << 5) - a) + b.charCodeAt(0))|0, 0).toString(16)
+  const name = `jwt-${hash}`
+
+  passport.use(name, strategy)
+
+  return name
+}
+
 let optional = []
 let auth = (req, res, next) => {
   next(new ForbiddenAccessError("Access forbidden. No authentication configured."))
@@ -91,22 +107,14 @@ let auth = (req, res, next) => {
 
 // Prepare authorization via JWT
 if (config.auth.algorithm && config.auth.key) {
-  const opts = {
-    jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-    secretOrKey: config.auth.key,
-    algorithms: [config.auth.algorithm],
-  }
   try {
-    const strategy = new JwtStrategy(opts, (jwt_payload, done) => done(null, jwt_payload.user))
-    const strategyName = "jwt" // TODO: derive strategyName from opts
-
-    passport.use(strategyName, strategy)
-    optional.push(strategyName)
+    const name = jwtStrategy(config.auth)
+    optional.push(name)
 
     // Use like this: app.get("/secureEndpoint", auth, (req, res) => { ... })
     // res.user will contain the current authorized user.
     auth = (req, res, next) => {
-      passport.authenticate(strategyName, { session: false }, (error, user) => {
+      passport.authenticate(name, { session: false }, (error, user) => {
         if (error || !user) {
           return next(new ForbiddenAccessError("Access forbidden. Could not authenticate via JWT."))
         }

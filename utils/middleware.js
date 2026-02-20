@@ -8,7 +8,8 @@ import express from "express"
 import { createServices } from "../services/index.js"
 import { createAdjuster } from "./adjust.js"
 
-import { matchesCreator, getCreator, handleCreatorForObject } from "../routes/utils.js"
+import { matchesCreator, handleCreatorForObject } from "../routes/utils.js"
+import { getCreator } from "./users.js"
 
 const services = createServices(config)
 const adjust = createAdjuster(config, services)
