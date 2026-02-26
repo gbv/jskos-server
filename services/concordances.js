@@ -185,7 +185,7 @@ export class ConcordanceService extends AbstractService {
     }
   }
 
-  async patchConcordance({ body, existing }) {
+  async patch({ body, existing }) {
     if (!body) {
       throw new InvalidBodyError()
     }

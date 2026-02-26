@@ -1,81 +1,10 @@
-/**
- * Module that prepares authentication middleware via Passport.
- *
- * Exports a function that return default or optional authentication.
- * Optional authentication should be used if `auth` is set to `false` for a particular endpoint.
- * For example: app.get("/mappings", useAuth(config.mappings.read.auth), (req, res) => { ... })
- * req.user will cointain the user if authorized, otherwise stays undefined.
- */
-
 import _ from "lodash"
-import { ForbiddenAccessError } from "../errors/index.js"
-
-import config from "../config/index.js"
 
 import passport from "passport"
 import { Strategy as JwtStrategy, ExtractJwt } from "passport-jwt"
 import { Strategy as AnonymousStrategy } from "passport-anonymous"
 
 passport.use(new AnonymousStrategy())
-
-const actions = {
-  POST: "create",
-  PUT: "update",
-  PATCH: "update",
-  DELETE: "delete",
-}
-
-// Add some properties and methods related to authentication
-// This middleware is added to both auth.main and auth.optional
-const authPreparation = (req, res, next) => {
-  // Add action
-  req.action = actions[req.method] || "read"
-
-  // Add user URIs and providers
-  req.uris = [req.user?.uri].concat(Object.values(req.user?.identities || {}).map(id => id.uri)).filter(Boolean)
-  req.userProviders = Object.keys(req.user?.identities || {})
-
-  // Add isAuthorizedFor method
-  req.isAuthorizedFor = function ({ type, action, whitelist, providers, throwError = false } = {}) {
-    type = type ?? this.type
-    action = action ?? this.action
-
-    if (!config[type]?.[action]?.auth && type !== "checkAuth") {
-      // If action does not require auth at all, the request is authorized
-      return true
-    } else if (!this.user) {
-      // If action requires auth, but user isn't logged in, the request is not authorized
-      // For routes using the `auth.main` middleware, this is called early, but not for routes with `auth.optional`.
-      if (throwError) {
-        throw new ForbiddenAccessError("Access forbidden. Could not authenticate via JWT.")
-      }
-      return false
-    }
-
-    if (whitelist === undefined) {
-      whitelist = expandWhiteList(config[type]?.[action]?.identities, config.identityGroups)
-    }
-    providers = providers ?? config[type]?.[action]?.identityProviders
-
-    if (whitelist && _.intersection(whitelist, this.uris).length == 0) {
-      if (throwError) {
-        throw new ForbiddenAccessError("Access forbidden. A whitelist is in place, but authenticated user is not on the whitelist.")
-      }
-      return false
-    }
-
-    if (providers && _.intersection(providers, this.userProviders).length == 0) {
-      if (throwError) {
-        throw new ForbiddenAccessError("Access forbidden, missing identity provider. One of the following providers is necessary: " + providers.join(", "))
-      }
-      return false
-    }
-
-    return true
-  }
-
-  next()
-}
 
 function expandWhiteList(whitelist, identityGroups) {
   if (whitelist && identityGroups) {
@@ -84,79 +13,135 @@ function expandWhiteList(whitelist, identityGroups) {
   return whitelist
 }
 
-function jwtStrategy({ key, algorithm }) {
-  const strategy = new JwtStrategy({
-    jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-    secretOrKey: key,
-    algorithms: [algorithm],
-  }, (jwt_payload, done) => done(null, jwt_payload.user))
+import { ForbiddenAccessError } from "../errors/index.js"
 
-  // unique name derived from configuration, so strategy can be registered globally
-  const hash = `${algorithm}${key}`.split("").reduce((a,b) => (((a << 5) - a) + b.charCodeAt(0))|0, 0).toString(16)
-  const name = `jwt-${hash}`
 
-  passport.use(name, strategy)
-
-  return name
-}
-
-let optional = []
-let auth = (req, res, next) => {
-  next(new ForbiddenAccessError("Access forbidden. No authentication configured."))
-}
-
-// Prepare authorization via JWT
-if (config.auth.algorithm && config.auth.key) {
-  try {
-    const name = jwtStrategy(config.auth)
-    optional.push(name)
-
-    // Use like this: app.get("/secureEndpoint", auth, (req, res) => { ... })
-    // res.user will contain the current authorized user.
-    auth = (req, res, next) => {
-      passport.authenticate(name, { session: false }, (error, user) => {
-        if (error || !user) {
-          return next(new ForbiddenAccessError("Access forbidden. Could not authenticate via JWT."))
-        }
-        req.user = user
-        return next()
-      })(req, res, next)
-    }
-  } catch(error) {
-    config.error("Error setting up JWT authentication")
+export class Authenticator {
+  static actions = {
+    POST: "create",
+    PUT: "update",
+    PATCH: "update",
+    DELETE: "delete",
   }
-} else {
-  config.warn("Note: To provide authentication via JWT, please add `auth.algorithm` and `auth.key` to the configuration file!")
-}
 
-// Configure identities whitelists and identity providers
-const authAuthorize = (req, res, next) => {
-  let whitelist, providers, type, action
+  constructor(config) {
+    this.optional = []
+    this.config = config // auth, [type], identityGroups
 
-  if (req.type == "checkAuth") {
-    ({ type, action } = req.query || {})
-    if (type && action && config[type][action]) {
-      whitelist = config[type][action].identities
-      providers = config[type][action].identityProviders
+    // Prepare authorization via JWT
+    if (config.auth) {
+      const { algorithm, key } = config.auth
+
+      const strategy = new JwtStrategy({
+        jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+        secretOrKey: key,
+        algorithms: [algorithm],
+      }, (jwt_payload, done) => done(null, jwt_payload.user))
+
+      // unique name derived from configuration, to avoid overwriting strategies can be registered globally
+      const hash = `${algorithm}${key}`.split("").reduce((a,b) => (((a << 5) - a) + b.charCodeAt(0))|0, 0).toString(16)
+      const name = `jwt-${hash}`
+
+      passport.use(name, strategy)
+      this.optional.push(name)
+
+      this.auth = (req, res, next) => {
+        passport.authenticate(name, { session: false }, (error, user) => {
+          if (error || !user) {
+            return next(new ForbiddenAccessError("Access forbidden. Could not authenticate via JWT."))
+          }
+          req.user = user
+          return next()
+        })(req, res, next)
+      }
+    }
+
+    // Also use anonymous strategy for endpoints that can be used authenticated or not authenticated
+    this.optional.push("anonymous")
+  }
+
+  /**
+   * Checks if action on type is allowed, throws an execption otherwise.
+   */
+  checkAccess({ type, action, whitelist, providers, user }) {
+    const config = this.config
+
+    if (!config[type]?.[action]?.auth && type !== "checkAuth") {
+      // If action does not require auth at all, the request is authorized
+      return true
+    } else if (!user) {
+      // If action requires auth, but user isn't logged in, the request is not authorized
+      // For routes using the `auth.main` middleware, this is called early, but not for routes with `auth.optional`.
+      throw new ForbiddenAccessError("Access forbidden. Could not authenticate via JWT.")
+    }
+
+    if (whitelist === undefined) {
+      whitelist = expandWhiteList(config[type]?.[action]?.identities, config.identityGroups)
+    }
+    providers = providers ?? config[type]?.[action]?.identityProviders
+
+    const uris = [user.uri].concat(Object.values(user.identities || {}).map(id => id.uri)).filter(Boolean)
+    if (whitelist && _.intersection(whitelist, uris).length == 0) {
+      throw new ForbiddenAccessError("Access forbidden. A whitelist is in place, but authenticated user is not on the whitelist.")
+    }
+
+    if (providers && !_.intersection(providers, Object.keys(user?.identities || {})).length) {
+      throw new ForbiddenAccessError("Access forbidden, missing identity provider. One of the following providers is necessary: " + providers.join(", "))
+    }
+
+    return true
+  }
+
+  /**
+   * Returns middleware for required or optional authentication.
+   */
+  authenticate(required) {
+    if (required) {
+      const auth = this.auth || ((req, res, next) => {
+        next(new ForbiddenAccessError("Access forbidden. No authentication configured."))
+      })
+      return [
+        auth, // sets req.user on success
+        (req, res, next) => this._authAuthorize(req, res, next),
+      ]
     } else {
-      whitelist = config.identities
-      providers = config.identityProviders
+      return [passport.authenticate(this.optional, { session: false })]
     }
   }
 
-  whitelist = expandWhiteList(whitelist, config.identityGroups)
+  _authAuthorize(req, res, next) {
+    let whitelist, providers
 
-  try {
-    req.isAuthorizedFor({ type, action, whitelist, providers, throwError: true })
-    next()
-  } catch (error) {
-    next(error)
+    let action = Authenticator.actions[req.method] || "read"
+    let type = req.type
+
+    if (req.type == "checkAuth") {
+      ({ type, action } = req.query || {})
+      if (type && action && this.config[type][action]) {
+        whitelist = this.config[type][action].identities
+        providers = this.config[type][action].identityProviders
+      } else {
+        whitelist = this.config.identities
+        providers = this.config.identityProviders
+      }
+    }
+
+    whitelist = expandWhiteList(whitelist, config.identityGroups)
+
+    try {
+      type = type || req.type
+      action = action || "read"
+      this.checkAccess({ type, action, whitelist, providers, user: req.user })
+      next()
+    } catch (error) {
+      next(error)
+    }
   }
+
+
 }
 
-// Also use anonymous strategy for endpoints that can be used authenticated or not authenticated
-optional.push("anonymous")
+import config from "../config/index.js"
+const authenticator = new Authenticator(config)
 
-export const useAuth = required => required
-  ? [auth, authPreparation, authAuthorize]
-  : [passport.authenticate(optional, { session: false }), authPreparation]
+export const useAuth = required => authenticator.authenticate(required)

@@ -146,20 +146,7 @@ export class RegistryService extends AbstractService {
     return doc
   }
 
-  /**
-   * Partially updates a registry entry.
-   *
-   * @async
-   * @function patchRegistry
-   * @param {Object} params - Parameters for updating a registry.
-   * @param {Object} params.body - Incoming registry fields to merge into the existing entry.
-   * @param {Object} params.existing - The existing registry document from the database to be updated.
-   * @throws {InvalidBodyError} If the request body is missing or fails validation.
-   * @throws {EntityNotFoundError} If the target registry does not exist.
-   * @throws {DatabaseAccessError} If the database update fails.
-   * @returns {Promise<Object>} The updated registry document from the database.
-   */
-  async patchRegistry({ body, existing }) {
+  async patch({ body, existing }) {
     if (!body) {
       throw new InvalidBodyError()
     }

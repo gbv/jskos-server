@@ -17,10 +17,7 @@
       "heartbeatFrequencyMS": 10000
     }
   },
-  "auth": {
-    "algorithm": "RS256",
-    "key": null
-  },
+  "auth": false,
   "schemes": true,
   "concepts": true,
   "mappings": {

@@ -54,7 +54,7 @@ export default config => {
       useAuth(concordances.update.auth),
       bodyParser,
       wrapAsync(async (req) => {
-        return await service.patchConcordance({
+        return await service.patch({
           _id: req.params._id,
           body: req.body,
           user: req.user,

@@ -51,7 +51,7 @@ export default config => {
       useAuth(annotations.update.auth),
       bodyParser,
       wrapAsync(async (req) => {
-        return await service.patchAnnotation({
+        return await service.patch({
           _id: req.params._id,
           body: req.body,
           user: req.user,

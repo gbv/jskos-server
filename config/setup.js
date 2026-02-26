@@ -91,6 +91,7 @@ export function setupConfig(config) {
 
   // Set baseUrl to localhost if not set
   if (!config.baseUrl) {
+    // TODO: use normal property once port is set *before* setup
     Object.defineProperty(config, "baseUrl", {
       get: function () {
         return `http://localhost:${this.port}/`

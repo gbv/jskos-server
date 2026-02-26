@@ -59,7 +59,7 @@
       "type": "boolean"
     },
     "namespace": {
-      "description": "A namespace string that is used for generating unique URIs.",
+      "description": "A namespace string that is used for generating unique URIs for mappings on import.",
       "type": "string"
     },
     "verbosity": {
@@ -140,25 +140,24 @@
     },
     "auth": {
       "description": "Describes authentication capabilities and groups of identities",
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "algorithm": {
-          "description": "The encryption algorithm used by the login-server that provides the JWTs that are used for authenticaton",
-          "type": "string"
-        },
-        "key": {
-          "description": "The public key or symmetric secret of the login-server that is used for authentication",
-          "anyOf": [
-            {
-              "type": "null"
+      "anyOf": [
+        { "const": false },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "algorithm": {
+              "description": "The encryption algorithm used by the login-server that provides the JWTs that are used for authenticaton",
+              "type": "string"
             },
-            {
+            "key": {
+              "description": "The public key or symmetric secret of the login-server that is used for authentication",
               "type": "string"
             }
-          ]
+          },
+          "required": ["algorithm", "key"]
         }
-      }
+      ]
     },
     "identityProviders": {
       "$ref": "#/definitions/identityProviders"

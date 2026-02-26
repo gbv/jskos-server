@@ -6,12 +6,13 @@ import * as anystream from "json-anystream"
 import express from "express"
 
 import { createServices } from "../services/index.js"
-import { createAdjuster } from "./adjust.js"
 
 import { matchesCreator, handleCreatorForObject } from "../routes/utils.js"
 import { getCreator } from "./users.js"
 
 const services = createServices(config)
+
+import { createAdjuster } from "./adjust.js"
 const adjust = createAdjuster(config, services)
 
 const buildUrlForLinkHeader = ({ query, rel, req }) => {
@@ -175,7 +176,7 @@ const bodyParser = (req, res, next) => {
             superordinated.existing = concordance
           } catch (error) {
             const message = `Existing concordance with URI ${existing.partOf[0].uri} could not be found in database.`
-            config.error(message)
+            // console.error(message)
             next(new DatabaseInconsistencyError(message))
           }
         }

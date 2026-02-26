@@ -76,7 +76,7 @@ export default config => {
       useAuth(config.mappings.update.auth),
       bodyParser,
       wrapAsync(async (req) => {
-        return await service.patchMapping({
+        return await service.patch({
           _id: req.params._id,
           body: req.body,
           user: req.user,

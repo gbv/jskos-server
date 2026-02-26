@@ -8,6 +8,8 @@ function createAdjuster(config) {
     concepts: new ConceptService(config),
   }
 
+  const { baseUrl } = config
+
   // Adjust data in req.data based on req.type (which is set by `addMiddlewareProperties`)
   const adjust = async (req, res, next) => {
   /**
@@ -113,16 +115,16 @@ function createAdjuster(config) {
     if (concordance) {
       concordance["@context"] = "https://gbv.github.io/jskos/context.json"
       // Remove existing "distributions" array (except for external URLs)
-      concordance.distributions = (concordance.distributions || []).filter(dist => !dist.download || !dist.download.startsWith(config.baseUrl))
+      concordance.distributions = (concordance.distributions || []).filter(dist => !dist.download || !dist.download.startsWith(baseUrl))
       // Add distributions for JSKOS and CSV
       concordance.distributions = [
         {
-          download: `${config.baseUrl}mappings?partOf=${encodeURIComponent(concordance.uri)}&download=ndjson`,
+          download: `${baseUrl}mappings?partOf=${encodeURIComponent(concordance.uri)}&download=ndjson`,
           format: "http://format.gbv.de/jskos",
           mimetype: "application/x-ndjson; charset=utf-8",
         },
         {
-          download: `${config.baseUrl}mappings?partOf=${encodeURIComponent(concordance.uri)}&download=csv`,
+          download: `${baseUrl}mappings?partOf=${encodeURIComponent(concordance.uri)}&download=csv`,
           mimetype: "text/csv; charset=utf-8",
         },
       ].concat(concordance.distributions)
@@ -154,17 +156,17 @@ function createAdjuster(config) {
       scheme["@context"] = "https://gbv.github.io/jskos/context.json"
       scheme.type = scheme.type || ["http://www.w3.org/2004/02/skos/core#ConceptScheme"]
       // Remove existing "distributions" array (except for external URLs)
-      scheme.distributions = (scheme.distributions || []).filter(dist => !dist.download || !dist.download.startsWith(config.baseUrl))
+      scheme.distributions = (scheme.distributions || []).filter(dist => !dist.download || !dist.download.startsWith(baseUrl))
       if (scheme.concepts && scheme.concepts.length) {
       // If this instance contains concepts for this scheme, add distribution for it
         scheme.distributions = [
           {
-            download: `${config.baseUrl}voc/concepts?uri=${encodeURIComponent(scheme.uri)}&download=ndjson`,
+            download: `${baseUrl}voc/concepts?uri=${encodeURIComponent(scheme.uri)}&download=ndjson`,
             format: "http://format.gbv.de/jskos",
             mimetype: "application/x-ndjson; charset=utf-8",
           },
           {
-            download: `${config.baseUrl}voc/concepts?uri=${encodeURIComponent(scheme.uri)}&download=json`,
+            download: `${baseUrl}voc/concepts?uri=${encodeURIComponent(scheme.uri)}&download=json`,
             mimetype: "application/json; charset=utf-8",
           },
         ].concat(scheme.distributions)
@@ -173,13 +175,13 @@ function createAdjuster(config) {
           scheme.API = [
             {
               type: "http://bartoc.org/api-type/jskos",
-              url: config.baseUrl,
+              url: baseUrl,
             },
           ]
         }
       }
       // Add distributions based on API field
-      (scheme.API || []).filter(api => api.type === "http://bartoc.org/api-type/jskos" && api.url !== config.baseUrl).forEach(api => {
+      (scheme.API || []).filter(api => api.type === "http://bartoc.org/api-type/jskos" && api.url !== baseUrl).forEach(api => {
         scheme.distributions.push({
           download: `${api.url}voc/concepts?uri=${encodeURIComponent(scheme.uri)}&download=ndjson`,
           format: "http://format.gbv.de/jskos",

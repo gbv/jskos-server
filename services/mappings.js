@@ -695,7 +695,7 @@ export class MappingService extends AbstractService {
     }
   }
 
-  async patchMapping({ body, existing }) {
+  async patch({ body, existing }) {
     let mapping = body
     if (!mapping) {
       throw new InvalidBodyError()

@@ -1,3 +1,7 @@
+## ...
+
+- Malformed configuration of JWT key/algorithm will now prevent server from starting
+
 ## 2.4.1
 
 - Remove option "closedWorldAssumption" (always true)

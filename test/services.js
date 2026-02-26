@@ -60,12 +60,12 @@ describe("Services Features", () => {
           uri: "test:user",
         }],
       }
-      const patchedConcordance = await services.concordance.patchConcordance({ body: patch, existing: postedConcordance })
+      const patchedConcordance = await services.concordance.patch({ body: patch, existing: postedConcordance })
       assert.ok(!patchedConcordance.contributor[0].prefLabel, "PATCH requests should merge objects only on the top level.")
       const patch2 = {
         contributor: null,
       }
-      const patchedConcordance2 = await services.concordance.patchConcordance({ body: patch2, existing: patchedConcordance })
+      const patchedConcordance2 = await services.concordance.patch({ body: patch2, existing: patchedConcordance })
       assert.ok(patchedConcordance2.contributor === undefined, "A field should be removed when set to `null`.")
     })
 
@@ -482,14 +482,14 @@ describe("Services Features", () => {
       const existing = await services.registry.getItem(registryExample.uri)
 
       // Add a field and verify it exists
-      const patched1 = await services.registry.patchRegistry({
+      const patched1 = await services.registry.patch({
         existing,
         body: { publisher: [{ uri: "urn:test:publisher", prefLabel: { en: "Pub" } }] },
       })
       assert.ok(patched1.publisher?.length)
 
       // Now remove field and verify it is removed
-      const patched2 = await services.registry.patchRegistry({
+      const patched2 = await services.registry.patch({
         existing: patched1,
         body: { publisher: null },
       })

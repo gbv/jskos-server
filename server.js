@@ -18,18 +18,29 @@ import createValidateRouter from "./routes/validate.js"
 import { serverStatus } from "./utils/status.js"
 
 import { ipcheck } from "./utils/ipcheck.js"
-import { useAuth } from "./utils/auth.js"
+import { Authenticator } from "./utils/auth.js"
 import { getUser } from "./utils/users.js"
 import * as errors from "./errors/index.js"
 import portfinder from "portfinder"
 import expressWs from "express-ws"
 import { setupChangesApi, isChangesApiAvailable } from "./utils/changes.js"
 
+const authenticator = new Authenticator(config)
+const useAuth = required => authenticator.authenticate(required)
+
 const __dirname = import.meta.dirname
+
 const db = createDatabase(config)
 const connection = db.connection
 
 config.log(`Running in ${config.env} mode.`)
+
+if (config.env == "test") {
+  portfinder.basePort = config.port
+  // TODO: update config.baseUrl
+  config.port = await portfinder.getPortPromise()
+}
+
 
 if (!config.baseUrl) {
   config.warn("Warning: If you're using jskos-server behind a reverse proxy, it is necessary to add `baseUrl` to the configuration file!")
@@ -176,17 +187,9 @@ app.use((error, req, res, next) => {
 // Changes API
 await setupChangesApi(app, config, db)
 
-const start = async () => {
-  if (config.env == "test") {
-    portfinder.basePort = config.port
-    config.port = await portfinder.getPortPromise()
-  }
-  app.listen(config.port, () => {
-    config.log(`Now listening on port ${config.port}`)
-  })
-}
-// Start express server immediately even if database is not yet connected
-start()
+app.listen(config.port, () => {
+  config.log(`Now listening on port ${config.port}`)
+})
 
 export {
   app,

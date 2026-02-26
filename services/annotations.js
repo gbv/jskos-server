@@ -188,7 +188,7 @@ export class AnnotationService extends AbstractService {
     }
   }
 
-  async patchAnnotation({ body, existing }) {
+  async patch({ body, existing }) {
     let annotation = body
     if (!annotation) {
       throw new InvalidBodyError()
