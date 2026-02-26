@@ -117,6 +117,14 @@ app.get("/status",
     res.status(200).json(serverStatus(config, connection.readyState === 1))
   })
 
+// IP check middleware
+app.use(ipcheck(config))
+
+// /checkAuth
+app.get("/checkAuth", useAuth(true), (req, res) => {
+  res.json(getUser(req))
+})
+
 // Database check middleware
 app.use((req, res, next) => {
   if (connection.readyState === 1) {
@@ -125,13 +133,6 @@ app.use((req, res, next) => {
     // No connection to database, return error
     next(new errors.DatabaseAccessError())
   }
-})
-// IP check middleware
-app.use(ipcheck(config))
-
-// /checkAuth
-app.get("/checkAuth", useAuth(true), (req, res) => {
-  res.json(getUser(req))
 })
 
 // Add conditional routes
