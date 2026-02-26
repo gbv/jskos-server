@@ -25,7 +25,7 @@ Options
                                       meaning that existing entities will not be overridden.
                                       Note that an error will be thrown when even one of the entities already exist.
   --nobulk                -b          Disable bulk import no not ignore and filter out invalid entities
-  --set-api                           EXPERIMENTAL. Onlt for concepts. Will update the scheme's \`API\` property after
+  --set-api                           EXPERIMENTAL. Only for concepts. Will update the scheme's \`API\` property after
                                       importing concepts.
 
 Examples
