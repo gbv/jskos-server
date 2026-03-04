@@ -42,7 +42,7 @@ export function updateRoute(router, path, config, service) {
       path,
       useAuth(config.auth),
       bodyParser,
-      wrapAsync(async req => service.updateItems({
+      wrapAsync(async req => service.updateItem({
         body: req.body,
         existing: req.existing,
         setApi: req.query?.setApi, // TODO: this is not documented
