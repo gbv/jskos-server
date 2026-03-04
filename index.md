@@ -65,7 +65,6 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [GET /concepts/suggest](#get-conceptssuggest)
   - [GET /concepts/search](#get-conceptssearch)
   - [GET /registries](#get-registries)
-  - [GET /registries/:\_id](#get-registries_id)
   - [GET /registries/suggest](#get-registriessuggest)
   - [POST /registries](#post-registries)
   - [PUT /registries](#put-registries)
@@ -147,7 +146,6 @@ All missing keys will be defaulted from `config/config.default.json`. See [endpo
   "env": "development",
   "title": "JSKOS Server",
   "version": null,
-  "closedWorldAssumption": true,
   "port": 3000,
   "proxies": [],
   "mongo": {
@@ -958,6 +956,14 @@ Endpoint to check whether a user is authorized (see [user accounts](#user-accoun
   `type=[type]` one of "schemes", "concepts", "mappings", "concordances, "registries", "annotations" (optional)
 
   `action=[action]` one of "read", "create", "update", "delete" (optional)
+
+  `identity` optional identity URI (must be valid if authentication is required)
+
+  `identityName` optional identity name
+
+* **Success Response**
+
+  JSON Object with [user data](#user-acounts) that can be written into the database (`uri` and/or `name`).
 
 ### POST /validate
 
