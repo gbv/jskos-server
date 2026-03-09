@@ -36,7 +36,7 @@ export class AbstractService {
     return item
   }
 
-  // Low-level database delete an item by its id
+  // Low-level database delete an item by its internal id
   async deleteItem({ existing }) {
     const result = await this.model.deleteOne({ _id: existing._id })
     if (!result.deletedCount) {

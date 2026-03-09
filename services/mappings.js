@@ -438,13 +438,6 @@ export class MappingService extends AbstractService {
   }
 
   async getItem(_id) {
-    return this.getMapping(_id)
-  }
-
-  /**
-   * Returns a promise with a single mapping with ObjectId in req.params._id.
-   */
-  async getMapping(_id) {
     if (!_id) {
       throw new MalformedRequestError()
     }
@@ -647,7 +640,7 @@ export class MappingService extends AbstractService {
     return mapping
   }
 
-  async putMapping({ body, existing }) {
+  async updateItem({ body, existing }) {
     let mapping = body
     if (!mapping) {
       throw new InvalidBodyError()

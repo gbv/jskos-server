@@ -1,11 +1,14 @@
 ## ...
 
 - Malformed configuration of JWT key/algorithm will now prevent server from starting
+- Add `download` parameter for annotations
 
 ## 2.4.1
 
-- Remove option "closedWorldAssumption" (always true)
-- Extend /checkAuth endpoint to return user data
+- Fix bug on `POST /voc`
+- Extend `/checkAuth` endpoint to return user data
+- Deprecate configuration field `closedWorldAssumption`
+- Fix empty search in suggest endpoints
 
 ## 2.4.0
 

@@ -14,8 +14,11 @@ export default config => {
   const service = new ConceptService(config)
 
   readRoute(router, "/concepts", concepts.read, service, authenticator, "concepts", ["json", "ndjson"])
+
   createRoute(router, "/concepts", concepts.create, service, authenticator)
+
   updateRoute(router, "/concepts", concepts.update, service, authenticator)
+
   deleteRoute(router, "/concepts", concepts.delete, service, authenticator)
 
   if (concepts.read) {

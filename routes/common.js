@@ -16,6 +16,21 @@ export function readRoute(router, path, config, service, authenticator, name, fo
   }
 }
 
+// TODO: merge with readRoute
+export function readByIdRoute(router, config, service, authenticator, name, formats = []) {
+  if (config) {
+    router.get(
+      "/:_id",
+      authenticator.authenticate(config.auth),
+      supportDownloadFormats(formats),
+      wrapAsync(async req => service.getItem(req.params._id)),
+      wrapDownload(adjust, false),
+      wrapDownload(returnJSON, false),
+      wrapDownload(handleDownload(name), true),
+    )
+  }
+}
+
 export function createRoute(router, path, config, service, authenticator) {
   if (config) {
     router.post(
@@ -52,6 +67,35 @@ export function updateRoute(router, path, config, service, authenticator) {
   }
 }
 
+// TODO: merge with updateRoute
+export function updateByIdRoute(router, config, service, authenticator) {
+  if (config) {
+    router.put(
+      "/:_id",
+      authenticator.authenticate(config.auth),
+      bodyParser,
+      wrapAsync(async req => service.updateItem({
+        body: req.body,
+        existing: req.existing,
+      })),
+      adjust,
+      returnJSON,
+    )
+
+    router.patch(
+      "/:_id",
+      authenticator.authenticate(config.auth),
+      bodyParser,
+      wrapAsync(async req => service.patch({
+        body: req.body,
+        existing: req.existing,
+      })),
+      adjust,
+      returnJSON,
+    )
+  }
+}
+
 export function deleteRoute(router, path, config, service, authenticator) {
   if (config) {
     router.delete(
@@ -62,6 +106,23 @@ export function deleteRoute(router, path, config, service, authenticator) {
         uri: req.query.uri,
         existing: req.existing,
         setApi: req.query?.setApi, // TODO: this is not documented
+      })),
+      (req, res) => res.sendStatus(204),
+    )
+  }
+}
+
+// TODO: merge with deleteRoute
+export function deleteByIdRoute(router, config, service, authenticator) {
+  if (config) {
+    router.delete(
+      "/:_id",
+      authenticator.authenticate(config.auth),
+      bodyParser,
+      wrapAsync(async (req) => service.deleteItem({
+        uri: req.params._id,
+        user: req.user,
+        existing: req.existing,
       })),
       (req, res) => res.sendStatus(204),
     )

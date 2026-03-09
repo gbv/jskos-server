@@ -148,7 +148,7 @@ export class ConcordanceService extends AbstractService {
     return concordance
   }
 
-  async putConcordance({ body, existing }) {
+  async updateItem({ body, existing }) {
     let concordance = body
     if (!concordance) {
       throw new InvalidBodyError()

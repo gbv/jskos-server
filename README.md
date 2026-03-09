@@ -2375,6 +2375,8 @@ Returns an array of annotations. Each annotation has a property `id` under which
 
   `motivation=[motivation]` only return annotations with a specific motivation (e.g. `assessing`, `moderating`, `tagging`)
 
+  `download=[type]` returns the whole result as a download (available types are `json` and `ndjson`), ignores `limit` and `offset`
+
 * **Success Response**
 
   Array of annotations in [Web Annotation Data Model] format
