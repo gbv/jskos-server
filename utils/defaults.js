@@ -1,8 +1,12 @@
+import { expandIdentities } from "./users.js"
+
 /**
  * Middleware that adds default properties:
  *
  * - If req.query exists, make sure req.query.limit and req.query.offset are set as numbers and make req.bulk a Boolean.
  * - If possible, set req.type depending on the endpoint (one of concepts, schemes, mappings, annotations, suggest).
+ * - Set req.action
+ * - Set req.anonymous, req.crossUser, and req.auth
  */
 export const addMiddlewareProperties = config => (req, res, next) => {
 
@@ -80,9 +84,12 @@ export const addMiddlewareProperties = config => (req, res, next) => {
   }
 
   if (action === "update" || action === "delete") {
-    const crossUser = config[type]?.[action]?.crossUser
-    if (crossUser) {
-      req.crossUser = crossUser // boolean or array
+    let crossUser = config[type]?.[action]?.crossUser
+    if (crossUser) { // boolean or array
+      if (Array.isArray(crossUser)) {
+        crossUser = expandIdentities(crossUser, config.identityGroups)
+      }
+      req.crossUser = crossUser
     }
   }
 

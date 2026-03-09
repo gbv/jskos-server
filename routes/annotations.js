@@ -1,25 +1,23 @@
-import express from "express"
-import { AnnotationService } from "../services/annotations.js"
-import { readRoute, readByIdRoute, createRoute, updateRoute, updateByIdRoute, deleteRoute, deleteByIdRoute } from "./common.js"
+import { Router } from "./router.js"
 
 export default config => {
-  const router = express.Router()
-  const { annotations, authenticator } = config
+  const router = new Router(config)
+  const { annotations } = config
 
   if (annotations) {
-    const service = new AnnotationService(config)
+    const service = router.services.annotation
 
-    readRoute(router, "/", annotations.read, service, authenticator, "annotations")
-    readByIdRoute(router, annotations.read, service, authenticator, "annotation")
+    router.read("/", annotations.read, service, "annotations")
+    router.readOne(annotations.read, service, "annotation")
 
-    createRoute(router, "/", annotations.create, service, authenticator)
+    router.create("/", annotations.create, service)
 
-    updateRoute(router, "/", annotations.update, service, authenticator)
-    updateByIdRoute(router, annotations.update, service, authenticator)
+    router.update("/", annotations.update, service)
+    router.update("/:_id", annotations.update, service)
 
-    deleteRoute(router, "/", annotations.delete, service, authenticator)
-    deleteByIdRoute(router, annotations.delete, service, authenticator)
+    router.delete("/", annotations.delete, service)
+    router.delete("/:_id", annotations.delete, service)
   }
 
-  return router
+  return router.router
 }

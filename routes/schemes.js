@@ -1,41 +1,37 @@
-import express from "express"
-import { SchemeService } from "../services/schemes.js"
-import { ConceptService } from "../services/concepts.js"
-import { adjust, addPaginationHeaders, bodyParser } from "../utils/middleware.js"
 import { wrapAsync, wrapDownload, supportDownloadFormats, returnJSON, handleDownload } from "./utils.js"
 import { MalformedRequestError } from "../errors/index.js"
-import { readRoute, createRoute, updateRoute, deleteRoute, suggestRoute } from "./common.js"
+import { Router } from "./router.js"
 
 export default config => {
-  const router = express.Router()
-  const service = new SchemeService(config)
-  const { schemes, concepts, authenticator } = config
+  const router = new Router(config)
+  const service = router.services.scheme
+  const { schemes, concepts } = config
 
-  readRoute(router, "/", schemes.read, service, authenticator, "schemes")
-  createRoute(router, "/", schemes.create, service, authenticator)
-  updateRoute(router, "/", schemes.update, service, authenticator)
-  deleteRoute(router, "/", schemes.delete, service, authenticator)
+  router.read("/", schemes.read, service, "schemes")
+  router.create("/", schemes.create, service)
+  router.update("/", schemes.update, service)
+  router.delete("/", schemes.delete, service)
 
-  suggestRoute(router, "/suggest", schemes.read, service, authenticator)
+  router.suggest("/suggest", schemes.read, service)
 
   if (concepts) {
-    const conceptService = new ConceptService(config)
+    const conceptService = router.services.concept
 
     router.get(
       "/top",
-      authenticator.authenticate(concepts.read.auth),
+      router.authenticate(concepts.read.auth),
       supportDownloadFormats([]),
       wrapAsync(async (req) => {
         return await conceptService.getTop(req.query)
       }),
-      addPaginationHeaders,
-      adjust,
+      router.paginationHeaders,
+      router.adjust,
       returnJSON,
     )
 
     router.get(
       "/concepts",
-      authenticator.authenticate(concepts.read.auth),
+      router.authenticate(concepts.read.auth),
       supportDownloadFormats(["json", "ndjson"]),
       wrapAsync(async (req) => {
         if (!req.query.uri) {
@@ -45,17 +41,17 @@ export default config => {
         delete query.uri
         return await conceptService.queryItems(query)
       }),
-      wrapDownload(addPaginationHeaders, false),
-      wrapDownload(adjust, false),
+      wrapDownload(router.paginationHeaders, false),
+      wrapDownload(router.adjust, false),
       wrapDownload(returnJSON, false),
       wrapDownload(handleDownload("concepts"), true),
     )
 
     if (concepts.delete) {
-      router.delete(
+      router.del(
         "/concepts",
-        authenticator.authenticate(concepts.delete.auth),
-        bodyParser,
+        router.authenticate(concepts.delete.auth),
+        router.bodyParser,
         wrapAsync(async (req) => {
           return await conceptService.deleteConceptsFromScheme({
             scheme: req.existing,
@@ -67,5 +63,5 @@ export default config => {
     }
   }
 
-  return router
+  return router.router
 }

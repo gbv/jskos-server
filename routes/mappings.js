@@ -1,56 +1,55 @@
-import express from "express"
-import { MappingService } from "../services/mappings.js"
-import { adjust, addPaginationHeaders } from "../utils/middleware.js"
 import { wrapAsync, returnJSON } from "./utils.js"
-import { readRoute, readByIdRoute, createRoute, updateByIdRoute, deleteByIdRoute } from "./common.js"
+import { Router } from "./router.js"
 
 export default config => {
-  const router = express.Router()
-  const service = new MappingService(config)
+  const router = new Router(config)
+  const service = router.services.mapping
 
-  const { mappings, concepts, schemes, authenticator } = config
+  const { mappings, concepts, schemes } = config
 
-  // order or routes matters:
+  // order of routes matters:
 
   router.get(
     "/suggest",
-    authenticator.authenticate(concepts?.read?.auth),
+    router.authenticate(concepts?.read?.auth),
     wrapAsync(async (req) => {
       return await service.getNotationSuggestions(req.query)
     }),
-    addPaginationHeaders,
+    router.paginationHeaders,
     returnJSON,
   )
 
   router.get(
     "/voc",
-    authenticator.authenticate(schemes?.read?.auth),
+    router.authenticate(schemes?.read?.auth),
     wrapAsync(async (req) => {
       return await service.getMappingSchemes(req.query)
     }),
-    addPaginationHeaders,
-    adjust,
+    router.paginationHeaders,
+    router.adjust,
     returnJSON,
   )
 
   if (mappings.read) {
     router.get(
       "/infer",
-      authenticator.authenticate(mappings.read.auth),
+      router.authenticate(mappings.read.auth),
       wrapAsync(async req => service.inferMappings(req.query)),
-      addPaginationHeaders,
-      adjust,
+      router.paginationHeaders,
+      router.adjust,
       returnJSON,
     )
   }
 
-  readRoute(router, "/", mappings.read, service, authenticator, "mappings", ["json", "ndjson", "csv", "tsv"])
-  createRoute(router, "/", mappings.create, service, authenticator)
+  router.read("/", mappings.read, service, "mappings", ["json", "ndjson", "csv", "tsv"])
+  router.readOne(mappings.read, service, "mappings", ["json", "ndjson", "csv", "tsv"])
 
-  readByIdRoute(router, mappings.read, service, authenticator, "mapping", ["json", "ndjson", "csv", "tsv"])
-  updateByIdRoute(router, mappings.update, service, authenticator)
+  router.create("/", mappings.create, service)
 
-  deleteByIdRoute(router, mappings.delete, service, authenticator)
+  router.update("/", mappings.update, service)
+  router.update("/:_id", mappings.update, service)
 
-  return router
+  router.delete("/:_id", mappings.delete, service)
+
+  return router.router
 }

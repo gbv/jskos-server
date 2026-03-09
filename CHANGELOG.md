@@ -3,6 +3,7 @@
 - Malformed configuration of JWT key/algorithm will now prevent server from starting
 - Add `download` parameter for annotations
 - Allow PATCH for registries (#257)
+- Support `identityGroups` also for `crossUser`
 
 ## 2.4.1
 

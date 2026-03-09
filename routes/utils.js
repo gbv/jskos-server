@@ -45,45 +45,6 @@ const wrapDownload = (fn, isDownload = true) => {
 }
 
 /**
- * Returns `true` if the creator of `object` matches `user`, `false` if not.
- * `object.creator` can be
- * - an array of objects
- * - an object
- * - a string
- * The object for a creator will be checked for properties `uri` (e.g. JSKOS mapping) and `id` (e.g. annotations).
- *
- * If config.auth.allowCrossUserEditing is enabled, this returns true as long as a user and object are given.
- *
- * @param {object} options.req the request object (that includes req.user, req.crossUser, and req.auth)
- * @param {object} options.object any object that has the property `creator`
- * @param {boolean} options.withContributors allow contributors to be matched (for object with superordinated object)
- */
-const matchesCreator = ({ req = {}, object, withContributors = false }) => {
-  const { user, crossUser, auth } = req
-  if (!auth) {
-    return true
-  }
-  if (!object || !user) {
-    return false
-  }
-  const userUris = getUrisOfUser(user)
-  // TODO: crossUser could also be identityGroup. Use authenticator with expandWhitelist
-  if (crossUser === true || _.intersection(crossUser || [], userUris).length) {
-    return true
-  }
-  // Support arrays, objects, and strings as creators
-  let creators = Array.isArray(object.creator) ? object.creator : (_.isObject(object.creator) ? [object.creator] : [{ uri: object.creator }])
-  // Also check contributors if requested
-  let contributors = withContributors ? (object.contributor || []) : []
-  for (let creator of creators.concat(contributors)) {
-    if (userUris.includes(creator.uri) || userUris.includes(creator.id)) {
-      return true
-    }
-  }
-  return false
-}
-
-/**
  * Middleware that receives a list of supported download formats and overrides req.query.download if the requested format is not supported.
  *
  * @param {Array} formats
@@ -295,7 +256,6 @@ const handleCreatorForObject = ({ object, existing, creator, req }) => {
 export {
   wrapAsync,
   wrapDownload,
-  matchesCreator,
   supportDownloadFormats,
   returnJSON,
   handleDownload,
