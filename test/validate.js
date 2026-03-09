@@ -1,7 +1,7 @@
 // Tests for /validate endpoints
 
 import chai from "./chai.js"
-import * as server from "../server.js"
+import { app } from "../server.js"
 import { globSync } from "glob"
 import fs from "node:fs"
 import assert from "node:assert"
@@ -66,7 +66,7 @@ describe("Validation endpoint testing", () => {
               objects = object
             }
             for (let object of objects) {
-              chai.request.execute(server.app)
+              chai.request.execute(app)
                 .post("/validate")
                 .query({
                   type,
@@ -94,7 +94,7 @@ describe("Validation endpoint testing", () => {
   describe("Validation endpoint: parameters", () => {
 
     it("should validate empty object without type parameter", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .post("/validate")
         .send({})
         .end((error, res) => {
@@ -108,7 +108,7 @@ describe("Validation endpoint testing", () => {
 
     it("should fail validation for object with unknown parameter, but pass when `unknownFields` is set", done => {
       const object = { abcdef: 1 }
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .post("/validate?type=concept")
         .send(object)
         .end((error, res) => {
@@ -119,7 +119,7 @@ describe("Validation endpoint testing", () => {
           assert.notEqual(res.body[0].length, 0)
 
           // Set parameter
-          chai.request.execute(server.app)
+          chai.request.execute(app)
             .post("/validate")
             .query({
               unknownFields: true,
@@ -155,7 +155,7 @@ describe("Validation endpoint testing", () => {
           inScheme: [{uri: "http://example.org/voc"}],
         },
       ]
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .post("/validate")
         .send(objects)
         .end((error, res) => {
@@ -191,7 +191,7 @@ describe("Validation endpoint testing", () => {
         },
       ]
       // 1. POST scheme
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .post("/voc")
         .send(scheme)
         .end((error, res) => {
@@ -200,7 +200,7 @@ describe("Validation endpoint testing", () => {
           res.body.should.be.an("object")
           assert.equal(res.body.uri, scheme.uri)
           // 2. Validate objects
-          chai.request.execute(server.app)
+          chai.request.execute(app)
             .post("/validate")
             .query({
               knownSchemes: true,

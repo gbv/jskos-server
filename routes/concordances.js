@@ -1,25 +1,23 @@
-import express from "express"
-import { ConcordanceService } from "../services/concordances.js"
-import { readRoute, readByIdRoute, createRoute, updateRoute, updateByIdRoute, deleteRoute, deleteByIdRoute } from "./common.js"
+import { Router } from "./router.js"
 
 export default config => {
-  const router = express.Router()
-  const { concordances, authenticator } = config
+  const router = new Router(config)
+  const { concordances } = config
 
   if (concordances) {
-    const service = new ConcordanceService(config)
+    const service = router.services.concordance
 
-    readRoute(router, "/", concordances.read, service, authenticator, "concordances", ["json", "ndjson"])
-    readByIdRoute(router, concordances.read, service, authenticator, "concordance", ["json", "ndjson"])
+    router.read("/", concordances.read, service, "concordances", ["json", "ndjson"])
+    router.readOne(concordances.read, service, "concordance", ["json", "ndjson"])
 
-    createRoute(router, "/", concordances.create, service, authenticator)
+    router.create("/", concordances.create, service)
 
-    updateRoute(router, "/", concordances.update, service, authenticator)
-    updateByIdRoute(router, concordances.update, service, authenticator)
+    router.update("/", concordances.update, service)
+    router.update("/:_id", concordances.update, service)
 
-    deleteRoute(router, "/", concordances.delete, service, authenticator)
-    deleteByIdRoute(router, concordances.delete, service, authenticator)
+    router.delete("/", concordances.delete, service)
+    router.delete("/:_id", concordances.delete, service)
   }
 
-  return router
+  return router.router
 }

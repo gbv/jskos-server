@@ -1,20 +1,18 @@
-import express from "express"
-import { RegistryService } from "../services/registries.js"
-import { createRoute, readRoute, updateRoute, deleteRoute, suggestRoute } from "./common.js"
+import { Router } from "./router.js"
 
 export default config => {
-  const router = express.Router()
-  const { registries, authenticator } = config
+  const router = new Router(config)
+  const { registries } = config
 
   if (registries) {
-    const service = new RegistryService(config)
+    const service = router.services.registry
 
-    readRoute(router, "/", registries.read, service, authenticator, "registries")
-    createRoute(router, "/", registries.create, service, authenticator)
-    updateRoute(router, "/", registries.update, service, authenticator)
-    deleteRoute(router, "/", registries.delete, service, authenticator)
-    suggestRoute(router, "/suggest", registries.read, service, authenticator)
+    router.read("/", registries.read, service, "registries")
+    router.create("/", registries.create, service)
+    router.update("/", registries.update, service)
+    router.delete("/", registries.delete, service)
+    router.suggest("/suggest", registries.read, service)
   }
 
-  return router
+  return router.router
 }

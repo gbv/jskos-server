@@ -6,13 +6,7 @@ import { Strategy as AnonymousStrategy } from "passport-anonymous"
 
 passport.use(new AnonymousStrategy())
 
-function expandWhiteList(whitelist, identityGroups) {
-  if (whitelist && identityGroups) {
-    return whitelist.map(uri => uri in identityGroups ? identityGroups[uri].identities : uri).flat()
-  }
-  return whitelist
-}
-
+import { expandIdentities } from "./users.js"
 import { ForbiddenAccessError } from "../errors/index.js"
 
 
@@ -76,7 +70,7 @@ export class Authenticator {
     }
 
     if (whitelist === undefined) {
-      whitelist = expandWhiteList(config[type]?.[action]?.identities, config.identityGroups)
+      whitelist = expandIdentities(config[type]?.[action]?.identities, config.identityGroups)
     }
     providers = providers ?? config[type]?.[action]?.identityProviders
 
@@ -126,7 +120,7 @@ export class Authenticator {
       }
     }
 
-    whitelist = expandWhiteList(whitelist, this.config.identityGroups)
+    whitelist = expandIdentities(whitelist, this.config.identityGroups)
 
     try {
       type = type || req.type

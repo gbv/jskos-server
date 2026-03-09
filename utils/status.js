@@ -3,7 +3,7 @@ import _ from "lodash"
 export function serverStatus(config, ok) {
   const { baseUrl } = config
   const status = {
-    config: _.omit(_.cloneDeep(config), ["verbosity", "port", "mongo", "namespace", "proxies", "ips", "authenticator"]),
+    config: _.omit(_.cloneDeep(config), ["verbosity", "port", "mongo", "namespace", "proxies", "ips"]),
   }
   // Remove `ips` property from all actions
   for (let type of ["schemes", "concepts", "mappings", "concordances", "annotations"]) {
