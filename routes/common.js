@@ -1,12 +1,11 @@
-import { useAuth } from "../utils/auth.js"
 import { bodyParser, addPaginationHeaders, adjust } from "../utils/middleware.js"
 import { wrapAsync, supportDownloadFormats, returnJSON, handleDownload, wrapDownload } from "./utils.js"
 
-export function readRoute(router, path, config, service, name, formats = []) {
+export function readRoute(router, path, config, service, authenticator, name, formats = []) {
   if (config) {
     router.get(
       path,
-      useAuth(config.auth),
+      authenticator.authenticate(config.auth),
       supportDownloadFormats(formats),
       wrapAsync(async req => service.queryItems(req.query)),
       wrapDownload(addPaginationHeaders, false),
@@ -17,11 +16,11 @@ export function readRoute(router, path, config, service, name, formats = []) {
   }
 }
 
-export function createRoute(router, path, config, service) {
+export function createRoute(router, path, config, service, authenticator) {
   if (config) {
     router.post(
       path,
-      useAuth(config.auth),
+      authenticator.authenticate(config.auth),
       bodyParser,
       wrapAsync(async req => service.createItem({
         bodyStream: req.anystream,
@@ -36,11 +35,11 @@ export function createRoute(router, path, config, service) {
   }
 }
 
-export function updateRoute(router, path, config, service) {
+export function updateRoute(router, path, config, service, authenticator) {
   if (config) {
     router.put(
       path,
-      useAuth(config.auth),
+      authenticator.authenticate(config.auth),
       bodyParser,
       wrapAsync(async req => service.updateItem({
         body: req.body,
@@ -53,11 +52,11 @@ export function updateRoute(router, path, config, service) {
   }
 }
 
-export function deleteRoute(router, path, config, service) {
+export function deleteRoute(router, path, config, service, authenticator) {
   if (config) {
     router.delete(
       path,
-      useAuth(config.auth),
+      authenticator.authenticate(config.auth),
       bodyParser,
       wrapAsync(async req => service.deleteItem({
         uri: req.query.uri,
@@ -69,11 +68,11 @@ export function deleteRoute(router, path, config, service) {
   }
 }
 
-export function suggestRoute(router, path, config, service) {
+export function suggestRoute(router, path, config, service, authenticator) {
   if (config) {
     router.get(
       path,
-      useAuth(config.auth),
+      authenticator.authenticate(config.auth),
       supportDownloadFormats([]),
       wrapAsync(async req => service.getSuggestions(req.query)),
       addPaginationHeaders,

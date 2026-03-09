@@ -126,7 +126,7 @@ export class Authenticator {
       }
     }
 
-    whitelist = expandWhiteList(whitelist, config.identityGroups)
+    whitelist = expandWhiteList(whitelist, this.config.identityGroups)
 
     try {
       type = type || req.type
@@ -137,11 +137,4 @@ export class Authenticator {
       next(error)
     }
   }
-
-
 }
-
-import config from "../config/index.js"
-const authenticator = new Authenticator(config)
-
-export const useAuth = required => authenticator.authenticate(required)

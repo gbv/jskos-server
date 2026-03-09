@@ -66,7 +66,6 @@ export const addMiddlewareProperties = config => (req, res, next) => {
   }
   req.type = type
 
-  // Add req.action
   const action = {
     GET: "read",
     POST: "create",
@@ -75,18 +74,22 @@ export const addMiddlewareProperties = config => (req, res, next) => {
     DELETE: "delete",
   }[req.method]
   req.action = action
-  // Add req.anonymous, req.crossUser, and req.auth if necessary
-  if (config[type] && config[type].anonymous) {
+
+  if (config[type]?.anonymous) {
     req.anonymous = true
   }
-  if (["PUT", "PATCH", "DELETE"].includes(req.method)) {
-    if (config[type] && config[type][action] && config[type][action].crossUser) {
-      req.crossUser = config[type][action].crossUser
+
+  if (action === "update" || action === "delete") {
+    const crossUser = config[type]?.[action]?.crossUser
+    if (crossUser) {
+      req.crossUser = crossUser // boolean or array
     }
   }
-  if (config[type] && config[type][action] && config[type][action].auth) {
+
+  if (config[type]?.[action]?.auth) {
     req.auth = true
   }
+
   next()
 }
 

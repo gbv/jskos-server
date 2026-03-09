@@ -8,6 +8,8 @@ import statusSchema from "../status.schema.json" with { type: "json" }
 import configDefault from "./config.default.json" with { type: "json" }
 import info from "../package.json" with { type: "json" }
 
+import { Authenticator } from "../utils/auth.js"
+
 const ajv = new AJV({ allErrors: true })
 addAjvFormats(ajv)
 ajv.addSchema(configSchema)
@@ -208,6 +210,8 @@ export function setupConfig(config) {
       config.warn("annotations.mismatchTagVocabulary currently does not support loading concepts from an external API. It will be attempted to load concepts from this instance instead.")
     }
   }
+
+  config.authenticator = new Authenticator(config)
 
   return config
 }

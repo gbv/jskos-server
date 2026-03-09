@@ -18,15 +18,11 @@ import createValidateRouter from "./routes/validate.js"
 import { serverStatus } from "./utils/status.js"
 
 import { ipcheck } from "./utils/ipcheck.js"
-import { Authenticator } from "./utils/auth.js"
 import { getUser } from "./utils/users.js"
 import * as errors from "./errors/index.js"
 import portfinder from "portfinder"
 import expressWs from "express-ws"
 import { setupChangesApi, isChangesApiAvailable } from "./utils/changes.js"
-
-const authenticator = new Authenticator(config)
-const useAuth = required => authenticator.authenticate(required)
 
 const __dirname = import.meta.dirname
 
@@ -62,7 +58,7 @@ if (config.proxies && config.proxies.length) {
 app.set("views", __dirname + "/views")
 app.set("view engine", "ejs")
 
-// Database connection
+// Database connection (TODO: move to db module)
 const connect = async () => {
   try {
     await db.connect(true)
@@ -132,7 +128,7 @@ app.get("/status",
 app.use(ipcheck(config))
 
 // /checkAuth
-app.get("/checkAuth", useAuth(true), (req, res) => {
+app.get("/checkAuth", config.authenticator.authenticate(true), (req, res) => {
   res.json(getUser(req))
 })
 

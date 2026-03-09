@@ -2,22 +2,21 @@ import express from "express"
 import { ConceptService } from "../services/concepts.js"
 import { adjust, addPaginationHeaders } from "../utils/middleware.js"
 import { wrapAsync, supportDownloadFormats, returnJSON } from "./utils.js"
-import { useAuth } from "../utils/auth.js"
 import { readRoute, createRoute, updateRoute, deleteRoute, suggestRoute } from "./common.js"
 
 export default config => {
   const router = express.Router()
-  const { concepts } = config
+  const { concepts, authenticator } = config
   if (!concepts) {
     return concepts
   }
 
   const service = new ConceptService(config)
 
-  readRoute(router, "/concepts", concepts.read, service, "concepts", ["json", "ndjson"])
-  createRoute(router, "/concepts", concepts.create, service)
-  updateRoute(router, "/concepts", concepts.update, service)
-  deleteRoute(router, "/concepts", concepts.delete, service)
+  readRoute(router, "/concepts", concepts.read, service, authenticator, "concepts", ["json", "ndjson"])
+  createRoute(router, "/concepts", concepts.create, service, authenticator)
+  updateRoute(router, "/concepts", concepts.update, service, authenticator)
+  deleteRoute(router, "/concepts", concepts.delete, service, authenticator)
 
   if (concepts.read) {
     // Add these routes both with and without the /concepts prefix.
@@ -28,7 +27,7 @@ export default config => {
 
       router.get(
         prefix + "/narrower",
-        useAuth(concepts.read.auth),
+        authenticator.authenticate(concepts.read.auth),
         supportDownloadFormats([]),
         wrapAsync(async req => service.getNarrower(req.query)),
         addPaginationHeaders,
@@ -38,7 +37,7 @@ export default config => {
 
       router.get(
         prefix + "/ancestors",
-        useAuth(concepts.read.auth),
+        authenticator.authenticate(concepts.read.auth),
         supportDownloadFormats([]),
         wrapAsync(async req => service.getAncestors(req.query)),
         addPaginationHeaders,
@@ -46,11 +45,11 @@ export default config => {
         returnJSON,
       )
 
-      suggestRoute(router, prefix + "/suggest", concepts.read, service)
+      suggestRoute(router, prefix + "/suggest", concepts.read, service, authenticator)
 
       router.get(
         prefix + "/search",
-        useAuth(concepts.read.auth),
+        authenticator.authenticate(concepts.read.auth),
         supportDownloadFormats([]),
         wrapAsync(async req => await service.search(req.query)),
         addPaginationHeaders,

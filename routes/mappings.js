@@ -2,17 +2,18 @@ import express from "express"
 import { MappingService } from "../services/mappings.js"
 import { adjust, addPaginationHeaders, bodyParser } from "../utils/middleware.js"
 import { wrapAsync, wrapDownload, supportDownloadFormats, returnJSON, handleDownload } from "./utils.js"
-import { useAuth } from "../utils/auth.js"
 import { readRoute, createRoute } from "./common.js"
 
 export default config => {
   const router = express.Router()
   const service = new MappingService(config)
 
+  const { mappings, concepts, schemes, authenticator } = config
+
   // /mappings/suggest and /mappings/voc need to come before /mappings/:_id!
   router.get(
     "/suggest",
-    useAuth(config.concepts?.read?.auth),
+    authenticator.authenticate(concepts?.read?.auth),
     wrapAsync(async (req) => {
       return await service.getNotationSuggestions(req.query)
     }),
@@ -21,7 +22,7 @@ export default config => {
   )
   router.get(
     "/voc",
-    useAuth(config.schemes?.read?.auth),
+    authenticator.authenticate(schemes?.read?.auth),
     wrapAsync(async (req) => {
       return await service.getMappingSchemes(req.query)
     }),
@@ -30,13 +31,13 @@ export default config => {
     returnJSON,
   )
 
-  readRoute(router, "/", config.mappings.read, service, "mappings", ["json", "ndjson", "csv", "tsv"])
-  createRoute(router, "/", config.mappings.create, service)
+  readRoute(router, "/", mappings.read, service, authenticator, "mappings", ["json", "ndjson", "csv", "tsv"])
+  createRoute(router, "/", mappings.create, service, authenticator)
 
-  if (config.mappings.read) {
+  if (mappings.read) {
     router.get(
       "/infer",
-      useAuth(config.mappings.read.auth),
+      authenticator.authenticate(mappings.read.auth),
       wrapAsync(async req => service.inferMappings(req.query)),
       addPaginationHeaders,
       adjust,
@@ -45,7 +46,7 @@ export default config => {
 
     router.get(
       "/:_id",
-      useAuth(config.mappings.read.auth),
+      authenticator.authenticate(mappings.read.auth),
       supportDownloadFormats(["json", "ndjson", "csv", "tsv"]),
       wrapAsync(async req => service.getMapping(req.params._id)),
       wrapDownload(adjust, false),
@@ -54,10 +55,10 @@ export default config => {
     )
   }
 
-  if (config.mappings.update) {
+  if (mappings.update) {
     router.put(
       "/:_id",
-      useAuth(config.mappings.update.auth),
+      authenticator.authenticate(mappings.update.auth),
       bodyParser,
       wrapAsync(async (req) => {
         return await service.putMapping({
@@ -73,7 +74,7 @@ export default config => {
 
     router.patch(
       "/:_id",
-      useAuth(config.mappings.update.auth),
+      authenticator.authenticate(mappings.update.auth),
       bodyParser,
       wrapAsync(async (req) => {
         return await service.patch({
@@ -88,10 +89,10 @@ export default config => {
     )
   }
 
-  if (config.mappings.delete) {
+  if (mappings.delete) {
     router.delete(
       "/:_id",
-      useAuth(config.mappings.delete.auth),
+      authenticator.authenticate(mappings.delete.auth),
       bodyParser,
       wrapAsync(async (req) => {
         return await service.deleteItem({

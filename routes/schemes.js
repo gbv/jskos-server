@@ -3,28 +3,27 @@ import { SchemeService } from "../services/schemes.js"
 import { ConceptService } from "../services/concepts.js"
 import { adjust, addPaginationHeaders, bodyParser } from "../utils/middleware.js"
 import { wrapAsync, wrapDownload, supportDownloadFormats, returnJSON, handleDownload } from "./utils.js"
-import { useAuth } from "../utils/auth.js"
 import { MalformedRequestError } from "../errors/index.js"
 import { readRoute, createRoute, updateRoute, deleteRoute, suggestRoute } from "./common.js"
 
 export default config => {
   const router = express.Router()
   const service = new SchemeService(config)
-  const { schemes, concepts } = config
+  const { schemes, concepts, authenticator } = config
 
-  readRoute(router, "/", schemes.read, service, "schemes")
-  createRoute(router, "/", schemes.create, service)
-  updateRoute(router, "/", schemes.update, service)
-  deleteRoute(router, "/", schemes.delete, service)
+  readRoute(router, "/", schemes.read, service, authenticator, "schemes")
+  createRoute(router, "/", schemes.create, service, authenticator)
+  updateRoute(router, "/", schemes.update, service, authenticator)
+  deleteRoute(router, "/", schemes.delete, service, authenticator)
 
-  suggestRoute(router, "/suggest", schemes.read, service)
+  suggestRoute(router, "/suggest", schemes.read, service, authenticator)
 
   if (concepts) {
     const conceptService = new ConceptService(config)
 
     router.get(
       "/top",
-      useAuth(concepts.read.auth),
+      authenticator.authenticate(concepts.read.auth),
       supportDownloadFormats([]),
       wrapAsync(async (req) => {
         return await conceptService.getTop(req.query)
@@ -36,7 +35,7 @@ export default config => {
 
     router.get(
       "/concepts",
-      useAuth(concepts.read.auth),
+      authenticator.authenticate(concepts.read.auth),
       supportDownloadFormats(["json", "ndjson"]),
       wrapAsync(async (req) => {
         if (!req.query.uri) {
@@ -55,7 +54,7 @@ export default config => {
     if (concepts.delete) {
       router.delete(
         "/concepts",
-        useAuth(concepts.delete.auth),
+        authenticator.authenticate(concepts.delete.auth),
         bodyParser,
         wrapAsync(async (req) => {
           return await conceptService.deleteConceptsFromScheme({
