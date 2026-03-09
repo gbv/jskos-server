@@ -1515,9 +1515,7 @@ describe("Express Server", () => {
   })
 
   describe("GET /voc/search", () => {
-
-
-
+    // TODO
   })
 
   describe("GET /concepts", () => {
@@ -2250,6 +2248,20 @@ describe("Express Server", () => {
               done()
             })
         })
+      })
+    })
+
+    describe("PATCH /registries", () => {
+      it("should PATCH a registry", done => {
+        const change = { scopeNote: { en: ["Test 2"] } }
+        chai.request.execute(app)
+          .patch("/registries?uri=http://example.org/registry/1")
+          .send(change)
+          .end((err, res) => {
+            assert.equal(res.status, 200)
+            assert.deepStrictEqual(res.body.scopeNote, change.scopeNote)
+            done()
+          })
       })
     })
 

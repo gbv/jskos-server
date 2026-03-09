@@ -148,6 +148,7 @@ const bodyParser = (req, res, next) => {
     // For all other requests, parse as JSON
     express.json()(req, res, async (...params) => {
       // Get existing
+      // TODO: _id likely contains contain a local identifier, not a full URI!
       const uri = req.params._id || (req.body || {}).uri || req.query.uri
       let existing
       try {

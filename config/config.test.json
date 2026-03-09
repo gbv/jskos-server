@@ -92,6 +92,20 @@
       "uri": "https://uri.gbv.de/terminology/mismatch/"
     }
   },
+  "registries": {
+    "read": {
+      "auth": false
+    },
+    "create": {
+      "auth": true
+    },
+    "update": {
+      "auth": false
+    },
+    "delete": {
+      "auth": false
+    }
+  },
   "identities": ["http://test.user", "http://test-moderating.user"],
   "identityProviders": ["test"],
   "identityGroups": {

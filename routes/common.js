@@ -53,46 +53,38 @@ export function createRoute(router, path, config, service, authenticator) {
 export function updateRoute(router, path, config, service, authenticator) {
   if (config) {
     router.put(
-      path,
+      path, // "/{:_id}",
       authenticator.authenticate(config.auth),
       bodyParser,
       wrapAsync(async req => service.updateItem({
         body: req.body,
         existing: req.existing,
-        setApi: req.query?.setApi, // TODO: this is not documented
+        setApi: req.query?.setApi, // TODO: this is not documented!
       })),
       adjust,
       returnJSON,
     )
+
+    if (service.patch) { // TODO: implement for all services
+      router.patch(
+        path,
+        authenticator.authenticate(config.auth),
+        bodyParser,
+        wrapAsync(async req => service.patch({
+          body: req.body,
+          existing: req.existing,
+        })),
+        adjust,
+        returnJSON,
+      )
+    }
   }
 }
 
 // TODO: merge with updateRoute
 export function updateByIdRoute(router, config, service, authenticator) {
   if (config) {
-    router.put(
-      "/:_id",
-      authenticator.authenticate(config.auth),
-      bodyParser,
-      wrapAsync(async req => service.updateItem({
-        body: req.body,
-        existing: req.existing,
-      })),
-      adjust,
-      returnJSON,
-    )
-
-    router.patch(
-      "/:_id",
-      authenticator.authenticate(config.auth),
-      bodyParser,
-      wrapAsync(async req => service.patch({
-        body: req.body,
-        existing: req.existing,
-      })),
-      adjust,
-      returnJSON,
-    )
+    updateRoute(router, "/:_id", config, service, authenticator)
   }
 }
 
