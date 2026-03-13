@@ -1,4 +1,3 @@
-// utils/changes.js
 import * as jskos from "jskos-tools"
 import { ConfigurationError } from "../errors/index.js"
 
@@ -12,10 +11,23 @@ export const collections = {
 }
 
 export const operationTypeMap = { insert: "create", update: "update", delete: "delete" }
-export let isChangesApiAvailable = false
 
-export default function registerChangesRoutes(app, db) {
+// After DB connection, conditionally enable change-stream routes
+export async function setupChangesApi(app, config, db) {
+
+  if (!config.changes) {
+    return
+  }
+
+  if (!await db.waitForReplicaSet(config.changes)) {
+    throw new ConfigurationError(
+      "Changes API enabled, but MongoDB replica set did not initialize in time.",
+    )
+  }
+
+  // Register WebSocket change-stream endpoints
   const connection = db.connection
+  // TODO: allow to configure individual object types, see <https://github.com/gbv/jskos-server/issues/233>
   for (const [route, collName] of Object.entries(collections)) {
     app.ws(`/${route}/changes`, (ws) => {
       const stream = connection.db
@@ -47,24 +59,7 @@ export default function registerChangesRoutes(app, db) {
       ws.on("close", () => stream.close())
     })
   }
-}
 
-// After DB connection, conditionally enable change-stream routes
-export async function setupChangesApi(app, config, db) {
-  if (!config.changes) {
-    console.log("Changes API is disabled by configuration.")
-    return
-  }
-
-  if (!await db.waitForReplicaSet(config.changes)) {
-    throw new ConfigurationError(
-      "Changes API enabled, but MongoDB replica set did not initialize in time.",
-    )
-  }
-
-  // Register WebSocket change-stream endpoints
-  registerChangesRoutes(app, db)
-  isChangesApiAvailable = true
   console.log("Changes API enabled: replica set confirmed, endpoints are registered.")
 }
 

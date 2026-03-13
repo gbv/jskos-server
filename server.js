@@ -15,7 +15,7 @@ import { getUser } from "./utils/users.js"
 import * as errors from "./errors/index.js"
 import portfinder from "portfinder"
 import expressWs from "express-ws"
-import { setupChangesApi, isChangesApiAvailable } from "./utils/changes.js"
+import { setupChangesApi } from "./utils/changes.js"
 
 const __dirname = import.meta.dirname
 
@@ -121,10 +121,7 @@ app.use(addMiddlewareProperties(config))
 // Root path for static page
 app.get("/", (req, res) => {
   res.setHeader("Content-Type", "text/html")
-  res.render("base", {
-    config,
-    isChangesApiAvailable,
-  })
+  res.render("base", { config })
 })
 
 // JSON Schema for /status
@@ -188,7 +185,9 @@ app.use((error, req, res, next) => {
 connect()
 
 // Changes API
-await setupChangesApi(app, config, db)
+if (config.changes) {
+  await setupChangesApi(app, config, db)
+}
 
 app.listen(config.port, () => {
   config.log(`Now listening on port ${config.port}`)

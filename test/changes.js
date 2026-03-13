@@ -1,7 +1,10 @@
 import { assertMongoDB, dropDatabaseBeforeAndAfter, setupInMemoryMongo, teardownInMemoryMongo, createCollectionsAndIndexes } from "./test-utils.js"
 import WebSocket from "ws"
 import assert from "assert"
+
 import config from "../config/index.js"
+config.changes = true
+
 import { app } from "../server.js"
 import { setupChangesApi } from "../utils/changes.js"
 import { createDatabase } from "../utils/db.js"
@@ -20,37 +23,10 @@ const routes = {
   registries: { coll: "registries", type: "Registry" },
 }
 
-describe("Change‐Streams API setup", () => {
-  // Capture console.log output
-  let loggedMessages = []
-  const originalLog = console.log
-
-  before(async () => {
-    console.log = (msg) => loggedMessages.push(msg)
-  })
-
-  after(async () => {
-    console.log = originalLog
-  })
-
-  it("should skip registering when changes is false", async () => {
-    // ensure flag is off
-    config.changes = false
-
-    // call the exported setup function
-    await setupChangesApi(app, config, db)
-
-    // assert our early‐return message was logged
-    loggedMessages.includes("Change API is disabled by configuration.")
-  })
-
-})
-
 describe("WebSocket Change‐Streams (integration)", function () {
 
   before(async () => {
     await setupInMemoryMongo({ replSet: true })
-    config.changes = true
     await setupChangesApi(app, config, db)
     await createCollectionsAndIndexes()
     // optionally spin up your HTTP+WS server here
