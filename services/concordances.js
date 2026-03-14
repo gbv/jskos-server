@@ -2,11 +2,9 @@ import _ from "lodash"
 import jskos from "jskos-tools"
 import { validate } from "jskos-validate"
 
-import { removeNullProperties } from "../utils/utils.js"
 import { uuid } from "../utils/uuid.js"
 
-import { Concordance } from "../models/concordances.js"
-import { Mapping } from "../models/mappings.js"
+import { Concordance, Mapping } from "../models/index.js"
 import { SchemeService } from "./schemes.js"
 
 const validateConcordance = validate.concordance
@@ -209,7 +207,7 @@ export class ConcordanceService extends AbstractService {
     // Use lodash merge to merge concordance objects
     _.assign(existing, concordance)
 
-    removeNullProperties(existing)
+    this._removeNullProperties(existing)
 
     // Validate concordance after merge
     if (!validateConcordance(existing)) {

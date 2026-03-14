@@ -3,7 +3,7 @@ import jskos from "jskos-tools"
 import { validate } from "jskos-validate"
 import { bulkOperationForEntities, queryToAggregation } from "../utils/utils.js"
 import { addKeywords } from "../utils/searchHelper.js"
-import { Concept } from "../models/concepts.js"
+import { Concept } from "../models/index.js"
 import { SchemeService } from "../services/schemes.js"
 import { MalformedBodyError, MalformedRequestError, EntityNotFoundError, InvalidBodyError, DatabaseAccessError } from "../errors/index.js"
 

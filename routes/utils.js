@@ -5,7 +5,7 @@ import { DuplicateEntityError } from "../errors/index.js"
 import { Transform, Readable } from "node:stream"
 import JSONStream from "JSONStream"
 
-import { cleanJSON } from "../utils/utils.js"
+import { cleanJSON } from "../utils/clean-json.js"
 import { getUrisOfUser } from "../utils/users.js"
 
 /**

@@ -1,12 +1,11 @@
 import _ from "lodash"
 import { uuid, isValidUuid } from "../utils/uuid.js"
-import { removeNullProperties, addMappingSchemes } from "../utils/utils.js"
+import { addMappingSchemes } from "../utils/utils.js"
 import jskos from "jskos-tools"
 import { validate } from "jskos-validate"
 import { cdk } from "cocoda-sdk"
 
-import { Mapping } from "../models/mappings.js"
-import { Annotation } from "../models/annotations.js"
+import { Mapping, Annotation } from "../models/index.js"
 import { SchemeService } from "./schemes.js"
 import { ConcordanceService } from "./concordances.js"
 import { MalformedRequestError, EntityNotFoundError, InvalidBodyError, DatabaseAccessError, BackendError } from "../errors/index.js"
@@ -726,7 +725,8 @@ export class MappingService extends AbstractService {
     if (!mapping.type || !mapping.type.length) {
       mapping.type = ["http://www.w3.org/2004/02/skos/core#mappingRelation"]
     }
-    removeNullProperties(newMapping)
+
+    this._removeNullProperties(newMapping)
 
     // Validate mapping after merge
     if (!validateMapping(newMapping)) {

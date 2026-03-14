@@ -3,7 +3,7 @@
 import assert from "node:assert"
 import { handleCreatorForObject } from "../routes/utils.js"
 import { getCreator } from "../utils/users.js"
-import { cleanJSON } from "../utils/utils.js"
+import { cleanJSON } from "../utils/clean-json.js"
 
 describe("utils", () => {
 

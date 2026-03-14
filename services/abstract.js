@@ -175,6 +175,13 @@ export class AbstractService {
   }
 
   /**
+   * Remove object properties when its value is null.
+   */
+  _removeNullProperties(obj) {
+    return Object.keys(obj).filter(key => obj[key] === null).forEach(key => delete obj[key])
+  }
+
+  /**
    * Returns a Promise with suggestions, either in OpenSearch Suggest Format or JSKOS (?format=jskos).
    */
   async getSuggestions(query) {

@@ -1,7 +1,6 @@
 import _ from "lodash"
-import { removeNullProperties } from "../utils/utils.js"
 import { validate } from "jskos-validate"
-import { Registry } from "../models/registries.js"
+import { Registry } from "../models/index.js"
 import { addKeywords } from "../utils/searchHelper.js"
 import { EntityNotFoundError, DatabaseAccessError, InvalidBodyError, MalformedBodyError } from "../errors/index.js"
 
@@ -164,7 +163,7 @@ export class RegistryService extends AbstractService {
     // Merge existing with updates
     _.assign(existing, body)
 
-    removeNullProperties(existing)
+    this._removeNullProperties(existing)
 
     await this.processMembers(existing)
 

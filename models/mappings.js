@@ -1,9 +1,7 @@
 import mongoose from "mongoose"
 import jskos from "jskos-tools"
 
-const Schema = mongoose.Schema
-
-const mappingSchema = new Schema({
+const mappingSchema = new mongoose.Schema({
   _id: String,
 }, {
   versionKey: false,
@@ -12,7 +10,6 @@ const mappingSchema = new Schema({
 })
 
 mappingSchema.pre("save", function(next) {
-  // Add mapping identifier
   this.set("identifier", jskos.addMappingIdentifiers(this).identifier)
   next()
 })

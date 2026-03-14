@@ -3,10 +3,10 @@
 import yesno from "yesno"
 import config from "../config/index.js"
 import { createDatabase } from "../utils/db.js"
-const db = createDatabase(config)
 import { schemeService } from "../services/schemes.js"
 import jskos from "jskos-tools"
-import { Mapping } from "../models/mappings.js"
+
+const db = createDatabase(config)
 
 /**
  * Map of async scripts.
@@ -15,7 +15,7 @@ import { Mapping } from "../models/mappings.js"
  */
 const scripts = {
   async supplementNotationsInMappings() {
-    const mappings = await Mapping.find({
+    const mappings = await db.models.mapping.find({
       $or: [
         { "from.memberSet.notation": { $exists: false }, "from.memberSet.uri": { $exists: true } },
         { "to.memberSet.notation": { $exists: false }, "to.memberSet.uri": { $exists: true } },

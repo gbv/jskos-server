@@ -3,8 +3,7 @@ import { validate } from "jskos-validate"
 
 import { addKeywords } from "../utils/searchHelper.js"
 import { MalformedBodyError, MalformedRequestError, EntityNotFoundError, DatabaseAccessError, InvalidBodyError } from "../errors/index.js"
-import { Scheme } from "../models/schemes.js"
-import { Concept } from "../models/concepts.js"
+import { Scheme, Concept } from "../models/index.js"
 
 import { AbstractService } from "./abstract.js"
 

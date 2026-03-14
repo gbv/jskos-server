@@ -16,6 +16,7 @@ export class DataService extends AbstractService {
 
       // Don't return data the user is not authorized to read
       try {
+        //
         // FIXME?
         // type = type === "registry" ? "registries" :`${type}s`
         this.authenticator.checkAccess({ type, action: "read", user: req.user })

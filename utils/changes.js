@@ -35,14 +35,22 @@ export async function setupChangesApi(app, config, db) {
         .watch([], { fullDocument: "updateLookup" })
 
       stream.on("change", change => {
-        const { operationType, documentKey, fullDocument } = change
+        const { operationType, documentKey, fullDocument, clusterTime } = change
         const evt = {
           objectType: jskos.guessObjectType(fullDocument),
           type: operationTypeMap[operationType],
           id: documentKey._id,
-          timestamp: clusterTimeToISOString(change.clusterTime),
           ...(operationType !== "delete" && { document: fullDocument }),
         }
+
+        // convert MongoDB cluster time object to ISO 8601 string
+        if (typeof clusterTime?.getHighBits === "function") {
+          const seconds = clusterTime.getHighBits()
+          if (typeof seconds === "number" && Number.isFinite(seconds)) {
+            evt.timestamp = new Date(seconds * 1000).toISOString()
+          }
+        }
+
         ws.send(JSON.stringify(evt))
       })
 
@@ -59,25 +67,4 @@ export async function setupChangesApi(app, config, db) {
       ws.on("close", () => stream.close())
     })
   }
-
-  console.log("Changes API enabled: replica set confirmed, endpoints are registered.")
-}
-
-/**
- * Converts a MongoDB cluster time object to an ISO 8601 string.
- *
- * @param {{ getHighBits: () => number } | null} clusterTime - The cluster time object.
- * @returns {string | null} ISO timestamp derived from the cluster time, or null if input is invalid.
- */
-function clusterTimeToISOString(clusterTime) {
-  if ((!clusterTime) || (typeof clusterTime.getHighBits !== "function")) {
-    return null
-  }
-
-  const seconds = clusterTime.getHighBits()
-  if (typeof seconds !== "number" || !Number.isFinite(seconds)) {
-    return null
-  }
-
-  return new Date(seconds * 1000).toISOString()
 }

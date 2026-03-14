@@ -1,5 +1,4 @@
 import { uuid, isValidUuid } from "../utils/uuid.js"
-import { removeNullProperties } from "../utils/utils.js"
 import jskos from "jskos-tools"
 import { validate } from "jskos-validate"
 import _ from "lodash"
@@ -207,7 +206,7 @@ export class AnnotationService extends AbstractService {
       annotation.target = { id: annotation.target }
     }
 
-    removeNullProperties(existing)
+    this._removeNullProperties(existing)
 
     // Validate annotation
     await this.validateAnnotation(existing)
