@@ -1,4 +1,3 @@
-import { models } from "../models/index.js"
 import { AbstractService } from "./abstract.js"
 import { createAdjuster } from "../utils/adjust.js"
 import { Authenticator } from "../utils/auth.js"
@@ -12,10 +11,11 @@ export class DataService extends AbstractService {
 
   async getData(req) {
     const uris = req.query.uri?.split("|") ?? []
-    return [].concat(...await Promise.all(Object.keys(models).map(async type => {
+    return [].concat(...await Promise.all(Object.keys(this.models).map(async type => {
 
       // Don't return data the user is not authorized to read
       try {
+        //
         // FIXME?
         // type = type === "registry" ? "registries" :`${type}s`
         this.authenticator.checkAccess({ type, action: "read", user: req.user })
@@ -23,7 +23,7 @@ export class DataService extends AbstractService {
         return []
       }
 
-      const model = models[type]
+      const model = this.models[type]
       const prop = model.schema.paths.id ? "id" : "uri"
       const results = await model.find({
         $or: [

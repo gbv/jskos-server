@@ -1,9 +1,7 @@
 import { uuid, isValidUuid } from "../utils/uuid.js"
-import { removeNullProperties } from "../utils/utils.js"
 import jskos from "jskos-tools"
 import { validate } from "jskos-validate"
 import _ from "lodash"
-import { Annotation, Mapping, Concept } from "../models/index.js"
 import { DatabaseAccessError, InvalidBodyError, ForbiddenAccessError } from "../errors/index.js"
 
 import { AbstractService } from "./abstract.js"
@@ -14,7 +12,7 @@ export class AnnotationService extends AbstractService {
     super(config)
     this.baseUri = config.baseUrl + "annotations/"
     this.config = config.annotations || {}
-    this.model = Annotation
+    this.model = this.models.annotation
   }
 
   // Wrapper around validate.annotation that also checks the `body` field and throws errors if necessary.
@@ -26,7 +24,7 @@ export class AnnotationService extends AbstractService {
     }
     // Check `body` property
     if (data.body?.length) {
-      const mismatchTagConcepts = await Concept.find({ "inScheme.uri": this.config.mismatchTagVocabulary?.uri })
+      const mismatchTagConcepts = await this.models.concept.find({ "inScheme.uri": this.config.mismatchTagVocabulary?.uri })
       if (data.bodyValue !== "-1") {
         throw new InvalidBodyError("Property `body` is currently only allowed with when `bodyValue` is set to \"-1\".")
       }
@@ -99,8 +97,8 @@ export class AnnotationService extends AbstractService {
 
     const mongoQuery = criteria.length ? { $and: criteria } : {}
     const { limit, offset } = this._getLimitAndOffset(query)
-    const annotations = await Annotation.find(mongoQuery).lean().skip(offset).limit(limit).exec()
-    annotations.totalCount = await this._count(Annotation, [{ $match: mongoQuery }])
+    const annotations = await this.model.find(mongoQuery).lean().skip(offset).limit(limit).exec()
+    annotations.totalCount = await this._count(this.model, [{ $match: mongoQuery }])
 
     return annotations
   }
@@ -143,7 +141,7 @@ export class AnnotationService extends AbstractService {
     // Change target to object and add mapping content identifier if possible
     const target = _.get(item, "target.id", item.target)
     if (!item.target?.state?.id) {
-      const mapping = await Mapping.findOne({ uri: target })
+      const mapping = await this.models.mapping.findOne({ uri: target })
       const contentId = mapping && (mapping.identifier || []).find(id => id.startsWith("urn:jskos:mapping:content:"))
       item.target = contentId ? {
         id: target,
@@ -180,7 +178,7 @@ export class AnnotationService extends AbstractService {
       annotation.target = { id: annotation.target }
     }
 
-    const result = await Annotation.replaceOne({ _id: existing._id }, annotation)
+    const result = await this.model.replaceOne({ _id: existing._id }, annotation)
     if (result.acknowledged && result.matchedCount) {
       return annotation
     } else {
@@ -207,12 +205,12 @@ export class AnnotationService extends AbstractService {
       annotation.target = { id: annotation.target }
     }
 
-    removeNullProperties(existing)
+    this._removeNullProperties(existing)
 
     // Validate annotation
     await this.validateAnnotation(existing)
 
-    const result = await Annotation.replaceOne({ _id: existing._id }, existing)
+    const result = await this.model.replaceOne({ _id: existing._id }, existing)
     if (result.acknowledged) {
       return existing
     } else {

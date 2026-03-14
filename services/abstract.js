@@ -1,4 +1,5 @@
 import _ from "lodash"
+import { models } from "../models/index.js"
 import jskos from "jskos-tools"
 
 import { bulkOperationForEntities } from "../utils/utils.js"
@@ -11,6 +12,9 @@ export class AbstractService {
     this.log = config.log
     this.warn = config.warn
     this.error = config.error
+
+    // model
+    this.models = models
   }
 
   // Low-level database lookup an item by its id
@@ -172,6 +176,13 @@ export class AbstractService {
       limit: Number.isFinite(+query.limit) ? Math.max(0, +query.limit) : 100,
       offset: Number.isFinite(+query.offset) ? Math.max(0, +query.offset) : 0,
     }
+  }
+
+  /**
+   * Remove object properties when its value is null.
+   */
+  _removeNullProperties(obj) {
+    return Object.keys(obj).filter(key => obj[key] === null).forEach(key => delete obj[key])
   }
 
   /**

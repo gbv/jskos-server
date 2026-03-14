@@ -3,7 +3,6 @@ import { uuid } from "./uuid.js"
 import _ from "lodash"
 import yesno from "yesno"
 
-import { Scheme, Concordance, Mapping, Annotation } from "../models/index.js"
 import { SchemeService } from "../services/schemes.js"
 import { ConcordanceService } from "../services/concordances.js"
 import { AnnotationService } from "../services/annotations.js"
@@ -81,10 +80,10 @@ export class Upgrader {
   async "1.2.0"() {
     // 1. Additional fields for schemes (full-text search)
     console.log("Creating additional fields for schemes...")
-    const schemes = await Scheme.find().lean()
+    const schemes = await this.schemeService.model.find().lean()
     for (let scheme of schemes) {
       addKeywords(scheme)
-      await Scheme.findByIdAndUpdate(scheme._id, scheme)
+      await this.schemeService.model.findByIdAndUpdate(scheme._id, scheme)
     }
     console.log("... done.")
     // 2. Create indexes for concordances
@@ -99,32 +98,32 @@ export class Upgrader {
   async "1.2.2"() {
     // Update text search fields for schemes (full-text search)
     console.log("Updating text search fields for schemes...")
-    const schemes = await Scheme.find().lean()
+    const schemes = await this.schemeService.model.find().lean()
     for (let scheme of schemes) {
       addKeywords(scheme)
       // Also add modified if it doesn't exist
       scheme.modified = scheme.modified || scheme.created
-      await Scheme.findByIdAndUpdate(scheme._id, scheme)
+      await this.schemeService.model.findByIdAndUpdate(scheme._id, scheme)
     }
     console.log("... done.")
   }
   async "1.2.3"() {
     // Update text search fields for schemes (full-text search)
     console.log("Updating text search fields for schemes...")
-    const schemes = await Scheme.find().lean()
+    const schemes = await this.schemeService.model.find().lean()
     for (let scheme of schemes) {
       addKeywords(scheme)
-      await Scheme.findByIdAndUpdate(scheme._id, scheme)
+      await this.schemeService.model.findByIdAndUpdate(scheme._id, scheme)
     }
     console.log("... done.")
   }
   async "1.2.7"() {
     // 1. Update publisher keywords field for schemes
     console.log("Updating publisher keywords fields for schemes...")
-    const schemes = await Scheme.find().lean()
+    const schemes = await this.schemeService.model.find().lean()
     for (let scheme of schemes) {
       addKeywords(scheme)
-      await Scheme.findByIdAndUpdate(scheme._id, scheme)
+      await this.schemeService.model.findByIdAndUpdate(scheme._id, scheme)
     }
     console.log("... done.")
     // 2. Create indexes for schemes
@@ -154,7 +153,7 @@ export class Upgrader {
     let adjusted = 0
     let failed = 0
     let skipped = 0
-    const concordances = await Concordance.find().lean()
+    const concordances = await this.concordanceService.model.find().lean()
     for (const concordance of concordances) {
       const previous_id = concordance._id
       if (!previous_id.startsWith("http")) {
@@ -185,8 +184,8 @@ export class Upgrader {
       }
       // Save concordance
       try {
-        await Concordance.insertMany([concordance])
-        await Concordance.deleteOne({ _id: previous_id })
+        await this.concordanceService.model.insertMany([concordance])
+        await this.concordanceService.model.deleteOne({ _id: previous_id })
         adjusted += 1
       } catch (error) {
         console.error(error)
@@ -217,10 +216,10 @@ export class Upgrader {
     }
 
     let updatedCount = 0
-    const annotations = await Annotation.find({ "target.state.id": { $exists: false } }).exec()
+    const annotations = await this.annotationService.model.find({ "target.state.id": { $exists: false } }).exec()
     for (const annotation of annotations) {
       const target = _.get(annotation, "target.id", annotation.target)
-      const mapping = await Mapping.findOne({ uri: target })
+      const mapping = await this.mappingService.model.findOne({ uri: target })
       const contentId = mapping && (mapping.identifier || []).find(id => id.startsWith("urn:jskos:mapping:content:"))
       const update = contentId ? {
         target: {
@@ -232,7 +231,7 @@ export class Upgrader {
       } : {
         target: { id: target },
       }
-      await Annotation.updateOne({ _id: annotation._id }, update)
+      await this.annotationService.model.updateOne({ _id: annotation._id }, update)
       updatedCount += 1
     }
     console.log(`... done (${updatedCount} annotations updated).`)
@@ -252,13 +251,13 @@ export class Upgrader {
   }
   async "2.0.3"() {
     console.log("Adding missing `fromScheme`/`toScheme` fields to mappings...")
-    const mappings = await Mapping.aggregate([
+    const mappings = await this.mappingService.model.aggregate([
       {
         $match: { $or: [{ "fromScheme.uri": { $exists: false } }, { "toScheme.uri": { $exists: false } }] },
       },
       {
         $lookup: {
-          from: Concordance.collection.name,
+          from: this.concordanceService.model.collection.name,
           localField: "partOf.0.uri",
           foreignField: "uri",
           as: "CONCORDANCE",
@@ -274,7 +273,7 @@ export class Upgrader {
       delete mapping.CONCORDANCE
       addMappingSchemes(mapping, { concordance })
       if (!hasFromScheme && mapping.fromScheme || !hasToScheme && mapping.toScheme) {
-        await Mapping.replaceOne({ _id }, mapping)
+        await this.mappingService.model.replaceOne({ _id }, mapping)
         adjustedCount += 1
       }
     }
@@ -290,7 +289,7 @@ export class Upgrader {
     console.log("Rewriting concordance URIs for mappings...")
 
     // Find all concordances with "identifier" set
-    const concordances = await Concordance.find({
+    const concordances = await this.concordanceService.model.find({
       "identifier.0": { $exists: true },
     })
     console.log(`- Found ${concordances.length} concordances where updates might be necessary.`)
@@ -298,7 +297,7 @@ export class Upgrader {
     let updatedConcordaces = 0, updatedMappings = 0
     for (const concordance of concordances) {
       // Update concordance URIs
-      const result = await Mapping.updateMany({
+      const result = await this.mappingService.model.updateMany({
         "partOf.0.uri": {
           $in: concordance.identifier,
         },

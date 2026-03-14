@@ -1,24 +1,19 @@
 import _ from "lodash"
-import { removeNullProperties } from "../utils/utils.js"
 import { validate } from "jskos-validate"
-import { Registry } from "../models/registries.js"
 import { addKeywords } from "../utils/searchHelper.js"
 import { EntityNotFoundError, DatabaseAccessError, InvalidBodyError, MalformedBodyError } from "../errors/index.js"
 
 import { AbstractService } from "./abstract.js"
-
-// TODO: get via factory Method
-import { models } from "../models/index.js"
 
 export class RegistryService extends AbstractService {
   static allMemberTypes = ["schemes", "concepts", "mappings", "concordances", "annotations", "registries"]
 
   constructor(config) {
     super(config)
+    this.model = this.models.registry
+
     this.config = config.registries || {}
     this.types = {}
-
-    this.model = Registry
 
     // TODO: duplicated code in config.setup
     for (let type of RegistryService.allMemberTypes) {
@@ -164,7 +159,7 @@ export class RegistryService extends AbstractService {
     // Merge existing with updates
     _.assign(existing, body)
 
-    removeNullProperties(existing)
+    this._removeNullProperties(existing)
 
     await this.processMembers(existing)
 
@@ -286,7 +281,7 @@ export class RegistryService extends AbstractService {
           error = `invalid ${type} in registry`
           // TODO: use validator.errors error object
         } else if (mustExist) {
-          const found = await models[type].findOne({ uri: item.uri }).lean()
+          const found = await this.models[type].findOne({ uri: item.uri }).lean()
           if (!found) {
             error = `${type} not found with uri: ${item.uri}`
           }

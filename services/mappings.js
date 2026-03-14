@@ -1,12 +1,10 @@
 import _ from "lodash"
 import { uuid, isValidUuid } from "../utils/uuid.js"
-import { removeNullProperties, addMappingSchemes } from "../utils/utils.js"
+import { addMappingSchemes } from "../utils/utils.js"
 import jskos from "jskos-tools"
 import { validate } from "jskos-validate"
 import { cdk } from "cocoda-sdk"
 
-import { Mapping } from "../models/mappings.js"
-import { Annotation } from "../models/annotations.js"
 import { SchemeService } from "./schemes.js"
 import { ConcordanceService } from "./concordances.js"
 import { MalformedRequestError, EntityNotFoundError, InvalidBodyError, DatabaseAccessError, BackendError } from "../errors/index.js"
@@ -29,9 +27,10 @@ export class MappingService extends AbstractService {
 
   constructor(config) {
     super(config)
+    this.model = this.models.mapping
+
     this.baseUri = config.baseUrl + "mappings/"
     this.config = config.mappings || {}
-    this.model = Mapping
     this.schemeService = new SchemeService(config)
     this.concordanceService = new ConcordanceService(config)
     this.loadWhitelists()
@@ -327,7 +326,7 @@ export class MappingService extends AbstractService {
           { $match: query },
           ...(sorting ? [{ $sort: sorting }] : []),
         ]
-        pipeline.model = Mapping
+        pipeline.model = this.model
       } else if (from || to || creator || negativeAnnotationAssertion) {
         // 2. Filter by annotation, and from/to/creator is defined
         // We'll first filter the mappings, then add annotations and filter by those
@@ -409,7 +408,7 @@ export class MappingService extends AbstractService {
           // Match mappings
           { $match: query },
         ]
-        pipeline.model = Annotation
+        pipeline.model = this.models.annotation
       }
       return pipeline
     }
@@ -726,7 +725,8 @@ export class MappingService extends AbstractService {
     if (!mapping.type || !mapping.type.length) {
       mapping.type = ["http://www.w3.org/2004/02/skos/core#mappingRelation"]
     }
-    removeNullProperties(newMapping)
+
+    this._removeNullProperties(newMapping)
 
     // Validate mapping after merge
     if (!validateMapping(newMapping)) {

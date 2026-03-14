@@ -5,6 +5,7 @@ import { MappingService } from "./mappings.js"
 import { SchemeService } from "./schemes.js"
 import { RegistryService } from "./registries.js"
 
+// TODO: also pass database connection to generate model[s] from
 export function createServices(config) {
   const annotationService = new AnnotationService(config)
   const conceptService = new ConceptService(config)

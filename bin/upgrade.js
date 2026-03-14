@@ -7,7 +7,7 @@ const upgrader = new Upgrader(config)
 
 import { createDatabase } from "../utils/db.js"
 const db = createDatabase(config)
-import { Meta } from "../models/meta.js"
+import { Meta } from "../models/index.js"
 
 ; (async () => {
   await db.connect()

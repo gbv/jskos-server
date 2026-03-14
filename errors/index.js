@@ -69,11 +69,7 @@ export class DatabaseAccessError extends BackendError {
 
 export class DatabaseInconsistencyError extends BackendError {
   constructor(message) {
-    if (message) {
-      message += " Please contact us with this error message at coli-conc@gbv.de or open an issue on GitHub. Thanks!"
-    } else {
-      message = "There was an inconsistency error with the database. Please try again later."
-    }
+    message = message || "There was an inconsistency error with the database. Please try again later."
     super(message)
   }
 }

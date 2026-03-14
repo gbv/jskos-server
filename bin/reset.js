@@ -128,7 +128,6 @@ if (cli.flags.scheme && cli.flags.concordance) {
 
 import { createServices } from "../services/index.js"
 const services = createServices(config)
-import { models } from "../models/index.js"
 
 ;
 (async () => {
@@ -136,13 +135,12 @@ import { models } from "../models/index.js"
   try {
     await db.connect()
   } catch (error) {
-    logError({
-      message: error,
-      exit: true,
-    })
+    logError({ message: error, exit: true })
   }
   log("Connection to database established.")
   log()
+
+  const models = db.models
 
   // 2. Figure out what will get deleted (default: all types).
   const types = type ? [type] : Object.keys(models)

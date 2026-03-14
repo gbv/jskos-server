@@ -1,6 +1,6 @@
 import { Upgrader } from "../utils/version.js"
 
-import { Meta } from "../models/meta.js"
+import { Meta, models } from "../models/index.js"
 import mongoose from "mongoose"
 
 // Set mongoose buffering options
@@ -13,9 +13,7 @@ export function createDatabase(config) {
   const upgrader = new Upgrader(config)
   const connection = mongoose.connection
 
-  connection.on("connected", () => {
-    config.warn("Connected to database")
-  })
+  connection.on("connected", () => config.warn("Connected to database"))
   const onDisconnected = () => {
     config.warn("Disconnected from database, waiting for automatic reconnect...")
   }
@@ -101,11 +99,10 @@ export function createDatabase(config) {
   }
 
   return {
+    models,
     connection,
     connect,
     disconnect,
     waitForReplicaSet,
   }
 }
-
-

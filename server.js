@@ -39,7 +39,6 @@ const app = express()
 // Initialize WebSocket support
 expressWs(app)
 
-
 app.set("json spaces", 2)
 if (config.proxies && config.proxies.length) {
   app.set("trust proxy", config.proxies)
@@ -50,31 +49,28 @@ app.set("views", __dirname + "/views")
 app.set("view engine", "ejs")
 
 // Database connection (TODO: move to db module)
+// connect(db, config)
 const connect = async () => {
-  try {
-    await db.connect(true)
-    // TODO: `indexExists` causes a deprecation warning. Find a different solution.
-    if (config.schemes && !(await db.connection.collection("terminologies").indexExists("text"))) {
-      config.warn("Text index on terminologies collection missing. /voc/search and /voc/suggest are disabled. Run `npm run import -- --indexes` or `npm run import -- -i schemes` to created indexes.")
-      config.status["voc-search"] = null
-      config.status["voc-suggest"] = null
+  await db.connect(true)
+  // TODO: `indexExists` causes a deprecation warning. Find a different solution.
+  if (config.schemes && !(await db.connection.collection("terminologies").indexExists("text"))) {
+    config.warn("Text index on terminologies collection missing. /voc/search and /voc/suggest are disabled. Run `npm run import -- --indexes` or `npm run import -- -i schemes` to created indexes.")
+    config.status["voc-search"] = null
+    config.status["voc-suggest"] = null
+  }
+  if (config.concepts && !(await db.connection.collection("concepts").indexExists("text"))) {
+    config.warn("Text index on concepts collection missing. /concepts/search and /concepts/suggest are disabled. Run `npm run import -- --indexes` or `npm run import -- -i concepts` to created indexes.")
+    config.status.search = null
+    config.status.suggest = null
+  }
+  if (config.annotations?.mismatchTagVocabulary?.uri) {
+    const concepts = await db.models.concept.find({ "inScheme.uri": config.annotations.mismatchTagVocabulary.uri })
+    if (concepts.length === 0) {
+      config.warn("annotations.mismatchTagVocabulary is configured, but no data for that vocabulary could be found in the database. Import the vocabulary data into this instance for the setting to work.")
     }
-    if (config.concepts && !(await db.connection.collection("concepts").indexExists("text"))) {
-      config.warn("Text index on concepts collection missing. /concepts/search and /concepts/suggest are disabled. Run `npm run import -- --indexes` or `npm run import -- -i concepts` to created indexes.")
-      config.status.search = null
-      config.status.suggest = null
-    }
-    if (config.annotations?.mismatchTagVocabulary?.uri) {
-      const model = await import("./models/concepts.js")
-      const concepts = await model.Concept.find({ "inScheme.uri": config.annotations.mismatchTagVocabulary.uri })
-      if (concepts.length === 0) {
-        config.warn("annotations.mismatchTagVocabulary is configured, but no data for that vocabulary could be found in the database. Import the vocabulary data into this instance for the setting to work.")
-      }
-    }
-  } catch (error) {
-    config.warn("Error connecting to database, reconnect in a few seconds...")
   }
 }
+
 // Logging for access logs
 if (config.verbosity === true || config.verbosity === "log") {
   app.use(morgan(":date[iso] \":method :url HTTP/:http-version\" :status :res[content-length] \":referrer\" \":user-agent\""))

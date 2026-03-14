@@ -3,7 +3,6 @@ import jskos from "jskos-tools"
 import { validate } from "jskos-validate"
 import { bulkOperationForEntities, queryToAggregation } from "../utils/utils.js"
 import { addKeywords } from "../utils/searchHelper.js"
-import { Concept } from "../models/concepts.js"
 import { SchemeService } from "../services/schemes.js"
 import { MalformedBodyError, MalformedRequestError, EntityNotFoundError, InvalidBodyError, DatabaseAccessError } from "../errors/index.js"
 
@@ -13,8 +12,8 @@ export class ConceptService extends AbstractService {
 
   constructor(config) {
     super(config)
+    this.model = this.models.concept
     this.schemeService = new SchemeService(config)
-    this.model = Concept
   }
 
   retrieveItems(query, $skip, $limit, narrower = true) {
@@ -22,7 +21,7 @@ export class ConceptService extends AbstractService {
     if (narrower) {
       pipeline.push({
         $lookup: {
-          from: Concept.collection.name,
+          from: this.model.collection.name,
           localField: "uri",
           foreignField: "broader.uri",
           as: "narrower",
@@ -46,7 +45,7 @@ export class ConceptService extends AbstractService {
     if (_.isNumber($limit)) {
       pipeline.push({ $limit })
     }
-    return Concept.aggregate(pipeline)
+    return this.model.aggregate(pipeline)
   }
 
   /**
@@ -69,7 +68,7 @@ export class ConceptService extends AbstractService {
       criteria = { "topConceptOf.uri": { $type: 2 } }
     }
     const concepts = await this.retrieveItems(criteria, query.offset, query.limit)
-    concepts.totalCount = await this._count(Concept, [{ $match: criteria }])
+    concepts.totalCount = await this._count(this.model, [{ $match: criteria }])
     return concepts
   }
 
@@ -124,7 +123,7 @@ export class ConceptService extends AbstractService {
       return this.retrieveItems(mongoQuery, null, null, false).cursor()
     }
     const concepts = await this.retrieveItems(mongoQuery, query.offset, query.limit)
-    concepts.totalCount = await this._count(Concept, queryToAggregation(mongoQuery))
+    concepts.totalCount = await this._count(this.model, queryToAggregation(mongoQuery))
     return concepts
   }
 
@@ -212,7 +211,7 @@ export class ConceptService extends AbstractService {
         let current = []
         const saveObjects = async (objects) => {
           const { concepts, errors, schemeUrisToAdjust } = await this.prepareAndCheckConcepts(objects, { scheme })
-          concepts.length && await Concept.bulkWrite(bulkOperationForEntities({ entities: concepts, replace: bulkReplace }))
+          concepts.length && await this.model.bulkWrite(bulkOperationForEntities({ entities: concepts, replace: bulkReplace }))
           preparation.concepts = preparation.concepts.concat(concepts.map(c => ({ uri: c.uri })))
           preparation.errors = preparation.errors.concat(errors.map(c => ({ uri: c.uri })))
           preparation.schemeUrisToAdjust = _.uniq(preparation.schemeUrisToAdjust.concat(schemeUrisToAdjust))
@@ -243,7 +242,7 @@ export class ConceptService extends AbstractService {
         throw preparation.errors[0]
       }
       // Insert concepts
-      response = await Concept.insertMany(items, { lean: true })
+      response = await this.model.insertMany(items, { lean: true })
     }
 
     preparation.setApi = setApi
@@ -277,7 +276,7 @@ export class ConceptService extends AbstractService {
     concept.created = existing.created
 
     // Write concept to database
-    const result = await Concept.replaceOne({ _id: existing._id }, concept)
+    const result = await this.model.replaceOne({ _id: existing._id }, concept)
     if (!result.acknowledged) {
       throw new DatabaseAccessError()
     }
@@ -317,7 +316,7 @@ export class ConceptService extends AbstractService {
       throw new EntityNotFoundError(`Could not find scheme with URI ${uri} to delete concepts from.`)
     }
 
-    const result = await Concept.deleteMany({ "inScheme.uri": { $in: [scheme.uri].concat(scheme.identifier || []) } })
+    const result = await this.model.deleteMany({ "inScheme.uri": { $in: [scheme.uri].concat(scheme.identifier || []) } })
     if (!result) {
       throw new DatabaseAccessError()
     }

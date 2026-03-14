@@ -3,8 +3,6 @@ import { validate } from "jskos-validate"
 
 import { addKeywords } from "../utils/searchHelper.js"
 import { MalformedBodyError, MalformedRequestError, EntityNotFoundError, DatabaseAccessError, InvalidBodyError } from "../errors/index.js"
-import { Scheme } from "../models/schemes.js"
-import { Concept } from "../models/concepts.js"
 
 import { AbstractService } from "./abstract.js"
 
@@ -12,8 +10,8 @@ export class SchemeService extends AbstractService {
 
   constructor(config) {
     super(config)
+    this.model = this.models.scheme
     this.baseUrl = config.baseUrl
-    this.model = Scheme
   }
 
   /**
@@ -106,7 +104,7 @@ export class SchemeService extends AbstractService {
     pipeline.push({ $limit: limit })
 
     const schemes = await this.model.aggregate(pipeline)
-    schemes.totalCount = await this._count(Scheme, [{ $match: mongoQuery }])
+    schemes.totalCount = await this._count(this.model, [{ $match: mongoQuery }])
 
     return schemes
   }
@@ -247,8 +245,8 @@ export class SchemeService extends AbstractService {
     )
     const result = []
     for (let scheme of schemes) {
-      const hasTopConcepts = !!(await Concept.findOne({ $or: [scheme.uri].concat(scheme.identifier || []).map(uri => ({ "topConceptOf.uri": uri })) }))
-      const hasConcepts = hasTopConcepts || !!(await Concept.findOne({ $or: [scheme.uri].concat(scheme.identifier || []).map(uri => ({ "inScheme.uri": uri })) }))
+      const hasTopConcepts = !!(await this.models.concept.findOne({ $or: [scheme.uri].concat(scheme.identifier || []).map(uri => ({ "topConceptOf.uri": uri })) }))
+      const hasConcepts = hasTopConcepts || !!(await this.models.concept.findOne({ $or: [scheme.uri].concat(scheme.identifier || []).map(uri => ({ "inScheme.uri": uri })) }))
       const update = {
         $set: {
           concepts: hasConcepts ? [null] : [],

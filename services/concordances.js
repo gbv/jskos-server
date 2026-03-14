@@ -2,11 +2,8 @@ import _ from "lodash"
 import jskos from "jskos-tools"
 import { validate } from "jskos-validate"
 
-import { removeNullProperties } from "../utils/utils.js"
 import { uuid } from "../utils/uuid.js"
 
-import { Concordance } from "../models/concordances.js"
-import { Mapping } from "../models/mappings.js"
 import { SchemeService } from "./schemes.js"
 
 const validateConcordance = validate.concordance
@@ -19,9 +16,10 @@ export class ConcordanceService extends AbstractService {
 
   constructor(config) {
     super(config)
+    this.model = this.models.concordance
+
     this.schemeService = new SchemeService(config)
     this.uriBase = config.baseUrl + "concordances/"
-    this.model = Concordance
   }
 
   /**
@@ -209,7 +207,7 @@ export class ConcordanceService extends AbstractService {
     // Use lodash merge to merge concordance objects
     _.assign(existing, concordance)
 
-    removeNullProperties(existing)
+    this._removeNullProperties(existing)
 
     // Validate concordance after merge
     if (!validateConcordance(existing)) {
@@ -235,7 +233,7 @@ export class ConcordanceService extends AbstractService {
 
   async getMappingsCountForConcordance(concordance) {
     const uris = [concordance.uri].concat(concordance.identifier || [])
-    return await Mapping.countDocuments({ $or: uris.map(uri => ({ "partOf.uri": uri })) })
+    return await this.models.mapping.countDocuments({ $or: uris.map(uri => ({ "partOf.uri": uri })) })
   }
 
   async postAdjustmentForConcordance(uriOrId) {
