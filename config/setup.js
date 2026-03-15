@@ -1,4 +1,5 @@
 import _ from "lodash"
+import fs from "node:fs"
 
 import AJV from "ajv"
 import addAjvFormats from "ajv-formats"
@@ -40,6 +41,16 @@ export function validateConfig(data) {
   return data
 }
 
+export function loadConfig(file) {
+  try {
+    const config = JSON.parse(fs.readFileSync(file))
+    console.log(`Read configuration from ${file}`)
+    return validateConfig(config)
+  } catch(error) {
+    throw new Error(`Could not read and validate configuration file ${file}: ${error}`)
+  }
+}
+
 export function validateStatus(data) {
   if (!ajv.validate(statusSchema, data)) {
     throw new Error(ajvErrorsToString(ajv.errors))
@@ -49,15 +60,16 @@ export function validateStatus(data) {
 
 export function setupConfig(config) {
   config.env = config.env ?? "development"
-  const testing = config.env === "test"
+  const { env, verbosity } = config
 
   // Merge in default values
   config = _.defaultsDeep(config, configDefault)
-  const defaultChangesConfig = { retries: 20, interval: 5000 }
+
+  const changesDefault = { retries: 20, interval: 5000 }
   if (config.changes === true) {
-    config.changes = defaultChangesConfig
+    config.changes = changesDefault
   } else if (config.changes) {
-    config.changes = { ...defaultChangesConfig, ...config.changes }
+    config.changes = { ...changesDefault, ...config.changes }
   }
 
   // Add versions from package
@@ -66,17 +78,17 @@ export function setupConfig(config) {
 
   // Logging functions
   config.log = (...args) => {
-    if (!testing && (config.verbosity === true || config.verbosity === "log")) {
+    if (!env !== "test" && (verbosity === true || verbosity === "log")) {
       console.log(new Date(), ...args)
     }
   }
   config.warn = (...args) => {
-    if (!testing && (config.verbosity === true || config.verbosity === "log" || config.verbosity === "warn")) {
+    if (!env !== "test" && (verbosity === true || verbosity === "log" || verbosity === "warn")) {
       console.warn(new Date(), ...args)
     }
   }
   config.error = (...args) => {
-    if (!testing && config.verbosity !== false) {
+    if (!env !== "test" && verbosity !== false) {
       console.error(new Date(), ...args)
     }
   }
@@ -84,10 +96,6 @@ export function setupConfig(config) {
   // Set composed config variables
   config.mongo.auth = config.mongo.user ? `${config.mongo.user}:${config.mongo.pass}@` : ""
   config.mongo.url = `mongodb://${config.mongo.auth}${config.mongo.host}:${config.mongo.port}`
-  // Adjust database name during tests
-  if (testing) {
-    config.mongo.db += "-test-" + config.namespace
-  }
 
   // Set baseUrl to localhost if not set
   if (!config.baseUrl) {
@@ -154,8 +162,6 @@ export function setupConfig(config) {
         } else if (uriOrigin !== "external" && uriBase === false) {
           throw new Error(`uriBase of ${type}.create must not be false if uriOrigin is not external`)
         }
-
-        //if (type
         // TODO: hard-coded settings for mappings, concordances, and annotations
       }
     }
@@ -196,6 +202,7 @@ export function setupConfig(config) {
   }
 
   // Adjust annotations.mismatchTagVocabulary to have the correct "API" field so that clients using cocoda-sdk can natively query it
+  // TODO: use `service` instead
   if (config.annotations?.mismatchTagVocabulary) {
     if (!config.annotations?.mismatchTagVocabulary?.API?.[0]) {
       config.annotations.mismatchTagVocabulary.API = [

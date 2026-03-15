@@ -1,4 +1,4 @@
-import { validateConfig, setupConfig } from "./config/setup.js"
+import { validateConfig, loadConfig, setupConfig } from "./config/setup.js"
 import { createServices as _createServices } from "./services/index.js"
 
 // TODO: move this into createServices
@@ -7,4 +7,4 @@ function createServices(config) {
   return _createServices(config)
 }
 
-export { validateConfig, createServices }
+export { validateConfig, loadConfig, createServices }

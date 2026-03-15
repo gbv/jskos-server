@@ -4,6 +4,7 @@
 - Add `download` parameter for annotations
 - Allow PATCH for registries (#257)
 - Support `identityGroups` also for `crossUser`
+- Remove automatic generation of `namespace` key in configuration. This is only required by `bin/import.js` to generate reproducible mapping URIs.
 
 ## 2.4.1
 

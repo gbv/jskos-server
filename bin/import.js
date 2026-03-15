@@ -356,6 +356,9 @@ async function doImport({ input, format, type, concordance }) {
         const contentIdentifier = object.identifier.find(id => id && id.startsWith("urn:jskos:mapping:content:"))
         const concordance = object.partOf?.[0]?.uri || ""
         if (contentIdentifier) {
+          if (!config.namespace) {
+            throw new Error("Please add configuration key 'namespace' for reproducible import of mappings!")
+          }
           object._id = uuidv5(contentIdentifier + concordance, config.namespace)
           object.uri = config.baseUrl + "mappings/" + object._id
         }
