@@ -1,4 +1,4 @@
-## ...
+## 2.4.2
 
 - Malformed configuration of JWT key/algorithm will now prevent server from starting
 - Add `download` parameter for annotations

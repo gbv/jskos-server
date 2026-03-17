@@ -4,6 +4,11 @@ import { app } from "../server.js"
 import assert from "node:assert"
 import { assertMongoDB, setupInMemoryMongo, createCollectionsAndIndexes, teardownInMemoryMongo } from "./test-utils.js"
 
+import jwt from "jsonwebtoken"
+
+const userInGroup = { uri: "http://in-group.user", identities: { test: {} } }
+const deleteConceptToken = jwt.sign({ user: userInGroup }, "test")
+
 const schemes = [
   {
     uri: "urn:test:scheme1",
@@ -46,7 +51,6 @@ describe("Data Writing features", () => {
 
   // 🔌 Sanity‐check that mongoose really is connected
   assertMongoDB()
-
 
   describe("/voc write access", () => {
 
@@ -134,7 +138,6 @@ describe("Data Writing features", () => {
         })
     })
 
-    /*
     // TODO: Maybe move somewhere else?
     it("should GET correct results for term (2)", done => {
       chai.request.execute(app)
@@ -244,8 +247,7 @@ describe("Data Writing features", () => {
           })
         })
     })
-*/
-    /*
+
     it("should PUT a scheme (created should be removed, modified should be updated)", async () => {
       const patch = {
         notation: ["A"],
@@ -461,6 +463,7 @@ describe("Data Writing features", () => {
       // DELETE concept
       res = await chai.request.execute(app)
         .delete("/concepts")
+        .set("Authorization", `Bearer ${deleteConceptToken}`)
         .query(concept)
       res.should.have.status(204)
     })
@@ -635,6 +638,7 @@ describe("Data Writing features", () => {
       for (let concept of concepts) {
         chai.request.execute(app)
           .delete("/concepts")
+          .set("Authorization", `Bearer ${deleteConceptToken}`)
           .query({
             uri: concept.uri,
           })
@@ -703,6 +707,7 @@ describe("Data Writing features", () => {
       // Delete from scheme
       res = await chai.request.execute(app)
         .delete("/voc/concepts")
+        .set("Authorization", `Bearer ${deleteConceptToken}`)
         .query({
           uri,
         })
@@ -719,6 +724,7 @@ describe("Data Writing features", () => {
     it("should not DELETE a concept that doesn't exist", done => {
       chai.request.execute(app)
         .delete("/concepts")
+        .set("Authorization", `Bearer ${deleteConceptToken}`)
         .query({
           uri: "urn:test:concept-that-does-not-exist",
         })
@@ -766,6 +772,7 @@ describe("Data Writing features", () => {
       // DELETE concept
       res = await chai.request.execute(app)
         .delete("/concepts")
+        .set("Authorization", `Bearer ${deleteConceptToken}`)
         .query({
           uri: concept.uri,
         })
@@ -777,7 +784,6 @@ describe("Data Writing features", () => {
       assert.notDeepStrictEqual(res.body.topConcepts, scheme.topConcepts)
       assert.notStrictEqual(res.body.modified, scheme.modified)
     })
-*/
 
   })
 

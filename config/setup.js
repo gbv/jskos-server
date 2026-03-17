@@ -146,7 +146,8 @@ export function setupConfig(config) {
           }
         }
       }
-      // Fill in origin of URIs
+
+      // Fill in origin of URIs. TODO: this is not supported yet!
       if (config[type].create) {
         const { uriBase, uriOrigin } = config[type].create
         if (!uriOrigin) {
@@ -154,9 +155,6 @@ export function setupConfig(config) {
         } else if (uriOrigin !== "external" && uriBase === false) {
           throw new Error(`uriBase of ${type}.create must not be false if uriOrigin is not external`)
         }
-
-        //if (type
-        // TODO: hard-coded settings for mappings, concordances, and annotations
       }
     }
   }

@@ -310,19 +310,19 @@ export class AbstractService {
 
 // Determines whether a query is actually empty (i.e. returns all documents).
 export function isQueryEmpty(query) {
-  const allowedProps = ["$and", "$or"]
-  let result = true
-  _.forOwn(query, (value, key) => {
-    if (!allowedProps.includes(key)) {
-      result = false
+  for (let key in query) {
+    // for $and and $or, value is an array
+    if (key === "$and" || key === "$or") {
+      for (let element of query[key]) {
+        if (!isQueryEmpty(element)) {
+          return false
+        }
+      }
     } else {
-      // for $and and $or, value is an array
-      _.forEach(value, (element) => {
-        result = result && isQueryEmpty(element)
-      })
+      return false
     }
-  })
-  return result
+  }
+  return true
 }
 
 

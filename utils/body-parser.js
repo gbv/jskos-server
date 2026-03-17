@@ -29,6 +29,9 @@ const matchesCreator = ({ req = {}, object, withContributors = false }) => {
   if (!object || !user) {
     return false
   }
+  if (!object.creator && !(withContributors && object.contributor)) {
+    return true
+  }
   const userUris = getUrisOfUser(user)
   // TODO: crossUser could also be identityGroup. Use authenticator with expandWhitelist
   if (crossUser === true || _.intersection(crossUser || [], userUris).length) {
