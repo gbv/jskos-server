@@ -68,6 +68,7 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [GET /registries/suggest](#get-registriessuggest)
   - [POST /registries](#post-registries)
   - [PUT /registries](#put-registries)
+  - [PATCH /registries](#patch-registries)
   - [DELETE /registries](#delete-registries)
   - [GET /annotations](#get-annotations)
   - [GET /annotations/:\_id](#get-annotations_id)
@@ -2343,7 +2344,14 @@ Saves one registry or multiple registries in the database.
   Non-bulk mode: the first error is thrown (see [errors](#errors)).
 
 ### PUT /registries
-Overwrites a registry in the database, identfied by its `uri` fiel.
+Overwrites a registry in the database, identfied by its `uri` field.
+
+* **Success Response**
+
+  Registry object as it was saved in the database in [JSKOS Registry] format.
+
+### PATCH /registries
+Modifies a registry in the database, identfied by its `uri` fiel.
 
 * **Success Response**
 
@@ -2374,6 +2382,8 @@ Returns an array of annotations. Each annotation has a property `id` under which
   `bodyValue=[bodyValue]` only return annotations with a specific bodyValue (e.g. `+1`, `-1`)
 
   `motivation=[motivation]` only return annotations with a specific motivation (e.g. `assessing`, `moderating`, `tagging`)
+
+  `download=[type]` returns the whole result as a download (available types are `json` and `ndjson`), ignores `limit` and `offset`
 
 * **Success Response**
 
