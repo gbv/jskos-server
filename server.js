@@ -45,9 +45,18 @@ if (config.proxies && config.proxies.length) {
   app.set("trust proxy", config.proxies)
 }
 
+import ejs from "ejs"
+
 // Configure view engine to render EJS templates.
 app.set("views", __dirname + "/views")
 app.set("view engine", "ejs")
+app.engine("ejs", (filepath, data, callback) => {
+  return ejs.renderFile(filepath, data, {
+    openDelimiter: "[",
+    closeDelimiter: "]",
+  }, callback)
+})
+
 
 // Database connection (TODO: move to db module)
 const connect = async () => {
