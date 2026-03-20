@@ -5,6 +5,7 @@
   <title>[%= config.title %]</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="styles.css">
+  <script src="scripts.js"></script>
 </head>
 <body>
   <h1>[%= config.title %]</h1>
@@ -17,7 +18,7 @@
   <h3>General</h3>
   <ul>
     <li>GET <a href="status">/status</a> - Returns a status object
-      (<a href="status.schema.json">JSON Schema</a>
+      (<a href="status.schema.json">JSON Schema</a>)
       [%- include("icons",{ ref: "get-status" }) %]
     </li>
     <li>GET <a href="checkAuth">/checkAuth</a> - Endpoint to check whether a user is authorized
@@ -26,46 +27,46 @@
     <li>POST/GET <a href="validate">/validate</a> - Endpoint to validate JSKOS data
       [%- include("icons",{ ref: "post-validate" }) %]
     </li>
-    <li>GET <a href="data">/data</a> - Returns data for a certain URI or URIs (concept schemes, concepts, concordances,
+    <li>GET <a href="data">/data</a> - Returns data for a certain URI or URIs (terminologies, concepts, concordances,
       mappings, annotations, registries)
       [%- include("icons",{ ref: "get-data" }) %]
     </li>
   </ul>
   [% if (config.schemes) { %]
-  [%- include("section", { title: "Concept Schemes", api: "voc" }) %]
+  [%- include("section", { title: "Terminologies", api: "voc" }) %]
   <ul>
-    <li>GET <a href="voc">/voc</a> - Returns a list of vocabularies (concept schemes)
+    <li>GET <a href="voc">/voc</a> - Returns a list of vocabularies (terminologies)
       [%- include("icons",{ api: config.schemes.read, ref: "get-voc" }) %]
     </li>
-    <li>GET <a href="voc/top">/voc/top</a> - Lists top concepts for a concept scheme
+    <li>GET <a href="voc/top">/voc/top</a> - Lists top concepts for a terminology
       [%- include("icons",{ api: config.schemes.read, ref: "get-voctop" }) %]
     </li>
-    <li>GET <a href="voc/concepts">/voc/concepts</a> - Lists concepts for a concept scheme
+    <li>GET <a href="voc/concepts">/voc/concepts</a> - Lists concepts for a terminology
       [%- include("icons",{ api: config.schemes.read, ref: "get-vocconcepts" }) %]
     </li>
-    <li>GET <a href="voc/suggest">/voc/suggest</a> - Returns concept scheme suggestions in OpenSearch Suggest Format
+    <li>GET <a href="voc/suggest">/voc/suggest</a> - Returns terminology suggestions in OpenSearch Suggest Format
       [%- include("icons",{ api: config.schemes.read, ref: "get-vocsuggest" }) %]
     </li>
     <li>GET <a href="voc/search">/voc/search</a> - Concept scheme search
       [%- include("icons",{ api: config.schemes.read, ref: "get-vocsearch" }) %]
     </li>
     [% if (config.changes) { %]
-    <li>WS /voc/changes - Real-time updates for concept schemes via WebSocket
+    <li>WS /voc/changes - Real-time updates for terminologies via WebSocket
       [%- include("icons",{ api: config.schemes.changes, ref: "change-stream-endpoints" }) %]
     </li>
     [% } %]
     [% if (config.schemes.create) { %]
-    <li>POST /voc - Saves a concept scheme or multiple concept schemes in the database
+    <li>POST /voc - Saves a terminology or multiple terminologies in the database
       [%- include("icons",{ api: config.schemes.create, ref: "post-voc" }) %]
     </li>
     [% } %]
     [% if (config.schemes.update) { %]
-    <li>PUT /voc - Updates a concept scheme in the database
+    <li>PUT /voc - Updates a terminology in the database
       [%- include("icons",{ api: config.schemes.update, ref: "put-voc" }) %]
     </li>
     [% } %]
     [% if (config.schemes.delete) { %]
-    <li>DELETE /voc - Deletes a concept scheme from the database
+    <li>DELETE /voc - Deletes a terminology from the database
       [%- include("icons",{ api: config.schemes.delete, ref: "delete-voc" }) %]
     </li>
     [% } %]
@@ -74,7 +75,7 @@
   [% if (config.concepts) { %]
   [%- include("section", { title: "Concepts", api: "concepts" }) %]
   <ul>
-    <li>GET <a href="concepts">/concepts</a> - Returns detailed data for concepts or concept schemes
+    <li>GET <a href="concepts">/concepts</a> - Returns detailed data for concepts or terminologies
       [%- include("icons", { api: config.concepts.read, ref: "get-concepts" }) %]
     </li>
     <li>GET <a href="concepts/narrower">/concepts/narrower</a> - Returns narrower concepts for a concept
@@ -184,7 +185,7 @@
     <li>GET <a href="mappings/suggest">/mappings/suggest</a> - Suggests notations used in mappings
       [%- include("icons",{ api: config.mappings.suggest, ref: "get-mappingssuggest" }) %]
     </li>
-    <li>GET <a href="mappings/voc">/mappings/voc</a> - Returns a list of concept schemes used in mappings
+    <li>GET <a href="mappings/voc">/mappings/voc</a> - Returns a list of terminologies used in mappings
       [%- include("icons",{ api: config.mappings.voc, ref: "get-mappingsvoc" }) %]
     </li>
     [% if (config.changes) { %]
