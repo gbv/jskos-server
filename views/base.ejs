@@ -32,7 +32,7 @@
     </li>
   </ul>
   [% if (config.schemes) { %]
-  <h3>Concept Schemes</h3>
+  [%- include("section", { title: "Concept Schemes", api: "voc" }) %]
   <ul>
     <li>GET <a href="voc">/voc</a> - Returns a list of vocabularies (concept schemes)
       [%- include("icons",{ api: config.schemes.read, ref: "get-voc" }) %]
@@ -72,7 +72,7 @@
   </ul>
   [% } %]
   [% if (config.concepts) { %]
-  <h3>Concepts</h3>
+  [%- include("section", { title: "Concepts", api: "concepts" }) %]
   <ul>
     <li>GET <a href="concepts">/concepts</a> - Returns detailed data for concepts or concept schemes
       [%- include("icons", { api: config.concepts.read, ref: "get-concepts" }) %]
@@ -112,7 +112,7 @@
   </ul>
   [% } %]
   [% if (config.concordances) { %]
-  <h3>Concordances</h3>
+  [%- include("section", { title: "Concordances", api: "concordances" }) %]
   <ul>
     [% if (config.concordances.read) { %]
     <li>GET <a href="concordances">/concordances</a> - Returns a list of concordances for mappings
@@ -148,7 +148,7 @@
   </ul>
   [% } %]
   [% if (config.mappings) { %]
-  <h3>Mappings</h3>
+  [%- include("section", { title: "Mappings", api: "mappings" }) %]
   <ul>
     [% if (config.mappings.read) { %]
     <li>GET <a href="mappings">/mappings</a> - Returns a list of mappings
@@ -195,7 +195,7 @@
   </ul>
   [% } %]
   [% if (config.registries) { %]
-  <h3>Registries</h3>
+  [%- include("section", { title: "Registries", api: "registries" }) %]
   <ul>
     <li>GET <a href="registries">/registries</a> - Returns a list of registries
       [%- include("icons", { api: config.registries.read, ref: "get-registries" }) %]
@@ -223,7 +223,7 @@
   </ul>
   [% } %]
   [% if (config.annotations) { %]
-  <h3>Annotations</h3>
+  [%- include("section", { title: "Annotations", api: "annotations" }) %]
   <ul>
     [% if (config.annotations.read) { %]
     <li>GET <a href="annotations">/annotations</a> - Returns a list of annotations
