@@ -36,6 +36,8 @@ if (!config.baseUrl) {
 // Initialize express with settings
 const app = express()
 
+app.use(express.static("public"))
+
 // Initialize WebSocket support
 expressWs(app)
 
