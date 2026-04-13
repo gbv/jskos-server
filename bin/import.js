@@ -350,7 +350,7 @@ async function doImport({ input, format, type, concordance }) {
       }
       // Add mapping identifier
       try {
-        object.identifier = jskos.addMappingIdentifiers(object).identifier
+        object.identifier = (await jskos.addMappingIdentifiers(object)).identifier
       } catch (error) {
         log("Could not add identifier to mapping.", error)
       }

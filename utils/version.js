@@ -2,6 +2,7 @@ import { addMappingSchemes } from "./utils.js"
 import { uuid } from "./uuid.js"
 import _ from "lodash"
 import yesno from "yesno"
+import jskos from "jskos-tools"
 
 import { Scheme, Concordance, Mapping, Annotation } from "../models/index.js"
 import { SchemeService } from "../services/schemes.js"
@@ -320,5 +321,20 @@ export class Upgrader {
     console.log("Creating index for registries...")
     await this.registryService.createIndexes()
     console.log("... done.")
+  }
+  async "2.5.0"() {
+    console.log("Adding mapping sameness identifier to all existing mappings...")
+    let updatedCount = 0
+    const cursor = Mapping.find().lean().cursor()
+    for await (const mapping of cursor) {
+      // Skip if sameness identifier already present
+      if ((mapping.identifier || []).some(id => id && id.startsWith("mapping:"))) {
+        continue
+      }
+      const updated = await jskos.addMappingIdentifiers(mapping)
+      await Mapping.updateOne({ _id: mapping._id }, { $set: { identifier: updated.identifier } })
+      updatedCount += 1
+    }
+    console.log(`... done (${updatedCount} mappings updated).`)
   }
 }

@@ -534,7 +534,7 @@ export class MappingService extends AbstractService {
       for (const uri of ancestors.map(a => a && a.uri).filter(Boolean)) {
         mappings = await this.queryItems(Object.assign({}, query, { from: uri, type: types.join("|") }))
         if (mappings.length) {
-          return mappings.map(m => {
+          return Promise.all(mappings.map(async m => {
             const mapping = {
               from: {},
               fromScheme: m.fromScheme,
@@ -566,7 +566,7 @@ export class MappingService extends AbstractService {
               mapping.type = [type]
             }
             return jskos.addMappingIdentifiers(mapping)
-          })
+          }))
         }
       }
     } catch (error) {
@@ -631,7 +631,7 @@ export class MappingService extends AbstractService {
       mapping.uri = mapping.uri.replace("http:", "https:")
     }
     // Set mapping identifier
-    mapping.identifier = jskos.addMappingIdentifiers(mapping).identifier
+    mapping.identifier = (await jskos.addMappingIdentifiers(mapping)).identifier
     // Set mapping type to mappingRelation if not set
     if (!mapping.type || !mapping.type.length) {
       mapping.type = ["http://www.w3.org/2004/02/skos/core#mappingRelation"]
@@ -667,7 +667,7 @@ export class MappingService extends AbstractService {
     mapping.uri = existing.uri
     mapping.created = existing.created
     // Set mapping identifier
-    mapping.identifier = jskos.addMappingIdentifiers(mapping).identifier
+    mapping.identifier = (await jskos.addMappingIdentifiers(mapping)).identifier
     // Set mapping type to mappingRelation if not set
     if (!mapping.type || !mapping.type.length) {
       mapping.type = ["http://www.w3.org/2004/02/skos/core#mappingRelation"]
@@ -721,7 +721,7 @@ export class MappingService extends AbstractService {
     // Merge mappings
     const newMapping = Object.assign({}, existing, mapping)
     // Set mapping identifier
-    newMapping.identifier = jskos.addMappingIdentifiers(newMapping).identifier
+    newMapping.identifier = (await jskos.addMappingIdentifiers(newMapping)).identifier
     // Set mapping type to mappingRelation if not set
     if (!mapping.type || !mapping.type.length) {
       mapping.type = ["http://www.w3.org/2004/02/skos/core#mappingRelation"]
