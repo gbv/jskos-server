@@ -1,6 +1,6 @@
 import chai from "./chai.js"
 
-import * as server from "../server.js"
+import { app } from "../server.js"
 import assert from "node:assert"
 import { exec as cpexec } from "node:child_process"
 import { promisify } from "node:util"
@@ -32,20 +32,13 @@ const userWithModerating = {
 }
 const tokenWithModerating = jwt.sign({ user: userWithModerating }, "test")
 
-const userNotOnWhitelist = {
-  uri: "http://test2.user",
-  name: "Test User",
+const userInGroup = {
+  uri: "http://in-group.user",
   identities: {
     test: {},
   },
 }
-const tokenNotOnWhitelist = jwt.sign({ user: userNotOnWhitelist }, "test")
-
-const userMissingIdentity = {
-  uri: "http://test.user",
-  name: "Test User",
-}
-const tokenMissingIdentity = jwt.sign({ user: userMissingIdentity }, "test")
+const tokenWithGroup = jwt.sign({ user: userInGroup }, "test")
 
 // Hide UnhandledPromiseRejectionWarning on output
 process.on("unhandledRejection", () => {})
@@ -97,6 +90,84 @@ let mapping = {
   ],
 }
 
+const userNotOnWhitelist = {
+  uri: "http://test2.user",
+  name: "Test User",
+  identities: {
+    test: {},
+  },
+}
+const tokenNotOnWhitelist = jwt.sign({ user: userNotOnWhitelist }, "test")
+
+const userMissingIdentity = {
+  uri: "http://test.user",
+  name: "Test User",
+}
+const tokenMissingIdentity = jwt.sign({ user: userMissingIdentity }, "test")
+
+// no database connection required for /checkAuth
+describe("GET /checkAuth", () => {
+  const tests = [
+    {
+      test: "",
+      token,
+      body: {
+        name: "Test User",
+        uri: "http://test.user",
+      },
+    },
+    {
+      test: "user in group",
+      token: tokenWithGroup,
+      query: { type: "concepts", action: "delete", identityName: "42" },
+      body: {
+        name: "42",
+        uri: "http://in-group.user",
+      },
+    },
+    {
+      test: "user not on whitelist",
+      token: tokenNotOnWhitelist,
+    },
+    {
+      test: "missing identity",
+      token: tokenMissingIdentity,
+    },
+    {
+      // identityProviders is set to null for annotations.delete
+      test: "userMissingIdentity for delete annotations",
+      query: { type: "annotations", action: "delete" },
+      token: tokenMissingIdentity,
+      body: { uri: "http://test.user", name: "Test User" },
+    },
+    {
+      test: "missing identity for create annotations",
+      query: { type: "annotations", action: "create" },
+      tokenMissingIdentity,
+    },
+  ]
+
+  for (let { test, token, query, body } of tests) {
+    it(`${body ? "" : "not "}authorized ${test}`, done => {
+      chai.request.execute(app)
+        .get("/checkAuth")
+        .query(query || {})
+        .set("Authorization", `Bearer ${token}`)
+        .end((err, res) => {
+          if (body) {
+            res.should.have.status(200)
+            res.body.should.deep.equal(body)
+          } else {
+            res.should.have.status(403)
+            res.body.should.be.an("object")
+            res.body.error.should.be.eql("ForbiddenAccessError")
+          }
+          done()
+        })
+    })
+  }
+})
+
 describe("Express Server", () => {
   before(async () => {
     const mongoUri = await setupInMemoryMongo({ replSet: false })
@@ -118,19 +189,19 @@ describe("Express Server", () => {
   describe("GET /status", () => {
 
     it("should GET status ok = 1", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/status")
         .end((err, res) => {
           res.should.have.status(200)
           res.body.should.be.a("object")
-          _.get(res.body, "ok", 0).should.be.eql(1)
+          res.body.ok.should.be.eql(1)
           res.body.config.should.be.a("object")
           done()
         })
     })
 
     it("should pass JSON schema", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/status")
         .end((err, res) => {
           res.should.have.status(200)
@@ -141,7 +212,7 @@ describe("Express Server", () => {
     })
 
     it("should GET status.schema.json", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/status.schema.json")
         .end((err, res) => {
           res.should.have.status(200)
@@ -151,79 +222,10 @@ describe("Express Server", () => {
 
   })
 
-  describe("GET /checkAuth", () => {
-
-    it("should be authorized for user", done => {
-      chai.request.execute(server.app)
-        .get("/checkAuth")
-        .set("Authorization", `Bearer ${token}`)
-        .end((err, res) => {
-          res.should.have.status(204)
-          done()
-        })
-    })
-
-    it("should not be authorized for userNotOnWhitelist", done => {
-      chai.request.execute(server.app)
-        .get("/checkAuth")
-        .set("Authorization", `Bearer ${tokenNotOnWhitelist}`)
-        .end((err, res) => {
-          res.should.have.status(403)
-          res.body.should.be.an("object")
-          res.body.error.should.be.eql("ForbiddenAccessError")
-          done()
-        })
-    })
-
-    it("should be not be authorized for userMissingIdentity", done => {
-      chai.request.execute(server.app)
-        .get("/checkAuth")
-        .set("Authorization", `Bearer ${tokenMissingIdentity}`)
-        .end((err, res) => {
-          res.should.have.status(403)
-          res.body.should.be.an("object")
-          res.body.error.should.be.eql("ForbiddenAccessError")
-          done()
-        })
-    })
-
-    it("should not be authorized for userMissingIdentity for create annotations", done => {
-      chai.request.execute(server.app)
-        .get("/checkAuth")
-        .query({
-          type: "annotations",
-          action: "create",
-        })
-        .set("Authorization", `Bearer ${tokenMissingIdentity}`)
-        .end((err, res) => {
-          res.should.have.status(403)
-          res.body.should.be.an("object")
-          res.body.error.should.be.eql("ForbiddenAccessError")
-          done()
-        })
-    })
-
-    // identityProviders is set to null for annotations.delete
-    it("should be authorized for userMissingIdentity for delete annotations", done => {
-      chai.request.execute(server.app)
-        .get("/checkAuth")
-        .query({
-          type: "annotations",
-          action: "delete",
-        })
-        .set("Authorization", `Bearer ${tokenMissingIdentity}`)
-        .end((err, res) => {
-          res.should.have.status(204)
-          done()
-        })
-    })
-
-  })
-
   describe("GET /concordances", () => {
 
     it("should GET an empty array", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/concordances")
         .end((err, res) => {
           res.should.have.status(200)
@@ -243,7 +245,7 @@ describe("Express Server", () => {
           done(err)
           return
         }
-        chai.request.execute(server.app)
+        chai.request.execute(app)
           .get("/concordances")
           .end((err, res) => {
             res.should.have.status(200)
@@ -272,7 +274,7 @@ describe("Express Server", () => {
     })
 
     it("should not POST a concordance without fromScheme/toScheme", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .post("/concordances")
         .set("Authorization", `Bearer ${token}`)
         .send({})
@@ -283,7 +285,7 @@ describe("Express Server", () => {
     })
 
     it("should not POST a concordance with unknown fromScheme", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .post("/concordances")
         .set("Authorization", `Bearer ${token}`)
         .send({
@@ -301,7 +303,7 @@ describe("Express Server", () => {
         toScheme: { uri: "http://bartoc.org/en/node/313" },
         notation: ["ddc_stw_test"],
       }
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .post("/concordances")
         .set("Authorization", `Bearer ${token}`)
         .send(concordance)
@@ -322,7 +324,7 @@ describe("Express Server", () => {
         fromScheme: { uri: "http://bartoc.org/en/node/241" },
         toScheme: { uri: "http://bartoc.org/en/node/313" },
       }
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .post("/concordances")
         .set("Authorization", `Bearer ${token}`)
         .send(concordance)
@@ -342,7 +344,7 @@ describe("Express Server", () => {
     })
 
     it("should be able to retrieve concordance via GET /data", async () => {
-      const res = await chai.request.execute(server.app)
+      const res = await chai.request.execute(app)
         .get("/data")
         .query({
           uri: createdConcordance.uri,
@@ -353,7 +355,7 @@ describe("Express Server", () => {
 
     it("should PUT a concordance", done => {
       createdConcordance.scopeNote = { en: ["Test"] }
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .put(`/concordances/${created_id}`)
         .set("Authorization", `Bearer ${token}`)
         .send(createdConcordance)
@@ -373,7 +375,7 @@ describe("Express Server", () => {
       createdConcordance.toScheme = { uri: "test" }
       createdConcordance.extent = "5000"
       createdConcordance._id = "abc"
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .put(`/concordances/${created_id}`)
         .set("Authorization", `Bearer ${token}`)
         .send(createdConcordance)
@@ -392,7 +394,7 @@ describe("Express Server", () => {
     })
 
     it("should not PUT a concordance that doesn't validate", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .put(`/concordances/${created_id}`)
         .set("Authorization", `Bearer ${token}`)
         .send(Object.assign({}, createdConcordance, { scopeNote: 0 }))
@@ -404,7 +406,7 @@ describe("Express Server", () => {
 
     it("should PATCH a concordance", done => {
       const change = { scopeNote: { en: ["Test 2"] } }
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .patch(`/concordances/${created_id}`)
         .set("Authorization", `Bearer ${token}`)
         .send(change)
@@ -421,7 +423,7 @@ describe("Express Server", () => {
 
     it("should not PATCH certain properties of a concordance", done => {
       const change = { fromScheme: { uri: "test" } }
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .patch(`/concordances/${created_id}`)
         .set("Authorization", `Bearer ${token}`)
         .send(change)
@@ -432,7 +434,7 @@ describe("Express Server", () => {
     })
 
     it("should not PATCH a concordance change that doesn't validate", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .put(`/concordances/${created_id}`)
         .set("Authorization", `Bearer ${token}`)
         .send({ scopeNote: 0 })
@@ -451,7 +453,7 @@ describe("Express Server", () => {
         from: { memberSet: [{ uri: "urn:test:concept" }] },
         to: { memberSet: [] },
       }
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .post("/mappings")
         .set("Authorization", `Bearer ${token}`)
         .send(mapping)
@@ -459,7 +461,7 @@ describe("Express Server", () => {
           assert.equal(res.status, 201)
           mapping_id = res.body.uri.substring(res.body.uri.lastIndexOf("/") + 1)
           const modified = res.body.modified
-          chai.request.execute(server.app)
+          chai.request.execute(app)
             .patch(`/mappings/${mapping_id}`)
             .set("Authorization", `Bearer ${token}`)
             .send({ partOf: [{ uri: createdConcordance.uri }] })
@@ -475,7 +477,7 @@ describe("Express Server", () => {
     })
 
     it("should be able to retrieve mapping via GET /data", async () => {
-      const res = await chai.request.execute(server.app)
+      const res = await chai.request.execute(app)
         .get("/data")
         .query({
           uri: createdMapping.uri,
@@ -485,7 +487,7 @@ describe("Express Server", () => {
     })
 
     it("should have updated extent and modified of concordance", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get(`/concordances/${created_id}`)
         .end((err, res) => {
           assert.equal(res.status, 200)
@@ -497,7 +499,7 @@ describe("Express Server", () => {
     })
 
     it("should return mapping when requesting mappings with partOf parameter", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/mappings")
         .query({
           partOf: createdConcordance.uri,
@@ -511,7 +513,7 @@ describe("Express Server", () => {
     })
 
     it("should return mapping when requesting mappings with partOf=any", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/mappings")
         .query({
           partOf: "any",
@@ -525,7 +527,7 @@ describe("Express Server", () => {
     })
 
     it("should return no mappings when requesting mappings with partOf=none", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/mappings")
         .query({
           partOf: "none",
@@ -539,7 +541,7 @@ describe("Express Server", () => {
     })
 
     it("should return an error on PATCH mapping if the target concordance does not exist", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .patch(`/mappings/${mapping_id}`)
         .set("Authorization", `Bearer ${token}`)
         .send({ partOf: [{ uri: "abcdef" }] })
@@ -550,7 +552,7 @@ describe("Express Server", () => {
     })
 
     it("should not allow PATCHing a mapping with new fromScheme if it belongs to a concordance (1/2)", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .patch(`/mappings/${mapping_id}`)
         .set("Authorization", `Bearer ${token}`)
         .send({ fromScheme: { uri: "http://bartoc.org/en/node/313" } })
@@ -561,7 +563,7 @@ describe("Express Server", () => {
     })
 
     it("should not allow PUTing a mapping with new toScheme if it belongs to a concordance (2/2)", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .put(`/mappings/${mapping_id}`)
         .set("Authorization", `Bearer ${token}`)
         .send(Object.assign({}, createdMapping, { toScheme: { uri: "http://bartoc.org/en/node/241" } }))
@@ -572,7 +574,7 @@ describe("Express Server", () => {
     })
 
     it("should not DELETE a concordance with mappings", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .delete(`/concordances/${created_id}`)
         .set("Authorization", `Bearer ${token}`)
         .end((err, res) => {
@@ -582,17 +584,17 @@ describe("Express Server", () => {
     })
 
     it("should DELETE a mapping, then have extent of 0, then should DELETE a concordance without mappings", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .delete(`/mappings/${mapping_id}`)
         .set("Authorization", `Bearer ${token}`)
         .end((err, res) => {
           assert.equal(res.status, 204)
-          chai.request.execute(server.app)
+          chai.request.execute(app)
             .get(`/concordances/${created_id}`)
             .end((err, res) => {
               assert.equal(res.status, 200)
               assert.equal(res.body && res.body.extent, "0")
-              chai.request.execute(server.app)
+              chai.request.execute(app)
                 .delete(`/concordances/${created_id}`)
                 .set("Authorization", `Bearer ${token}`)
                 .end((err, res) => {
@@ -604,7 +606,7 @@ describe("Express Server", () => {
     })
 
     it("should fail to DELETE a concordance that doesn't exist", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .delete(`/concordances/${created_id}`)
         .set("Authorization", `Bearer ${token}`)
         .end((err, res) => {
@@ -628,7 +630,7 @@ describe("Express Server", () => {
   describe("GET /mappings", () => {
 
     it("should GET an empty array", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/mappings")
         .end((err, res) => {
           res.should.have.status(200)
@@ -648,7 +650,7 @@ describe("Express Server", () => {
           done(err)
           return
         }
-        chai.request.execute(server.app)
+        chai.request.execute(app)
           .get("/mappings")
           .end((err, res) => {
             res.should.have.status(200)
@@ -663,7 +665,7 @@ describe("Express Server", () => {
     })
 
     it("should sort mappings by mappingRelevance ascending", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/mappings")
         .query({
           sort: "mappingRelevance",
@@ -682,7 +684,7 @@ describe("Express Server", () => {
     })
 
     it("should paginate mappings properly", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/mappings")
         .query({
           limit: 2,
@@ -694,7 +696,7 @@ describe("Express Server", () => {
           res.headers["x-total-count"].should.be.eql("3")
           res.body.should.be.a("array")
           res.body.length.should.be.eql(2)
-          chai.request.execute(server.app)
+          chai.request.execute(app)
             .get("/mappings")
             .query({
               limit: 2,
@@ -713,7 +715,7 @@ describe("Express Server", () => {
     })
 
     it("should GET one mapping with URL parameter", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/mappings")
         .query({
           to: "http://d-nb.info/gnd/4499720-6",
@@ -734,7 +736,7 @@ describe("Express Server", () => {
     })
 
     it("should GET one mapping with URL parameter (with direction = backward)", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/mappings")
         .query({
           from: "http://d-nb.info/gnd/4499720-6",
@@ -753,7 +755,7 @@ describe("Express Server", () => {
     })
 
     it("should handle direction=both correctly when both from and fromScheme are given", async () => {
-      const res = await chai.request.execute(server.app)
+      const res = await chai.request.execute(app)
         .get("/mappings")
         .query({
           from: "http://d-nb.info/gnd/4074195-3",
@@ -764,7 +766,7 @@ describe("Express Server", () => {
     })
 
     it("should handle direction=both correctly for edge case with from and toScheme (#219)", async () => {
-      const res = await chai.request.execute(server.app)
+      const res = await chai.request.execute(app)
         .get("/mappings")
         .query({
           from: "612.112",
@@ -775,7 +777,7 @@ describe("Express Server", () => {
     })
 
     it("should handle combination of direction=both and mode=or correctly", async () => {
-      const res = await chai.request.execute(server.app)
+      const res = await chai.request.execute(app)
         .get("/mappings")
         .query({
           from: "http://d-nb.info/gnd/4074195-3",
@@ -793,7 +795,7 @@ describe("Express Server", () => {
           done(err)
           return
         }
-        chai.request.execute(server.app)
+        chai.request.execute(app)
           .get("/mappings")
           .query({
             to: "612.112",
@@ -812,7 +814,7 @@ describe("Express Server", () => {
     })
 
     it("should have identifiers for all mappings", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/mappings")
         .end((err, res) => {
           res.should.have.status(200)
@@ -826,7 +828,7 @@ describe("Express Server", () => {
     })
 
     it("should GET mappings by identifier", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/mappings")
         .query({
           identifier: "urn:jskos:mapping:content:ecfbefed9712bf4b5c90269ddbb6788bff15b7d6|urn:jskos:mapping:content:fa693e08d92696e453208ce478e988434cc73a0e",
@@ -844,7 +846,7 @@ describe("Express Server", () => {
 
     it("should POST a mapping, then GET it using its URI with the identifier parameter, then DELETE it again", done => {
       let uri, _id
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .post("/mappings")
         .set("Authorization", `Bearer ${token}`)
         .send(mapping)
@@ -855,7 +857,7 @@ describe("Express Server", () => {
           uri = res.body.uri
           // _id needed for deletion later
           _id = res.body.uri.substring(res.body.uri.lastIndexOf("/") + 1)
-          chai.request.execute(server.app)
+          chai.request.execute(app)
             .get("/mappings")
             .query({
               identifier: uri,
@@ -866,7 +868,7 @@ describe("Express Server", () => {
               res.body.length.should.be.eql(1)
               res.body[0].uri.should.be.eql(uri)
               // DELETE the mapping
-              chai.request.execute(server.app).delete(`/mappings/${_id}`).set("Authorization", `Bearer ${token}`).end((err, res) => {
+              chai.request.execute(app).delete(`/mappings/${_id}`).set("Authorization", `Bearer ${token}`).end((err, res) => {
                 res.should.have.status(204)
                 done()
               })
@@ -879,7 +881,7 @@ describe("Express Server", () => {
   describe("GET /mappings/:_id", () => {
 
     it("should GET error 404 if ID does not exist", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/mappings/5bf3dad9ad10c2917066d8af")
         .end((err, res) => {
           res.should.have.status(404)
@@ -888,7 +890,7 @@ describe("Express Server", () => {
     })
 
     it("should POST a mapping, then GET the mapping with its uri, then DELETE it with its uri", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .post("/mappings")
         .set("Authorization", `Bearer ${token}`)
         .send(mapping)
@@ -897,12 +899,12 @@ describe("Express Server", () => {
           res.body.should.be.a("object")
           res.body.uri.should.be.a("string")
           let _id = res.body.uri.substring(res.body.uri.lastIndexOf("/") + 1)
-          chai.request.execute(server.app).get(`/mappings/${_id}`).end((err, res) => {
+          chai.request.execute(app).get(`/mappings/${_id}`).end((err, res) => {
             res.should.have.status(200)
             res.body.should.be.a("object")
             // Due to chai, the URL will be different, so we will remove it from the objects
             _.isEqual(_.omit(res.body, ["uri", "identifier", "creator", "created", "modified", "@context"]), _.omit(mapping, ["creator"])).should.be.eql(true)
-            chai.request.execute(server.app).delete(`/mappings/${_id}`).set("Authorization", `Bearer ${token}`).end((err, res) => {
+            chai.request.execute(app).delete(`/mappings/${_id}`).set("Authorization", `Bearer ${token}`).end((err, res) => {
               res.should.have.status(204)
               done()
             })
@@ -926,7 +928,7 @@ describe("Express Server", () => {
     })
 
     it("should GET appropriate results", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/mappings/voc")
         .end((err, res) => {
           res.should.have.status(200)
@@ -940,7 +942,7 @@ describe("Express Server", () => {
     })
 
     it("should GET appropriate results with mode=and", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/mappings/voc")
         .query({
           from: "http://dewey.info/class/612.112/e23/",
@@ -963,7 +965,7 @@ describe("Express Server", () => {
     })
 
     it("should GET appropriate results with mode=or", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/mappings/voc")
         .query({
           from: "http://dewey.info/class/612.112/e23/",
@@ -991,7 +993,7 @@ describe("Express Server", () => {
 
     it("should GET correct suggestions", done => {
       let search = "6"
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/mappings/suggest")
         .query({
           search,
@@ -1017,7 +1019,7 @@ describe("Express Server", () => {
   describe("POST /mappings", () => {
 
     it("should POST a mapping", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .post("/mappings")
         .set("Authorization", `Bearer ${token}`)
         .send(mapping)
@@ -1038,7 +1040,7 @@ describe("Express Server", () => {
     })
 
     it("should not POST a mapping with `partOf` property", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .post("/mappings")
         .set("Authorization", `Bearer ${token}`)
         .send(Object.assign({}, mapping, { partOf: [ { uri: "..." } ] }))
@@ -1051,7 +1053,7 @@ describe("Express Server", () => {
     it("should POST a mapping with valid URI", done => {
       let uri, _id
       // 1. POST a new mapping
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .post("/mappings")
         .set("Authorization", `Bearer ${token}`)
         .send(mapping)
@@ -1060,10 +1062,10 @@ describe("Express Server", () => {
           uri = res.body.uri
           _id = uri.substring(uri.lastIndexOf("/") + 1)
           // 2. DELETE that mapping
-          chai.request.execute(server.app).delete(`/mappings/${_id}`).set("Authorization", `Bearer ${token}`).end((err, res) => {
+          chai.request.execute(app).delete(`/mappings/${_id}`).set("Authorization", `Bearer ${token}`).end((err, res) => {
             res.should.have.status(204)
             // 3. POST new mapping with same valid URI as previous POSTED mapping
-            chai.request.execute(server.app)
+            chai.request.execute(app)
               .post("/mappings")
               .set("Authorization", `Bearer ${token}`)
               .send(Object.assign({ uri }, mapping))
@@ -1080,7 +1082,7 @@ describe("Express Server", () => {
     it("should not POST a mapping with already existing URI", done => {
       let uri
       // 1. POST a new mapping
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .post("/mappings")
         .set("Authorization", `Bearer ${token}`)
         .send(mapping)
@@ -1088,7 +1090,7 @@ describe("Express Server", () => {
           res.should.have.status(201)
           uri = res.body.uri
           // 2. POST new mapping with same URI as previous POSTED mapping
-          chai.request.execute(server.app)
+          chai.request.execute(app)
             .post("/mappings")
             .set("Authorization", `Bearer ${token}`)
             .send(Object.assign({ uri }, mapping))
@@ -1102,7 +1104,7 @@ describe("Express Server", () => {
     it("should keep URI in identifier when POSTing a mapping with invalid URI", done => {
       let uri, _id
       // 1. POST a new mapping
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .post("/mappings")
         .set("Authorization", `Bearer ${token}`)
         .send(mapping)
@@ -1111,10 +1113,10 @@ describe("Express Server", () => {
           uri = res.body.uri
           _id = uri.substring(uri.lastIndexOf("/") + 1)
           // 2. DELETE that mapping
-          chai.request.execute(server.app).delete(`/mappings/${_id}`).set("Authorization", `Bearer ${token}`).end((err, res) => {
+          chai.request.execute(app).delete(`/mappings/${_id}`).set("Authorization", `Bearer ${token}`).end((err, res) => {
             res.should.have.status(204)
             // 3. POST new mapping with slightly modified URI as previous POSTED mapping
-            chai.request.execute(server.app)
+            chai.request.execute(app)
               .post("/mappings")
               .set("Authorization", `Bearer ${token}`)
               .send(Object.assign({ uri: uri.substring(0, uri.length - 1) }, mapping))
@@ -1147,7 +1149,7 @@ describe("Express Server", () => {
         },
       ]
       // 1. Post normal mapping
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .post("/mappings")
         .set("Authorization", `Bearer ${token}`)
         .send(mappingToBeUpdated)
@@ -1161,7 +1163,7 @@ describe("Express Server", () => {
           // Add update to bulk mappings
           bulkMappings.push(Object.assign({}, mappingToBeUpdated, update))
           // 2. Post bulk mappings
-          chai.request.execute(server.app)
+          chai.request.execute(app)
             .post("/mappings")
             .query({
               bulk: true,
@@ -1174,7 +1176,7 @@ describe("Express Server", () => {
               res.body.should.be.an("array")
               assert.equal(res.body.length, bulkMappings.length - 1)
               // 3. Check updated mapping
-              chai.request.execute(server.app)
+              chai.request.execute(app)
                 .get(`/mappings/${_id}`)
                 .end((error, res) => {
                   assert.equal(error, null)
@@ -1192,7 +1194,7 @@ describe("Express Server", () => {
   describe("POST, then PUT mapping", () => {
 
     it("should POST a mapping, then PUT a changed mapping", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .post("/mappings")
         .set("Authorization", `Bearer ${token}`)
         .send(mapping)
@@ -1203,7 +1205,7 @@ describe("Express Server", () => {
           // Adjust mapping
           let changedMapping = Object.assign({}, mapping, { type: ["http://www.w3.org/2004/02/skos/core#closeMatch"] })
           // PUT that mapping
-          chai.request.execute(server.app)
+          chai.request.execute(app)
             .put(`/mappings/${_id}`)
             .set("Authorization", `Bearer ${token}`)
             .send(changedMapping)
@@ -1222,7 +1224,7 @@ describe("Express Server", () => {
   describe("POST, then PATCH mapping", () => {
 
     it("should POST a mapping, then PATCH the mapping", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .post("/mappings")
         .set("Authorization", `Bearer ${token}`)
         .send(mapping)
@@ -1232,7 +1234,7 @@ describe("Express Server", () => {
           let _id = res.body.uri.substring(res.body.uri.lastIndexOf("/") + 1)
           let patch = { type: ["http://www.w3.org/2004/02/skos/core#closeMatch"] }
           // PATCH that change
-          chai.request.execute(server.app)
+          chai.request.execute(app)
             .patch(`/mappings/${_id}`)
             .set("Authorization", `Bearer ${token}`)
             .send(patch)
@@ -1251,7 +1253,7 @@ describe("Express Server", () => {
   describe("POST, then DELETE mapping", () => {
 
     it("should POST a mapping, then DELETE the mapping", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .post("/mappings")
         .set("Authorization", `Bearer ${token}`)
         .send(mapping)
@@ -1260,13 +1262,13 @@ describe("Express Server", () => {
           res.body.uri.should.be.a("string")
           let _id = res.body.uri.substring(res.body.uri.lastIndexOf("/") + 1)
           // DELETE
-          chai.request.execute(server.app)
+          chai.request.execute(app)
             .delete(`/mappings/${_id}`)
             .set("Authorization", `Bearer ${token}`)
             .end((err, res) => {
               res.should.have.status(204)
               // Test if that mapping still exists
-              chai.request.execute(server.app)
+              chai.request.execute(app)
                 .get(`/mappings/${_id}`)
                 .set("Authorization", `Bearer ${token}`)
                 .end((err, res) => {
@@ -1282,7 +1284,7 @@ describe("Express Server", () => {
   describe("GET /voc", () => {
 
     it("should GET an empty array", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/voc")
         .end((err, res) => {
           res.should.have.status(200)
@@ -1304,7 +1306,7 @@ describe("Express Server", () => {
           done(err)
           return
         }
-        chai.request.execute(server.app)
+        chai.request.execute(app)
           .get("/voc")
           .end((err, res) => {
             res.should.have.status(200)
@@ -1320,7 +1322,7 @@ describe("Express Server", () => {
     })
 
     it("should also GET the three vocabularies at the /data endpoint", async () => {
-      const res = await chai.request.execute(server.app)
+      const res = await chai.request.execute(app)
         .get("/data")
         .query({
           uri: vocs.map(voc => voc.uri).join("|"),
@@ -1333,7 +1335,7 @@ describe("Express Server", () => {
     })
 
     it("should support filtering by language", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/voc?languages=fr")
         .end((err, res) => {
           res.body.length.should.be.eql(1)
@@ -1342,7 +1344,7 @@ describe("Express Server", () => {
     })
 
     it("should support filtering by multiple languages", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/voc?languages=it,jp,de")
         .end((err, res) => {
           res.body.length.should.be.eql(3)
@@ -1351,7 +1353,7 @@ describe("Express Server", () => {
     })
 
     it("should support filtering by notation", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/voc?notation=DDC")
         .end((err, res) => {
           res.body.length.should.be.eql(1)
@@ -1360,7 +1362,7 @@ describe("Express Server", () => {
     })
 
     it("should support filtering by notations", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/voc?notation=DDC|ASB")
         .end((err, res) => {
           res.body.length.should.be.eql(2)
@@ -1369,7 +1371,7 @@ describe("Express Server", () => {
     })
 
     it("should support filtering by license", async () => {
-      const res = await chai.request.execute(server.app)
+      const res = await chai.request.execute(app)
         .get("/voc")
         .query({
           license: "http://creativecommons.org/licenses/by-nc-nd/3.0/",
@@ -1379,7 +1381,7 @@ describe("Express Server", () => {
     })
 
     it("should support sorting by label", async () => {
-      const res = await chai.request.execute(server.app)
+      const res = await chai.request.execute(app)
         .get("/voc")
         .query({
           sort: "label",
@@ -1390,7 +1392,7 @@ describe("Express Server", () => {
     })
 
     it("should support sorting by notation", async () => {
-      const res = await chai.request.execute(server.app)
+      const res = await chai.request.execute(app)
         .get("/voc")
         .query({
           sort: "notation",
@@ -1406,7 +1408,7 @@ describe("Express Server", () => {
   describe("GET /voc/top", () => {
 
     it("should GET one top concept", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/voc/top")
         .end((err, res) => {
           res.should.have.status(200)
@@ -1426,7 +1428,7 @@ describe("Express Server", () => {
   describe("GET /voc/concepts", () => {
 
     it("should GET all four DDC concepts", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/voc/concepts")
         .query({
           uri: "http://dewey.info/scheme/edition/e23/",
@@ -1448,7 +1450,7 @@ describe("Express Server", () => {
   describe("GET /voc/suggest", () => {
 
     it("should GET correct results for notation", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/voc/suggest")
         .query({
           search: "dd",
@@ -1458,18 +1460,19 @@ describe("Express Server", () => {
           res.should.have.header("Link")
           res.should.have.header("X-Total-Count")
           res.headers["x-total-count"].should.be.eql("1")
-          res.body.should.be.a("array")
-          res.body.length.should.be.eql(4) // OpenSearch Suggest Format
-          res.body[0].should.be.a("string")
-          res.body[1].should.be.a("array")
-          res.body[1].length.should.be.eql(1)
+          assert.deepStrictEqual(res.body, [
+            "dd",
+            [ "DDC Dewey Decimal Classification" ],
+            [ "" ],
+            [ "http://dewey.info/scheme/edition/e23/" ],
+          ])
           done()
         })
     })
 
     // TODO: Maybe move somewhere else?
     it("should GET correct results for term (1)", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/voc/suggest")
         .query({
           search: "Thesauru",
@@ -1490,7 +1493,7 @@ describe("Express Server", () => {
 
     // TODO: Maybe move somewhere else?
     it("should GET correct results for term (2)", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/voc/suggest")
         .query({
           search: "Dewey",
@@ -1512,15 +1515,13 @@ describe("Express Server", () => {
   })
 
   describe("GET /voc/search", () => {
-
-
-
+    // TODO
   })
 
   describe("GET /concepts", () => {
 
     it("should GET empty list when no URL is provided", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/concepts")
         .end((err, res) => {
           res.should.have.status(200)
@@ -1534,7 +1535,7 @@ describe("Express Server", () => {
     })
 
     it("should GET one concept", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/concepts")
         .query({
           uri: "http://dewey.info/class/61/e23/",
@@ -1553,7 +1554,7 @@ describe("Express Server", () => {
     })
 
     it("should GET one concept by notation", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/concepts")
         .query({
           notation: "61",
@@ -1577,7 +1578,7 @@ describe("Express Server", () => {
     }
 
     it("should add properties narrower, ancestors, and annotations when using properties=*", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/concepts")
         .query(ddc6Query)
         .end((err, res) => {
@@ -1603,7 +1604,7 @@ describe("Express Server", () => {
     })
 
     it("should return the same data when requested via GET /data", async () => {
-      const res = await chai.request.execute(server.app)
+      const res = await chai.request.execute(app)
         .get("/concepts")
         .query(ddc6Query)
       assert.deepStrictEqual(res.body, ddc6body)
@@ -1611,7 +1612,7 @@ describe("Express Server", () => {
 
     it("should remove properties when prefixed with -, but not when explicitly added again with +", async () => {
       // Request concept via /concepts endpoint
-      const res = await chai.request.execute(server.app)
+      const res = await chai.request.execute(app)
         .get("/concepts")
         .query({
           notation: "61",
@@ -1632,7 +1633,7 @@ describe("Express Server", () => {
     })
 
     it("should GET multiple concepts", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/concepts")
         .query({
           uri: "http://dewey.info/class/60/e23/|http://dewey.info/class/61/e23/",
@@ -1651,7 +1652,7 @@ describe("Express Server", () => {
     })
 
     it("should GET no concepts for different concept scheme", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/concepts")
         .query({
           uri: "http://dewey.info/class/60/e23/|http://dewey.info/class/61/e23/",
@@ -1669,7 +1670,7 @@ describe("Express Server", () => {
     })
 
     it("should only GET concepts if voc is given", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/concepts")
         .query({
           notation: "60|61|DDC",
@@ -1693,7 +1694,7 @@ describe("Express Server", () => {
   describe("GET /concepts/narrower", () => {
 
     it("should GET three children", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/concepts/narrower")
         .query({
           uri: "http://dewey.info/class/6/e23/",
@@ -1714,7 +1715,7 @@ describe("Express Server", () => {
   describe("GET /concepts/ancestors", () => {
 
     it("should GET correct results when using properties=narrower", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/concepts/ancestors")
         .query({
           uri: "http://dewey.info/class/60/e23/",
@@ -1737,8 +1738,18 @@ describe("Express Server", () => {
 
   describe("GET /concepts/suggest", () => {
 
+    it("should GET no results without search", done => {
+      chai.request.execute(app)
+        .get("/concepts/suggest")
+        .end((err, res) => {
+          res.should.have.status(200)
+          assert.deepEqual(res.body, ["",[],[],[]])
+          done()
+        })
+    })
+
     it("should GET correct results for notation", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/concepts/suggest")
         .query({
           search: "60",
@@ -1763,7 +1774,7 @@ describe("Express Server", () => {
     })
 
     it("should GET correct results for notation with language", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/concepts/suggest")
         .query({
           search: "60",
@@ -1785,7 +1796,7 @@ describe("Express Server", () => {
     })
 
     it("should GET correct results for term", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/concepts/suggest")
         .query({
           search: "techn",
@@ -1808,7 +1819,7 @@ describe("Express Server", () => {
 
 
     it("should GET correct results for term with voc parameter", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/concepts/suggest")
         .query({
           search: "techn",
@@ -1835,7 +1846,7 @@ describe("Express Server", () => {
   describe("GET /concepts/search", () => {
 
     it("should GET correct results for notation", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/concepts/search")
         .query({
           search: "60",
@@ -1854,7 +1865,7 @@ describe("Express Server", () => {
     })
 
     it("should GET correct results for term", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/concepts/search")
         .query({
           search: "techn",
@@ -1875,7 +1886,7 @@ describe("Express Server", () => {
   describe("/annotations", () => {
 
     it("should GET zero annotations", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/annotations")
         .end((err, res) => {
           res.should.have.status(200)
@@ -1895,7 +1906,7 @@ describe("Express Server", () => {
     }
 
     it("should POST a annotation", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .post("/annotations")
         .set("Authorization", `Bearer ${token}`)
         .send(annotation)
@@ -1914,7 +1925,7 @@ describe("Express Server", () => {
     })
 
     it("should be able to retrieve annotation via GET /data", async () => {
-      const res = await chai.request.execute(server.app)
+      const res = await chai.request.execute(app)
         .get("/data")
         .query({
           uri: annotation.id,
@@ -1926,7 +1937,7 @@ describe("Express Server", () => {
     })
 
     it("should not POST an invalid annotation", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .post("/annotations")
         .set("Authorization", `Bearer ${token}`)
         .send(Object.assign({}, annotation, { target: 0 }))
@@ -1937,7 +1948,7 @@ describe("Express Server", () => {
     })
 
     it("should GET one annotations", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/annotations")
         .end((err, res) => {
           res.should.have.status(200)
@@ -1955,7 +1966,7 @@ describe("Express Server", () => {
 
     it("should GET an annotation by id", done => {
       let _id = annotation.id.substring(annotation.id.lastIndexOf("/") + 1)
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/annotations/" + _id)
         .end((err, res) => {
           res.should.have.status(200)
@@ -1972,7 +1983,7 @@ describe("Express Server", () => {
       let patch = {
         bodyValue: "-1",
       }
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .patch("/annotations/" + _id)
         .send(patch)
         .end((err, res) => {
@@ -1986,7 +1997,7 @@ describe("Express Server", () => {
       let patch = {
         bodyValue: "-1",
       }
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .patch("/annotations/" + _id)
         .set("Authorization", `Bearer ${tokenWithModerating}`)
         .send(patch)
@@ -2000,7 +2011,7 @@ describe("Express Server", () => {
       let patch = {
         bodyValue: "-1",
       }
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .patch("/annotations/abcdef")
         .set("Authorization", `Bearer ${token}`)
         .send(patch)
@@ -2015,7 +2026,7 @@ describe("Express Server", () => {
       let patch = {
         bodyValue: "-1",
       }
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .patch("/annotations/" + _id)
         .set("Authorization", `Bearer ${token}`)
         .send(patch)
@@ -2036,7 +2047,7 @@ describe("Express Server", () => {
       let annotation2 = _.clone(annotation)
       annotation2.motivation = "commenting"
       annotation2.bodyValue = "hello"
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .put("/annotations/" + _id)
         .set("Authorization", `Bearer ${token}`)
         .send(annotation2)
@@ -2055,7 +2066,7 @@ describe("Express Server", () => {
     })
 
     it("should GET the annotated concept including annotations with prefix syntax", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .get("/concepts")
         .query({
           uri: annotation.target.id,
@@ -2075,7 +2086,7 @@ describe("Express Server", () => {
 
     it("should DELETE an annotation", done => {
       let _id = annotation.id.substring(annotation.id.lastIndexOf("/") + 1)
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .delete("/annotations/" + _id)
         .set("Authorization", `Bearer ${token}`)
         .end((err, res) => {
@@ -2101,7 +2112,7 @@ describe("Express Server", () => {
         },
       ]
       // 1. Post normal annotation
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .post("/annotations")
         .set("Authorization", `Bearer ${token}`)
         .send(annotationToBeUpdated)
@@ -2115,11 +2126,9 @@ describe("Express Server", () => {
           // Add update to bulk annotations
           bulkAnnotations.push(Object.assign({}, annotationToBeUpdated, update))
           // 2. Post bulk annoations
-          chai.request.execute(server.app)
+          chai.request.execute(app)
             .post("/annotations")
-            .query({
-              bulk: true,
-            })
+            .query({ bulk: true })
             .set("Authorization", `Bearer ${token}`)
             .send(bulkAnnotations)
             .end((error, res) => {
@@ -2128,7 +2137,7 @@ describe("Express Server", () => {
               res.body.should.be.an("array")
               assert.equal(res.body.length, bulkAnnotations.length - 1)
               // 3. Check updated annotation
-              chai.request.execute(server.app)
+              chai.request.execute(app)
                 .get(`/annotations/${_id}`)
                 .end((error, res) => {
                   assert.equal(error, null)
@@ -2147,7 +2156,7 @@ describe("Express Server", () => {
     }
 
     it("should not POST an annotation with type moderating for user", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .post("/annotations")
         .set("Authorization", `Bearer ${token}`)
         .send(annotationModerating)
@@ -2160,7 +2169,7 @@ describe("Express Server", () => {
     })
 
     it("should POST an annotation with type moderating for userWithModerating", done => {
-      chai.request.execute(server.app)
+      chai.request.execute(app)
         .post("/annotations")
         .set("Authorization", `Bearer ${tokenWithModerating}`)
         .send(annotationModerating)
@@ -2179,8 +2188,7 @@ describe("Express Server", () => {
 
   describe("GET /registries", () => {
     it("should GET an empty array", (done) => {
-      chai.request
-        .execute(server.app)
+      chai.request.execute(app)
         .get("/registries")
         .end((err, res) => {
           if (err) {
@@ -2205,8 +2213,7 @@ describe("Express Server", () => {
       })
 
       it("should GET registries after import", (done) => {
-        chai.request
-          .execute(server.app)
+        chai.request.execute(app)
           .get("/registries")
           .end((err, res) => {
             if (err) {
@@ -2225,11 +2232,9 @@ describe("Express Server", () => {
       describe("GET /registries/suggest", () => {
 
         it("should GET correct results for notation", done => {
-          chai.request.execute(server.app)
+          chai.request.execute(app)
             .get("/registries/suggest")
-            .query({
-              search: "ERMS",
-            })
+            .query({ search: "ERMS" })
             .end((err, res) => {
               res.should.have.status(200)
               res.should.have.header("Link")
@@ -2246,9 +2251,23 @@ describe("Express Server", () => {
       })
     })
 
+    describe("PATCH /registries", () => {
+      it("should PATCH a registry", done => {
+        const change = { scopeNote: { en: ["Test 2"] } }
+        chai.request.execute(app)
+          .patch("/registries?uri=http://example.org/registry/1")
+          .send(change)
+          .end((err, res) => {
+            assert.equal(res.status, 200)
+            assert.deepStrictEqual(res.body.scopeNote, change.scopeNote)
+            done()
+          })
+      })
+    })
+
   })
 
-  describe("POST registries with memberships", () => {
+  describe("/POST registries", () => {
     const baseRegistry = {
       uri: "http://example.org/registry/membership-base",
       notation: ["MEMBERSHIP-BASE"],
@@ -2264,9 +2283,9 @@ describe("Express Server", () => {
         ..._.cloneDeep(config.registries.types),
         concordances: {
           ..._.cloneDeep(config.registries.types.concordances),
-          uriRequired: false,
+          uriRequired: true,
           mustExist: false,
-          ignoreErrors: false,
+          skipInvalid: false,
         },
       },
     }
@@ -2288,106 +2307,112 @@ describe("Express Server", () => {
       config.registries.types = defaultRegistriesConfig.types
     })
 
-    it("should reject registry with concordance missing uri", (done) => {
+
+    it("should accept missing concordance uri (uriRequired=false)", done => {
+      config.registries.types.concordances.uriRequired = false
+
+      const uri = "http://example.org/registry/a"
+      const concordances = [{}]
+      const registry = { uri, concordances }
+
+      chai.request.execute(app)
+        .post("/registries")
+        .set("Authorization", `Bearer ${token}`)
+        .send([registry])
+        .end((err, res) => {
+          res.should.have.status(201)
+          res.body[0].uri.should.equal(uri)
+          res.body[0].concordances.should.eql(concordances)
+          done()
+        })
+    })
+
+    it("should filter out member with missing uri (skipInvalid=true)", done => {
       config.registries.types.concordances.uriRequired = true
-      config.registries.types.concordances.ignoreErrors = false
+      config.registries.types.concordances.skipInvalid = true
 
-      const registry = _.cloneDeep(baseRegistry)
-      registry.uri = "http://example.org/registry/membership-test"
-      registry.concordances = [{}]
+      const uri = "http://example.org/registry/b"
+      const concordances = [{},{uri:"some:uri"}]
+      const registry = { uri, concordances }
 
-      chai.request
-        .execute(server.app)
+      chai.request.execute(app)
+        .post("/registries")
+        .set("Authorization", `Bearer ${token}`)
+        .send([registry])
+        .end((err, res) => {
+          res.should.have.status(201)
+          res.body[0].uri.should.equal(uri)
+          res.body[0].concordances.should.eql([{uri:"some:uri"}])
+          done()
+        })
+    })
+
+    it("should given an error on member with missing uri (skipInvalid=false)", done => {
+      config.registries.types.concordances.skipInvalid = false
+
+      const uri = "http://example.org/registry/c"
+      const registry = { uri, concordances: [ {} ] }
+
+      chai.request.execute(app)
         .post("/registries")
         .set("Authorization", `Bearer ${token}`)
         .send(registry)
         .end((err, res) => {
           res.should.have.status(422)
-          res.body.error.should.be.eql("InvalidRegistryMembershipError")
           done()
         })
     })
 
-    it("should reject registry with unknown concordance uri", (done) => {
-      config.registries.types.concordances.uriRequired = true
+    it("should filter out non-existing member (mustExist=true, skipInvalid=true)", done => {
       config.registries.types.concordances.mustExist = true
-      config.registries.types.concordances.ignoreErrors = false
+      config.registries.types.concordances.skipInvalid = true
 
-      const registry = _.cloneDeep(baseRegistry)
-      registry.uri = "http://example.org/registry/membership-test-unknown"
-      registry.concordances = [{ uri: "fake:uri-that-does-not-exist" }]
+      const uri = "http://example.org/registry/c"
+      const knownUri = "http://coli-conc.gbv.de/concordances/ddc_rvk_medizin"
+      const concordances = [ {uri:"some:uri"}, {uri:knownUri} ]
+      const registry = { uri, concordances }
 
-      chai.request
-        .execute(server.app)
-        .post("/registries")
-        .set("Authorization", `Bearer ${token}`)
-        .send(registry)
-        .end((err, res) => {
-          res.should.have.status(422)
-          res.body.error.should.be.eql("InvalidRegistryMembershipError")
-          done()
-        })
-    })
-
-    it("should accept registry with existing concordance uri", (done) => {
-      config.registries.types.concordances.uriRequired = true
-      config.registries.types.concordances.mustExist = true
-      config.registries.types.concordances.ignoreErrors = false
-      config.registries.mixedTypes = true
-
-      const registry = _.cloneDeep(baseRegistry)
-      registry.uri = "http://example.org/registry/membership-test-known"
-      registry.concordances = [
-        { uri: "http://coli-conc.gbv.de/concordances/ddc_rvk_recht" },
-      ]
-
-      chai.request
-        .execute(server.app)
+      chai.request.execute(app)
         .post("/registries")
         .set("Authorization", `Bearer ${token}`)
         .send(registry)
         .end((err, res) => {
           res.should.have.status(201)
-          res.body.should.be.an("object")
-          res.body.uri.should.be.eql(registry.uri)
+          res.body.uri.should.equal(uri)
+          res.body.concordances.should.eql([{uri:knownUri}])
           done()
         })
     })
 
     it("should reject registry with mixed membership types when mixedTypes=false", (done) => {
+      config.registries.types.concordances.mustExist = false
       config.registries.mixedTypes = false
-      config.registries.types.concordances.uriRequired = true
-      config.registries.types.concordances.ignoreErrors = true
 
       const registry = _.cloneDeep(baseRegistry)
       registry.uri = "http://example.org/registry/membership-mixed-types"
       registry.concordances = [{ uri: "http://example.org/concordance/1" }]
       registry.schemes = [{ uri: "http://example.org/scheme/1" }]
 
-      chai.request
-        .execute(server.app)
+      chai.request.execute(app)
         .post("/registries")
         .set("Authorization", `Bearer ${token}`)
         .send(registry)
         .end((err, res) => {
           res.should.have.status(422)
-          res.body.error.should.be.eql("InvalidRegistryMixedMembershipError")
+          res.body.error.should.be.eql("InvalidBodyError")
           done()
         })
     })
 
-    it("should allow mixed membership types when mixedTypes=true", (done) => {
+    it("should allow mixed membership types (mixedTypes=true)", done => {
       config.registries.mixedTypes = true
-      config.registries.types.concordances.uriRequired = true
-      config.registries.types.concordances.ignoreErrors = true
 
       const registry = _.cloneDeep(baseRegistry)
       registry.uri = "http://example.org/registry/membership-mixed-types-allowed"
       registry.concordances = [{ uri: "http://example.org/concordance/2" }]
       registry.schemes = [{ uri: "http://example.org/scheme/2" }]
 
-      chai.request
-        .execute(server.app)
+      chai.request.execute(app)
         .post("/registries")
         .set("Authorization", `Bearer ${token}`)
         .send(registry)
@@ -2399,35 +2424,56 @@ describe("Express Server", () => {
         })
     })
 
-    it("should skip invalid registry object in multiple upload", (done) => {
-      config.registries.mixedTypes = true
-      config.registries.types.concordances.uriRequired = true
-      config.registries.types.concordances.mustExist = true
-      config.registries.types.concordances.ignoreErrors = true
-
-      const validRegistry = _.cloneDeep(baseRegistry)
-      validRegistry.uri = "http://example.org/registry/membership-valid"
-      validRegistry.concordances = [
-        { uri: "http://coli-conc.gbv.de/concordances/ddc_rvk_recht" },
+    it("should skip invalid registry object in bulk upload", done => {
+      const items = [
+        { uri: "http://example.org/registry/1" },
+        { uri: 42 },
+        { uri: "http://example.org/registry/2" },
       ]
-
-      const invalidRegistry = _.cloneDeep(baseRegistry)
-      invalidRegistry.uri = "http://example.org/registry/membership-invalid-uri"
-      invalidRegistry.concordances = [{}]
-
-      chai.request
-        .execute(server.app)
+      chai.request.execute(app)
         .post("/registries")
         .query({ bulk: true })
         .set("Authorization", `Bearer ${token}`)
-        .send([invalidRegistry, validRegistry])
+        .send(items)
         .end((err, res) => {
           res.should.have.status(201)
-          res.body.should.be.an("object")
-          res.body.importedCount.should.be.eql(1)
-          res.body.skippedCount.should.be.eql(1)
+          res.body.should.be.an("array")
+          assert.equal(res.body.length, 2)
           done()
         })
     })
+
   })
+
+  describe("DELETE /concepts", () => {
+
+    const concept = {
+      uri: "http://example.org/42",
+    }
+
+    it("should disallow with wrong identity", done => {
+      chai.request.execute(app)
+        .delete("/concepts")
+        .set("Authorization", `Bearer ${token}`)
+        .query(concept)
+        .end((err, res) => {
+          assert.equal(res.status, 403)
+          done()
+        })
+    })
+
+    it("should allow with identity in group", done => {
+      chai.request.execute(app)
+        .delete("/concepts")
+        .set("Authorization", `Bearer ${tokenWithGroup}`)
+        .query(concept)
+        .end((err, res) => {
+          // TODO: use another concept that exist
+          assert.equal(res.status, 404)
+          done()
+        })
+    })
+
+  })
+
 })

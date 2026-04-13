@@ -27,6 +27,7 @@ imports/
 docker/data/*
 ## .env file for Docker build
 !docker/.env
+data/
 
 # pm2 ecosystem file
 ecosystem.config.json

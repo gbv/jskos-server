@@ -30,17 +30,10 @@ describe("Services Features", () => {
   assertMongoDB()
 
   Object.keys(services).forEach(type => {
-    const capType = type.charAt(0).toUpperCase() + type.slice(1)
-    const pluralCapType =
-      capType.endsWith("y") && !/[aeiou]y$/i.test(capType)
-        ? capType.slice(0, -1) + "ies"
-        : capType + "s"
-    const method = "get" + pluralCapType
-    it(`should return an empty array for ${method}`, async () => {
-      const entities = await services[type][method]({ limit: 1, offset: 0 })
+    it(`should return an empty array for ${type} queryItems`, async () => {
+      const entities = await services[type].queryItems({ limit: 1, offset: 0 })
       assert.strictEqual(entities.length, 0)
     })
-
   })
 
   describe("Concordance Service", () => {
@@ -49,7 +42,7 @@ describe("Services Features", () => {
     const toScheme = { uri: "test:toScheme" }
 
     it("should post schemes for testing concordances", async () => {
-      await services.scheme.postScheme({ bodyStream: await arrayToStream([fromScheme, toScheme]) })
+      await services.scheme.createItem({ bodyStream: await arrayToStream([fromScheme, toScheme]) })
     })
 
     it("should post a concordance with a named contributor, then remove the contributor name, then remove the contributor", async () => {
@@ -61,18 +54,18 @@ describe("Services Features", () => {
           prefLabel: { de: "test" },
         }],
       }
-      const [postedConcordance] = await services.concordance.postConcordance({ bodyStream: await arrayToStream([concordance]) })
+      const [postedConcordance] = await services.concordance.createItem({ bodyStream: await arrayToStream([concordance]) })
       const patch = {
         contributor: [{
           uri: "test:user",
         }],
       }
-      const patchedConcordance = await services.concordance.patchConcordance({ body: patch, existing: postedConcordance })
+      const patchedConcordance = await services.concordance.patch({ body: patch, existing: postedConcordance })
       assert.ok(!patchedConcordance.contributor[0].prefLabel, "PATCH requests should merge objects only on the top level.")
       const patch2 = {
         contributor: null,
       }
-      const patchedConcordance2 = await services.concordance.patchConcordance({ body: patch2, existing: patchedConcordance })
+      const patchedConcordance2 = await services.concordance.patch({ body: patch2, existing: patchedConcordance })
       assert.ok(patchedConcordance2.contributor === undefined, "A field should be removed when set to `null`.")
     })
 
@@ -80,7 +73,7 @@ describe("Services Features", () => {
       it("should delete scheme after testing concordances", async () => {
         scheme._id = scheme.uri
         scheme.concepts = []
-        await services.scheme.deleteScheme({ uri: scheme.uri, existing: scheme })
+        await services.scheme.deleteItem({ uri: scheme.uri, existing: scheme })
       })
     }
 
@@ -152,7 +145,7 @@ describe("Services Features", () => {
       it("should post mappings and annotations used for tests", async () => {
         let result
         // Mappings
-        result = await services.mapping.postMapping({ bodyStream: await arrayToStream(mappings) })
+        result = await services.mapping.createItem({ bodyStream: await arrayToStream(mappings) })
         assert.strictEqual(result.length, mappings.length)
         mappings.forEach(mapping => {
           // Find corresponding mapping and set identifier/uri
@@ -168,13 +161,13 @@ describe("Services Features", () => {
           assert.ok(!!mapping)
           annotation.target = mapping.uri
         })
-        result = await services.annotation.postAnnotation({ bodyStream: await arrayToStream(annotations), admin: true })
+        result = await services.annotation.createItem({ bodyStream: await arrayToStream(annotations), admin: true })
         assert.strictEqual(result.length, annotations.length)
       })
 
       it("should get correct number of mappings when using annotatedWith param", async () => {
         const annotatedWith = "-1"
-        const result = await services.mapping.getMappings({ limit: 10, offset: 0, annotatedWith })
+        const result = await services.mapping.queryItems({ limit: 10, offset: 0, annotatedWith })
         const expected = _.uniq(annotations.filter(a => a.bodyValue === annotatedWith).map(a => a.target)).sort()
         assert.deepStrictEqual(result.map(r => r.uri).sort(), expected)
       })
@@ -184,7 +177,7 @@ describe("Services Features", () => {
           { to: "urn:test:concept", annotatedWith: ">=1" },
           { from: "urn:test:fromConcept", annotatedWith: "=0" },
         ]) {
-          const result = await services.mapping.getMappings({ limit: 100, offset: 0, from, to, annotatedWith })
+          const result = await services.mapping.queryItems({ limit: 100, offset: 0, from, to, annotatedWith })
           // Replace = with == for later evaluation
           if (annotatedWith.startsWith("=")) {
             annotatedWith = `=${annotatedWith}`
@@ -207,35 +200,35 @@ describe("Services Features", () => {
 
       it("should get correct number of mappings when using annotatedFor param", async () => {
         const annotatedFor = "assessing"
-        const result = await services.mapping.getMappings({ limit: 10, offset: 0, annotatedFor })
+        const result = await services.mapping.queryItems({ limit: 10, offset: 0, annotatedFor })
         const expected = _.uniq(annotations.filter(a => a.motivation === annotatedFor).map(a => a.target)).sort()
         assert.deepStrictEqual(result.map(r => r.uri).sort(), expected)
       })
 
       it("should get correct number of mappings when using annotatedFor param with value `any`", async () => {
         const annotatedFor = "any"
-        const result = await services.mapping.getMappings({ limit: 10, offset: 0, annotatedFor })
+        const result = await services.mapping.queryItems({ limit: 10, offset: 0, annotatedFor })
         const expected = _.uniq(annotations.map(a => a.target)).sort()
         assert.deepStrictEqual(result.map(r => r.uri).sort(), expected)
       })
 
       it("should get correct number of mappings when using annotatedFor param with value `none`", async () => {
         const annotatedFor = "none"
-        const result = await services.mapping.getMappings({ limit: 10, offset: 0, annotatedFor })
+        const result = await services.mapping.queryItems({ limit: 10, offset: 0, annotatedFor })
         const expected = mappings.map(m => m.uri).filter(uri => !annotations.find(a => a.target === uri)).sort()
         assert.deepStrictEqual(result.map(r => r.uri).sort(), expected)
       })
 
       it("should get correct number of mappings when using annotatedFor param with negative value", async () => {
         const annotatedFor = "!assessing"
-        const result = await services.mapping.getMappings({ limit: 10, offset: 0, annotatedFor })
+        const result = await services.mapping.queryItems({ limit: 10, offset: 0, annotatedFor })
         const expected = mappings.map(m => m.uri).filter(uri => !annotations.find(a => a.target === uri && a.motivation === annotatedFor.slice(1))).sort()
         assert.deepStrictEqual(result.map(r => r.uri).sort(), expected)
       })
 
       it("should get correct number of mappings when using annotatedBy param", async () => {
         const annotatedBy = "urn:test:creator|urn:other:uri"
-        const result = await services.mapping.getMappings({ limit: 10, offset: 0, annotatedBy })
+        const result = await services.mapping.queryItems({ limit: 10, offset: 0, annotatedBy })
         const expected = _.uniq(annotations.filter(a => annotatedBy.split("|").includes(_.get(a, "creator.id"))).map(a => a.target)).sort()
         assert.deepStrictEqual(result.map(r => r.uri).sort(), expected)
       })
@@ -244,12 +237,12 @@ describe("Services Features", () => {
         let result, expected
         const annotatedFor = "moderating"
         // First only annotatedFor
-        result = await services.mapping.getMappings({ limit: 10, offset: 0, annotatedFor })
+        result = await services.mapping.queryItems({ limit: 10, offset: 0, annotatedFor })
         expected = _.uniq(annotations.filter(a => a.motivation === annotatedFor).map(a => a.target)).sort()
         assert.deepStrictEqual(result.map(r => r.uri).sort(), expected)
         // Then with annotatedBy
         const annotatedBy = "urn:test:creator|urn:other:uri"
-        result = await services.mapping.getMappings({ limit: 10, offset: 0, annotatedFor, annotatedBy })
+        result = await services.mapping.queryItems({ limit: 10, offset: 0, annotatedFor, annotatedBy })
         expected = _.uniq(annotations.filter(a => annotatedBy.split("|").includes(_.get(a, "creator.id")) && a.motivation === annotatedFor).map(a => a.target)).sort()
         assert.deepStrictEqual(result.map(r => r.uri).sort(), expected)
       })
@@ -258,12 +251,12 @@ describe("Services Features", () => {
         let result, expected
         const annotatedWith = "+1"
         // First only annotatedWith
-        result = await services.mapping.getMappings({ limit: 10, offset: 0, annotatedWith })
+        result = await services.mapping.queryItems({ limit: 10, offset: 0, annotatedWith })
         expected = _.uniq(annotations.filter(a => a.bodyValue === annotatedWith).map(a => a.target)).sort()
         assert.deepStrictEqual(result.map(r => r.uri).sort(), expected)
         // Then with to
         const to = "urn:test:concept"
-        result = await services.mapping.getMappings({ limit: 10, offset: 0, to, annotatedWith })
+        result = await services.mapping.queryItems({ limit: 10, offset: 0, to, annotatedWith })
         expected = mappings.filter(m => jskos.isContainedIn({ uri: to }, jskos.conceptsOfMapping(m, "to")) && annotations.find(a => a.target === m.uri && a.bodyValue === annotatedWith))
         assert.deepStrictEqual(result.map(r => r.uri).sort(), expected.map(r => r.uri).sort())
       })
@@ -298,8 +291,8 @@ describe("Services Features", () => {
           },
         ]) {
           try {
-            await services.mapping.postMapping({ bodyStream: await arrayToStream([mapping]) })
-            assert.fail("Expected postMapping to fail")
+            await services.mapping.createItem({ bodyStream: await arrayToStream([mapping]) })
+            assert.fail("Expected createItem to fail")
           } catch (error) {
             assert.ok(error instanceof InvalidBodyError)
           }
@@ -321,7 +314,7 @@ describe("Services Features", () => {
             }],
           },
         }
-        const postedMapping = (await services.mapping.postMapping({ bodyStream: await arrayToStream([mapping]) }))?.[0]
+        const postedMapping = (await services.mapping.createItem({ bodyStream: await arrayToStream([mapping]) }))?.[0]
         assert.deepStrictEqual(postedMapping.fromScheme?.uri, mapping.from.memberSet[0].inScheme[0].uri)
         assert.deepStrictEqual(postedMapping.toScheme?.uri, mapping.to.memberSet[0].inScheme[0].uri)
       })
@@ -340,9 +333,9 @@ describe("Services Features", () => {
     }
 
     it("should post tag mismatch scheme and concepts", async () => {
-      await services.scheme.postScheme({ bodyStream: await arrayToStream([mismatchTagScheme]) })
-      await services.concept.postConcept({ bodyStream: await arrayToStream([mismatchTagConcept]) })
-      const concept = await services.concept.get(mismatchTagConcept.uri)
+      await services.scheme.createItem({ bodyStream: await arrayToStream([mismatchTagScheme]) })
+      await services.concept.createItem({ bodyStream: await arrayToStream([mismatchTagConcept]) })
+      const concept = await services.concept.getItem(mismatchTagConcept.uri)
       assert.strictEqual(concept?.uri, mismatchTagConcept.uri)
     })
 
@@ -358,7 +351,7 @@ describe("Services Features", () => {
           },
         ],
       }
-      const results = await services.annotation.postAnnotation({ bodyStream: await arrayToStream([annotation]) })
+      const results = await services.annotation.createItem({ bodyStream: await arrayToStream([annotation]) })
       assert.ok(results?.[0]?.id)
     })
 
@@ -375,7 +368,7 @@ describe("Services Features", () => {
         ],
       }
       try {
-        await services.annotation.postAnnotation({ bodyStream: await arrayToStream([annotation]) })
+        await services.annotation.createItem({ bodyStream: await arrayToStream([annotation]) })
         assert.fail("No error was thrown even though it was expected.")
       } catch (error) {
         assert.ok(error instanceof InvalidBodyError)
@@ -395,7 +388,7 @@ describe("Services Features", () => {
         ],
       }
       try {
-        await services.annotation.postAnnotation({ bodyStream: await arrayToStream([annotation]) })
+        await services.annotation.createItem({ bodyStream: await arrayToStream([annotation]) })
         assert.fail("No error was thrown even though it was expected.")
       } catch (error) {
         assert.ok(error instanceof InvalidBodyError)
@@ -413,7 +406,7 @@ describe("Services Features", () => {
         },
       }
       try {
-        await services.annotation.postAnnotation({ bodyStream: await arrayToStream([annotation]) })
+        await services.annotation.createItem({ bodyStream: await arrayToStream([annotation]) })
         assert.fail("No error was thrown even though it was expected.")
       } catch (error) {
         assert.ok(error instanceof InvalidBodyError)
@@ -433,7 +426,7 @@ describe("Services Features", () => {
         ],
       }
       try {
-        await services.annotation.postAnnotation({ bodyStream: await arrayToStream([annotation]) })
+        await services.annotation.createItem({ bodyStream: await arrayToStream([annotation]) })
         assert.fail("No error was thrown even though it was expected.")
       } catch (error) {
         assert.ok(error instanceof InvalidBodyError)
@@ -453,7 +446,7 @@ describe("Services Features", () => {
         ],
       }
       try {
-        await services.annotation.postAnnotation({ bodyStream: await arrayToStream([annotation]) })
+        await services.annotation.createItem({ bodyStream: await arrayToStream([annotation]) })
         assert.fail("No error was thrown even though it was expected.")
       } catch (error) {
         assert.ok(error instanceof InvalidBodyError)
@@ -472,32 +465,31 @@ describe("Services Features", () => {
       url: "https://example.org/registry/1",
     }
 
-    it("should post a registry and return an id/uri", async () => {
-      const result = await services.registry.postRegistry({
+    it("should post a registry and return with uri", async () => {
+      const result = await services.registry.createItem({
         bodyStream: await arrayToStream([registryExample]),
-        bulk: false,
       })
-      assert.ok(result?.length === 1)
-      assert.ok(result[0]?.uri || result[0]?._id || result[0]?.id)
+      assert.ok(result.length === 1)
+      assert.ok(result[0].uri)
     })
 
     it("should get a registry by id/uri after posting", async () => {
-      const doc = await services.registry.getRegistry(registryExample.uri)
+      const doc = await services.registry.getItem(registryExample.uri)
       assert.strictEqual(doc?.uri, registryExample.uri)
     })
 
     it("should patch a registry and remove a field when set to null", async () => {
-      const existing = await services.registry.getRegistry(registryExample.uri)
+      const existing = await services.registry.getItem(registryExample.uri)
 
       // Add a field and verify it exists
-      const patched1 = await services.registry.patchRegistry({
+      const patched1 = await services.registry.patch({
         existing,
         body: { publisher: [{ uri: "urn:test:publisher", prefLabel: { en: "Pub" } }] },
       })
       assert.ok(patched1.publisher?.length)
 
       // Now remove field and verify it is removed
-      const patched2 = await services.registry.patchRegistry({
+      const patched2 = await services.registry.patch({
         existing: patched1,
         body: { publisher: null },
       })
@@ -505,7 +497,7 @@ describe("Services Features", () => {
     })
 
     it("should put a registry and preserve immutable fields while updating", async () => {
-      const existing = await services.registry.getRegistry(registryExample.uri)
+      const existing = await services.registry.getItem(registryExample.uri)
 
       const body = {
         // intentionally omit _id/id/created; service should preserve/override them
@@ -514,8 +506,7 @@ describe("Services Features", () => {
         notation: ["ERMS"],
       }
 
-      const updated = await services.registry.putRegistry({ body, existing })
-      assert.strictEqual(updated._id, existing._id)
+      const updated = await services.registry.updateItem({ body, existing })
       assert.strictEqual(updated.id, existing.id)
       assert.strictEqual(updated.created, existing.created)
       assert.ok(updated.modified, "modified should be set")
@@ -523,26 +514,41 @@ describe("Services Features", () => {
     })
 
     it("should delete a registry", async () => {
-      const existing = await services.registry.getRegistry(registryExample.uri)
-      await services.registry.deleteRegistry({ existing })
+      const existing = await services.registry.getItem(registryExample.uri)
+      await services.registry.deleteItem({ existing })
       try {
-        await services.registry.getRegistry(registryExample.uri)
-        assert.fail("Expected getRegistry to fail after delete")
+        await services.registry.getItem(registryExample.uri)
+        assert.fail("Expected getItem to fail after delete")
       } catch (error) {
         assert.ok(error)
       }
     })
 
     it("should reject invalid registry bodies", async () => {
-      delete registryExample.uri
       try {
-        await services.registry.postRegistry({
-          bodyStream: await arrayToStream([registryExample]),
+        await services.registry.createItem({
+          bodyStream: await arrayToStream([{uri:42}]),
           bulk: false,
         })
-        assert.fail("Expected postRegistry to fail")
+        assert.fail("Expected createItem to fail")
       } catch (error) {
         assert.ok(error instanceof InvalidBodyError)
+      }
+    })
+
+    it("should filter out invalid registry bodies in bulk mode", async () => {
+      const items = [
+        { uri: "registry:1" },
+        { uri: 42 },
+      ]
+      try {
+        const res = await services.registry.createItem({
+          bodyStream: await arrayToStream(items),
+          bulk: true,
+        })
+        assert.deepStrictEqual(res, [ { uri: "registry:1" } ])
+      } catch (error) {
+        assert.fail("Should not fail")
       }
     })
 

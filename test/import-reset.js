@@ -1,7 +1,9 @@
-import * as server from "../server.js"
 import assert from "node:assert"
 
 import { teardownInMemoryMongo, createCollectionsAndIndexes, setupInMemoryMongo, assertIndexes, assertMongoDB, dropDatabaseBeforeAndAfter, exec } from "./test-utils.js"
+
+import { app } from "../server.js"
+const db = app.connection
 
 describe("Import and Reset Script", () => {
 
@@ -29,7 +31,7 @@ describe("Import and Reset Script", () => {
       await exec("NODE_ENV=test ./bin/import.js --indexes " + type)
       for (let collection of ["terminologies", "concepts", "concordances", "mappings", "annotations"]) {
         try {
-          const result = await server.db.collection(collection).indexInformation()
+          const result = await db.collection(collection).indexInformation()
           if (collection == type) {
             assert(Object.keys(result).length >= 3)
           } else {
@@ -48,14 +50,14 @@ describe("Import and Reset Script", () => {
     it("should import terminologies", async () => {
       // Add vocabularies to database
       await exec("NODE_ENV=test ./bin/import.js schemes ./test/terminologies/terminologies.json")
-      const results = await server.db.collection("terminologies").find({}).toArray()
+      const results = await db.collection("terminologies").find({}).toArray()
       assert.strictEqual(results.length, 3)
     })
 
     it("should import concepts", async () => {
       // Add concepts to database
       await exec("NODE_ENV=test ./bin/import.js -q concepts ./test/concepts/concepts-ddc-6-60-61-62.json")
-      const results = await server.db.collection("concepts").find({}).toArray()
+      const results = await db.collection("concepts").find({}).toArray()
       assert.strictEqual(results.length, 4)
     })
 
@@ -71,27 +73,27 @@ describe("Import and Reset Script", () => {
       }
       // Then with -f
       await exec(`${command} --format json`)
-      const results = await server.db.collection("concepts").find({ uri: `uri:${filename}` }).toArray()
+      const results = await db.collection("concepts").find({ uri: `uri:${filename}` }).toArray()
       assert.strictEqual(results.length, 1)
     })
 
     it("should import concordances", async () => {
       // Add concordances to database
       await exec("NODE_ENV=test ./bin/import.js concordances ./test/concordances/concordances.ndjson")
-      const results = await server.db.collection("concordances").find({}).toArray()
+      const results = await db.collection("concordances").find({}).toArray()
       assert.strictEqual(results.length, 2)
     })
 
     it("should not import mappings without scheme", async () => {
       await exec("NODE_ENV=test ./bin/import.js mappings ./test/mappings/mapping-ddc-gnd-noScheme.json")
-      const results = await server.db.collection("mappings").find({}).toArray()
+      const results = await db.collection("mappings").find({}).toArray()
       assert.strictEqual(results.length, 0)
     })
 
     it("should import mappings", async () => {
       // Add mappings to database
       await exec("NODE_ENV=test ./bin/import.js mappings ./test/mappings/mapping-ddc-gnd.json")
-      const results = await server.db.collection("mappings").find({}).toArray()
+      const results = await db.collection("mappings").find({}).toArray()
       assert.strictEqual(results.length, 3)
     })
 
@@ -100,11 +102,11 @@ describe("Import and Reset Script", () => {
       const concordance = "http://coli-conc.gbv.de/concordances/ddc_rvk_medizin"
       const query = { "partOf.uri": concordance }
       // Before, it should have no mappings
-      results = await server.db.collection("mappings").find(query).toArray()
+      results = await db.collection("mappings").find(query).toArray()
       assert.strictEqual(results.length, 0)
       // Add mappings to database
       await exec(`NODE_ENV=test ./bin/import.js mappings ./test/mappings/mapping-ddc-gnd-noScheme.json -c ${concordance}`)
-      results = await server.db.collection("mappings").find(query).toArray()
+      results = await db.collection("mappings").find(query).toArray()
       assert.strictEqual(results.length, 3)
       results.forEach(mapping => {
         assert.ok(mapping.fromScheme?.uri, "fromScheme field is missing from mapping")
@@ -115,10 +117,10 @@ describe("Import and Reset Script", () => {
     it("should import annotations", async () => {
       // Import one annotation
       let results
-      results = await server.db.collection("annotations").find({}).toArray()
+      results = await db.collection("annotations").find({}).toArray()
       assert.strictEqual(results.length, 0)
       await exec("NODE_ENV=test ./bin/import.js annotations ./test/annotations/annotation.json")
-      results = await server.db.collection("annotations").find({}).toArray()
+      results = await db.collection("annotations").find({}).toArray()
       assert.strictEqual(results.length, 1)
     })
 
@@ -185,7 +187,7 @@ describe("Import and Reset Script", () => {
     it(`should delete ${type}`, async () => {
       await exec(`yes | NODE_ENV=test ./bin/reset.js -t ${type}`)
       for (let collection of ["concepts", "mappings", "terminologies", "annotations", "concordances"]) {
-        const result = await server.db.collection(collection).find({}).toArray()
+        const result = await db.collection(collection).find({}).toArray()
         if (collection == type) {
           assert.strictEqual(result.length, 0)
         } else {
@@ -218,11 +220,11 @@ describe("Import and Reset Script", () => {
 
     it("should delete entities with specific URIs", async () => {
       let results
-      results = await server.db.collection("concepts").find({}).toArray()
+      results = await db.collection("concepts").find({}).toArray()
       const lengthBefore = results.length
       const uris = results.map(r => r.uri).slice(0, 2)
       await exec(`yes | NODE_ENV=test ./bin/reset.js ${uris.join(" ")}`)
-      results = await server.db.collection("concepts").find({}).toArray()
+      results = await db.collection("concepts").find({}).toArray()
       assert.strictEqual(results.length, lengthBefore - uris.length)
     })
 
@@ -268,7 +270,7 @@ describe("Import and Reset Script", () => {
       // Clear database
       await exec("yes | NODE_ENV=test ./bin/reset.js")
       for (let collection of ["concepts", "mappings", "terminologies"]) {
-        const result = await server.db.collection(collection).find({}).toArray()
+        const result = await db.collection(collection).find({}).toArray()
         assert.strictEqual(result.length, 0)
       }
     })

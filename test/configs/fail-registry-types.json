@@ -9,7 +9,7 @@
       "concepts": {
         "uriRequired": false,
         "mustExist": true,
-        "ignoreErrors": true
+        "skipInvalid": true
       }
     }
   }

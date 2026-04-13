@@ -11,7 +11,7 @@ import { SchemeService } from "./schemes.js"
 
 const validateConcordance = validate.concordance
 
-import { MalformedRequestError, EntityNotFoundError, MalformedBodyError, InvalidBodyError, DatabaseAccessError } from "../errors/index.js"
+import { MalformedRequestError, EntityNotFoundError, InvalidBodyError, DatabaseAccessError } from "../errors/index.js"
 
 import { AbstractService } from "./abstract.js"
 
@@ -21,12 +21,13 @@ export class ConcordanceService extends AbstractService {
     super(config)
     this.schemeService = new SchemeService(config)
     this.uriBase = config.baseUrl + "concordances/"
+    this.model = Concordance
   }
 
   /**
    * Return a Promise with an array of concordances.
    */
-  async getConcordances(query) {
+  async queryItems(query) {
     let conditions = []
     // Search by URI
     if (query.uri) {
@@ -69,39 +70,36 @@ export class ConcordanceService extends AbstractService {
 
     if (query.download) {
       // For a download, return a stream
-      return Concordance.find(mongoQuery).lean().cursor()
+      return this.model.find(mongoQuery).lean().cursor()
     } else {
       // Otherwise, return results
-      const concordances = await Concordance.find(mongoQuery).lean().skip(query.offset).limit(query.limit).exec()
-      concordances.totalCount = await this._count(Concordance, [{ $match: mongoQuery }])
+      const { limit, offset } = this._getLimitAndOffset(query)
+      const concordances = await this.model.find(mongoQuery).lean().skip(offset).limit(limit).exec()
+      concordances.totalCount = await this._count(this.model, [{ $match: mongoQuery }])
       return concordances
     }
-  }
-
-  async get(_id) {
-    return this.getConcordance(_id)
   }
 
   /**
    * Returns a promise with a single concordance with ObjectId in req.params._id.
    */
-  async getConcordance(uriOrId) {
+  async getItem(uriOrId) {
     if (!uriOrId) {
       throw new MalformedRequestError()
     }
     let result
     // First look via ID
-    result = await Concordance.findById(uriOrId).lean()
+    result = await this.model.findById(uriOrId).lean()
     if (result) {
       return result
     }
     // Then via URI
-    result = await Concordance.findOne({ uri: uriOrId }).lean()
+    result = await this.model.findOne({ uri: uriOrId }).lean()
     if (result) {
       return result
     }
     // Then via identifier
-    result = await Concordance.findOne({ identifier: uriOrId }).lean()
+    result = await this.model.findOne({ identifier: uriOrId }).lean()
     if (result) {
       return result
     }
@@ -109,77 +107,48 @@ export class ConcordanceService extends AbstractService {
     throw new EntityNotFoundError(null, uriOrId)
   }
 
-  /**
-   * Save a single concordance or multiple concordances in the database. Adds created date, validates the concordance, and adds identifiers.
-   *
-   * TODO: Implement bulk and bulkReplace, equivalent to postMapping
-   */
-  async postConcordance({ bodyStream, bulk = false }) {
-    if (!bodyStream) {
-      throw new MalformedBodyError()
+  async prepareAndCheckItemForAction(concordance, action, { bulk }) {
+    if (action !== "create") {
+      return concordance
     }
 
-    let isMultiple = true
+    // Add created and modified dates.
+    const now = (new Date()).toISOString()
+    if (!bulk || !concordance.created) {
+      concordance.created = now
+    }
+    concordance.modified = now
+    // Validate concordance
+    if (!validateConcordance(concordance)) {
+      throw new InvalidBodyError()
+    }
+    // Check if schemes are available and replace them with URI/notation only
+    await this.schemeService.replaceSchemeProperties(concordance, ["fromScheme", "toScheme"], false)
 
-    // As a workaround, build body from bodyStream
-    let concordances = await new Promise((resolve) => {
-      const body = []
-      bodyStream.on("data", concordance => {
-        body.push(concordance)
-      })
-      bodyStream.on("isSingleObject", () => {
-        isMultiple = false
-      })
-      bodyStream.on("end", () => {
-        resolve(body)
-      })
-    })
-
-    let response
-
-    // Adjust all concordances
-    for (const concordance of concordances) {
-      // Add created and modified dates.
-      const now = (new Date()).toISOString()
-      if (!bulk || !concordance.created) {
-        concordance.created = now
-      }
-      concordance.modified = now
-      // Validate concordance
-      if (!validateConcordance(concordance)) {
-        throw new InvalidBodyError()
-      }
-      // Check if schemes are available and replace them with URI/notation only
-      await this.schemeService.replaceSchemeProperties(concordance, ["fromScheme", "toScheme"], false)
-
-      // _id and URI
-      delete concordance._id
-      if (concordance.uri) {
-        let uri = concordance.uri
-        // URI already exists, use if it's valid, otherwise move to identifier
-        if (uri.startsWith(this.uriBase)) {
-          concordance._id = uri.slice(this.uriBase.length, uri.length)
-          concordance.notation = [concordance._id].concat((concordance.notation || []).slice(1))
-        } else {
-          concordance.identifier = (concordance.identifier || []).concat([uri])
-        }
-      }
-      if (!concordance._id) {
-        concordance._id = concordance.notation && concordance.notation[0] || uuid()
-        concordance.uri = this.uriBase + concordance._id
+    // _id and URI
+    delete concordance._id
+    if (concordance.uri) {
+      let uri = concordance.uri
+      // URI already exists, use if it's valid, otherwise move to identifier
+      if (uri.startsWith(this.uriBase)) {
+        concordance._id = uri.slice(this.uriBase.length, uri.length)
         concordance.notation = [concordance._id].concat((concordance.notation || []).slice(1))
+      } else {
+        concordance.identifier = (concordance.identifier || []).concat([uri])
       }
-      // Extent should be 0 when added; will be updated in postAdjustmentForConcordance whenever there are changes
-      concordance.extent = "0"
     }
-    concordances = concordances.filter(m => m)
+    if (!concordance._id) {
+      concordance._id = concordance.notation && concordance.notation[0] || uuid()
+      concordance.uri = this.uriBase + concordance._id
+      concordance.notation = [concordance._id].concat((concordance.notation || []).slice(1))
+    }
+    // Extent should be 0 when added; will be updated in postAdjustmentForConcordance whenever there are changes
+    concordance.extent = "0"
 
-    response = await Concordance.insertMany(concordances, { lean: true })
-
-    return isMultiple ? response : response[0]
+    return concordance
   }
 
-  async putConcordance({ body, existing }) {
+  async updateItem({ body, existing }) {
     let concordance = body
     if (!concordance) {
       throw new InvalidBodyError()
@@ -195,19 +164,19 @@ export class ConcordanceService extends AbstractService {
     if (existing.extent) {
       concordance.extent = existing.extent
     } else {
-      _.unset(concordance, "extent")
+      delete concordance.extent
     }
     if (existing.distributions) {
       concordance.distributions = existing.distributions
     } else {
-      _.unset(concordance, "distributions")
+      delete concordance.distributions
     }
     // Validate concordance
     if (!validateConcordance(concordance)) {
       throw new InvalidBodyError()
     }
 
-    const result = await Concordance.replaceOne({ _id: existing._id }, concordance)
+    const result = await this.model.replaceOne({ _id: existing._id }, concordance)
     if (result.acknowledged && result.matchedCount) {
       await this.postAdjustmentForConcordance(existing._id)
       return concordance
@@ -216,7 +185,7 @@ export class ConcordanceService extends AbstractService {
     }
   }
 
-  async patchConcordance({ body, existing }) {
+  async patch({ body, existing }) {
     if (!body) {
       throw new InvalidBodyError()
     }
@@ -247,7 +216,7 @@ export class ConcordanceService extends AbstractService {
       throw new InvalidBodyError()
     }
 
-    const result = await Concordance.replaceOne({ _id: existing._id }, existing)
+    const result = await this.model.replaceOne({ _id: existing._id }, existing)
     if (result.acknowledged) {
       await this.postAdjustmentForConcordance(existing._id)
       return existing
@@ -256,15 +225,12 @@ export class ConcordanceService extends AbstractService {
     }
   }
 
-  async deleteConcordance({ existing }) {
+  async deleteItem({ existing }) {
     const count = await this.getMappingsCountForConcordance(existing)
     if (count > 0) {
       throw new MalformedRequestError(`Can't delete a concordance that still has mappings associated with it (${count} mappings).`)
     }
-    const result = await Concordance.deleteOne({ _id: existing._id })
-    if (!result.deletedCount) {
-      throw new DatabaseAccessError()
-    }
+    super.deleteItem({ existing })
   }
 
   async getMappingsCountForConcordance(concordance) {
@@ -274,11 +240,11 @@ export class ConcordanceService extends AbstractService {
 
   async postAdjustmentForConcordance(uriOrId) {
     try {
-      const concordance = await this.get(uriOrId)
+      const concordance = await this.getItem(uriOrId)
       const count = await this.getMappingsCountForConcordance(concordance)
       if (`${count}` !== concordance.extent) {
         // Update extent with new count
-        await Concordance.updateOne({ _id: concordance._id }, { extent: `${count}`, modified: (new Date()).toISOString() })
+        await this.model.updateOne({ _id: concordance._id }, { extent: `${count}`, modified: (new Date()).toISOString() })
       }
     } catch (error) {
       this.error(error)
@@ -286,23 +252,13 @@ export class ConcordanceService extends AbstractService {
   }
 
   async createIndexes() {
-    const indexes = []
-    indexes.push([{ uri: 1 }, {}])
-    indexes.push([{ identifier: 1 }, {}])
-    indexes.push([{ notation: 1 }, {}])
-    indexes.push([{ "fromScheme.uri": 1 }, {}])
-    indexes.push([{ "toScheme.uri": 1 }, {}])
-    // Create collection if necessary
-    try {
-      await Concordance.createCollection()
-    } catch (error) {
-      // Ignore error
-    }
-    // Drop existing indexes
-    await Concordance.collection.dropIndexes()
-    for (let [index, options] of indexes) {
-      await Concordance.collection.createIndex(index, options)
-    }
+    await this._createIndexes([
+      [{ uri: 1 }, {}],
+      [{ identifier: 1 }, {}],
+      [{ notation: 1 }, {}],
+      [{ "fromScheme.uri": 1 }, {}],
+      [{ "toScheme.uri": 1 }, {}],
+    ])
   }
 
 }

@@ -13,8 +13,7 @@
           "type": "null"
         },
         {
-          "type": "string",
-          "format": "uri"
+          "$ref": "#/definitions/uri"
         }
       ]
     },
@@ -56,11 +55,11 @@
       ]
     },
     "closedWorldAssumption": {
-      "description": "If false, empty JSKOS closed world statements (see specs) will be removed from returned entities",
+      "description": "DEPRECATED",
       "type": "boolean"
     },
     "namespace": {
-      "description": "A namespace string that is used for generating unique URIs.",
+      "description": "A namespace string that is used for generating unique URIs for mappings on import.",
       "type": "string"
     },
     "verbosity": {
@@ -84,6 +83,9 @@
       "type": "integer",
       "minimum": 0,
       "maximum": 65535
+    },
+    "changesApi": {
+      "description": "Ignored but allowed for backwards compatibility"
     },
     "changes" : {
       "description": "Configuration of change stream endpoints",
@@ -137,29 +139,54 @@
       }
     },
     "auth": {
-      "description": "Describes authentication capabilities",
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "algorithm": {
-          "description": "The encryption algorithm used by the login-server that provides the JWTs that are used for authenticaton",
-          "type": "string"
-        },
-        "key": {
-          "description": "The public key or symmetric secret of the login-server that is used for authentication",
-          "anyOf": [
-            {
-              "type": "null"
+      "description": "Describes authentication capabilities and groups of identities",
+      "anyOf": [
+        { "const": false },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "algorithm": {
+              "description": "The encryption algorithm used by the login-server that provides the JWTs that are used for authenticaton",
+              "type": "string"
             },
-            {
+            "key": {
+              "description": "The public key or symmetric secret of the login-server that is used for authentication",
               "type": "string"
             }
-          ]
+          },
+          "required": ["algorithm", "key"]
         }
-      }
+      ]
     },
     "identityProviders": {
       "$ref": "#/definitions/identityProviders"
+    },
+    "identityGroups": {
+      "description": "Groups of identities",
+      "type": "object",
+      "patternProperties": {
+        "^([a-z0-9+.-]+):.*": {
+          "type": "object",
+          "properties": {
+            "identities": {
+              "$ref": "#/definitions/identities"
+            },
+            "claims": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "patternProperties": {
+                  "^.*$": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
     },
     "identities": {
       "$ref": "#/definitions/identities"
@@ -190,6 +217,15 @@
     }
   },
   "definitions": {
+    "uri": {
+      "type": "string",
+      "format": "uri"
+    },
+    "uriList": {
+      "type": "array",
+      "items": {
+      }
+    },
     "capabilityAndForbidMappingOnlyProperties": {
       "anyOf": [
         {
@@ -282,7 +318,7 @@
                 "mustExist": {
                   "type": "boolean"
                 },
-                "ignoreErrors": {
+                "skipInvalid": {
                   "type": "boolean"
                 }
               }
@@ -338,6 +374,16 @@
                 },
                 "ips": {
                   "$ref": "#/definitions/ips"
+                },
+                "uriBase": {
+                  "$ref": "#/definitions/uri"
+                },
+                "uriOrigin": {
+                  "type": "string",
+                  "enum": [
+                    "external",
+                    "uuid"
+                  ]
                 }
               },
               "additionalProperties": false
@@ -442,15 +488,10 @@
                 ],
                 "properties": {
                   "uri": {
-                    "type": "string",
-                    "format": "uri"
+                    "$ref": "#/definitions/uri"
                   },
                   "identifier": {
-                    "type": "array",
-                    "items": {
-                      "type": "string",
-                      "format": "uri"
-                    }
+                    "$ref": "#/definitions/uriList"
                   }
                 }
               }
@@ -471,15 +512,10 @@
                 ],
                 "properties": {
                   "uri": {
-                    "type": "string",
-                    "format": "uri"
+                    "$ref": "#/definitions/uri"
                   },
                   "identifier": {
-                    "type": "array",
-                    "items": {
-                      "type": "string",
-                      "format": "uri"
-                    }
+                    "$ref": "#/definitions/uriList"
                   }
                 }
               }
@@ -541,11 +577,7 @@
               "type": "boolean"
             },
             {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "format": "uri"
-              }
+              "$ref": "#/definitions/uriList"
             }
           ]
         }
@@ -598,6 +630,16 @@
                 },
                 "ips": {
                   "$ref": "#/definitions/ips"
+                },
+                "uriBase": {
+                  "$ref": "#/definitions/uri"
+                },
+                "uriOrigin": {
+                  "type": "string",
+                  "enum": [
+                    "external",
+                    "uuid"
+                  ]
                 }
               },
               "additionalProperties": false
@@ -702,15 +744,10 @@
                 ],
                 "properties": {
                   "uri": {
-                    "type": "string",
-                    "format": "uri"
+                    "$ref": "#/definitions/uri"
                   },
                   "identifier": {
-                    "type": "array",
-                    "items": {
-                      "type": "string",
-                      "format": "uri"
-                    }
+                    "$ref": "#/definitions/uriList"
                   }
                 }
               }
@@ -731,15 +768,10 @@
                 ],
                 "properties": {
                   "uri": {
-                    "type": "string",
-                    "format": "uri"
+                    "$ref": "#/definitions/uri"
                   },
                   "identifier": {
-                    "type": "array",
-                    "items": {
-                      "type": "string",
-                      "format": "uri"
-                    }
+                    "$ref": "#/definitions/uriList"
                   }
                 }
               }
@@ -779,11 +811,7 @@
           "type": "null"
         },
         {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "format": "uri"
-          }
+          "$ref": "#/definitions/uriList"
         }
       ]
     },

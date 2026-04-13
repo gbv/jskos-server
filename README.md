@@ -2,8 +2,8 @@
 
 [![GitHub release](https://img.shields.io/github/release/gbv/jskos-server.svg)](https://github.com/gbv/jskos-server/releases/latest)
 [![API Status](https://coli-conc-status.fly.dev/api/badge/2/status?label=API)](https://coli-conc.gbv.de/api/)
-[![License](https://img.shields.io/github/license/gbv/jskos-server.svg)](https://github.com/gbv/jskos-server/blob/master/LICENSE)
-[![Docker](https://img.shields.io/badge/Docker-ghcr.io%2Fgbv%2Fjskos--server-informational)](https://github.com/gbv/jskos-server/blob/master/docker/README.md)
+[![License](https://img.shields.io/github/license/gbv/jskos-server.svg)](https://github.com/gbv/jskos-server/blob/main/LICENSE)
+[![Docker](https://img.shields.io/badge/Docker-ghcr.io%2Fgbv%2Fjskos--server-informational)](https://github.com/gbv/jskos-server/blob/main/docker/README.md)
 [![Test](https://github.com/gbv/jskos-server/actions/workflows/test.yml/badge.svg)](https://github.com/gbv/jskos-server/actions/workflows/test.yml)
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg)](https://github.com/RichardLitt/standard-readme)
 
@@ -16,6 +16,7 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [Requirements](#requirements)
   - [Docker](#docker)
   - [Configuration](#configuration)
+  - [User accounts](#user-accounts)
   - [Access control](#access-control)
   - [Authentication](#authentication)
   - [Data Import](#data-import)
@@ -64,12 +65,11 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [GET /concepts/suggest](#get-conceptssuggest)
   - [GET /concepts/search](#get-conceptssearch)
   - [GET /registries](#get-registries)
-  - [GET /registries/:\_id](#get-registries_id)
   - [GET /registries/suggest](#get-registriessuggest)
   - [POST /registries](#post-registries)
-  - [PUT /registries/:\_id](#put-registries_id)
-  - [PATCH /registries/:\_id](#patch-registries_id)
-  - [DELETE /registries/:\_id](#delete-registries_id)
+  - [PUT /registries](#put-registries)
+  - [PATCH /registries](#patch-registries)
+  - [DELETE /registries](#delete-registries)
   - [GET /annotations](#get-annotations)
   - [GET /annotations/:\_id](#get-annotations_id)
   - [POST /annotations](#post-annotations)
@@ -93,6 +93,7 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
 ## Install
 
 ### Requirements
+
 You need Node.js 22 or higher and access to a [MongoDB database](https://docs.mongodb.com/manual/installation/) (minimun v4; v6 or v7 recommended).
 
 To enable optional [Change Stream endpoints](#change-stream-endpoints) the MongoDB database must be configured as a replica set. When using Docker please refer to [our Docker documentation](docker/README.md) for instructions on setting up a replica set. For a non‐Docker setup, start `mongod` with the `--replSet` flag, then once connect with the [MongoDB Shell](https://www.mongodb.com/docs/mongodb-shell/) and execute:
@@ -104,9 +105,11 @@ rs.initiate({ _id: "rs0", members: [{ _id: 0, host: "localhost:27017" }] });
 If the replica set is initialized, JSKOS Server will detect it at startup (the `replSetGetStatus` command is retried up to `changes.retries` times). If Change Streams [are configured](#change-streams-configuration) but no replica set was detected, JSKOS Server will log an error during startup but continue running with Change Streams disabled.
 
 ### Docker
+
 The easiest way to install and use JSKOS Server as stand-alone application is with Docker and Docker Compose. Please refer to [our Docker documentation](docker/README.md) for more information and instructions.
 
 ### Configuration
+
 You can customize the application settings via a configuration file. By default, this configuration file resides in `config/config.json`. However, it is possible to adjust this path via the `CONFIG_FILE` environment variable. Note that the given path has to be either absolute (i.e. starting with `/`) or relative to the `config/` folder (i.e. it defaults to `./config.json`). **Note** that the path to the configuration file needs to be valid and writable because a `namespace` key will be generated and written to the file if it doesn't currently exist. **Note** that if the file exists and contains invalid JSON data, JSKOS Server will refuse to start.
 
 Currently, there are only two environment variables:
@@ -123,7 +126,7 @@ The provided configuration files (user config and environment config) will be va
 
 Function `validateConfig` is exported for [used as module](#use-as-module):
 
-~~~
+~~~js
 import { validateConfig } from "jskos-server"
 
 try {
@@ -144,7 +147,6 @@ All missing keys will be defaulted from `config/config.default.json`. See [endpo
   "env": "development",
   "title": "JSKOS Server",
   "version": null,
-  "closedWorldAssumption": true,
   "port": 3000,
   "proxies": [],
   "mongo": {
@@ -223,6 +225,7 @@ All missing keys will be defaulted from `config/config.default.json`. See [endpo
   "changes": false,
   "anonymous": false,
   "identityProviders": null,
+  "identityGroups": {},
   "identities": null,
   "ips": null
 }
@@ -267,6 +270,8 @@ Explanations for additional options:
 
 - **`identityProviders`**: List of strings. Can be defined on any level (deeper levels will take the values from higher levels if necessary\*). If set, an action can only be used by users who have that identity associated with them. `null` by default (no restrictions).
 
+- **`identityGroups`**: Object mapping URIs to objects with only field `identities`. Keys of this option can be used in field `identities` elsewhere in the configuration to refer to a group of identities.
+
 - **`ips`**: List of strings. Strings can be IPv4 addresses (e.g. `127.0.0.1`, `123.234.123.234`) or CIDR ranges (e.g. `192.168.0.1/24`). Can be defined on any level (deeper levels will take the values from higher levels if necessary\*). If set, an action can only be used by clients with a whitelisted IP address. `null` by default (no restrictions). Note: An empty array will allow all IPs. Note: This property will be removed for security reasons when accessing [GET /status](#get-status) (meaning that clients will not be able to see the whitelisted IP addresses).
 
 - **`fromSchemeWhitelist`/`toSchemeWhitelist`**: Can be defined only on type `mappings`. List of scheme objects that are allowed for `fromScheme`/`toScheme` respectively. `null` allows all schemes.
@@ -277,6 +282,15 @@ Explanations for additional options:
 
 Note that any properties not mentioned here are not allowed!
 
+#### Origin of URIs
+
+**This fields are hardcoded in the current version so they don't affect configuration yet!**
+
+The `create` field of configuration can have two field that control where URIs of newly created URIs come from:
+
+- **`uriBase`**: a string or Boolean (false by default). Value true is replaced by the baseUrl of the server. URIs of newly created items must start with this string.
+- **`uriOrigin`**: where URIs of new items orgin from. Default value `external` requires clients to provide an URI. Value `uuid` can be used when `uriBase` is set to generate URIs based on UUIDs.
+
 #### Registries configuration
 
 Endpoint configuration key `registries` can further contain key **`types`** to control object types collected in registries. By default it is set to `true` for every type with endpoint enabled in [endpoint configuration](#endpoint configuration). Setting a type to `false` will disallow creation and import of [registry](https://gbv.github.io/jskos/#registry) having this field. By default, a registry can only have one type of members. Registry configuration key **`mixedTypes`** can be set to true to allow registries to have multiple member types.
@@ -285,7 +299,7 @@ Member types can further the configured with three Boolean keys:
 
 - **`uriRequired`** (default `true`) whether members must have a valid field `uri`
 - **`mustExist`** (default `false`) whether members must exist in the database (and have the right type)
-- **`ignoreErrors`** (default `false`) to filter out members that don't fulfill requirement or `uriRequired` or `mustExist`
+- **`skipInvalid`** (default `false`) to filter out members that don't fulfill requirement or `uriRequired` or `mustExist`
 
 Setting `mustExist` to true and `uriRequired` to false results in an invalid configuration because URIs are required to check whether an item exists.
 
@@ -297,7 +311,7 @@ Setting `mustExist` to true and `uriRequired` to false results in an invalid con
     "concepts": {
       "uriRequired": true,
       "mustExist": false,
-      "ignoreErrors": false
+      "skipInvalid": false
     },
   },
   "mixedTypes": true
@@ -362,6 +376,43 @@ After restarting JSKOS Server, mapping mismatch tagging is available for annotat
 Currently, this is the only supported format, i.e. `body` as an array containing an object with `type` of "SpecificResource", `purpose` of "tagging", and the tag concept's URI as `value`.
 
 To identify whether a JSKOS Server instance supports this kind of tagging, check the `/status` endpoint for the `config.annotations.mismatchTagVocabulary` key.
+
+### User accounts
+
+jskos-server does not store user accounts but refers to external identity providers and JSON Web Tokens (JWT) for [authentication](#authentication). Users are identified from field `user` of a valid JWT passed to jskos-server with a request, having the following subfields:
+
+- **`uri`** primary identity of the user.
+- **`name`** optional name of the user for display (must be a string)
+- **`identities`** optional object mapping names of identity providers to identities, each having field
+  - **`uri`** additional identities of the user
+  - **`name`** optional name of the user for display
+  - optional arbitrary fields
+- optional arbitrary fields
+
+Optional arbitrary fields don't have semantics in jskos-server and their values are never written into the database but they can be used for extended access control.
+
+So a user can have multiple identities, each being an URI. For example, the following user has ORCID `https://orcid.org/0000-0002-2771-9344` and the fictitious GitHub account `https://github.com/account`. Both can be used interchangeably for [access control](#access-control), but the ORCID is stored (as part of field `creator` or `contributor`) when entities are written into the database.
+
+~~~json
+{
+  "uri": "https://orcid.org/0000-0002-2771-9344",
+  "name": "Sofia",
+  "affiliation": "http://example.org/university",
+  "identities": {
+    "github": {
+      "uri": "https://github.com/account",
+      "name": "Sofia Coding"
+    }
+  ]
+}
+~~~
+
+User names are not unique and not mandatory. Identity and user name can also be passed with query parameters `identity` and `identityName`, respectively. The latter can be set to any string, including the empty string to avoid any user name being written to the database. Query parameter `identity` is ignored if authentication is enabled and its value does not match any of the identities listed in the JWT used for authentication.
+
+User groups are not fully supported yet (see [this issue](https://github.com/gbv/jskos-server/issues/232)) but
+
+- identities can be grouped in configuration of access control with `identityGroups`.
+- access control can be limited to identity providers with `identityProviders`.
 
 ### Access control
 
@@ -685,12 +736,17 @@ In addition to [data import](#data-import) there are some supplemental scripts t
 
 ### Use as Module
 
-*Use as module is experimental and authentication is ignored!*
+*Use as module is experimental. Authentication is ignored on direct access to services!*
 
 ~~~js
 import { validateConfig, createServices } from "jskos-server"
 
-validateConfig(config)
+try {
+  validateConfig(config)
+} catch(error) {
+  console.error(`Invalid configuration: ${error}`)
+}
+
 const services = createServices(config)
 
 const scheme = await services.scheme.getScheme(schemeUri)
@@ -893,15 +949,25 @@ Note that certain properties from the actual configuration will not be shown in 
   In case of an error, for instance a failed database connection, the value of response property `ok` is set to `0`.
 
 ### GET /checkAuth
-Endpoint to check whether a user is authorized. If `type` or `action` are not set, it will use `identities`/`identityProviders` that are defined directly under config.
+
+Endpoint to check whether a user is authorized (see [user accounts](#user-accounts) and [access control](#access-control)). If `type` or `action` are not set, it will use `identities`, `identityProviders`, and `identityGroups` that are defined directly under config.
 
 * **URL Params**
 
-  `type=[type]` one of "schemes", "concepts", "mappings", "annotations" (optional)
+  `type=[type]` one of "schemes", "concepts", "mappings", "concordances, "registries", "annotations" (optional)
 
   `action=[action]` one of "read", "create", "update", "delete" (optional)
 
+  `identity` optional identity URI (must be valid if authentication is required)
+
+  `identityName` optional identity name
+
+* **Success Response**
+
+  JSON Object with [user data](#user-acounts) that can be written into the database (`uri` and/or `name`).
+
 ### POST /validate
+
 Endpoint to validate JSKOS objects via [jskos-validate].
 
 * **URL Params**
@@ -2223,41 +2289,6 @@ Returns an array of registries. Each registry has a property `id` under which th
   ]
   ```
 
-### GET /registries/:_id
-Returns a specific registry.
-
-* **Success Response**
-
-  Object for registry in [JSKOS Registry] format.
-
-* **Error Response**
-
-  If no registry with `_id` could be found, it will return a 404 not found error.
-
-* **Sample Call**
-
-  ```bash
-  curl "http://localhost:3000/registries/http%3A%2F%2Fbartoc.org%2Fen%2Fnode%2F18927"
-  ```
-
-  ```json
-  {
-    "definition": {
-      "en": [
-        "This Agrisemantics Map of Data Standards is the continuation of the VEST Registry started on the FAO AIMS website (now superseded by tis Map) and it includes metadata from the AgroPortal ontology repository managed by University of Montpelier and Stanford University."
-      ]
-    },
-    "prefLabel": {
-      "en": "VEST Registry"
-    },
-    "type": [
-      "http://www.w3.org/ns/dcat#Catalog"
-    ],
-    "uri": "http://bartoc.org/en/node/18927",
-    "url": "http://aims.fao.org/vest-registry"
-  }
-  ```
-
 ### GET /registries/suggest
 Returns registry suggestions.
 
@@ -2312,26 +2343,26 @@ Saves one registry or multiple registries in the database.
   Bulk mode: invalid registries are skipped.
   Non-bulk mode: the first error is thrown (see [errors](#errors)).
 
-### PUT /registries/:_id
-Overwrites a registry in the database.
+### PUT /registries
+Overwrites a registry in the database, identfied by its `uri` field.
 
 * **Success Response**
 
   Registry object as it was saved in the database in [JSKOS Registry] format.
 
-Note that any changes to the `created` property will be ignored.
-
-### PATCH /registries/:_id
-Adjusts a registry in the database.
+### PATCH /registries
+Modifies a registry in the database, identfied by its `uri` fiel.
 
 * **Success Response**
 
   Registry object as it was saved in the database in [JSKOS Registry] format.
 
-Note that any changes to the `created` property will be ignored.
-
-### DELETE /registries/:_id
+### DELETE /registries
 Deletes a registry from the database.
+
+* **URL Params**
+
+  `uri=URI` URI for registry to be deleted.
 
 * **Success Response**
 
@@ -2351,6 +2382,8 @@ Returns an array of annotations. Each annotation has a property `id` under which
   `bodyValue=[bodyValue]` only return annotations with a specific bodyValue (e.g. `+1`, `-1`)
 
   `motivation=[motivation]` only return annotations with a specific motivation (e.g. `assessing`, `moderating`, `tagging`)
+
+  `download=[type]` returns the whole result as a download (available types are `json` and `ndjson`), ignores `limit` and `offset`
 
 * **Success Response**
 
@@ -2547,12 +2580,6 @@ Status code 422. Will be returned for `POST` if an entity with the same ID/URI a
 #### InvalidBodyError
 Status code 422. Will be returned for `POST`/`PUT`/`PATCH` if the body was valid JSON, but could not be validated (e.g. does not pass the JSKOS Schema).
 
-#### InvalidRegistryMembershipError
-Status code 422. Will be returned for `POST`/`PUT`/`PATCH` when a registry contains a disallowed membership field or references unknown membership URIs.
-
-#### InvalidRegistryMixedMembershipError
-Status code 422. Will be returned when a registry uses mixed membership types while `registries.mixedTypes` is not allowed.
-
 #### CreatorDoesNotMatchError
 Status code 403. Will be returned by `PUT`/`PATCH`/`DELETE` endpoints if the authenticated creator does not match the creator of the entity that is being edited.
 
@@ -2686,7 +2713,7 @@ Small note: If editing the README, please conform to the [standard-readme](https
 ### Publish
 **For maintainers only**
 
-Never work on the master branch directly. Always make changes on `dev` and then run the release script:
+Never work on the main branch directly. Always make changes on a feature branch for specific issues or on the `dev` branch for small fixes and then run the release script:
 
 ```bash
 npm run release:patch # or minor or major

@@ -1,173 +1,264 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <title><%= config.title %></title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style type="text/css">
-    body {
-      margin: 20px;
-    }
-    a:link, a:visited {
-      text-decoration: none;
-      color: rgb(96, 143, 219);
-    }
-    a:hover, a:active {
-      text-decoration: underline;
-    }
-    .badge {
-      display: inline-block;
-      background-color:#29517C ;
-      color: white;
-      font-size: 0.75em;
-      padding: 2px 6px;
-      border-radius: 4px;
-      margin-left: 6px;
-      vertical-align: middle;
-    }
-    </style>
-  </head>
-  <body>
-    <h1><%= config.title %></h1>
-    <h2>Available Endpoints</h2>
-    <p>
-      This service provides a subset of JSKOS API <%= config.version %>. All the following endpoints are available on this instance of jskos-server. See documentation <a href="https://github.com/gbv/jskos-server" target="_blank">on GitHub</a> for details.
-    </p>
-    <h3>General</h3>
-    <ul>
-      <li>GET <a href="status">/status</a> - Returns a status object (<a href="status.schema.json">JSON Schema</a>, <a href="https://github.com/gbv/jskos-server#get-status" target="_blank">documentation</a>)</li>
-      <li>GET <a href="checkAuth">/checkAuth</a> - Endpoint to check whether a user is authorized (<a href="https://github.com/gbv/jskos-server#get-checkauth" target="_blank">documentation</a>)</li>
-      <li>POST/GET <a href="validate">/validate</a> - Endpoint to validate JSKOS data (<a href="https://github.com/gbv/jskos-server#post-validate" target="_blank">documentation</a>)</li>
-      <li>GET <a href="data">/data</a> - Returns data for a certain URI or URIs (concept schemes, concepts, concordances, mappings, annotations, registries) (<a href="https://github.com/gbv/jskos-server#get-data" target="_blank">documentation</a>)</li>
-    </ul>
-    <% if (config.concordances) { %>
-    <h3>Concordances</h3>
-    <ul>
-      <li>GET <a href="concordances">/concordances</a> - Returns a list of concordances for mappings (<a href="https://github.com/gbv/jskos-server#get-concordances" target="_blank">documentation</a>)</li>
-      <li>GET /concordances/:_id - Returns a specific concordance (<a href="https://github.com/gbv/jskos-server#get-concordances_id" target="_blank">documentation</a>)</li>
-      <% if (config.concordances.create) { %>
-      <li>POST /concordances - Saves a concordance in the database (<% if (config.concordances.create.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#post-concordances" target="_blank">documentation</a>)</li>
-      <% } %>
-      <% if (config.concordances.update) { %>
-      <li>PUT /concordances/:_id - Overwrites a concordance in the database (<% if (config.concordances.update.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#put-concordances_id" target="_blank">documentation</a>)</li>
-      <li>PATCH /concordances/:_id - Adjusts a mapping in the database (<% if (config.concordances.update.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#patch-concordances_id" target="_blank">documentation</a>)</li>
-      <% } %>
-      <% if (config.concordances.delete) { %>
-      <li>DELETE /concordances/:_id - Deletes a mapping from the database (<% if (config.concordances.delete.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#delete-concordances_id" target="_blank">documentation</a>)</li>
-      <% } %>
-       <% if (config.changes) { %>
-        <li>WS /concordances/changes - Real-time updates for concordances via WebSocket (<a href="https://github.com/gbv/jskos-server#change-stream-endpoints" target="_blank">documentation</a>)</li>
-      <% } %>
-    </ul>
-    <% } %>
-    <% if (config.mappings) { %>
-    <h3>Mappings</h3>
-    <ul>
-      <li>GET <a href="mappings">/mappings</a> - Returns a list of mappings (<a href="https://github.com/gbv/jskos-server#get-mappings" target="_blank">documentation</a>)</li>
-      <li>GET /mappings/:_id - Returns a specific mapping (<a href="https://github.com/gbv/jskos-server#get-mappings_id" target="_blank">documentation</a>)</li>
-      <% if (config.mappings.create) { %>
-      <li>POST /mappings - Saves a mapping in the database (<% if (config.mappings.create.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#post-mappings" target="_blank">documentation</a>)</li>
-      <% } %>
-      <% if (config.mappings.update) { %>
-      <li>PUT /mappings/:_id - Overwrites a mapping in the database (<% if (config.mappings.update.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#put-mappings_id" target="_blank">documentation</a>)</li>
-      <li>PATCH /mappings/:_id - Adjusts a mapping in the database (<% if (config.mappings.update.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#patch-mappings_id" target="_blank">documentation</a>)</li>
-      <% } %>
-      <% if (config.mappings.delete) { %>
-      <li>DELETE /mappings/:_id - Deletes a mapping from the database (<% if (config.mappings.delete.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#delete-mappings_id" target="_blank">documentation</a>)</li>
-      <% } %>
-      <li>GET <a href="mappings/infer">/mappings/infer</a> - Returns mappings based on stored mappings and mappings derived by inference (<a href="https://github.com/gbv/jskos-server#get-mappingsinfer" target="_blank">documentation</a>)</li>
-      <li>GET <a href="mappings/suggest">/mappings/suggest</a> - Suggests notations used in mappings (<a href="https://github.com/gbv/jskos-server#get-mappingssuggest" target="_blank">documentation</a>)</li>
-      <li>GET <a href="mappings/voc">/mappings/voc</a> - Returns a list of concept schemes used in mappings (<a href="https://github.com/gbv/jskos-server#get-mappingsvoc" target="_blank">documentation</a>)</li>
-       <% if (config.changes) { %>
-        <li>WS /mappings/changes - Real-time updates for mappings via WebSocket (<a href="https://github.com/gbv/jskos-server#change-stream-endpoints" target="_blank">documentation</a>)</li>
-      <% } %>
-    </ul>
-    <% } %>
-    <% if (config.schemes) { %>
-    <h3>Concept Schemes</h3>
-    <ul>
-      <li>GET <a href="voc">/voc</a> - Returns a list of vocabularies (concept schemes) (<a href="https://github.com/gbv/jskos-server#get-voc" target="_blank">documentation</a>)</li>
-      <li>GET <a href="voc/top">/voc/top</a> - Lists top concepts for a concept scheme (<a href="https://github.com/gbv/jskos-server#get-voctop" target="_blank">documentation</a>)</li>
-      <li>GET <a href="voc/concepts">/voc/concepts</a> - Lists concepts for a concept scheme
-        (<a href="https://github.com/gbv/jskos-server#get-vocconcepts" target="_blank">documentation</a>)</li>
-      <li>GET <a href="voc/suggest">/voc/suggest</a> - Returns concept scheme suggestions in OpenSearch Suggest Format
-        (<a href="https://github.com/gbv/jskos-server#get-vocsuggest" target="_blank">documentation</a>)</li>
-      <li>GET <a href="voc/search">/voc/search</a> - Concept scheme search
-        (<a href="https://github.com/gbv/jskos-server#get-vocsearch" target="_blank">documentation</a>)</li>
+<head>
+  <meta charset="utf-8">
+  <title>[%= config.title %]</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="styles.css">
+  <script src="scripts.js"></script>
+</head>
+<body>
+  <h1>[%= config.title %]</h1>
+  <h2>Available Endpoints</h2>
+  <p>
+    This service provides a subset of JSKOS API [%= config.version %]. All the following endpoints are available on this
+    instance of jskos-server. See documentation <a href="https://github.com/gbv/jskos-server" target="_blank">on
+      GitHub</a> for details.
+  </p>
+  <h3>General</h3>
+  <ul>
+    <li>GET <a href="status">/status</a> - Returns a status object
+      (<a href="status.schema.json">JSON Schema</a>)
+      [%- include("icons",{ ref: "get-status" }) %]
+    </li>
+    <li>GET <a href="checkAuth">/checkAuth</a> - Endpoint to check whether a user is authorized
+      [%- include("icons",{ ref: "get-checkauth" }) %]
+    </li>
+    <li>POST/GET <a href="validate">/validate</a> - Endpoint to validate JSKOS data
+      [%- include("icons",{ ref: "post-validate" }) %]
+    </li>
+    <li>GET <a href="data">/data</a> - Returns data for a certain URI or URIs (terminologies, concepts, concordances,
+      mappings, annotations, registries)
+      [%- include("icons",{ ref: "get-data" }) %]
+    </li>
+  </ul>
+  [% if (config.schemes) { %]
+  [%- include("section", { title: "Terminologies", api: "voc" }) %]
+  <ul>
+    <li>GET <a href="voc">/voc</a> - Returns a list of vocabularies (terminologies)
+      [%- include("icons",{ api: config.schemes.read, ref: "get-voc" }) %]
+    </li>
+    <li>GET <a href="voc/top">/voc/top</a> - Lists top concepts for a terminology
+      [%- include("icons",{ api: config.schemes.read, ref: "get-voctop" }) %]
+    </li>
+    <li>GET <a href="voc/concepts">/voc/concepts</a> - Lists concepts for a terminology
+      [%- include("icons",{ api: config.schemes.read, ref: "get-vocconcepts" }) %]
+    </li>
+    <li>GET <a href="voc/suggest">/voc/suggest</a> - Returns terminology suggestions in OpenSearch Suggest Format
+      [%- include("icons",{ api: config.schemes.read, ref: "get-vocsuggest" }) %]
+    </li>
+    <li>GET <a href="voc/search">/voc/search</a> - Concept scheme search
+      [%- include("icons",{ api: config.schemes.read, ref: "get-vocsearch" }) %]
+    </li>
+    [% if (config.changes) { %]
+    <li>WS /voc/changes - Real-time updates for terminologies via WebSocket
+      [%- include("icons",{ api: config.schemes.changes, ref: "change-stream-endpoints" }) %]
+    </li>
+    [% } %]
+    [% if (config.schemes.create) { %]
+    <li>POST /voc - Saves a terminology or multiple terminologies in the database
+      [%- include("icons",{ api: config.schemes.create, ref: "post-voc" }) %]
+    </li>
+    [% } %]
+    [% if (config.schemes.update) { %]
+    <li>PUT /voc - Updates a terminology in the database
+      [%- include("icons",{ api: config.schemes.update, ref: "put-voc" }) %]
+    </li>
+    [% } %]
+    [% if (config.schemes.delete) { %]
+    <li>DELETE /voc - Deletes a terminology from the database
+      [%- include("icons",{ api: config.schemes.delete, ref: "delete-voc" }) %]
+    </li>
+    [% } %]
+  </ul>
+  [% } %]
+  [% if (config.concepts) { %]
+  [%- include("section", { title: "Concepts", api: "concepts" }) %]
+  <ul>
+    <li>GET <a href="concepts">/concepts</a> - Returns detailed data for concepts or terminologies
+      [%- include("icons", { api: config.concepts.read, ref: "get-concepts" }) %]
+    </li>
+    <li>GET <a href="concepts/narrower">/concepts/narrower</a> - Returns narrower concepts for a concept
+      [%- include("icons", { api: config.concepts.read, ref: "get-conceptsnarrower" }) %]
+    </li>
+    <li>GET <a href="ancestors">/concepts/ancestors</a> - Returns ancestor concepts for a concept
+      [%- include("icons", { api: config.concepts.read, ref: "get-conceptsancestors" }) %]
+    </li>
+    <li>GET <a href="suggest">/concepts/suggest</a> - Returns concept suggestions
+      [%- include("icons", { api: config.concepts.read, ref: "get-conceptssuggest" }) %]
+    </li>
+    <li>GET <a href="search">/concepts/search</a> - Concept search
+      [%- include("icons", { api: config.concepts.read, ref: "get-conceptssearch" }) %]
+    </li>
+    [% if (config.concepts.create) { %]
+    <li>POST /concepts - Saves a concept or multiple concepts in the database
+      [%- include("icons", { api: config.concepts.create, ref: "post-concepts" }) %]
+    </li>
+    [% } %]
+    [% if (config.concepts.update) { %]
+    <li>PUT /concepts - Updates a concept in the database
+      [%- include("icons", { api: config.concepts.update, ref: "put-concepts" }) %]
+    </li>
+    [% } %]
+    [% if (config.concepts.delete) { %]
+    <li>DELETE /concepts - Deletes a concept from the database
+      [%- include("icons", { api: config.concepts.delete, ref: "delete-concepts" }) %]
+    </li>
+    [% } %]
+    [% if (config.changes) { %]
+    <li>WS /concepts/changes - Real-time updates for concepts via WebSocket
+      [%- include("icons", { api: config.concepts.changes, ref: "change-stream-endpoints" }) %]
+    </li>
+    [% } %]
+  </ul>
+  [% } %]
+  [% if (config.concordances) { %]
+  [%- include("section", { title: "Concordances", api: "concordances" }) %]
+  <ul>
+    [% if (config.concordances.read) { %]
+    <li>GET <a href="concordances">/concordances</a> - Returns a list of concordances for mappings
+      [%- include("icons", { api: config.concordances.read, ref: "get-concordances" }) %]
+    </li>
+    <li>GET /concordances/:_id - Returns a specific concordance
+      [%- include("icons", { api: config.concordances.read, ref: "get-concordances_id" }) %]
+    </li>
+    [% } %]
+    [% if (config.concordances.create) { %]
+    <li>POST /concordances - Saves a concordance in the database
+      [%- include("icons", { api: config.concordances.create, ref: "post-concordances" }) %]
+    </li>
+    [% } %]
+    [% if (config.concordances.update) { %]
+    <li>PUT /concordances/:_id - Updates a concordance in the database
+      [%- include("icons", { api: config.concordances.update, ref: "put-concordances_id" }) %]
+    </li>
+    <li>PATCH /concordances/:_id - Adjusts a mapping in the database
+      [%- include("icons", { api: config.concordances.update, ref: "patch-concordances_id" }) %]
+    </li>
+    [% } %]
+    [% if (config.concordances.delete) { %]
+    <li>DELETE /concordances/:_id - Deletes a mapping from the database
+      [%- include("icons", { api: config.concordances.delete, ref: "delete-concordances_id" }) %]
+    </li>
+    [% } %]
+    [% if (config.changes) { %]
+    <li>WS /concordances/changes - Real-time updates for concordances via WebSocket
+      [%- include("icons", { api: config.concordances.changes, ref: "change-stream-endpoints" }) %]
+    </li>
+    [% } %]
+  </ul>
+  [% } %]
+  [% if (config.mappings) { %]
+  [%- include("section", { title: "Mappings", api: "mappings" }) %]
+  <ul>
+    [% if (config.mappings.read) { %]
+    <li>GET <a href="mappings">/mappings</a> - Returns a list of mappings
+      [%- include("icons",{ api: config.mappings.read, ref: "get-mappings" }) %]
+    </li>
+    <li>GET /mappings/:_id - Returns a specific mapping
+      [%- include("icons",{ api: config.mappings.read, ref: "get-mappings_id" }) %]
+    </li>
+    [% } %]
+    [% if (config.mappings.create) { %]
+    <li>POST /mappings
+      [%- include("icons", { help: "Saves a mapping in the database", api: config.mappings.create, ref:
+      "post-mappings" }) %]
+    </li>
+    [% } %]
+    [% if (config.mappings.update) { %]
+    <li>PUT /mappings/:_id - Updates a mapping in the database
+      [%- include("icons", { api: config.mappings.update, ref: "put-mappings_id" }) %]
+    </li>
+    <li>PATCH /mappings/:_id - Adjusts a mapping in the database
+      [%- include("icons",{ api: config.mappings.update, ref: "patch-mappings_id" }) %]
+    </li>
+    [% } %]
+    [% if (config.mappings.delete) { %]
+    <li>DELETE /mappings/:_id - Deletes a mapping from the database
+      [%- include("icons",{ api: config.mappings.delete, ref: "delete-mappings_id" }) %]
+    </li>
+    [% } %]
+    <li>GET <a href="mappings/infer">/mappings/infer</a> - Returns mappings based on stored mappings and mappings
+      derived by inference
+      [%- include("icons",{ api: config.mappings.infer, ref: "get-mappingsinfer" }) %]
+    </li>
+    <li>GET <a href="mappings/suggest">/mappings/suggest</a> - Suggests notations used in mappings
+      [%- include("icons",{ api: config.mappings.suggest, ref: "get-mappingssuggest" }) %]
+    </li>
+    <li>GET <a href="mappings/voc">/mappings/voc</a> - Returns a list of terminologies used in mappings
+      [%- include("icons",{ api: config.mappings.voc, ref: "get-mappingsvoc" }) %]
+    </li>
+    [% if (config.changes) { %]
+    <li>WS /mappings/changes - Real-time updates for mappings via WebSocket
+      [%- include("icons",{ api: config.mappings.changes, ref: "change-stream-endpoints" }) %]
+    </li>
+    [% } %]
+  </ul>
+  [% } %]
+  [% if (config.registries) { %]
+  [%- include("section", { title: "Registries", api: "registries" }) %]
+  <ul>
+    <li>GET <a href="registries">/registries</a> - Returns a list of registries
+      [%- include("icons", { api: config.registries.read, ref: "get-registries" }) %]
+    </li>
+    <li>GET <a href="registries/suggest">/registries/suggest</a> - Returns registry suggestions
+      [%- include("icons", { api: config.registries.read, ref: "get-registriessuggest" }) %]
+    </li>
+    <li>POST /registries - Saves registries in the database
+      [%- include("icons", { api: config.registries.create, ref: "post-registries" }) %]
+    </li>
+    <li>PUT /registries - Updates a registry in the database
+      [%- include("icons", { api: config.registries.update, ref: "put-registries" }) %]
+    </li>
+    <li>PATCH /registries/:_id - Adjusts a registry in the database
+      [%- include("icons", { api: config.registries.update, ref: "patch-registries_id" }) %]
+    </li>
+    <li>DELETE /registries - Deletes registries from the database
+      [%- include("icons", { api: config.registries.delete, ref: "delete-registries" }) %]
+    </li>
+    [% if (config.changes) { %]
+    <li>WS /registries/changes - Real-time updates for registries via WebSocket
+      [%- include("icons", { api: config.registries.changes, ref: "change-stream-endpoints" }) %]
+    </li>
+    [% } %]
+  </ul>
+  [% } %]
+  [% if (config.annotations) { %]
+  [%- include("section", { title: "Annotations", api: "annotations" }) %]
+  <ul>
+    [% if (config.annotations.read) { %]
+    <li>GET <a href="annotations">/annotations</a> - Returns a list of annotations
+      [%- include("icons", { api: config.annotations.read, ref: "get-annotations" }) %]
+    </li>
+    <li>GET /annotations/:_id - Returns a specific annotation
+      [%- include("icons", { api: config.annotations.read, ref: "get-annotations_id" }) %]
+    </li>
+    [% } %]
+    [% if (config.annotations.create) { %]
+    <li>POST /annotations - Saves an annotation in the database
+      [%- include("icons", { api: config.annotations.create, ref: "post-annotations" }) %]
+    </li>
+    [% } %]
+    [% if (config.annotations.update) { %]
+    <li>PUT /annotations/:_id - Updates an annotation in the database
+      [%- include("icons", { api: config.annotations.update, ref: "put-annotations_id" }) %]
+    </li>
+    <li>PATCH /annotations/:_id - Adjusts an annotation in the database
+      [%- include("icons", { api: config.annotations.update, ref: "patch-annotations_id" }) %]
+    </li>
+    [% } %]
+    [% if (config.annotations.delete) { %]
+    <li>DELETE /annotations/:_id - Deletes an annotation from the database
+      [%- include("icons", { api: config.annotations.delete, ref: "delete-annotations_id" }) %]
+    </li>
+    [% } %]
+    [% if (config.changes) { %]
+    <li>WS /annotations/changes - Real-time updates for annotations via WebSocket
+      [%- include("icons", { api: config.annotations.changes, ref: "change-stream-endpoints" }) %]
+    </li>
+    [% } %]
+  </ul>
+  [% } %]
+</body>
 
-       <% if (config.changes) { %>
-        <li>WS /voc/changes - Real-time updates for concept schemes via WebSocket (<a href="https://github.com/gbv/jskos-server#change-stream-endpoints" target="_blank">documentation</a>)</li>
-      <% } %>
-
-      <% if (config.schemes.create) { %>
-      <li>POST /voc - Saves a concept scheme or multiple concept schemes in the database (<% if (config.schemes.create.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#post-voc" target="_blank">documentation</a>)</li>
-      <% } %>
-      <% if (config.schemes.update) { %>
-      <li>PUT /voc - Overwrites a concept scheme in the database (<% if (config.schemes.update.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#put-voc" target="_blank">documentation</a>)</li>
-      <% } %>
-      <% if (config.schemes.delete) { %>
-      <li>DELETE /voc - Deletes a concept scheme from the database (<% if (config.schemes.delete.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#delete-voc" target="_blank">documentation</a>)</li>
-      <% } %>
-    </ul>
-    <% } %>
-    <% if (config.concepts) { %>
-    <h3>Concepts</h3>
-    <ul>
-      <li>GET <a href="concepts">/concepts</a> - Returns detailed data for concepts or concept schemes (<a href="https://github.com/gbv/jskos-server#get-concepts" target="_blank">documentation</a>)</li>
-      <li>GET <a href="concepts/narrower">/concepts/narrower</a> - Returns narrower concepts for a concept (<a href="https://github.com/gbv/jskos-server#get-conceptsnarrower" target="_blank">documentation</a>)</li>
-      <li>GET <a href="ancestors">/concepts/ancestors</a> - Returns ancestor concepts for a concept (<a href="https://github.com/gbv/jskos-server#get-conceptsancestors" target="_blank">documentation</a>)</li>
-      <li>GET <a href="suggest">/concepts/suggest</a> - Returns concept suggestions (<a href="https://github.com/gbv/jskos-server#get-conceptssuggest" target="_blank">documentation</a>)</li>
-      <li>GET <a href="search">/concepts/search</a> - Concept search (<a href="https://github.com/gbv/jskos-server#get-conceptssearch" target="_blank">documentation</a>)</li>
-    <% if (config.concepts.create) { %>
-      <li>POST /concepts - Saves a concept or multiple concepts in the database (<% if (config.concepts.create.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#post-concepts" target="_blank">documentation</a>)</li>
-      <% } %>
-      <% if (config.concepts.update) { %>
-      <li>PUT /concepts - Overwrites a concept in the database (<% if (config.concepts.update.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#put-concepts" target="_blank">documentation</a>)</li>
-      <% } %>
-      <% if (config.concepts.delete) { %>
-      <li>DELETE /concepts - Deletes a concept from the database (<% if (config.concepts.delete.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#delete-concepts" target="_blank">documentation</a>)</li>
-      <% } %>
-     <% if (config.changes) { %>
-        <li>WS /concepts/changes - Real-time updates for concepts via WebSocket (<a href="https://github.com/gbv/jskos-server#change-stream-endpoints" target="_blank">documentation</a>) </li>
-      <% } %>
-    </ul>
-    <% } %>
-    <% if (config.annotations) { %>
-    <h3>Annotations</h3>
-    <ul>
-        <% if (config.annotations.read) { %>
-        <li>GET <a href="annotations">/annotations</a> - Returns a list of annotations (<a href="https://github.com/gbv/jskos-server#get-annotations" target="_blank">documentation</a>)</li>
-        <li>GET /annotations/:_id - Returns a specific annotation (<a href="https://github.com/gbv/jskos-server#get-annotations_id" target="_blank">documentation</a>)</li>
-        <% } %>
-        <% if (config.annotations.create) { %>
-        <li>POST /annotations - Saves an annotation in the database (<% if (config.annotations.create.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#post-annotations" target="_blank">documentation</a>)</li>
-        <% } %>
-        <% if (config.annotations.update) { %>
-        <li>PUT /annotations/:_id - Overwrites an annotation in the database (<% if (config.annotations.update.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#put-annotations_id" target="_blank">documentation</a>)</li>
-        <li>PATCH /annotations/:_id - Adjusts an annotation in the database (<% if (config.annotations.update.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#patch-annotations_id" target="_blank">documentation</a>)</li>
-        <% } %>
-        <% if (config.annotations.delete) { %>
-        <li>DELETE /annotations/:_id - Deletes an annotation from the database (<% if (config.annotations.delete.auth) { %>authentication needed, <% } %><a href="https://github.com/gbv/jskos-server#put-annotations_id" target="_blank">documentation</a>)</li>
-        <% } %>
-         <% if (config.changes) { %>
-        <li>WS /annotations/changes - Real-time updates for annotations via WebSocket (<a href="https://github.com/gbv/jskos-server#change-stream-endpoints" target="_blank">documentation</a>)</li>
-      <% } %>
-    </ul>
-    <% } %>
-    <% if (config.registries) { %>
-    <h3>Registries</h3>
-    <ul>
-      <li>GET <a href="registries">/registries</a> - Returns a list of registries (<a href="https://github.com/gbv/jskos-server#get-registries" target="_blank">documentation</a>)</li>
-      <li>GET /registries/:_id - Returns a specific registry (<a href="https://github.com/gbv/jskos-server#get-registries_id" target="_blank">documentation</a>)</li>
-      <li>GET <a href="registries/suggest">/registries/suggest</a> - Returns registry suggestions (<a href="https://github.com/gbv/jskos-server#get-registriessuggest" target="_blank">documentation</a>)</li>
-      <li>POST /registries - Saves a registry in the database (<a href="https://github.com/gbv/jskos-server#post-registries" target="_blank">documentation</a>)</li>
-      <li>PUT /registries/:_id - Overwrites a registry in the database (<a href="https://github.com/gbv/jskos-server#put-registries_id" target="_blank">documentation</a>)</li>
-      <li>PATCH /registries/:_id - Adjusts a registry in the database (<a href="https://github.com/gbv/jskos-server#patch-registries_id" target="_blank">documentation</a>)</li>
-      <li>DELETE /registries/:_id - Deletes a registry from the database (<a href="https://github.com/gbv/jskos-server#put-registries_id" target="_blank">documentation</a>)</li>
-      <% if (config.changes) { %>
-      <li>WS /registries/changes - Real-time updates for registries via WebSocket (<a href="https://github.com/gbv/jskos-server#change-stream-endpoints" target="_blank">documentation</a>) </li>
-      <% } %>
-    </ul>
-    <% } %>
-  </body>
 </html>

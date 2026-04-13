@@ -146,7 +146,7 @@ export function toOpenSearchSuggestFormat({ query, results }) {
     uris.push(result.uri)
   }
   const searchResults = [
-    query.search, labels, descriptions, uris,
+    query.search || "", labels, descriptions, uris,
   ]
   searchResults.totalCount = results.length
   return searchResults

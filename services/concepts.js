@@ -1,9 +1,8 @@
 import _ from "lodash"
 import jskos from "jskos-tools"
 import { validate } from "jskos-validate"
-
 import { bulkOperationForEntities, queryToAggregation } from "../utils/utils.js"
-import { toOpenSearchSuggestFormat, addKeywords } from "../utils/searchHelper.js"
+import { addKeywords } from "../utils/searchHelper.js"
 import { Concept } from "../models/concepts.js"
 import { SchemeService } from "../services/schemes.js"
 import { MalformedBodyError, MalformedRequestError, EntityNotFoundError, InvalidBodyError, DatabaseAccessError } from "../errors/index.js"
@@ -15,9 +14,10 @@ export class ConceptService extends AbstractService {
   constructor(config) {
     super(config)
     this.schemeService = new SchemeService(config)
+    this.model = Concept
   }
 
-  conceptFind(query, $skip, $limit, narrower = true) {
+  retrieveItems(query, $skip, $limit, narrower = true) {
     const pipeline = queryToAggregation(query)
     if (narrower) {
       pipeline.push({
@@ -49,10 +49,6 @@ export class ConceptService extends AbstractService {
     return Concept.aggregate(pipeline)
   }
 
-  async get(uri) {
-    return (await this.getConcepts({ uri, limit: 1, offset: 0 }))[0]
-  }
-
   /**
    * Return a Promise with an array of concept data.
    */
@@ -72,7 +68,7 @@ export class ConceptService extends AbstractService {
       // Search for all top concepts in all vocabularies
       criteria = { "topConceptOf.uri": { $type: 2 } }
     }
-    const concepts = await this.conceptFind(criteria, query.offset, query.limit)
+    const concepts = await this.retrieveItems(criteria, query.offset, query.limit)
     concepts.totalCount = await this._count(Concept, [{ $match: criteria }])
     return concepts
   }
@@ -80,7 +76,7 @@ export class ConceptService extends AbstractService {
   /**
    * Return a Promise with an array of concepts.
    */
-  async getConcepts(query) {
+  async queryItems(query) {
     if (!_.intersection(Object.keys(query), ["uri", "notation", "voc", "near"]).length) {
       return []
     }
@@ -125,9 +121,9 @@ export class ConceptService extends AbstractService {
       }
     }
     if (query.download) {
-      return this.conceptFind(mongoQuery, null, null, false).cursor()
+      return this.retrieveItems(mongoQuery, null, null, false).cursor()
     }
-    const concepts = await this.conceptFind(mongoQuery, query.offset, query.limit)
+    const concepts = await this.retrieveItems(mongoQuery, query.offset, query.limit)
     concepts.totalCount = await this._count(Concept, queryToAggregation(mongoQuery))
     return concepts
   }
@@ -139,7 +135,7 @@ export class ConceptService extends AbstractService {
     if (!query.uri) {
       return []
     }
-    return await this.conceptFind({ broader: { $elemMatch: { uri: query.uri } } })
+    return await this.retrieveItems({ broader: { $elemMatch: { uri: query.uri } } })
   }
 
   /**
@@ -151,7 +147,7 @@ export class ConceptService extends AbstractService {
     }
     const uri = query.uri
     // First retrieve the concept object from database
-    const concept = (await this.conceptFind({ _id: uri }))[0]
+    const concept = await this.getItem(uri)
     if (!concept) {
       return []
     }
@@ -181,41 +177,20 @@ export class ConceptService extends AbstractService {
   }
 
   /**
-   * Return a Promise with suggestions, either in OpenSearch Suggest Format or JSKOS (?format=jskos).
-   */
-  async getSuggestions(query) {
-    let search = query.search = query.search || ""
-    let format = query.format || ""
-    let results = await this.searchConcept(search, query.voc)
-    if (format.toLowerCase() == "jskos") {
-      // Return in JSKOS format
-      return results.slice(query.offset, query.offset + query.limit)
-    }
-    return toOpenSearchSuggestFormat({ query, results })
-  }
-
-  /**
    * Return a Promise with an array of suggestions in JSKOS format.
    */
   async search(query) {
     let search = query.query || query.search || ""
-    let results = await this.searchConcept(search, query.voc)
-    const searchResults = results.slice(query.offset, query.offset + query.limit)
+    let results = await this.searchItems({ search, voc: query.voc })
+    const { limit, offset } = this._getLimitAndOffset(query)
+    const searchResults = results.slice(offset, offset + limit)
     searchResults.totalCount = results.length
     return searchResults
   }
 
-  async searchConcept(search, voc) {
-    return this._searchItem({
-      search,
-      voc,
-      queryFunction: this.conceptFind,
-    })
-  }
-
   // Write endpoints start here
 
-  async postConcept({ bodyStream, bulk = false, setApi = false, bulkReplace = true, scheme }) {
+  async createItem({ bodyStream, bulk = false, setApi = false, bulkReplace = true, scheme }) {
     if (!bodyStream) {
       throw new MalformedBodyError()
     }
@@ -260,33 +235,24 @@ export class ConceptService extends AbstractService {
       response = preparation.concepts
     } else {
       // Fully assemble body for non-bulk operations
-      let concepts = await new Promise((resolve) => {
-        const body = []
-        bodyStream.on("data", concept => {
-          body.push(concept)
-        })
-        bodyStream.on("end", () => {
-          resolve(body)
-        })
-      })
+      let { items } = await this._readBodyStream(bodyStream)
       // Prepare
-      preparation = await this.prepareAndCheckConcepts(concepts, { scheme })
-      concepts = preparation.concepts
+      preparation = await this.prepareAndCheckConcepts(items, { scheme })
+      items = preparation.concepts
       if (preparation.errors.length) {
-        // Throw first error
         throw preparation.errors[0]
       }
       // Insert concepts
-      response = await Concept.insertMany(concepts, { lean: true })
+      response = await Concept.insertMany(items, { lean: true })
     }
 
     preparation.setApi = setApi
-    await this.postAdjustmentsForConcepts(preparation)
+    await this.postAdjustmentsForItems(preparation)
 
     return isMultiple ? response : response[0]
   }
 
-  async putConcept({ body, existing }) {
+  async updateItem({ body, existing }) {
     if (!body) {
       throw new MalformedBodyError()
     }
@@ -320,24 +286,21 @@ export class ConceptService extends AbstractService {
     }
 
     // ? Can we return the request without waiting for this step?
-    await this.postAdjustmentsForConcepts(preparation)
+    await this.postAdjustmentsForItems(preparation)
 
     return concept
   }
 
-  async deleteConcept({ uri, existing, setApi = false }) {
+  async deleteItem({ uri, existing, setApi = false }) {
     if (!uri) {
       throw new MalformedRequestError()
     }
 
-    const result = await Concept.deleteOne({ _id: existing._id })
-    if (!result.deletedCount) {
-      throw new DatabaseAccessError()
-    }
+    super.deleteItem({ existing })
 
-    await this.postAdjustmentsForConcepts({
+    await this.postAdjustmentsForItems({
       // Adjust scheme in case it was its last concept
-      schemeUrisToAdjust: [_.get(existing, "inScheme[0].uri")],
+      schemeUrisToAdjust: [existing?.inScheme?.[0]?.uri],
       conceptUrisWithNarrower: [],
       setApi,
     })
@@ -361,7 +324,7 @@ export class ConceptService extends AbstractService {
     if (!result.deletedCount) {
       throw new EntityNotFoundError("No concepts found to delete.")
     }
-    await this.postAdjustmentsForConcepts({
+    await this.postAdjustmentsForItems({
       schemeUrisToAdjust: [uri],
       conceptUrisWithNarrower: [],
       setApi,
@@ -372,10 +335,10 @@ export class ConceptService extends AbstractService {
    * Prepares and checks a list of concepts before inserting/updating (see `prepareAndCheckConcept`).
    *
    * @param {Object} allConcept concept objects
-   * @returns {Object} preparation object with properties `concepts`, `errors`, `schemeUrisToAdjust`, and `conceptUrisWithNarrower`; needs to be provided to `postAdjustmentsForConcepts`
+   * @returns {Object} preparation object with properties `concepts`, `errors`, `schemeUrisToAdjust`, and `conceptUrisWithNarrower`; needs to be provided to `postAdjustmentsForItems`
    */
   async prepareAndCheckConcepts(allConcepts, { scheme } = {}) {
-    const getSchemeUri = c => _.get(c, "inScheme[0].uri") || _.get(c, "topConceptOf[0].uri")
+    const getSchemeUri = c => c?.inScheme?.[0]?.uri || c?.topConceptOf?.[0]?.uri
     const schemeUrisToAdjust = []
     const concepts = []
     const errors = []
@@ -388,16 +351,13 @@ export class ConceptService extends AbstractService {
       })
     }
     // Load all schemes for concepts
-    const schemes = await this.schemeService.getSchemes({
-      uri: allConcepts
-        .map(c => getSchemeUri(c))
-        .filter(s => s != null)
-        .join("|"),
+    const schemes = await this.schemeService.queryItems({
+      uri: allConcepts.map(c => getSchemeUri(c)).filter(Boolean).join("|"),
     })
     for (let concept of allConcepts) {
       try {
         await this.prepareAndCheckConcept(concept, schemes)
-        let scheme = _.get(concept, "inScheme[0].uri")
+        let scheme = concept?.inScheme?.[0]?.uri
         if (scheme && !schemeUrisToAdjust.includes(scheme)) {
           schemeUrisToAdjust.push(scheme)
         }
@@ -441,7 +401,7 @@ export class ConceptService extends AbstractService {
     const inScheme = concept.inScheme?.[0]
     // Load scheme from database if necessary
     if (!schemes || !schemes.length) {
-      schemes = await this.schemeService.getSchemes({ uri: inScheme.uri })
+      schemes = await this.schemeService.queryItems({ uri: inScheme.uri })
     }
     const scheme = schemes.find(s => jskos.compare(s, inScheme))
     if (!scheme) {
@@ -463,55 +423,37 @@ export class ConceptService extends AbstractService {
     addKeywords(concept)
   }
 
-  /**
-   * Post-adjustments for concepts:
-   * - runs `postAdjustmentsForScheme` for relevant schemes in `preparation.schemeUrisToAdjust`
-   * - adds `narrower: [null]` for concepts in `preparation.conceptUrisWithNarrower`
-   *
-   * @param {Object} preparation preparation object that is returned by `prepareAndCheckConcepts`
-   */
-  async postAdjustmentsForConcepts(preparation) {
-    // Adjust scheme after adding concept
-    await this.schemeService.postAdjustmentsForScheme(preparation.schemeUrisToAdjust.map(uri => ({ uri })), { setApi: preparation.setApi })
+  async postAdjustmentsForItems(preparation) {
+    // runs `postAdjustmentsForItems` for relevant schemes in `preparation.schemeUrisToAdjust`
+    // adds `narrower: [null]` for concepts in `preparation.conceptUrisWithNarrower`
+    await this.schemeService.postAdjustmentsForItems(preparation.schemeUrisToAdjust.map(uri => ({ uri })), { setApi: preparation.setApi })
   }
 
   async createIndexes() {
-    const indexes = []
-    indexes.push([{ "broader.uri": 1 }, {}])
-    indexes.push([{ "topConceptOf.uri": 1 }, {}])
-    indexes.push([{ "inScheme.uri": 1 }, {}])
-    indexes.push([{ uri: 1 }, {}])
-    indexes.push([{ notation: 1 }, {}])
-    indexes.push([{ identifier: 1 }, {}])
-    indexes.push([{ _keywordsLabels: 1 }, {}])
-    indexes.push([{ location: "2dsphere" }, {}])
-    indexes.push([
-      {
-        _keywordsNotation: "text",
-        _keywordsLabels: "text",
-        _keywordsOther: "text",
-      },
-      {
-        name: "text",
-        default_language: "german",
-        weights: {
-          _keywordsNotation: 10,
-          _keywordsLabels: 6,
-          _keywordsOther: 3,
+    await this._createIndexes([
+      [{ "broader.uri": 1 }, {}],
+      [{ "topConceptOf.uri": 1 }, {}],
+      [{ "inScheme.uri": 1 }, {}],
+      [{ uri: 1 }, {}],
+      [{ notation: 1 }, {}],
+      [{ identifier: 1 }, {}],
+      [{ _keywordsLabels: 1 }, {}],
+      [{ location: "2dsphere" }, {}],
+      [
+        {
+          _keywordsNotation: "text",
+          _keywordsLabels: "text",
+          _keywordsOther: "text",
         },
-      },
-    ])
-    // Create collection if necessary
-    try {
-      await Concept.createCollection()
-    } catch (error) {
-      // Ignore error
-    }
-    // Drop existing indexes
-    await Concept.collection.dropIndexes()
-    for (let [index, options] of indexes) {
-      await Concept.collection.createIndex(index, options)
-    }
+        {
+          name: "text",
+          default_language: "german",
+          weights: {
+            _keywordsNotation: 10,
+            _keywordsLabels: 6,
+            _keywordsOther: 3,
+          },
+        },
+      ]])
   }
-
 }

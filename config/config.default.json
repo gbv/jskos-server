@@ -3,7 +3,6 @@
   "baseUrl": null,
   "title": "JSKOS Server",
   "version": null,
-  "closedWorldAssumption": true,
   "port": 3000,
   "proxies": [],
   "mongo": {
@@ -18,10 +17,7 @@
       "heartbeatFrequencyMS": 10000
     }
   },
-  "auth": {
-    "algorithm": "RS256",
-    "key": null
-  },
+  "auth": false,
   "schemes": true,
   "concepts": true,
   "mappings": {
@@ -82,6 +78,7 @@
   "changes": false,
   "anonymous": false,
   "identityProviders": null,
+  "identityGroups": {},
   "identities": null,
   "ips": null
 }

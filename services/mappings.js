@@ -1,6 +1,6 @@
 import _ from "lodash"
 import { uuid, isValidUuid } from "../utils/uuid.js"
-import { removeNullProperties, bulkOperationForEntities, addMappingSchemes } from "../utils/utils.js"
+import { removeNullProperties, addMappingSchemes } from "../utils/utils.js"
 import jskos from "jskos-tools"
 import { validate } from "jskos-validate"
 import { cdk } from "cocoda-sdk"
@@ -9,7 +9,7 @@ import { Mapping } from "../models/mappings.js"
 import { Annotation } from "../models/annotations.js"
 import { SchemeService } from "./schemes.js"
 import { ConcordanceService } from "./concordances.js"
-import { MalformedBodyError, MalformedRequestError, EntityNotFoundError, InvalidBodyError, DatabaseAccessError, BackendError } from "../errors/index.js"
+import { MalformedRequestError, EntityNotFoundError, InvalidBodyError, DatabaseAccessError, BackendError } from "../errors/index.js"
 
 const validateMapping = (mapping) => {
   const valid = validate.mapping(mapping)
@@ -29,6 +29,9 @@ export class MappingService extends AbstractService {
 
   constructor(config) {
     super(config)
+    this.baseUri = config.baseUrl + "mappings/"
+    this.config = config.mappings || {}
+    this.model = Mapping
     this.schemeService = new SchemeService(config)
     this.concordanceService = new ConcordanceService(config)
     this.loadWhitelists()
@@ -41,7 +44,7 @@ export class MappingService extends AbstractService {
     // Load schemes from fromSchemeWhitelist and toSchemeWhitelist
     for (let type of ["fromSchemeWhitelist", "toSchemeWhitelist"]) {
       let whitelist = []
-      for (let scheme of this.config.mappings[type] || []) {
+      for (let scheme of this.config[type] || []) {
         scheme = (await this.schemeService.getScheme(scheme.uri)) || scheme
         whitelist.push(scheme)
       }
@@ -68,7 +71,7 @@ export class MappingService extends AbstractService {
     }
   }
 
-  async getMappings({ uri, identifier, from, to, fromScheme, toScheme, mode, direction, type, partOf, creator, sort, order, limit, offset, download, annotatedWith, annotatedFor, annotatedBy, cardinality }) {
+  async queryItems({ uri, identifier, from, to, fromScheme, toScheme, mode, direction, type, partOf, creator, sort, order, limit, offset, download, annotatedWith, annotatedFor, annotatedBy, cardinality }) {
     direction = direction || "forward"
 
     let count = 0
@@ -225,7 +228,7 @@ export class MappingService extends AbstractService {
         for (const uri of uris) {
           // Get concordance from database, then add all its identifiers
           try {
-            const concordance = await this.concordanceService.get(uri)
+            const concordance = await this.concordanceService.getItem(uri)
             allUris = allUris.concat(concordance.uri, concordance.identifier || [])
           } catch (error) {
             // Ignore error and push URI only
@@ -374,7 +377,7 @@ export class MappingService extends AbstractService {
           ] : []),
           { $project: { annotations: 0, _assessmentSum: 0 } },
         ]
-        pipeline.model = Mapping
+        pipeline.model = this.model
       } else {
         // 3. Filter by annotation, and none of the properties is given
         // We'll first filter the annotations, then get the associated mappings, remove duplicates, and filter those
@@ -419,7 +422,8 @@ export class MappingService extends AbstractService {
       return pipeline.model.aggregate(pipeline).cursor()
     } else {
       // Otherwise, return results
-      const mappings = await pipeline.model.aggregate(pipeline.concat({ $skip: offset }, { $limit: limit }), { allowDiskUse: true }).exec()
+      const normalizedPagination = this._getLimitAndOffset({ limit, offset })
+      const mappings = await pipeline.model.aggregate(pipeline.concat({ $skip: normalizedPagination.offset }, { $limit: normalizedPagination.limit }), { allowDiskUse: true }).exec()
       // Handle negative annotation assertions differently because counting is inefficient
       if (negativeAnnotationAssertion) {
         // Instead, count by building a pipeline without `annotatedFor`, then another pipeline with the opposite `annotatedFor`, count for both and calculate the difference
@@ -433,18 +437,11 @@ export class MappingService extends AbstractService {
     }
   }
 
-  async get(_id) {
-    return this.getMapping(_id)
-  }
-
-  /**
-   * Returns a promise with a single mapping with ObjectId in req.params._id.
-   */
-  async getMapping(_id) {
+  async getItem(_id) {
     if (!_id) {
       throw new MalformedRequestError()
     }
-    const result = await Mapping.findById(_id).lean()
+    const result = await this.model.findById(_id).lean()
     if (!result) {
       throw new EntityNotFoundError(null, _id)
     }
@@ -475,8 +472,8 @@ export class MappingService extends AbstractService {
       return []
     }
 
-    // Try getMappings first; return if there are results
-    let mappings = await this.getMappings(query)
+    // Try queryItems first; return if there are results
+    let mappings = await this.queryItems(query)
     if (mappings.length) {
       return mappings
     }
@@ -535,7 +532,7 @@ export class MappingService extends AbstractService {
         ancestors = ancestors.slice(0, depth)
       }
       for (const uri of ancestors.map(a => a && a.uri).filter(Boolean)) {
-        mappings = await this.getMappings(Object.assign({}, query, { from: uri, type: types.join("|") }))
+        mappings = await this.queryItems(Object.assign({}, query, { from: uri, type: types.join("|") }))
         if (mappings.length) {
           return mappings.map(m => {
             const mapping = {
@@ -562,7 +559,7 @@ export class MappingService extends AbstractService {
               fromConcept.notation = [notation]
             }
             mapping.from.memberSet = [fromConcept]
-            const type = _.get(m, "type[0]") || "http://www.w3.org/2004/02/skos/core#mappingRelation"
+            const type = m?.type?.[0] || "http://www.w3.org/2004/02/skos/core#mappingRelation"
             if (type === "http://www.w3.org/2004/02/skos/core#exactMatch" || !strict && type === "http://www.w3.org/2004/02/skos/core#closeMatch") {
               mapping.type = ["http://www.w3.org/2004/02/skos/core#narrowMatch"]
             } else {
@@ -581,113 +578,69 @@ export class MappingService extends AbstractService {
 
   }
 
-  /**
-   * Save a single mapping or multiple mappings in the database. Adds created date, validates the mapping, and adds identifiers.
-   */
-  async postMapping({ bodyStream, bulk = false, bulkReplace = true }) {
-    if (!bodyStream) {
-      throw new MalformedBodyError()
+  async prepareAndCheckItemForAction(mapping, action, { bulk }) {
+    if (action !== "create") {
+      return mapping
     }
 
-    let isMultiple = true
-
-    // As a workaround, build body from bodyStream
-    // TODO: Use actual stream
-    let mappings = await new Promise((resolve) => {
-      const body = []
-      bodyStream.on("data", mapping => {
-        body.push(mapping)
-      })
-      bodyStream.on("isSingleObject", () => {
-        isMultiple = false
-      })
-      bodyStream.on("end", () => {
-        resolve(body)
-      })
-    })
-
-    let response
-
-    // Adjust all mappings
-    mappings = await Promise.all(mappings.map(async mapping => {
-      try {
-        // Add created and modified dates.
-        const now = (new Date()).toISOString()
-        if (!bulk || !mapping.created) {
-          mapping.created = now
-        }
-        mapping.modified = now
-        // Validate mapping
-        if (!validateMapping(mapping)) {
-          throw new InvalidBodyError()
-        }
-        if (mapping.partOf) {
-          throw new InvalidBodyError("Property `partOf` is currently not allowed.")
-        }
-        // Check cardinality for 1-to-1
-        if (this.config.mappings.cardinality == "1-to-1" && jskos.conceptsOfMapping(mapping, "to").length > 1) {
-          throw new InvalidBodyError("Only 1-to-1 mappings are supported.")
-        }
-        // Add mapping schemes if necessary (e.g. from concepts' `inScheme` property)
-        addMappingSchemes(mapping)
-        // Check if schemes are available and replace them with URI/notation only
-        await this.schemeService.replaceSchemeProperties(mapping, ["fromScheme", "toScheme"])
-        // Reject mapping if either fromScheme or toScheme is missing
-        for (let field of ["fromScheme", "toScheme"]) {
-          if (!mapping[field]) {
-            throw new InvalidBodyError(`Property \`${field}\` is missing.`)
-          }
-        }
-        this.checkWhitelists(mapping)
-        // _id and URI
-        delete mapping._id
-        let uriBase = this.config.baseUrl + "mappings/"
-        if (mapping.uri) {
-          let uri = mapping.uri
-          // URI already exists, use if it's valid, otherwise move to identifier
-          if (uri.startsWith(uriBase) && isValidUuid(uri.slice(uriBase.length, uri.length))) {
-            mapping._id = uri.slice(uriBase.length, uri.length)
-          } else {
-            mapping.identifier = (mapping.identifier || []).concat([uri])
-          }
-        }
-        if (!mapping._id) {
-          mapping._id = uuid()
-          mapping.uri = uriBase + mapping._id
-        }
-        // Make sure URI is a https URI when in production
-        if (this.config.env === "production") {
-          mapping.uri.replace("http:", "https:")
-        }
-        // Set mapping identifier
-        mapping.identifier = jskos.addMappingIdentifiers(mapping).identifier
-        // Set mapping type to mappingRelation if not set
-        if (!mapping.type || !mapping.type.length) {
-          mapping.type = ["http://www.w3.org/2004/02/skos/core#mappingRelation"]
-        }
-
-        return mapping
-      } catch (error) {
-        if (bulk) {
-          return null
-        }
-        throw error
+    // Add created and modified dates.
+    const now = (new Date()).toISOString()
+    if (!bulk || !mapping.created) {
+      mapping.created = now
+    }
+    mapping.modified = now
+    // Validate mapping
+    if (!validateMapping(mapping)) {
+      throw new InvalidBodyError()
+    }
+    if (mapping.partOf) {
+      throw new InvalidBodyError("Property `partOf` is currently not allowed.")
+    }
+    // Check cardinality for 1-to-1
+    if (this.config.cardinality == "1-to-1" && jskos.conceptsOfMapping(mapping, "to").length > 1) {
+      throw new InvalidBodyError("Only 1-to-1 items are supported.")
+    }
+    // Add mapping schemes if necessary (e.g. from concepts' `inScheme` property)
+    addMappingSchemes(mapping)
+    // Check if schemes are available and replace them with URI/notation only
+    await this.schemeService.replaceSchemeProperties(mapping, ["fromScheme", "toScheme"])
+    // Reject mapping if either fromScheme or toScheme is missing
+    for (let field of ["fromScheme", "toScheme"]) {
+      if (!mapping[field]) {
+        throw new InvalidBodyError(`Property \`${field}\` is missing.`)
       }
-    }))
-    mappings = mappings.filter(m => m)
-
-    if (bulk) {
-      // Use bulkWrite for most efficiency
-      mappings.length && await Mapping.bulkWrite(bulkOperationForEntities({ entities: mappings, replace: bulkReplace }))
-      response = mappings.map(c => ({ uri: c.uri }))
-    } else {
-      response = await Mapping.insertMany(mappings, { lean: true })
+    }
+    this.checkWhitelists(mapping)
+    // _id and URI
+    delete mapping._id
+    if (mapping.uri) {
+      let uri = mapping.uri
+      // URI already exists, use if it's valid, otherwise move to identifier
+      if (uri.startsWith(this.baseUri) && isValidUuid(uri.slice(this.baseUri.length, uri.length))) {
+        mapping._id = uri.slice(this.baseUri.length, uri.length)
+      } else {
+        mapping.identifier = (mapping.identifier || []).concat([uri])
+      }
+    }
+    if (!mapping._id) {
+      mapping._id = uuid()
+      mapping.uri = this.baseUri + mapping._id
+    }
+    // Make sure URI is a https URI when in production
+    if (this.config.env === "production") {
+      mapping.uri = mapping.uri.replace("http:", "https:")
+    }
+    // Set mapping identifier
+    mapping.identifier = jskos.addMappingIdentifiers(mapping).identifier
+    // Set mapping type to mappingRelation if not set
+    if (!mapping.type || !mapping.type.length) {
+      mapping.type = ["http://www.w3.org/2004/02/skos/core#mappingRelation"]
     }
 
-    return isMultiple ? response : response[0]
+    return mapping
   }
 
-  async putMapping({ body, existing }) {
+  async updateItem({ body, existing }) {
     let mapping = body
     if (!mapping) {
       throw new InvalidBodyError()
@@ -698,7 +651,7 @@ export class MappingService extends AbstractService {
     if (!validateMapping(mapping)) {
       throw new InvalidBodyError()
     }
-    if (this.config.mappings.cardinality == "1-to-1" && jskos.conceptsOfMapping(mapping, "to").length > 1) {
+    if (this.config.cardinality == "1-to-1" && jskos.conceptsOfMapping(mapping, "to").length > 1) {
       throw new InvalidBodyError("Only 1-to-1 mappings are supported.")
     }
     // If it's part of a concordance, don't allow changing fromScheme/toScheme
@@ -720,7 +673,7 @@ export class MappingService extends AbstractService {
       mapping.type = ["http://www.w3.org/2004/02/skos/core#mappingRelation"]
     }
 
-    const result = await Mapping.replaceOne({ _id: existing._id }, mapping)
+    const result = await this.model.replaceOne({ _id: existing._id }, mapping)
     if (result.acknowledged && result.matchedCount) {
       // Update concordances if necessary
       if (existing.partOf && existing.partOf[0]) {
@@ -735,7 +688,7 @@ export class MappingService extends AbstractService {
     }
   }
 
-  async patchMapping({ body, existing }) {
+  async patch({ body, existing }) {
     let mapping = body
     if (!mapping) {
       throw new InvalidBodyError()
@@ -779,12 +732,12 @@ export class MappingService extends AbstractService {
     if (!validateMapping(newMapping)) {
       throw new InvalidBodyError()
     }
-    if (this.config.mappings.cardinality == "1-to-1" && jskos.conceptsOfMapping(mapping, "to").length > 1) {
+    if (this.config.cardinality == "1-to-1" && jskos.conceptsOfMapping(mapping, "to").length > 1) {
       throw new InvalidBodyError("Only 1-to-1 mappings are supported.")
     }
     this.checkWhitelists(mapping)
 
-    const result = await Mapping.replaceOne({ _id: newMapping._id }, newMapping)
+    const result = await this.model.replaceOne({ _id: newMapping._id }, newMapping)
     if (result.acknowledged) {
       // Update concordances if necessary
       if (existing.partOf && existing.partOf[0]) {
@@ -799,11 +752,9 @@ export class MappingService extends AbstractService {
     }
   }
 
-  async deleteMapping({ existing }) {
-    const result = await Mapping.deleteOne({ _id: existing._id })
-    if (!result.deletedCount) {
-      throw new DatabaseAccessError()
-    }
+  async deleteItem({ existing }) {
+    super.deleteItem({ existing })
+
     // Update concordance if necessary
     if (existing.partOf && existing.partOf[0]) {
       await this.concordanceService.postAdjustmentForConcordance(existing.partOf[0].uri)
@@ -848,7 +799,7 @@ export class MappingService extends AbstractService {
     }
     match = { $match: { [`$${mode}`]: match } }
     let promises = [
-      Mapping.aggregate([
+      this.model.aggregate([
         match,
         {
           $group: {
@@ -857,7 +808,7 @@ export class MappingService extends AbstractService {
           },
         },
       ]).exec(),
-      Mapping.aggregate([
+      this.model.aggregate([
         match,
         {
           $group: {
@@ -918,7 +869,7 @@ export class MappingService extends AbstractService {
     }
     and.push({ $or: or })
     mongoQuery = { $and: and }
-    let mappings = await Mapping.find(mongoQuery).lean().exec()
+    let mappings = await this.model.find(mongoQuery).lean().exec()
     let results = []
     let descriptions = []
     for (let mapping of mappings) {
@@ -1006,14 +957,14 @@ export class MappingService extends AbstractService {
     indexes.push([{ "creator.prefLabel.en": 1 }, {}])
     // Create collection if necessary
     try {
-      await Mapping.createCollection()
+      await this.model.createCollection()
     } catch (error) {
       // Ignore error
     }
     // Drop existing indexes
-    await Mapping.collection.dropIndexes()
+    await this.model.collection.dropIndexes()
     for (let [index, options] of indexes) {
-      await Mapping.collection.createIndex(index, options)
+      await this.model.collection.createIndex(index, options)
     }
   }
 

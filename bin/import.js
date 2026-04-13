@@ -25,7 +25,7 @@ Options
                                       meaning that existing entities will not be overridden.
                                       Note that an error will be thrown when even one of the entities already exist.
   --nobulk                -b          Disable bulk import no not ignore and filter out invalid entities
-  --set-api                           EXPERIMENTAL. Onlt for concepts. Will update the scheme's \`API\` property after
+  --set-api                           EXPERIMENTAL. Only for concepts. Will update the scheme's \`API\` property after
                                       importing concepts.
 
 Examples
@@ -162,7 +162,7 @@ if (cli.flags.concordance && type != "mapping") {
   })
 }
 
-if (cli.flags.bulk && ["concordance","concordance","registry"].find(type)) {
+if (cli.flags.bulk && ["concordance", "concordance", "registry"].find(type)) {
   logError({
     message: `The --nobulk option is not supported with type ${type}`,
     exit: true,
@@ -206,8 +206,8 @@ import config from "../config/index.js"
 import { v5 as uuidv5 } from "uuid"
 import path from "node:path"
 import * as anystream from "json-anystream"
-import _ from "lodash"
-import * as db from "../utils/db.js"
+import { createDatabase } from "../utils/db.js"
+const db = createDatabase(config)
 
 import { createServices } from "../services/index.js"
 const services = createServices(config)
@@ -216,9 +216,9 @@ const allTypes = Object.keys(services)
 // Also import models for Mapping and Concordance
 // TODO: This won't be needed if these are imported through the service as well.
 import { Mapping, Concordance } from "../models/index.js"
-import { bulkOperationForEntities, addMappingSchemes} from "../utils/utils.js"
+import { bulkOperationForEntities, addMappingSchemes } from "../utils/utils.js"
 
-;(async () => {
+; (async () => {
   try {
     await db.connect()
   } catch (error) {
@@ -244,7 +244,7 @@ import { bulkOperationForEntities, addMappingSchemes} from "../utils/utils.js"
     let concordance
     if (cli.flags.concordance) {
       // Query concordance from database
-      concordance = await services.concordance.get(cli.flags.concordance)
+      concordance = await services.concordance.retrieveItem(cli.flags.concordance)
       if (!concordance) {
         logError({
           message: `Concordance with URI ${cli.flags.concordance} not found, aborting...`,
@@ -271,12 +271,12 @@ async function doImport({ input, format, type, concordance }) {
 
   if (type == "scheme") {
     log("Importing schemes...")
-    const result = await services.scheme.postScheme({ bodyStream, bulk, bulkReplace })
+    const result = await services.scheme.createItem({ bodyStream, bulk, bulkReplace })
     log(`... done: ${Array.isArray(result) ? result.length : 1} schemes imported.`)
   } else if (type == "concept") {
     log("Importing concepts...")
     // TODO: Find way to output progress.
-    const result = await services.concept.postConcept({
+    const result = await services.concept.createItem({
       bodyStream, bulk, bulkReplace,
       scheme: cli.flags.scheme,
       setApi: cli.flags.setApi,
@@ -357,7 +357,7 @@ async function doImport({ input, format, type, concordance }) {
       // Generate an identifier and a URI if necessary
       if (!object.uri) {
         const contentIdentifier = object.identifier.find(id => id && id.startsWith("urn:jskos:mapping:content:"))
-        const concordance = _.get(object, "partOf[0].uri") || ""
+        const concordance = object.partOf?.[0]?.uri || ""
         if (contentIdentifier) {
           object._id = uuidv5(contentIdentifier + concordance, config.namespace)
           object.uri = config.baseUrl + "mappings/" + object._id
@@ -427,11 +427,11 @@ async function doImport({ input, format, type, concordance }) {
   } else if (type == "annotation") {
     log("Importing annotations...")
     // TODO: Find way to output progress.
-    const result = await services.annotation.postAnnotation({ bodyStream, bulk, bulkReplace, admin: true })
+    const result = await services.annotation.createItem({ bodyStream, bulk, bulkReplace, admin: true })
     log(`... done: ${Array.isArray(result) ? result.length : 1} annotations imported.`)
   } else if (type == "registry") {
     log("Importing registries...")
-    const result = await services.registry.postRegistry({ bodyStream, bulk, bulkReplace })
+    const result = await services.registry.createItem({ bodyStream, bulk, bulkReplace })
     const imported = result?.importedCount ?? 0
     const skipped = result?.skippedCount ?? 0
     log(`... done: ${imported} registries imported${skipped > 0 ? ` (${skipped} skipped).` : "."}`)

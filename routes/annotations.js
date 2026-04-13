@@ -1,104 +1,23 @@
-import express from "express"
-import { AnnotationService } from "../services/annotations.js"
-import * as utils from "../utils/middleware.js"
-import { wrapAsync, wrapDownload } from "../utils/middleware.js"
-import * as auth from "../utils/auth.js"
+import { Router } from "./router.js"
 
 export default config => {
-  const router = express.Router()
-  const annotationService = new AnnotationService(config)
+  const router = new Router(config)
   const { annotations } = config
 
-  if (annotations.read) {
-    router.get(
-      "/",
-      annotations.read.auth ? auth.main : auth.optional,
-      utils.supportDownloadFormats([]),
-      wrapAsync(async (req) => {
-        return await annotationService.getAnnotations(req.query)
-      }),
-      wrapDownload(utils.addPaginationHeaders, false),
-      wrapDownload(utils.adjust, false),
-      wrapDownload(utils.returnJSON, false),
-    )
+  if (annotations) {
+    const service = router.services.annotation
 
-    router.get(
-      "/:_id",
-      annotations.read.auth ? auth.main : auth.optional,
-      wrapAsync(async (req) => {
-        return await annotationService.getAnnotation(req.params._id)
-      }),
-      utils.adjust,
-      utils.returnJSON,
-    )
+    router.read("/", annotations.read, service, "annotations")
+    router.readOne(annotations.read, service, "annotation")
+
+    router.create("/", annotations.create, service)
+
+    router.update("/", annotations.update, service)
+    router.update("/:_id", annotations.update, service)
+
+    router.delete("/", annotations.delete, service)
+    router.delete("/:_id", annotations.delete, service)
   }
 
-  if (annotations.create) {
-    router.post(
-      "/",
-      annotations.create.auth ? auth.main : auth.optional,
-      utils.bodyParser,
-      wrapAsync(async (req) => {
-        return await annotationService.postAnnotation({
-          bodyStream: req.anystream,
-          user: req.user,
-          bulk: req.query.bulk,
-        })
-      }),
-      utils.adjust,
-      utils.returnJSON,
-    )
-  }
-
-  if (annotations.update) {
-    router.put(
-      "/:_id",
-      annotations.update.auth ? auth.main : auth.optional,
-      utils.bodyParser,
-      wrapAsync(async (req) => {
-        return await annotationService.putAnnotation({
-          _id: req.params._id,
-          body: req.body,
-          user: req.user,
-          existing: req.existing,
-        })
-      }),
-      utils.adjust,
-      utils.returnJSON,
-    )
-
-    router.patch(
-      "/:_id",
-      annotations.update.auth ? auth.main : auth.optional,
-      utils.bodyParser,
-      wrapAsync(async (req) => {
-        return await annotationService.patchAnnotation({
-          _id: req.params._id,
-          body: req.body,
-          user: req.user,
-          existing: req.existing,
-        })
-      }),
-      utils.adjust,
-      utils.returnJSON,
-    )
-  }
-
-  if (annotations.delete) {
-    router.delete(
-      "/:_id",
-      annotations.delete.auth ? auth.main : auth.optional,
-      utils.bodyParser,
-      wrapAsync(async (req) => {
-        return await annotationService.deleteAnnotation({
-          uri: req.params._id,
-          user: req.user,
-          existing: req.existing,
-        })
-      }),
-      (req, res) => res.sendStatus(204),
-    )
-  }
-
-  return router
+  return router.router
 }

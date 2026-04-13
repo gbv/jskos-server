@@ -1,116 +1,57 @@
-import express from "express"
-import { SchemeService } from "../services/schemes.js"
-import { ConceptService } from "../services/concepts.js"
-import * as utils from "../utils/middleware.js"
-import { wrapAsync, wrapDownload } from "../utils/middleware.js"
-import * as auth from "../utils/auth.js"
+import { wrapAsync, wrapDownload, supportDownloadFormats, returnJSON, handleDownload } from "./utils.js"
 import { MalformedRequestError } from "../errors/index.js"
+import { Router } from "./router.js"
 
 export default config => {
-  const router = express.Router()
-  const schemeService = new SchemeService(config)
-  const conceptService = new ConceptService(config)
+  const router = new Router(config)
+  const service = router.services.scheme
   const { schemes, concepts } = config
 
-  if (schemes.read) {
-    router.get(
-      "/",
-      schemes.read.auth ? auth.main : auth.optional,
-      utils.supportDownloadFormats([]),
-      wrapAsync(async (req) => {
-        return await schemeService.getSchemes(req.query)
-      }),
-      utils.addPaginationHeaders,
-      utils.adjust,
-      utils.returnJSON,
-    )
-  }
+  router.read("/", schemes.read, service, "schemes")
+  router.create("/", schemes.create, service)
+  router.update("/", schemes.update, service)
+  router.delete("/", schemes.delete, service)
 
-  if (schemes.create) {
-    router.post(
-      "/",
-      schemes.create.auth ? auth.main : auth.optional,
-      utils.bodyParser,
-      wrapAsync(async (req) => {
-        return await schemeService.postScheme({
-          bodyStream: req.anystream,
-          bulk: req.query.bulk,
-        })
-      }),
-      utils.adjust,
-      utils.returnJSON,
-    )
-  }
-
-  if (schemes.update) {
-    router.put(
-      "/",
-      schemes.update.auth ? auth.main : auth.optional,
-      utils.bodyParser,
-      wrapAsync(async (req) => {
-        return await schemeService.putScheme({
-          body: req.body,
-          existing: req.existing,
-          setApi: req.query.setApi,
-        })
-      }),
-      utils.adjust,
-      utils.returnJSON,
-    )
-  }
-
-  if (schemes.delete) {
-    router.delete(
-      "/",
-      schemes.delete.auth ? auth.main : auth.optional,
-      utils.bodyParser,
-      wrapAsync(async (req) => {
-        return await schemeService.deleteScheme({
-          uri: req.query.uri,
-          existing: req.existing,
-        })
-      }),
-      (req, res) => res.sendStatus(204),
-    )
-  }
+  router.suggest("/suggest", schemes.read, service)
 
   if (concepts) {
+    const conceptService = router.services.concept
 
     router.get(
       "/top",
-      concepts.read.auth ? auth.main : auth.optional,
-      utils.supportDownloadFormats([]),
+      router.authenticate(concepts.read.auth),
+      supportDownloadFormats([]),
       wrapAsync(async (req) => {
         return await conceptService.getTop(req.query)
       }),
-      utils.addPaginationHeaders,
-      utils.adjust,
-      utils.returnJSON,
+      router.paginationHeaders,
+      router.adjust,
+      returnJSON,
     )
 
     router.get(
       "/concepts",
-      concepts.read.auth ? auth.main : auth.optional,
-      utils.supportDownloadFormats(["json", "ndjson"]),
+      router.authenticate(concepts.read.auth),
+      supportDownloadFormats(["json", "ndjson"]),
       wrapAsync(async (req) => {
         if (!req.query.uri) {
           throw new MalformedRequestError("Parameter `uri` (URI of a vocabulary) is required for endpoint /voc/concepts")
         }
         const query = { ...req.query, voc: req.query.uri }
         delete query.uri
-        return await conceptService.getConcepts(query)
+        return await conceptService.queryItems(query)
       }),
-      wrapDownload(utils.addPaginationHeaders, false),
-      wrapDownload(utils.adjust, false),
-      wrapDownload(utils.returnJSON, false),
-      wrapDownload(utils.handleDownload("concepts"), true),
+      wrapDownload(router.paginationHeaders, false),
+      wrapDownload(router.adjust, false),
+      wrapDownload(returnJSON, false),
+      wrapDownload(handleDownload("concepts"), true),
     )
 
     if (concepts.delete) {
-      router.delete(
+      router.del(
         "/concepts",
-        concepts.delete.auth ? auth.main : auth.optional,
-        utils.bodyParser,
+        router.authenticate(concepts.delete.auth),
+        router.bodyParser,
         wrapAsync(async (req) => {
           return await conceptService.deleteConceptsFromScheme({
             scheme: req.existing,
@@ -120,33 +61,7 @@ export default config => {
         (req, res) => res.sendStatus(204),
       )
     }
-
   }
 
-  if (schemes.read) {
-    router.get(
-      "/suggest",
-      schemes.read.auth ? auth.main : auth.optional,
-      utils.supportDownloadFormats([]),
-      wrapAsync(async (req) => {
-        return await schemeService.getSuggestions(req.query)
-      }),
-      utils.addPaginationHeaders,
-      utils.returnJSON,
-    )
-
-    router.get(
-      "/search",
-      schemes.read.auth ? auth.main : auth.optional,
-      utils.supportDownloadFormats([]),
-      wrapAsync(async (req) => {
-        return await schemeService.search(req.query)
-      }),
-      utils.addPaginationHeaders,
-      utils.adjust,
-      utils.returnJSON,
-    )
-  }
-
-  return router
+  return router.router
 }

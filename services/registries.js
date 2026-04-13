@@ -1,26 +1,37 @@
 import _ from "lodash"
-import { removeNullProperties, bulkOperationForEntities } from "../utils/utils.js"
+import { removeNullProperties } from "../utils/utils.js"
 import { validate } from "jskos-validate"
-import config from "../config/index.js"
 import { Registry } from "../models/registries.js"
-import { Annotation, Concept, Concordance, Scheme } from "../models/index.js"
-import { toOpenSearchSuggestFormat, addKeywords } from "../utils/searchHelper.js"
-import {
-  EntityNotFoundError,
-  DatabaseAccessError,
-  InvalidBodyError,
-  InvalidRegistryMembershipError,
-  InvalidRegistryMixedMembershipError,
-  MalformedBodyError,
-  MalformedRequestError,
-} from "../errors/index.js"
+import { addKeywords } from "../utils/searchHelper.js"
+import { EntityNotFoundError, DatabaseAccessError, InvalidBodyError, MalformedBodyError } from "../errors/index.js"
 
 import { AbstractService } from "./abstract.js"
 
+// TODO: get via factory Method
+import { models } from "../models/index.js"
+
 export class RegistryService extends AbstractService {
+  static allMemberTypes = ["schemes", "concepts", "mappings", "concordances", "annotations", "registries"]
+
   constructor(config) {
     super(config)
+    this.config = config.registries || {}
+    this.types = {}
+
+    this.model = Registry
+
+    // TODO: duplicated code in config.setup
+    for (let type of RegistryService.allMemberTypes) {
+      this.types[type] = config.types?.[type]
+      if (this.types[type] === true) {
+        this.types[type] = { mustExist: false, skipInvalid: false }
+      }
+      if (this.types[type] && !("uriRequired" in this.types[type])) {
+        this.types[type].uriRequired = true
+      }
+    }
   }
+
   /**
    * Retrieves registry entries.
    *
@@ -29,85 +40,9 @@ export class RegistryService extends AbstractService {
    * @param {number|string} [query.offset=0] - Number of registries to skip before fetching.
    * @returns {Promise<Object[]>} A promise that resolves to the matching registries.
    */
-  async getRegistries(query) {
-    const limit = Number.isFinite(+query.limit)
-      ? Math.max(0, +query.limit)
-      : 100
-    const offset = Number.isFinite(+query.offset)
-      ? Math.max(0, +query.offset)
-      : 0
-
-    return Registry.find({}).skip(offset).limit(limit).lean().exec()
-  }
-
-  /**
-   * Retrieves a registry entry by its identifier.
-   *
-   * @param {string} _id - The unique identifier of the registry to fetch.
-   * @returns {Promise<Object>} Resolves with the registry data if found.
-   */
-  async get(_id) {
-    return this.getRegistry(_id)
-  }
-
-  /**
-   * Retrieves a registry entry by its identifier.
-   *
-   * @async
-   * @function getRegistry
-   * @param {string} _id - The unique identifier of the registry to fetch.
-   * @returns {Promise<Object>} Resolves with the registry data if found.
-   * @throws {MalformedRequestError} If no identifier is provided.
-   * @throws {EntityNotFoundError} If no registry exists for the given identifier.
-   */
-  async getRegistry(uriOrId) {
-    if (!uriOrId) {
-      throw new MalformedRequestError()
-    }
-    let result
-
-    // First look via ID
-    result = await Registry.findById(uriOrId).lean()
-    if (result) {
-      return result
-    }
-
-    // Then via URI
-    result = await Registry.findOne({ uri: uriOrId }).lean()
-    if (result) {
-      return result
-    }
-
-    // No registry found
-    throw new EntityNotFoundError(`Registry not found: ${uriOrId}`)
-  }
-
-  /**
-   * Returns OpenSearch Suggest format for registries.
-   *
-   * @param {Object} query - Query parameters.
-   * @returns {Promise<Array>} OpenSearch Suggest array.
-   */
-  async getSuggestions(query) {
-    const results = await this.searchRegistry(query)
-    return toOpenSearchSuggestFormat({ query, results })
-  }
-
-  /**
-   * Searches registry entries based on query params.
-   *
-   * @param {Object} query - Query parameters.
-   * @returns {Promise<Object[]>} Matching registries.
-   */
-  async searchRegistry(query) {
-    const search = query?.search || query?.q || ""
-    const voc = query?.voc
-
-    return this._searchItem({
-      search,
-      voc,
-      queryFunction: (mongoQuery) => Registry.find(mongoQuery).lean().exec(),
-    })
+  async queryItems(query) {
+    const { limit, offset } = this._getLimitAndOffset(query)
+    return this.model.find({}).skip(offset).limit(limit).lean().exec()
   }
 
   /**
@@ -120,25 +55,24 @@ export class RegistryService extends AbstractService {
    * @param {string} action one of "create" or "update"
    * @returns {Object} prepared registry
    */
-  async prepareAndCheckRegistryForAction(registry, action) {
-    if (!_.isObject(registry)) {
-      throw new MalformedBodyError()
+  async prepareAndCheckItemForAction(registry, action) {
+    if (typeof registry !== "object") {
+      throw new MalformedBodyError("Invalid registry object")
     }
+
     if (["create", "update"].includes(action)) {
       // Validate registry
-      const ok = validate.registry
-        ? validate.registry(registry)
-        : validate(registry)
-      if (!ok || !registry.uri) {
-        const msgs =
-          validate.registry?.errorMessages || validate.errorMessages || []
-        throw new InvalidBodyError(
-          msgs.join("; ") || "Registry validation failed",
-        )
+      if (!validate.registry(registry)) {
+        // TODO: use error object
+        const msgs = validate.registry.errorMessages || ["Registry validation failed"]
+        throw new InvalidBodyError(msgs.join("; "))
+      }
+      if (!registry.uri) {
+        // TODO: how about minting URIs?
+        throw new InvalidBodyError("Registry lacks uri")
       }
 
-      // Validate membership fields
-      await this.validateMembershipFields(registry)
+      await this.processMembers(registry)
 
       // Add _id
       registry._id = registry.uri
@@ -146,7 +80,7 @@ export class RegistryService extends AbstractService {
       // Add index keywords
       addKeywords(registry)
 
-      // Remove created for update action
+      // Remove created for update action // TODO: why?
       if (action === "update") {
         delete registry.created
       }
@@ -154,109 +88,6 @@ export class RegistryService extends AbstractService {
     return registry
   }
 
-  /**
-   * Handles insertion of registry items.
-   *
-   * @param {Object} options - Options for the registry import.
-   * @param {NodeJS.ReadableStream} options.bodyStream - Stream emitting registry items.
-   * @param {boolean} [options.bulk=true] - Whether to perform a bulk write operation.
-   * @param {boolean} [options.bulkReplace=true] - For bulk operations, whether to replace existing documents.
-   * @returns {Promise<Object[]|Object|undefined>} Imported registries or a single registry when a single object is sent; undefined when no valid single item exists.
-   * @throws {MalformedBodyError} When the body stream is missing.
-   * @throws {InvalidBodyError} When validation fails in non-bulk mode.
-   */
-  async postRegistry({ bodyStream, bulk = true, bulkReplace = true }) {
-    if (!bodyStream) {
-      throw new MalformedBodyError()
-    }
-
-    let isMultiple = true
-
-    // As a workaround, build body from bodyStream
-    // TODO: Use actual stream
-    let registries = await new Promise((resolve) => {
-      const body = []
-      bodyStream.on("data", registry => {
-        body.push(registry)
-      })
-      bodyStream.on("isSingleObject", () => {
-        isMultiple = false
-      })
-      bodyStream.on("end", () => {
-        resolve(body)
-      })
-    })
-
-    let response
-
-    // Prepare
-    const skipped = []
-    registries = await Promise.all(registries.map(registry => {
-      return this.prepareAndCheckRegistryForAction(registry, "create")
-        .catch(error => {
-          const isAggregateError =
-            error instanceof AggregateError ||
-            (error?.name === "AggregateError" && Array.isArray(error?.errors))
-          const errors = isAggregateError ? error.errors : [error]
-          const membershipErrors = errors.filter(
-            err => err?.name === "InvalidRegistryMembershipError" && err?.field,
-          )
-          const otherErrors = errors.filter(
-            err => !(err?.name === "InvalidRegistryMembershipError" && err?.field),
-          )
-
-          if (otherErrors.length) {
-            throw otherErrors[0]
-          }
-
-          // Check if config states to ignore errors for the fields in question, if so skip instead of throwing
-          const nonIgnorableMembershipErrors = membershipErrors.filter(
-            err => config?.registries?.types?.[err.field]?.ignoreErrors !== true,
-          )
-          if (nonIgnorableMembershipErrors.length) {
-            throw nonIgnorableMembershipErrors[0]
-          }
-
-          if (membershipErrors.length) {
-            if (bulk) {
-              skipped.push({
-                uri: registry?.uri,
-                error: "InvalidRegistryMembershipError",
-                message: membershipErrors.map(err => err.message).join("; "),
-                field: membershipErrors.map(err => err.field),
-              })
-              this.warn(`${membershipErrors.map(err => err.message).join("; ")} => skipping registry object`)
-              return null
-            }
-            error = membershipErrors[0]
-          }
-
-          throw error
-        })
-    }))
-    // Filter out null
-    registries = registries.filter(Boolean)
-
-    if (bulk) {
-      // Use bulkWrite for most efficiency
-      registries.length && await Registry.bulkWrite(
-        bulkOperationForEntities({ entities: registries, replace: bulkReplace }))
-      response = {
-        imported: registries.map(r => ({ uri: r.uri })),
-        skipped,
-        skippedCount: skipped.length,
-        importedCount: registries.length,
-      }
-    } else {
-      response = await Registry.insertMany(registries, { lean: true })
-    }
-
-    return Array.isArray(response)
-      ? isMultiple
-        ? response
-        : response[0]
-      : response
-  }
 
   /**
    * Updates an existing registry entry, while preserving immutable fields.
@@ -269,30 +100,24 @@ export class RegistryService extends AbstractService {
    * @throws {EntityNotFoundError} If the targeted registry is not found.
    * @throws {DatabaseAccessError} If the database operation fails.
    */
-  async putRegistry({ body, existing }) {
+  async updateItem({ body, existing }) {
     if (!body) {
       throw new InvalidBodyError()
-
     }
 
-    // Add modified date.
     body.modified = new Date().toISOString()
 
-
-    // Remove type property
-    _.unset(body, "type")
-
-    await this.validateMembershipFields(body)
+    delete body.type
 
     // Validate registry
-    const ok = validate.registry ? validate.registry(body) : validate(body)
-    if (!ok) {
-      const msgs =
-        validate.registry?.errorMessages || validate.errorMessages || []
+    if (!validate.registry(body)) {
+      const msgs = validate.registry?.errorMessages || []
       throw new InvalidBodyError(
         msgs.join("; ") || "Registry validation failed",
       )
     }
+
+    await this.processMembers(body)
 
     // Preserve existing property: created date
     body.created = existing.created
@@ -302,7 +127,7 @@ export class RegistryService extends AbstractService {
     body._id = existing._id
 
     // Replace in database
-    const result = await Registry.replaceOne({ _id: existing._id }, body)
+    const result = await this.model.replaceOne({ _id: existing._id }, body)
     if (!result.matchedCount) {
       throw new EntityNotFoundError(`Registry not found: ${existing._id}`)
     }
@@ -313,7 +138,7 @@ export class RegistryService extends AbstractService {
     }
 
     // Return the updated registry entry
-    const doc = await Registry.findById(existing._id).lean()
+    const doc = await this.model.findById(existing._id).lean()
     if (!doc) {
       throw new DatabaseAccessError()
     }
@@ -321,20 +146,7 @@ export class RegistryService extends AbstractService {
     return doc
   }
 
-  /**
-   * Partially updates a registry entry.
-   *
-   * @async
-   * @function patchRegistry
-   * @param {Object} params - Parameters for updating a registry.
-   * @param {Object} params.body - Incoming registry fields to merge into the existing entry.
-   * @param {Object} params.existing - The existing registry document from the database to be updated.
-   * @throws {InvalidBodyError} If the request body is missing or fails validation.
-   * @throws {EntityNotFoundError} If the target registry does not exist.
-   * @throws {DatabaseAccessError} If the database update fails.
-   * @returns {Promise<Object>} The updated registry document from the database.
-   */
-  async patchRegistry({ body, existing }) {
+  async patch({ body, existing }) {
     if (!body) {
       throw new InvalidBodyError()
     }
@@ -354,22 +166,18 @@ export class RegistryService extends AbstractService {
 
     removeNullProperties(existing)
 
-    await this.validateMembershipFields(existing)
+    await this.processMembers(existing)
 
     // Validate merged object
-    const ok = validate.registry
-      ? validate.registry(existing)
-      : validate(existing)
-    if (!ok) {
-      const msgs =
-        validate.registry?.errorMessages || validate.errorMessages || []
+    if (!validate.registry(existing)) {
+      const msgs = validate.registry.errorMessages || []
       throw new InvalidBodyError(
         msgs.join("; ") || "Registry validation failed",
       )
     }
 
     // Replace in database
-    const result = await Registry.replaceOne({ _id: existing._id }, existing)
+    const result = await this.model.replaceOne({ _id: existing._id }, existing)
     if (!result.matchedCount) {
       throw new EntityNotFoundError(`Registry not found: ${existing._id}`)
     }
@@ -380,29 +188,12 @@ export class RegistryService extends AbstractService {
     }
 
     // Return the updated registry entry
-    const doc = await Registry.findById(existing._id).lean()
+    const doc = await this.model.findById(existing._id).lean()
     if (!doc) {
       throw new DatabaseAccessError()
     }
 
     return doc
-  }
-
-  /**
-   * Deletes a registry entry.
-   *
-   * @async
-   * @function deleteRegistry
-   * @param {Object} params - Parameters containing the registry to delete.
-   * @param {Object} params.existing - The existing registry document to be deleted.
-   * @throws {DatabaseAccessError} If no registry document was deleted.
-   * @returns {Promise<void>} Resolves when the registry has been successfully deleted.
-   */
-  async deleteRegistry({ existing }) {
-    const result = await Registry.deleteOne({ _id: existing._id })
-    if (!result.deletedCount) {
-      throw new DatabaseAccessError()
-    }
   }
 
   /**
@@ -423,9 +214,8 @@ export class RegistryService extends AbstractService {
 
     indexes.push([{ url: 1 }, {}])
     indexes.push([{ "subject.uri": 1 }, {}])
-    indexes.push([{ "API.url": 1 }, {}])
-    indexes.push([{ "API.type": 1 }, {}])
 
+    // TODO: check this
     indexes.push([{ _keywordsLabels: 1 }, {}])
     indexes.push([{ _keywordsPublisher: 1 }, {}])
     indexes.push([{ "_keywordsLabels.0": 1 }, {}])
@@ -438,7 +228,7 @@ export class RegistryService extends AbstractService {
       },
       {
         name: "text",
-        default_language: "german",
+        default_language: "german", // ??
         weights: {
           _keywordsNotation: 10,
           _keywordsLabels: 6,
@@ -450,177 +240,67 @@ export class RegistryService extends AbstractService {
 
     // Create collection if necessary
     try {
-      await Registry.createCollection()
+      await this.model.createCollection()
     } catch (error) {
       this.error("Error creating collection:", error)
       // Ignore error
     }
 
     // Drop existing indexes
-    await Registry.collection.dropIndexes()
+    await this.model.collection.dropIndexes()
     for (const [index, options] of indexes) {
-      await Registry.collection.createIndex(index, options)
+      await this.model.collection.createIndex(index, options)
     }
   }
 
   /**
-   * Validates registry membership fields based on config.
+   * Validates and filters registry member fields based on config.
    *
    * @param {Object} registry registry object
-   * @throws {InvalidRegistryMembershipError} When a disallowed membership field is present.
+   * @throws {InvalidBodyError} When a disallowed membership field is present.
    */
-  async validateMembershipFields(registry) {
-    const typesConfig = config?.registries?.types
-    if (!typesConfig || typeof typesConfig !== "object") {
-      return
-    }
-    const typeFields = Object.keys(typesConfig)
-    const membershipErrorsByField = new Map()
-    const otherErrors = []
+  async processMembers(registry) {
+    const usedTypes = RegistryService.allMemberTypes.filter(type => registry[type])
 
-    const recordMembershipError = (field, message) => {
-      if (membershipErrorsByField.has(field)) {
-        return
-      }
-      const error = new InvalidRegistryMembershipError(message)
-      error.field = field
-      membershipErrorsByField.set(field, error)
-    }
-
-    const recordMixedTypeError = (message) => {
-      otherErrors.push(new InvalidRegistryMixedMembershipError(message))
-    }
-
-    // If mixedTypes is not allowed, check that at most one type field is present
-    const mixedTypes = config?.registries?.mixedTypes
-    if (mixedTypes !== true) {
-      const presentTypes = typeFields.filter(
-        (field) =>
-          registry?.[field] !== undefined && registry?.[field] !== null,
-      )
-      if (presentTypes.length > 1) {
-        const presentTypesList = presentTypes.join(", ")
-        recordMixedTypeError(
-          `mixed types are not allowed (${presentTypesList}).`,
-        )
+    if (!this.config.mixedTypes) {
+      if (usedTypes.length > 1) {
+        throw new InvalidBodyError(`Registry must not have multiple member types, found: ${usedTypes.join(", ")}`)
       }
     }
 
-    // Fields that are disallowed by config (typesConfig[field] === false)
-    const disallowedFields = Object.entries(typesConfig)
-      .filter(([, allowed]) => allowed === false)
-      .map(([field]) => field)
-
-    // Disallowed fields that are actually present on the registry object
-    const disallowed = disallowedFields.filter(field =>
-      registry?.[field] !== undefined && registry?.[field] !== null,
-    )
-
-    if (disallowed.length) {
-      for (const field of disallowed) {
-        recordMembershipError(
-          field,
-          `Registry membership field "${field}" is not allowed.`,
-        )
-      }
-    }
-
-    const uriRequiredFields = typeFields.filter(
-      field => typesConfig?.[field]?.uriRequired === true,
-    )
-    const membershipUris = this.collectMembershipUris(
-      registry,
-      uriRequiredFields,
-      recordMembershipError,
-    )
-
-    await this.validateMembershipExistence(
-      membershipUris,
-      typesConfig,
-      recordMembershipError,
-    )
-
-    const errors = [...membershipErrorsByField.values(), ...otherErrors]
-    if (errors.length === 1) {
-      throw errors[0]
-    }
-    if (errors.length > 1) {
-      throw new AggregateError(errors, "Registry membership validation failed")
-    }
-  }
-
-  /**
-   * Collects membership URIs for fields that require a uri.
-   *
-   * @param {Object} registry registry object
-   * @param {string[]} uriRequiredFields fields that require uri
-   * @returns {Object<string, string[]>} map of field -> uri list
-   * @param {Function} recordMembershipError callback for recording errors
-   */
-  collectMembershipUris(registry, uriRequiredFields, recordMembershipError) {
-    const membershipUris = {}
-    for (const field of uriRequiredFields) {
-      const value = registry?.[field]
-      if (value === undefined || value === null) {
-        continue
-      }
-      const entries = Array.isArray(value) ? value : [value]
-      membershipUris[field] = entries
-        .map(entry => (typeof entry?.uri === "string" ? entry.uri.trim() : ""))
-        .filter(Boolean)
-      const hasMissingUri = entries.some(entry => {
-        const uri = entry?.uri
-        return typeof uri !== "string" || !uri.trim()
-      })
-      if (hasMissingUri) {
-        recordMembershipError(field, `${field} must have an uri`)
-      }
-    }
-
-    return membershipUris
-  }
-
-  /**
-   * Checks if referenced membership entities exist in the database.
-   *
-   * @param {Object<string, string[]>} membershipUris map of field -> uri list
-   * @param {Object} typesConfig config for registry membership fields
-   * @param {Function} recordMembershipError callback for recording errors
-   */
-  async validateMembershipExistence(
-    membershipUris,
-    typesConfig,
-    recordMembershipError,
-  ) {
-    const modelMap = {
-      concepts: Concept,
-      schemes: Scheme,
-      concordances: Concordance,
-      registries: Registry,
-      annotations: Annotation,
-    }
-
-    for (const [field, uris] of Object.entries(membershipUris)) {
-      const fieldConfig = typesConfig?.[field]
-      if (!fieldConfig || fieldConfig.mustExist !== true) {
-        continue
-      }
-      const model = modelMap[field]
-      if (!model || !uris?.length) {
-        continue
+    for (let type of usedTypes) {
+      if (!this.config.types[type]) {
+        throw new InvalidBodyError(`Registry member type not allowed: ${type}`)
       }
 
-      const results = await Promise.all(uris.map(async uri => {
-        const doc = await model.findOne({ uri: uri }).lean()
-        return { uri, exists: !!doc }
-      }))
-      const missing = results.filter(result => !result.exists).map(result => result.uri)
-      if (missing.length) {
-        recordMembershipError(
-          field,
-          `${field} contains unknown uri(s): ${missing.join(", ")}`,
-        )
+      const { uriRequired, mustExist, skipInvalid } = this.config.types[type]
+
+      const validator = validate[type.replace(/ies$/,"y").replace(/s$/,"")]
+
+      let items = []
+      for (let item of registry[type].filter(item => item !== null)) {
+        let error
+        if (uriRequired && !item.uri) {
+          error = `missing ${type} uri in registry`
+        } else if (!validator(item)) {
+          error = `invalid ${type} in registry`
+          // TODO: use validator.errors error object
+        } else if (mustExist) {
+          const found = await models[type].findOne({ uri: item.uri }).lean()
+          if (!found) {
+            error = `${type} not found with uri: ${item.uri}`
+          }
+        }
+        if (error) {
+          if (!skipInvalid) {
+            throw new InvalidBodyError(error)
+          }
+        } else {
+          items.push(item)
+        }
       }
+      registry[type] = items
     }
+
   }
 }

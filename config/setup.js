@@ -91,6 +91,7 @@ export function setupConfig(config) {
 
   // Set baseUrl to localhost if not set
   if (!config.baseUrl) {
+    // TODO: use normal property once port is set *before* setup
     Object.defineProperty(config, "baseUrl", {
       get: function () {
         return `http://localhost:${this.port}/`
@@ -145,6 +146,16 @@ export function setupConfig(config) {
           }
         }
       }
+
+      // Fill in origin of URIs. TODO: this is not supported yet!
+      if (config[type].create) {
+        const { uriBase, uriOrigin } = config[type].create
+        if (!uriOrigin) {
+          config[type].create.uriOrigin = "external"
+        } else if (uriOrigin !== "external" && uriBase === false) {
+          throw new Error(`uriBase of ${type}.create must not be false if uriOrigin is not external`)
+        }
+      }
     }
   }
 
@@ -170,7 +181,7 @@ export function setupConfig(config) {
       if (types[type] === true) {
         types[type] = {
           mustExist: false,
-          ignoreErrors: false,
+          skipInvalid: false,
         }
       }
       if (types[type] && !("uriRequired" in types[type])) {

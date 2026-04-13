@@ -16,9 +16,9 @@ export function serverStatus(config, ok) {
       }
     }
   }
-  // Remove `key` from auth config if a symmetric algorithm is used
+  // Purge `key` from auth config if a symmetric algorithm is used
   if (["HS256", "HS384", "HS512"].includes(status?.config?.auth?.algorithm)) {
-    delete status.config.auth.key
+    status.config.auth.key = ""
   }
   status.config.baseUrl = baseUrl
   // Set all available endpoints to `null` first

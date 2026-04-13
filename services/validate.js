@@ -23,7 +23,7 @@ export class ValidateService extends AbstractService {
     const rememberSchemes = type ? null : []
     if (knownSchemes) {
       // Get schemes from schemeService
-      knownSchemes = await this.schemeService.getSchemes({})
+      knownSchemes = await this.schemeService.queryItems({})
       type = "concept"
     }
     const validator = type ? validate[type] : validate
