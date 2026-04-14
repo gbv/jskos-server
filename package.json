@@ -15,6 +15,7 @@
   "scripts": {
     "test": "NODE_ENV=test mocha --exit --timeout 60000 --slow 2000",
     "coverage": "NODE_ENV=test c8 --reporter=text --skip-full mocha --exit --timeout 60000 --slow 2000",
+    "loc": "cloc $(git ls-files)",
     "start": "nodemon server.js",
     "mongodb": "./bin/mongodb.js",
     "lint": "eslint",
