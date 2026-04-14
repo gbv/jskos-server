@@ -11,10 +11,9 @@ const mappingSchema = new Schema({
   autoIndex: false,
 })
 
-mappingSchema.pre("save", function(next) {
+mappingSchema.pre("save", async function() {
   // Add mapping identifier
-  this.set("identifier", jskos.addMappingIdentifiers(this).identifier)
-  next()
+  this.set("identifier", (await jskos.addMappingIdentifiers(this)).identifier)
 })
 
 export const Mapping = mongoose.model("Mapping", mappingSchema)

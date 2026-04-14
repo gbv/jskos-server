@@ -822,6 +822,7 @@ describe("Express Server", () => {
           for (let mapping of res.body) {
             mapping.identifier.should.be.a("array")
             mapping.identifier.filter(id => id.startsWith("urn:jskos:mapping:")).length.should.be.eql(2)
+            mapping.identifier.filter(id => id.startsWith("mapping:")).length.should.be.eql(1)
           }
           done()
         })

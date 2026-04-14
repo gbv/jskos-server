@@ -84,20 +84,20 @@ describe("Services Features", () => {
     describe("filter mappings by annotations", () => {
       const mappings = [
         {
-          uri: "mapping:1",
+          uri: "urn:test:mapping:1",
         },
         {
-          uri: "mapping:2",
+          uri: "urn:test:mapping:2",
         },
         {
-          uri: "mapping:3",
+          uri: "urn:test:mapping:3",
         },
         {
           to: { memberSet: [{ uri: "urn:test:concept" }] },
-          uri: "mapping:4",
+          uri: "urn:test:mapping:4",
         },
         {
-          uri: "mapping:5",
+          uri: "urn:test:mapping:5",
         },
       ].map(mapping => {
         // Add fromScheme and toScheme
@@ -115,28 +115,28 @@ describe("Services Features", () => {
       })
       const annotations = [
         {
-          target: "mapping:1",
+          target: "urn:test:mapping:1",
           motivation: "assessing",
           bodyValue: "+1",
         },
         {
-          target: "mapping:1",
+          target: "urn:test:mapping:1",
           motivation: "assessing",
           bodyValue: "-1",
         },
         {
-          target: "mapping:2",
+          target: "urn:test:mapping:2",
           motivation: "moderating",
           creator: {
             id: "urn:test:creator",
           },
         },
         {
-          target: "mapping:3",
+          target: "urn:test:mapping:3",
           motivation: "moderating",
         },
         {
-          target: "mapping:4",
+          target: "urn:test:mapping:4",
           motivation: "assessing",
           bodyValue: "+1",
         },
