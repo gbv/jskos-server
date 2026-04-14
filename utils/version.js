@@ -69,7 +69,7 @@ export class Upgrader {
     const list = []
     fromVersion = Version.from(fromVersion)
 
-    for (let version of Object.getOwnPropertyNames(Upgrader).filter(/^[0-9.]+$/)) {
+    for (let version of Object.getOwnPropertyNames(Upgrader.prototype).filter(v => /^[0-9.]+$/.test(v))) {
       if (fromVersion.lt(version) || forceLatest && fromVersion.eq(version)) {
         list.push(version)
       }
