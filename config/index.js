@@ -40,7 +40,7 @@ if (env !== "test") {
   console.log(`Read configuration from ${configFilePath}`)
 }
 
-// Validate
+// Validate configs individually
 Object.entries({ environment: configEnv, user: configUser }).forEach(([name, config]) => {
   try {
     validateConfig(config)
@@ -50,20 +50,6 @@ Object.entries({ environment: configEnv, user: configUser }).forEach(([name, con
   }
 })
 
-// Validate
-try {
-  validateConfig(configEnv)
-} catch(error) {
-  console.error(`Could not validate environemnt configuration: ${error}`)
-  process.exit(1)
-}
-try {
-  validateConfig(configUser)
-} catch(error) {
-  console.error(`Could not validate user configuration: ${error}`)
-  process.exit(1)
-}
-
 // Before merging, check whether `namespace` exists in the user config and if not, generate a namespace and save it to user config
 if (!configUser.namespace && env != "test") {
   configUser.namespace = uuid()
@@ -71,6 +57,7 @@ if (!configUser.namespace && env != "test") {
   console.log(`Info/Config: Created a namespace and wrote it to ${configFilePath}.`)
 }
 
+// Merge and Setup configuration
 const config = _.defaultsDeep({ env }, configEnv, configUser)
 setupConfig(config)
 
