@@ -1,3 +1,5 @@
+- Rename `extra` management script runner to `script`
+
 ## 2.4.2
 
 - Malformed configuration of JWT key/algorithm will now prevent server from starting

@@ -730,7 +730,7 @@ NODE_ENV=production node ./server.js
 
 ### Supplemental Scripts
 
-In addition to [data import](#data-import) there are some supplemental scripts that were added to deal with specific sitatuations. These can be called with `npm run extra name-of-script`. The following scripts are available:
+In addition to [data import](#data-import) there are some supplemental scripts that were added to deal with specific sitatuations. These can be called with `npm run script name-of-script`. The following scripts are available:
 
 - `supplementNotationsInMappings`: This will look for mappings where the field `notation` is missing for any of the concepts, and it will attempt to supplement those notations. This only works for vocabularies which are also imported into the same jskos-server instance and where either `uriPattern` or `namespace` are given.
 

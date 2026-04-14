@@ -3,10 +3,12 @@
 import yesno from "yesno"
 import config from "../config/index.js"
 import { createDatabase } from "../utils/db.js"
-const db = createDatabase(config)
-import { schemeService } from "../services/schemes.js"
+import { SchemeService } from "../services/schemes.js"
 import jskos from "jskos-tools"
 import { Mapping } from "../models/mappings.js"
+
+const db = createDatabase(config)
+const schemeService = new SchemeService(config)
 
 /**
  * Map of async scripts.
