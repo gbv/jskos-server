@@ -1,4 +1,3 @@
-import _ from "lodash"
 import { validateConfig, setupConfig } from "../config/setup.js"
 import fs from "node:fs"
 import path from "node:path"
@@ -9,56 +8,38 @@ import { v4 as uuid } from "uuid"
 import * as dotenv from "dotenv"
 dotenv.config()
 const env = process.env.NODE_ENV
-const configFile = process.env.CONFIG_FILE || "./config.json"
 
-const __dirname = import.meta.dirname
-
-// Adjust path if it's relative
-let configFilePath
-if (configFile.startsWith("/")) {
-  configFilePath = configFile
-} else {
-  configFilePath = path.resolve(__dirname, configFile)
+// Get config file path and adjust if it's relative
+let configFile = process.env.CONFIG_FILE || env === "test" ? "./config.test.json" : "./config.json"
+if (!configFile.startsWith("/")) {
+  configFile = path.resolve(import.meta.dirname, configFile)
 }
 
+// Load config file
+let config = {}
+if (fs.existsSync(configFile)) {
+  config = JSON.parse(fs.readFileSync(configFile))
+  console.log(`Read configuration from ${configFile}`)
+} else if (env !== "test") {
 // If file doesn't exist, create it with an empty array
-if (env !== "test" && !fs.existsSync(configFilePath)) {
-  fs.writeFileSync(configFilePath, "{}")
+  fs.writeFileSync(configFile, "{}")
 }
 
-// Load environment config
-let configEnv = {}
-let configEnvFile = path.resolve(__dirname, `./config.${env}.json`)
-if (fs.existsSync(configEnvFile)) {
-  configEnv = JSON.parse(fs.readFileSync(configEnvFile))
-  console.log(`Read configuration from ${configEnvFile}`)
-}
-// Load user config
-let configUser = {}
-if (env !== "test") {
-  configUser = JSON.parse(fs.readFileSync(configFilePath))
-  console.log(`Read configuration from ${configFilePath}`)
+try {
+  validateConfig(config)
+} catch(error) {
+  console.error(`Could not validate configuration: ${error}`)
+  process.exit(1)
 }
 
-// Validate configs individually
-Object.entries({ environment: configEnv, user: configUser }).forEach(([name, config]) => {
-  try {
-    validateConfig(config)
-  } catch(error) {
-    console.error(`Could not validate ${name} configuration: ${error}`)
-    process.exit(1)
-  }
-})
-
-// Before merging, check whether `namespace` exists in the user config and if not, generate a namespace and save it to user config
-if (!configUser.namespace && env != "test") {
-  configUser.namespace = uuid()
-  fs.writeFileSync(configFilePath, JSON.stringify(configUser, null, 2))
-  console.log(`Info/Config: Created a namespace and wrote it to ${configFilePath}.`)
+// Check whether `namespace` exists and if not, generate a namespace and save it to config file
+if (!config.namespace && env !== "test") {
+  config.namespace = uuid()
+  fs.writeFileSync(configFile, JSON.stringify(config, null, 2))
+  console.log(`Info/Config: Created a namespace and wrote it to ${configFile}.`)
 }
 
-// Merge and Setup configuration
-const config = _.defaultsDeep({ env }, configEnv, configUser)
+config.env = env
 setupConfig(config)
 
 export default config

@@ -1,4 +1,5 @@
 - Rename `extra` management script runner to `script`
+- Remove support of environment configuration files (`config.{development,production}.json`), set `CONFIG_FILE` instead
 
 ## 2.4.2
 
