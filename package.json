@@ -16,6 +16,7 @@
     "test": "NODE_ENV=test mocha --exit --timeout 60000 --slow 2000",
     "coverage": "NODE_ENV=test c8 --reporter=text --skip-full mocha --exit --timeout 60000 --slow 2000",
     "loc": "cloc $(git ls-files)",
+    "deps": "madge -i dependencies.png -x ^test .",
     "start": "nodemon server.js",
     "mongodb": "./bin/mongodb.js",
     "lint": "eslint",
@@ -56,6 +57,7 @@
     "husky": "^9.1.7",
     "jsonwebtoken": "^9.0.2",
     "lint-staged": "^16.2.7",
+    "madge": "^8.0.0",
     "mocha": "^11.0.1",
     "mongodb-memory-server": "^11.0.1",
     "ws": "^8.18.2"

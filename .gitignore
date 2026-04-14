@@ -32,5 +32,6 @@ data/
 # pm2 ecosystem file
 ecosystem.config.json
 
-# code coverage
+# code coverage and analysis
 coverage/
+dependencies.png

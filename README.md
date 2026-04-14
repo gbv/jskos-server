@@ -764,7 +764,7 @@ This will:
 4. **Drop** the database before and after each test suite, ensuring full isolation.
 5. **Tear down** the in-memory server when the suite completes.
 
-Code coverage can be calculated with `npm run coverage` but numbers should be taken with a grain of salt. By the way, lines of code can be calculated with `cloc $(git ls-files)`.
+Code coverage can be calculated with `npm run coverage` but numbers should be taken with a grain of salt. By the way, lines of code can be calculated with `npm run loc` (if command line tool `cloc` is installed) and an internal dependency tree (excluding tests) can be generated with `npm run deps`.
 
 You can also start an in-memory MongoDB with local configuration:
 
