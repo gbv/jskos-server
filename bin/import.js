@@ -100,84 +100,56 @@ const log = (...args) => {
     console.log(...args)
   }
 }
-const logError = ({ message, showHelp = false, exit = false }) => {
+function error(message) {
   console.error(`  Error: ${message}`)
-  if (showHelp) {
-    cli.showHelp()
-  }
-  if (exit) {
-    process.exit(1)
-  }
+}
+function help(message) {
+  error(message)
+  cli.showHelp()
+  process.exit(1)
+}
+function fail(message) {
+  error(message)
+  process.exit(1)
 }
 
 // --reset was removed
 if (cli.flags.reset) {
-  logError({
-    message: "The option --reset was removed from the import script in version 1.2.0.",
-    showHelp: true,
-    exit: true,
-  })
-  // TODO: Mention URL to documentation and/or script that replaces --reset.
+  help("The option --reset was removed from the import script in version 1.2.0.")
 }
 
 import jskos from "jskos-tools"
 import fs from "node:fs"
 const input = cli.input[1] || ""
 
-// Parse type
 const type = jskos.guessObjectType(cli.input[0], true)
 if (cli.input[0] && !type) {
-  logError({
-    message: `Invalid <type> argument: ${cli.input[0] || ""}`,
-    showHelp: true,
-    exit: true,
-  })
+  help(`Invalid <type> argument: ${cli.input[0] || ""}`)
 }
 if (!indexes && !type) {
-  logError({
-    message: "The <type> argument is necessary to import data.",
-    showHelp: true,
-    exit: true,
-  })
+  help("The <type> argument is necessary to import data.")
 }
 if (cli.flags.scheme && type != "concept") {
-  logError({
-    message: `The -s option is not compatible with type ${type}.`,
-    showHelp: true,
-    exit: true,
-  })
+  help(`The -s option is not compatible with type ${type}.`)
 }
 if (cli.flags.setApi && type != "concept") {
-  logError({
-    message: `The --set-api option is not compatible with type ${type}.`,
-    showHelp: true,
-    exit: true,
-  })
+  help(`The --set-api option is not compatible with type ${type}.`)
 }
 if (cli.flags.concordance && type != "mapping") {
-  logError({
-    message: `The -c option is not compatible with type ${type}.`,
-    showHelp: true,
-    exit: true,
-  })
+  help(`The -c option is not compatible with type ${type}.`)
 }
-
 if (cli.flags.bulk && ["concordance", "concordance", "registry"].find(type)) {
-  logError({
-    message: `The --nobulk option is not supported with type ${type}`,
-    exit: true,
-  })
+  help(`The --nobulk option is not supported with type ${type}`)
+}
+if (type === "mapping" && !config.namespace) {
+  help("Import of mappings requires configuration key `namespace`")
 }
 
 // Check input parameter if necessary
 const inputIsUrl = !!input.match(/^https?:\/\//)
 if (!indexes) {
   if (!input || (!inputIsUrl && !fs.existsSync(input))) {
-    logError({
-      message: `Invalid or missing <file>: ${input || ""}`,
-      showHelp: true,
-      exit: true,
-    })
+    help(`Invalid or missing <file>: ${input || ""}`)
   }
 }
 
@@ -186,11 +158,7 @@ let format
 if (["json", "ndjson"].includes(cli.flags.format)) {
   format = cli.flags.format
 } else if (cli.flags.format) {
-  logError({
-    message: `Unknown format ${cli.flags.format}, please provide one of json or ndjson, or leave empty.`,
-    showHelp: true,
-    exit: true,
-  })
+  fail(`Unknown format ${cli.flags.format}, please provide one of json or ndjson, or leave empty.`)
 }
 
 log(`Start of import script: ${new Date()}`)
@@ -221,11 +189,8 @@ import { bulkOperationForEntities, addMappingSchemes } from "../utils/utils.js"
 ; (async () => {
   try {
     await db.connect()
-  } catch (error) {
-    logError({
-      message: error,
-      exit: true,
-    })
+  } catch (err) {
+    fail(err)
   }
   log("Connection to database established.")
   log()
@@ -246,16 +211,13 @@ import { bulkOperationForEntities, addMappingSchemes } from "../utils/utils.js"
       // Query concordance from database
       concordance = await services.concordance.retrieveItem(cli.flags.concordance)
       if (!concordance) {
-        logError({
-          message: `Concordance with URI ${cli.flags.concordance} not found, aborting...`,
-          exit: true,
-        })
+        fail(`Concordance with URI ${cli.flags.concordance} not found, aborting...`)
       }
     }
     try {
       await doImport({ input, format, type, concordance })
-    } catch (error) {
-      logError({ message: `Import failed - ${error}` })
+    } catch (err) {
+      error(`Import failed - ${err}`)
     }
   }
 
@@ -301,7 +263,7 @@ async function doImport({ input, format, type, concordance }) {
     mappingLoop: for await (let object of bodyStream) {
       total += 1
       if (!validate[type] || !validate[type](object)) {
-        logError({ message: `Could not validate ${type} number ${total}: ${object && object.uri}` })
+        error(`Could not validate ${type} number ${total}: ${object && object.uri}`)
         continue
       }
       // Adjustments for mapping
@@ -344,7 +306,7 @@ async function doImport({ input, format, type, concordance }) {
       // Reject mapping if either fromScheme or toScheme is missing
       for (let field of ["fromScheme", "toScheme"]) {
         if (!object[field]) {
-          logError({ message: `Field \`${field}\` missing for ${type} number ${total}: ${object && object.uri}` })
+          error(`Field \`${field}\` missing for ${type} number ${total}: ${object && object.uri}`)
           continue mappingLoop
         }
       }
@@ -397,7 +359,7 @@ async function doImport({ input, format, type, concordance }) {
       }
       // Validation
       if (!validate[type] || !validate[type](concordance)) {
-        logError({ message: `Could not validate ${type} number ${total}: ${concordance && concordance.uri}` })
+        error(`Could not validate ${type} number ${total}: ${concordance && concordance.uri}`)
         continue
       }
       const uri = concordance.uri
