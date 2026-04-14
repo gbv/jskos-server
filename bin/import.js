@@ -141,8 +141,8 @@ if (cli.flags.concordance && type != "mapping") {
 if (cli.flags.bulk && ["concordance", "concordance", "registry"].find(type)) {
   help(`The --nobulk option is not supported with type ${type}`)
 }
-if (type === "mapping" && !config.namespace) {
-  help("Import of mappings requires configuration key `namespace`")
+if (type == "mapping" && !config.namespace) {
+  help(`Import of mappings requires configuration key "namespace", e.g.: ${uuid()}`)
 }
 
 // Check input parameter if necessary
@@ -171,7 +171,7 @@ log("")
 
 import { validate } from "jskos-validate"
 import config from "../config/index.js"
-import { v5 as uuidv5 } from "uuid"
+import { v5 as uuidv5, v4 as uuid } from "uuid"
 import path from "node:path"
 import * as anystream from "json-anystream"
 import { createDatabase } from "../utils/db.js"
