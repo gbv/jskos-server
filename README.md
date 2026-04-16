@@ -112,9 +112,7 @@ The easiest way to install and use JSKOS Server as stand-alone application is wi
 
 You can customize the application settings via a configuration file. By default, this configuration file resides in `config/config.json`. However, it is possible to adjust this path via the `CONFIG_FILE` environment variable. Note that the given path has to be either absolute (i.e. starting with `/`) or relative to the `config/` folder. The configuration file is validated and JSKOS Server will refuse to start on configuration errors.
 
-Configuration is also affected by environment variable `NODE_ENV` being either `development` (default), `test` (when run with `npm test`), or `production`. In `test` the default config file is `./config.test.json` instead of `config.json`. In `production` HTTPS URIs are forced for entities created on POST requests.
-
-You can either provide the environment variables during the command to start the server, or in a `.env` file in the root folder.
+Configuration is also affected by environment variable `NODE_ENV` being either `development` (default), `test` (when run with `npm test`), or `production`. In `test` the default config file is `./config.test.json` instead of `config.json`. In `production` HTTPS URIs are forced for entities created on POST requests. Environment variable `CONFIG_FILE` can also be set in `.env` file in the root folder unless `NODE_ENV` is `test`.
 
 #### Validation of configuration
 

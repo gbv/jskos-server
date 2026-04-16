@@ -1,11 +1,13 @@
 import { validateConfig, setupConfig } from "../config/setup.js"
 import fs from "node:fs"
 import path from "node:path"
+import * as dotenv from "dotenv"
 
 // Prepare environment
-import * as dotenv from "dotenv"
-dotenv.config()
 const env = process.env.NODE_ENV
+if (env !== "test") {
+  dotenv.config()
+}
 
 // Get config file path and adjust if it's relative
 let configFile = process.env.CONFIG_FILE || (env === "test" ? "./config.test.json" : "./config.json")
