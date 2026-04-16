@@ -9,26 +9,19 @@ import { createDatabase } from "../utils/db.js"
 const db = createDatabase(config)
 import { Meta } from "../models/meta.js"
 
-; (async () => {
-  await db.connect()
+await (async () => {
+  await db.connect({ upgrade: false })
   const meta = await Meta.findOne()
   const list = upgrader.getUpgrades(meta.version, { forceLatest: process.argv.includes("-f") || process.argv.includes("--force-latest") })
   console.log()
-  for (const version of list) {
-    console.log(`Performing necessary upgrades for version ${version}...`)
+  if (list.length) {
     try {
-      await upgrader[version]()
-      meta.version = version
-      await meta.save()
-      console.log(`... upgrades for version ${version} done.`)
+      await upgrader.performUpgrades(list, meta)
     } catch (error) {
       console.error("Error:", error)
       console.error("aborting...")
-      break
     }
-    console.log()
-  }
-  if (!list.length) {
+  } else {
     console.log("No upgrades necessary.")
   }
   db.disconnect()

@@ -1,7 +1,5 @@
 import { addMappingSchemes } from "./utils.js"
 import { uuid } from "./uuid.js"
-import _ from "lodash"
-import yesno from "yesno"
 import jskos from "jskos-tools"
 
 import { Scheme, Concordance, Mapping, Annotation } from "../models/index.js"
@@ -77,6 +75,19 @@ export class Upgrader {
     return list
   }
 
+  // Perform a list of upgrades and update version number in meta model
+
+  async performUpgrades(list, meta) {
+    for (const version of list) {
+      console.log(`Performing necessary upgrades for version ${version}...`)
+      await this[version]()
+      meta.version = version
+      await meta.save()
+      console.log(`... upgrades for version ${version} done.`)
+      console.log()
+    }
+  }
+
   // Methods that perform upgrades necessary for that version
 
   async "1.2.0"() {
@@ -144,13 +155,6 @@ export class Upgrader {
     console.log(`- URI will be adjusted to start with ${this.baseUrl}`)
     console.log("- Previous URI(s) will be moved to identifier")
     console.log("- Distribtions which are served from this instance are removed (will be added dynamically)")
-    const ok = await yesno({
-      question: "Is that okay?",
-      defaultValue: false,
-    })
-    if (!ok) {
-      throw new Error("Aborted due to missing user confirmation.")
-    }
 
     let adjusted = 0
     let failed = 0
@@ -209,18 +213,11 @@ export class Upgrader {
     console.log("... done.")
 
     console.log("- Annotations will be updated to use an object for property `target` and to include mapping state if possible...")
-    const ok = await yesno({
-      question: "Is that okay?",
-      defaultValue: false,
-    })
-    if (!ok) {
-      throw new Error("Aborted due to missing user confirmation.")
-    }
 
     let updatedCount = 0
     const annotations = await Annotation.find({ "target.state.id": { $exists: false } }).exec()
     for (const annotation of annotations) {
-      const target = _.get(annotation, "target.id", annotation.target)
+      const target = annotation.target?.id || annotation.target
       const mapping = await Mapping.findOne({ uri: target })
       const contentId = mapping && (mapping.identifier || []).find(id => id.startsWith("urn:jskos:mapping:content:"))
       const update = contentId ? {
