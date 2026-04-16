@@ -141,7 +141,12 @@ export class Router {
     this.router.get(...args)
   }
 
+  post(...args) {
+    this.router.post(...args)
+  }
+
   del(...args) {
     this.router.delete(...args)
   }
+
 }

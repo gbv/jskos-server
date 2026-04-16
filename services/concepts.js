@@ -141,11 +141,10 @@ export class ConceptService extends AbstractService {
   /**
    * Return a Promise with an array of concept data.
    */
-  async getAncestors(query, root = true) {
-    if (!query.uri) {
+  async getAncestors({ uri }, root = true) {
+    if (!uri) {
       return []
     }
-    const uri = query.uri
     // First retrieve the concept object from database
     const concept = await this.getItem(uri)
     if (!concept) {

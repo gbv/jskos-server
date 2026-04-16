@@ -1,3 +1,4 @@
+import express from "express"
 import { wrapAsync, returnJSON } from "./utils.js"
 import { Router } from "./router.js"
 
@@ -37,6 +38,14 @@ export default config => {
       wrapAsync(async req => service.inferMappings(req.query)),
       router.paginationHeaders,
       router.adjust,
+      returnJSON,
+    )
+
+    router.post(
+      "/apply",
+      router.authenticate(mappings.read.auth),
+      express.json(),
+      wrapAsync(async req => service.applyMappings(req.body, req.query)),
       returnJSON,
     )
   }

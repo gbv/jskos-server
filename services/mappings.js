@@ -9,6 +9,7 @@ import { Mapping } from "../models/mappings.js"
 import { Annotation } from "../models/annotations.js"
 import { SchemeService } from "./schemes.js"
 import { ConcordanceService } from "./concordances.js"
+import { ConceptService } from "./concepts.js"
 import { MalformedRequestError, EntityNotFoundError, InvalidBodyError, DatabaseAccessError, BackendError } from "../errors/index.js"
 
 const validateMapping = (mapping) => {
@@ -23,6 +24,22 @@ const validateMapping = (mapping) => {
   return true
 }
 
+function restrictQueryParameters(query, params) {
+  for (let [name, value] of Object.entries(params)) {
+    if (value === null) {
+      if (query[name]) {
+        throw new MalformedRequestError(`Query parameter "${name}" is not allowed`)
+      }
+    } else {
+      if (query[name] && query[name] !== value) {
+        throw new MalformedRequestError(`Query parameter "${name}" must only be "${value}"`)
+      }
+      query[name] = value
+    }
+  }
+  return query
+}
+
 import { AbstractService } from "./abstract.js"
 
 export class MappingService extends AbstractService {
@@ -34,6 +51,7 @@ export class MappingService extends AbstractService {
     this.model = Mapping
     this.schemeService = new SchemeService(config)
     this.concordanceService = new ConcordanceService(config)
+    this.conceptService = new ConceptService(config)
     this.loadWhitelists()
   }
 
@@ -452,23 +470,16 @@ export class MappingService extends AbstractService {
    * Infer mappings based on the source concept's ancestors. (see https://github.com/gbv/jskos-server/issues/177)
    */
   async inferMappings({ strict, depth, ...query }) {
-    if (query.to) {
-      // `to` parameter not supported
-      throw new MalformedRequestError("Query parameter \"to\" is not supported in /mappings/infer.")
-    }
+    restrictQueryParameters(query, {
+      direction: "forward",
+      cardinality: "1-to-1",
+      to: null,
+      download: null,
+    })
 
-    // Remove unsupported query parameters
-    delete query.cardinality
-    query.cardinality = "1-to-1"
-    delete query.download
-
-    if (query.direction && query.direction !== "forward") {
-      throw new MalformedRequestError("Only direction \"forward\" is supported in /mappings/infer.")
-    }
     let { from, fromScheme, type } = query
 
-    // Do not continue with empty `from` parameter
-    if (!from || !fromScheme) {
+    if (depth === 0 || !from) {
       return []
     }
 
@@ -482,18 +493,25 @@ export class MappingService extends AbstractService {
     depth = parseInt(depth)
     depth = (isNaN(depth) || depth < 0) ? null : depth
 
-    if (depth === 0) {
+    // TODO: make fromScheme optional if from is an URI
+    if (!fromScheme && !jskos.isValidUri(from)) {
       return []
     }
 
     fromScheme = await this.schemeService.getScheme(fromScheme)
     try {
-      const registry = fromScheme && cdk.registryForScheme(fromScheme)
-      registry && await registry.init()
-      // If fromScheme is not found or has no JSKOS API, return empty result
-      if (!fromScheme || !registry || !registry.has.ancestors) {
-        return []
+      let getAncestors = async uri => this.conceptService.getAncestors({uri})
+
+      if (fromScheme) {
+        const registry = fromScheme && cdk.registryForScheme(fromScheme)
+        registry && await registry.init()
+        // If fromScheme is not found or has no JSKOS API, return empty result
+        if (!fromScheme || !registry || !registry.has.ancestors) {
+          return []
+        }
+        getAncestors = async uri => registry.getAncestors({ concept: { uri } })
       }
+
       fromScheme = new jskos.ConceptScheme(fromScheme)
 
       // Build URI from notation if necessary
@@ -527,7 +545,7 @@ export class MappingService extends AbstractService {
       }
 
       // Retrieve ancestors from API
-      let ancestors = await registry.getAncestors({ concept: { uri: from } })
+      let ancestors = await getAncestors(from)
       if (depth !== null) {
         ancestors = ancestors.slice(0, depth)
       }
@@ -577,6 +595,46 @@ export class MappingService extends AbstractService {
     return []
 
   }
+
+  async applyMappings(data, query) {
+    restrictQueryParameters(query, {
+      direction: "forward",
+      cardinality: "1-to-1",
+      to: null,
+      download: null,
+      mode: "or",
+      from: null,
+      strict: null,
+      type: null,
+    })
+
+    const from = new Set((Array.isArray(data) ? data : [data])
+      .map(({uri}) => uri)
+      .filter(uri => jskos.isValid(uri)))
+
+    const mappings = await this.inferMappings({
+      ...query,
+      strict: true,
+      from: ([...from].join("|")),
+      type: "http://www.w3.org/2004/02/skos/core#exactMatch|http://www.w3.org/2004/02/skos/core#narrowMatch",
+    })
+
+    const inferred = {}
+    for (let m of mappings) {
+      const to = m.to.memberSet[0]
+      const MAPPING = m.uri || m.source.uri
+      if (!(from.has(to.uri) || to.uri in inferred)) {
+        inferred[to.uri] = { MAPPING, inScheme: [m.toScheme] }
+      }
+    }
+
+    for (let uri in inferred) {
+      data.push({ uri, ...inferred[uri] })
+    }
+
+    return data
+  }
+
 
   async prepareAndCheckItemForAction(mapping, action, { bulk }) {
     if (action !== "create") {

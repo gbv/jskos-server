@@ -1407,7 +1407,7 @@ Lists all concept schemes used in mappings.
   ```
 
 ### GET /mappings/infer
-Returns mappings based on stored mappings and mappings derived by inference. If a request to [GET /mappings](#get-mappings) results in stored mappings, only those are returned. If no stored mappings match the request, the following algorithm is applied to infer virtual mappings (this is experimental and not all source schemes are supported):
+Returns mappings based on stored mappings and mappings derived by inference. If a request to [GET /mappings](#get-mappings) results in stored mappings, only those are returned. If no stored mappings match the request, the following algorithm is applied to infer virtual mappings:
 
 - Ancestors of the requested concept (`from`) are traversed from narrower to broader until matching mapping(s) from one of the ancestor concepts are found.
 
@@ -1421,9 +1421,14 @@ Returns mappings based on stored mappings and mappings derived by inference. If 
 
 Inferred mappings don't have fields such as `uri`, `identifier`, `creator`, `created`... but `uri` of the mapping used for inference is included in `source`.
 
+Retrieval of ancestors depends on existence of parameter `fromScheme` (*this is experimental, details may change*):
+
+- if missing, ancestors are searched for in the database (see [GET /concepts/ancestors](#get-conceptsancestors))
+- otherwise the concept scheme must exist in in the database with a supported external API to query ancestors
+
 * **URL Params**
 
-  This endpoint takes the same parameters as [GET /mappings](#get-mappings), except that `to`, `download`, and `cardinality` (fixed to "1-to-1") are not supported. Parameter `direction` only supports the default value "forward". Parameters `from` and `fromScheme` are mandatory to get a non-empty result.
+  This endpoint takes the same parameters as [GET /mappings](#get-mappings), except that `to` and `download` are not allowed, `cardinality` can only be "1-to-1" and `direction` can only be "forward". An empty set is returned if parameter `from` is missing or if `from` is no URI and the concept scheme identified by `fromScheme` does not have a `namespace` to map `from` to an URI.  In addition there are parameters:
 
   `strict=[boolean]` values `1` or `true` disallow mapping type "closeMatch" for inferred mappings (default `false`)
 
