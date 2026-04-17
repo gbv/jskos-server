@@ -1,8 +1,10 @@
 import _ from "lodash"
 import { EntityNotFoundError, CreatorDoesNotMatchError, DatabaseInconsistencyError, InvalidBodyError } from "../errors/index.js"
 
+import { Readable } from "node:stream"
 import * as anystream from "json-anystream"
 import express from "express"
+import { TSVReader, toJskosMapping } from "sssom-js"
 
 import { handleCreatorForObject } from "../routes/utils.js"
 import { getCreator, getUrisOfUser } from "../utils/users.js"
@@ -76,8 +78,33 @@ export function createBodyParser(services) {
     }
 
     if (req.method == "POST") {
-    // For POST requests, parse body with json-anystream middleware
-      anystream.addStream(adjust)(req, res, next)
+      // Detect SSSOM/TSV Content-Type
+      const contentType = req.headers["content-type"] || ""
+      const isSSSOM = contentType.includes("text/tab-separated-values")
+        || contentType.includes("application/sssom+tsv")
+
+      if (isSSSOM) {
+        if (req.type !== "mappings") {
+          next(new InvalidBodyError("SSSOM/TSV is only supported for the mappings endpoint."))
+          return
+        }
+        const stream = new Readable({ objectMode: true, read() {} })
+        new TSVReader(req, { liberal: true })
+          .on("mapping", m => {
+            try {
+              stream.push(adjust(toJskosMapping(m)))
+            } catch (err) {
+              console.warn(`Warning: [sssom-js] Could not convert SSSOM mapping to JSKOS, mapping skipped. (${err.message})`)
+            }
+          })
+          .on("error", err => stream.destroy(err))
+          .on("end", () => stream.push(null))
+        req.anystream = stream
+        next()
+      } else {
+        // For POST requests, parse body with json-anystream middleware
+        anystream.addStream(adjust)(req, res, next)
+      }
     } else {
     // For all other requests, parse as JSON
       express.json()(req, res, async (...params) => {

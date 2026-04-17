@@ -114,6 +114,33 @@ describe("Import and Reset Script", () => {
       })
     })
 
+    it("should import mappings from SSSOM/TSV file with --format sssom via concordance", async () => {
+      const concordance = "http://coli-conc.gbv.de/concordances/ddc_rvk_medizin"
+      await exec("NODE_ENV=test ./bin/import.js concordances ./test/concordances/concordances.ndjson")
+      const before = await db.collection("mappings").find({ "partOf.uri": concordance }).toArray()
+      await exec(`NODE_ENV=test ./bin/import.js --format sssom mappings ./test/mappings/mapping-ddc-gnd.sssom.tsv -c ${concordance}`)
+      const after = await db.collection("mappings").find({ "partOf.uri": concordance }).toArray()
+      assert.strictEqual(after.length - before.length, 1)
+    })
+
+    it("should auto-detect SSSOM format from .sssom.tsv extension via concordance", async () => {
+      const concordance = "http://coli-conc.gbv.de/concordances/ddc_rvk_medizin"
+      await exec("NODE_ENV=test ./bin/import.js concordances ./test/concordances/concordances.ndjson")
+      // No --format flag, auto-detect from .sssom.tsv extension
+      await exec(`NODE_ENV=test ./bin/import.js mappings ./test/mappings/mapping-ddc-gnd.sssom.tsv -c ${concordance}`)
+      const results = await db.collection("mappings").find({ "partOf.uri": concordance }).toArray()
+      assert.ok(results.length >= 1, "Expected at least 1 mapping in concordance after SSSOM import")
+    })
+
+    it("should fail with --format sssom for non-mapping type", async () => {
+      try {
+        await exec("NODE_ENV=test ./bin/import.js --format sssom schemes ./test/terminologies/terminologies.json")
+        assert.fail("Expected import with --format sssom for schemes to fail.")
+      } catch (error) {
+        // expected
+      }
+    })
+
     it("should import annotations", async () => {
       // Import one annotation
       let results

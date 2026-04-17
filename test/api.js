@@ -1133,6 +1133,63 @@ describe("Express Server", () => {
         })
     })
 
+    it("should parse SSSOM/TSV body and reject due to missing fromScheme (text/tab-separated-values)", done => {
+      // SSSOM/TSV input without fromScheme/toScheme: parsed correctly but rejected by service validation
+      const sssomTsv = [
+        "#mapping_set_id: https://example.org/test-mappings",
+        "#license: https://creativecommons.org/licenses/by/4.0/",
+        "#curie_map:",
+        "#  DDC: http://dewey.info/class/",
+        "#  GND: http://d-nb.info/gnd/",
+        "subject_id\tpredicate_id\tobject_id\tmapping_justification",
+        "DDC:612.112/e23/\tskos:exactMatch\tGND:4074195-3\tsemapv:ManualMappingCuration",
+      ].join("\n")
+      chai.request.execute(app)
+        .post("/mappings")
+        .set("Authorization", `Bearer ${token}`)
+        .set("Content-Type", "text/tab-separated-values")
+        .send(sssomTsv)
+        .end((err, res) => {
+          // 422 because fromScheme is missing (expected behavior — SSSOM parsed correctly)
+          res.should.have.status(422)
+          done()
+        })
+    })
+
+    it("should parse SSSOM/TSV body (application/sssom+tsv) and reject due to missing fromScheme", done => {
+      const sssomTsv = [
+        "#mapping_set_id: https://example.org/test-mappings",
+        "#license: https://creativecommons.org/licenses/by/4.0/",
+        "#curie_map:",
+        "#  DDC: http://dewey.info/class/",
+        "#  GND: http://d-nb.info/gnd/",
+        "subject_id\tpredicate_id\tobject_id\tmapping_justification",
+        "DDC:612.112/e23/\tskos:exactMatch\tGND:4074195-3\tsemapv:ManualMappingCuration",
+      ].join("\n")
+      chai.request.execute(app)
+        .post("/mappings")
+        .set("Authorization", `Bearer ${token}`)
+        .set("Content-Type", "application/sssom+tsv")
+        .send(sssomTsv)
+        .end((err, res) => {
+          // 422 because fromScheme is missing (expected behavior — SSSOM parsed correctly)
+          res.should.have.status(422)
+          done()
+        })
+    })
+
+    it("should reject SSSOM/TSV body on non-mappings endpoint", done => {
+      const sssomTsv = "subject_id\tpredicate_id\tobject_id\tmapping_justification\n"
+      chai.request.execute(app)
+        .post("/voc")
+        .set("Content-Type", "text/tab-separated-values")
+        .send(sssomTsv)
+        .end((err, res) => {
+          res.should.have.status(422)
+          done()
+        })
+    })
+
     it("should bulk POST mappings properly", done => {
       const fromScheme = { uri: "urn:test:fromScheme" }
       const toScheme = { uri: "urn:test:toScheme" }
