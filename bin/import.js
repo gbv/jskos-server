@@ -7,9 +7,9 @@ Usage
 
   type and input are required unless with options --indexes.
   input can be a .json file (single object or array), an .ndjson file (newline delimited JSON),
-  a .sssom.tsv file (SSSOM/TSV, only for type mapping), or a URL referring to a JSON, NDJSON, or SSSOM/TSV source.
+  a .tsv file (SSSOM/TSV, only for type mapping), or a URL referring to a JSON, NDJSON, or SSSOM/TSV source.
 
-  Note that with a URL, it either has to have a proper file ending (e.g. .json, .ndjson, .sssom.tsv) or the
+  Note that with a URL, it either has to have a proper file ending (e.g. .json, .ndjson, .tsv) or the
   --format option has to be provided (for JSON/NDJSON, the content type can also be used).
 
 Options
@@ -163,8 +163,8 @@ if (["json", "ndjson", "sssom"].includes(cli.flags.format)) {
 if (format === "sssom" && type !== "mapping") {
   fail("The --format sssom option is only compatible with type mapping.")
 }
-if (!format && input.endsWith(".sssom.tsv") && type !== "mapping") {
-  fail("The .sssom.tsv file format is only compatible with type mapping.")
+if (!format && input.endsWith(".tsv") && type !== "mapping") {
+  fail("The .tsv file format is only compatible with type mapping.")
 }
 
 log(`Start of import script: ${new Date()}`)
