@@ -753,7 +753,7 @@ export class MappingService extends AbstractService {
   }
 
   async deleteItem({ existing }) {
-    super.deleteItem({ existing })
+    await super.deleteItem({ existing })
 
     // Update concordance if necessary
     if (existing.partOf && existing.partOf[0]) {

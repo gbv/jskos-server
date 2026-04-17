@@ -230,7 +230,7 @@ export class ConcordanceService extends AbstractService {
     if (count > 0) {
       throw new MalformedRequestError(`Can't delete a concordance that still has mappings associated with it (${count} mappings).`)
     }
-    super.deleteItem({ existing })
+    await super.deleteItem({ existing })
   }
 
   async getMappingsCountForConcordance(concordance) {
