@@ -7,16 +7,16 @@ Usage
 
   type and input are required unless with options --indexes.
   input can be a .json file (single object or array), an .ndjson file (newline delimited JSON),
-  or a URL referring to a JSON or NDJSON source.
+  a .sssom.tsv file (SSSOM/TSV, only for type mapping), or a URL referring to a JSON, NDJSON, or SSSOM/TSV source.
 
-  Note that with a URL, it either has to have a proper file ending or provide the correct content type
-  (i.e. application/json or application/x-ndjson). If not, the --format option has to be provided.
+  Note that with a URL, it either has to have a proper file ending (e.g. .json, .ndjson, .sssom.tsv) or the
+  --format option has to be provided (for JSON/NDJSON, the content type can also be used).
 
 Options
   GNU long option         Option      Meaning
   --indexes               -i          Create indexes without import (can also be used in addition to import)
   --quiet                 -q          Only output warnings and errors
-  --format                -f          Either json or ndjson. Defaults to file ending or content type if available.
+  --format                -f          Either json, ndjson, or sssom (mappings only). Defaults to file ending or content type if available.
   --scheme                -s          Only for concepts. Adds imported concepts to a scheme for specified URI.
                                       The scheme must already exist. (topConceptOf still needs to be set if applicable.)
   --concordance           -c          Only for mappings. Adds imported mappings into a concordance for specified URI.
@@ -155,10 +155,16 @@ if (!indexes) {
 
 // Check format parameter
 let format
-if (["json", "ndjson"].includes(cli.flags.format)) {
+if (["json", "ndjson", "sssom"].includes(cli.flags.format)) {
   format = cli.flags.format
 } else if (cli.flags.format) {
-  fail(`Unknown format ${cli.flags.format}, please provide one of json or ndjson, or leave empty.`)
+  fail(`Unknown format ${cli.flags.format}, please provide one of json, ndjson, or sssom, or leave empty.`)
+}
+if (format === "sssom" && type !== "mapping") {
+  fail("The --format sssom option is only compatible with type mapping.")
+}
+if (!format && input.endsWith(".sssom.tsv") && type !== "mapping") {
+  fail("The .sssom.tsv file format is only compatible with type mapping.")
 }
 
 log(`Start of import script: ${new Date()}`)
@@ -173,7 +179,12 @@ import { validate } from "jskos-validate"
 import config from "../config/index.js"
 import { v5 as uuidv5, v4 as uuid } from "uuid"
 import path from "node:path"
+import { Readable } from "node:stream"
+import { createReadStream } from "node:fs"
+import http from "node:http"
+import https from "node:https"
 import * as anystream from "json-anystream"
+import { TSVReader, toJskosMapping } from "sssom-js"
 import { createDatabase } from "../utils/db.js"
 const db = createDatabase(config)
 
@@ -217,7 +228,8 @@ import { bulkOperationForEntities, addMappingSchemes } from "../utils/utils.js"
     try {
       await doImport({ input, format, type, concordance })
     } catch (err) {
-      error(`Import failed - ${err}`)
+      error(`[sssom-js] Import failed - ${err}`)
+      process.exit(1)
     }
   }
 
@@ -227,7 +239,39 @@ import { bulkOperationForEntities, addMappingSchemes } from "../utils/utils.js"
 })()
 
 async function doImport({ input, format, type, concordance }) {
-  const bodyStream = await anystream.make(input, format)
+  const isSSSOM = format === "sssom" || (!format && input.endsWith(".tsv"))
+  let bodyStream
+  let skippedMappings = 0
+  if (isSSSOM) {
+    bodyStream = new Readable({ objectMode: true, read() {} })
+    const startTSVReader = (sourceStream) => {
+      new TSVReader(sourceStream, { liberal: true })
+        .on("mapping", m => {
+          try {
+            bodyStream.push(toJskosMapping(m))
+          } catch (err) {
+            skippedMappings++
+            error(`[sssom-js] Could not convert SSSOM mapping to JSKOS, mapping skipped. (${err.message})`)
+          }
+        })
+        .on("error", err => bodyStream.destroy(err))
+        .on("end", () => bodyStream.push(null))
+    }
+    if (inputIsUrl) {
+      const isHttps = input.startsWith("https://")
+      ;(isHttps ? https : http).get(input, (res) => {
+        if (res.statusCode !== 200) {
+          bodyStream.destroy(new Error(`Requesting SSSOM from URL ${input} failed; status code ${res.statusCode}`))
+          return
+        }
+        startTSVReader(res)
+      }).on("error", (err) => bodyStream.destroy(err))
+    } else {
+      startTSVReader(createReadStream(input, "utf-8"))
+    }
+  } else {
+    bodyStream = await anystream.make(input, format)
+  }
   const bulk = !cli.flags.nobulk
   const bulkReplace = !cli.flags.noreplace
 
@@ -334,6 +378,9 @@ async function doImport({ input, format, type, concordance }) {
     }
     mappings.length && await saveMappings(mappings)
     log(`... done: ${imported} mappings imported (${total - imported} skipped).`)
+    if (skippedMappings) {
+      console.warn(`Warning: ${skippedMappings} SSSOM mapping(s) could not be converted to JSKOS by sssom-js and were skipped.`)
+    }
     if (concordanceUrisToAdjust.size) {
       log(`... adjusting extent for ${concordanceUrisToAdjust.size} concordances...`)
       await Promise.all([...concordanceUrisToAdjust].map(uri => services.concordance.postAdjustmentForConcordance(uri)))

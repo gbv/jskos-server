@@ -1,0 +1,7 @@
+#mapping_set_id: https://example.org/test-mappings
+#license: https://creativecommons.org/licenses/by/4.0/
+#curie_map:
+#  DDC: http://dewey.info/class/
+#  GND: http://d-nb.info/gnd/
+subject_id	predicate_id	object_id	mapping_justification
+DDC:612.112/e23/	skos:exactMatch	GND:4074195-3	semapv:ManualMappingCuration
