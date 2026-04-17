@@ -123,10 +123,10 @@ describe("Import and Reset Script", () => {
       assert.strictEqual(after.length - before.length, 1)
     })
 
-    it("should auto-detect SSSOM format from .sssom.tsv extension via concordance", async () => {
+    it("should auto-detect SSSOM format from .tsv extension via concordance", async () => {
       const concordance = "http://coli-conc.gbv.de/concordances/ddc_rvk_medizin"
       await exec("NODE_ENV=test ./bin/import.js concordances ./test/concordances/concordances.ndjson")
-      // No --format flag, auto-detect from .sssom.tsv extension
+      // No --format flag, auto-detect from .tsv extension
       await exec(`NODE_ENV=test ./bin/import.js mappings ./test/mappings/mapping-ddc-gnd.sssom.tsv -c ${concordance}`)
       const results = await db.collection("mappings").find({ "partOf.uri": concordance }).toArray()
       assert.ok(results.length >= 1, "Expected at least 1 mapping in concordance after SSSOM import")
