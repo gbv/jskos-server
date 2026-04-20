@@ -198,11 +198,11 @@ export class AbstractService {
     return items
   }
 
-  async createItem({ bodyStream, bulk = false, bulkReplace = true, user, admin = false }) {
+  async createItem({ bodyStream, bulk = false, bulkReplace = true, user, admin = false, scheme }) {
     let { items, isMultiple } = await this._readBodyStream(bodyStream)
 
     items = await Promise.all(items.map(item => {
-      return this.prepareAndCheckItemForAction(item, "create", { admin, user, bulk })
+      return this.prepareAndCheckItemForAction(item, "create", { admin, user, bulk, scheme })
         .catch(error => {
           if (bulk) {
             return null

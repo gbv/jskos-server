@@ -17,8 +17,10 @@ Options
   --indexes               -i          Create indexes without import (can also be used in addition to import)
   --quiet                 -q          Only output warnings and errors
   --format                -f          Either json, ndjson, or sssom (mappings only). Defaults to file ending or content type if available.
-  --scheme                -s          Only for concepts. Adds imported concepts to a scheme for specified URI.
+  --scheme                -s          For concepts: Adds imported concepts to a scheme for specified URI.
                                       The scheme must already exist. (topConceptOf still needs to be set if applicable.)
+                                      For mappings: Controls fromScheme/toScheme handling.
+                                      Values: ignore (accept even if missing).
   --concordance           -c          Only for mappings. Adds imported mappings into a concordance for specified URI.
                                       The concordance must already exist.
   --noreplace             -n          EXPERIMENTAL. When given, bulk writing will use insertOne instead of replaceOne,
@@ -129,8 +131,14 @@ if (cli.input[0] && !type) {
 if (!indexes && !type) {
   help("The <type> argument is necessary to import data.")
 }
-if (cli.flags.scheme && type != "concept") {
-  help(`The -s option is not compatible with type ${type}.`)
+if (cli.flags.scheme) {
+  if (type === "mapping") {
+    if (!["ignore"].includes(cli.flags.scheme)) {
+      help(`For type mapping, --scheme must be "ignore". Got: ${cli.flags.scheme}`)
+    }
+  } else if (type !== "concept") {
+    help(`The --scheme option is not compatible with type ${type}.`)
+  }
 }
 if (cli.flags.setApi && type != "concept") {
   help(`The --set-api option is not compatible with type ${type}.`)
@@ -242,6 +250,7 @@ async function doImport({ input, format, type, concordance }) {
   const isSSSOM = format === "sssom" || (!format && input.endsWith(".tsv"))
   let bodyStream
   let skippedMappings = 0
+  const schemeMode = cli.flags.scheme
   if (isSSSOM) {
     bodyStream = new Readable({ objectMode: true, read() {} })
     const startTSVReader = (sourceStream) => {
@@ -343,15 +352,22 @@ async function doImport({ input, format, type, concordance }) {
       if (!object.modified && object.created) {
         object.modified = object.created
       }
-      // Set fromScheme and toScheme from concordance
+      // Set fromScheme and toScheme from concordance / concept inScheme
       addMappingSchemes(object, { concordance })
       // Check if schemes are available and replace them with URI/notation only
       await services.scheme.replaceSchemeProperties(object, ["fromScheme", "toScheme"])
-      // Reject mapping if either fromScheme or toScheme is missing
-      for (let field of ["fromScheme", "toScheme"]) {
-        if (!object[field]) {
-          error(`Field \`${field}\` missing for ${type} number ${total}: ${object && object.uri}`)
-          continue mappingLoop
+      // Reject mapping if either fromScheme or toScheme is missing (unless scheme=ignore)
+      if (schemeMode !== "ignore") {
+        for (let field of ["fromScheme", "toScheme"]) {
+          if (!object[field]) {
+            const side = field === "fromScheme" ? "from" : "to"
+            const conceptUri = object[side]?.memberSet?.[0]?.uri || "unknown"
+            const hint = isSSSOM
+              ? "no `subject_source`/`object_source` in SSSOM data and no --concordance given"
+              : "field missing in data and no --concordance given"
+            error(`[jskos-server] Skipping mapping number ${total}: \`${field}\` missing for <${conceptUri}> (${hint})`)
+            continue mappingLoop
+          }
         }
       }
       // Add mapping identifier
