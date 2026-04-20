@@ -1190,6 +1190,23 @@ describe("Express Server", () => {
         })
     })
 
+    it("should POST a mapping without fromScheme/toScheme when scheme=ignore", done => {
+      const mappingWithoutSchemes = {
+        type: ["http://www.w3.org/2004/02/skos/core#exactMatch"],
+        from: { memberSet: [{ uri: "http://dewey.info/class/612.112/e23/" }] },
+        to: { memberSet: [{ uri: "http://d-nb.info/gnd/4074195-3" }] },
+      }
+      chai.request.execute(app)
+        .post("/mappings")
+        .query({ scheme: "ignore" })
+        .set("Authorization", `Bearer ${token}`)
+        .send(mappingWithoutSchemes)
+        .end((err, res) => {
+          res.should.have.status(201)
+          done()
+        })
+    })
+
     it("should bulk POST mappings properly", done => {
       const fromScheme = { uri: "urn:test:fromScheme" }
       const toScheme = { uri: "urn:test:toScheme" }

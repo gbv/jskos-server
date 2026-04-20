@@ -132,6 +132,21 @@ describe("Import and Reset Script", () => {
       assert.ok(results.length >= 1, "Expected at least 1 mapping in concordance after SSSOM import")
     })
 
+    it("should import mappings without fromScheme/toScheme when --scheme ignore is set", async () => {
+      await exec("NODE_ENV=test ./bin/import.js mappings ./test/mappings/mapping-ddc-gnd-noScheme.json --scheme ignore")
+      const results = await db.collection("mappings").find({}).toArray()
+      assert.ok(results.length >= 1, "Expected at least 1 mapping imported with --scheme ignore")
+    })
+
+    it("should fail when --scheme has an invalid value for mapping type", async () => {
+      try {
+        await exec("NODE_ENV=test ./bin/import.js mappings ./test/mappings/mapping-ddc-gnd.json --scheme someUri")
+        assert.fail("Expected import to fail with invalid --scheme value")
+      } catch (error) {
+        // expected
+      }
+    })
+
     it("should fail with --format sssom for non-mapping type", async () => {
       try {
         await exec("NODE_ENV=test ./bin/import.js --format sssom schemes ./test/terminologies/terminologies.json")
