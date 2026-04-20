@@ -1207,6 +1207,34 @@ describe("Express Server", () => {
         })
     })
 
+    it("should POST a mapping with scheme=given and apply fromScheme/toScheme from SSSOM metadata", done => {
+      const sssomTsv = [
+        "#mapping_set_id: https://example.org/test-mappings",
+        "#license: https://creativecommons.org/licenses/by/4.0/",
+        "#curie_map:",
+        "#  DDC: http://dewey.info/class/",
+        "#  GND: http://d-nb.info/gnd/",
+        "#  bartoc: http://bartoc.org/en/node/",
+        "#subject_source: bartoc:241",
+        "#object_source: bartoc:430",
+        "subject_id\tpredicate_id\tobject_id\tmapping_justification",
+        "DDC:612.112/e23/\tskos:exactMatch\tGND:4074195-3\tsemapv:ManualMappingCuration",
+      ].join("\n")
+      chai.request.execute(app)
+        .post("/mappings")
+        .query({ scheme: "given" })
+        .set("Authorization", `Bearer ${token}`)
+        .set("Content-Type", "text/tab-separated-values")
+        .send(sssomTsv)
+        .end((err, res) => {
+          res.should.have.status(201)
+          const mapping = Array.isArray(res.body) ? res.body[0] : res.body
+          assert.ok(mapping?.fromScheme?.uri, "fromScheme should be set from SSSOM metadata")
+          assert.ok(mapping?.toScheme?.uri, "toScheme should be set from SSSOM metadata")
+          done()
+        })
+    })
+
     it("should bulk POST mappings properly", done => {
       const fromScheme = { uri: "urn:test:fromScheme" }
       const toScheme = { uri: "urn:test:toScheme" }

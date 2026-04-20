@@ -1,0 +1,12 @@
+# subject_source: bartoc:241
+# object_source: bartoc:430
+# curie_map:
+#   bartoc: http://bartoc.org/en/node/
+#   DDC: http://dewey.info/class/
+#   GND: http://d-nb.info/gnd/
+#   skos: http://www.w3.org/2004/02/skos/core#
+#   semapv: https://w3id.org/semapv/vocab/
+# mapping_set_id: https://example.org/test-mappings-given
+# license: https://creativecommons.org/licenses/by/4.0/
+subject_id	predicate_id	object_id	mapping_justification
+DDC:612.112/e23/	skos:exactMatch	GND:4074195-3	semapv:ManualMappingCuration
