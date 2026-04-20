@@ -88,11 +88,25 @@ export function createBodyParser(services) {
           next(new InvalidBodyError("SSSOM/TSV is only supported for the mappings endpoint."))
           return
         }
+        const schemeMode = req.query?.scheme
         const stream = new Readable({ objectMode: true, read() {} })
+        let sssomMetadata = {}
         new TSVReader(req, { liberal: true })
+          .on("metadata", meta => {
+            sssomMetadata = meta
+          })
           .on("mapping", m => {
             try {
-              stream.push(adjust(toJskosMapping(m)))
+              const jskosMapping = toJskosMapping(m)
+              if (schemeMode === "given") {
+                if (!jskosMapping.fromScheme && sssomMetadata.subject_source) {
+                  jskosMapping.fromScheme = { uri: sssomMetadata.subject_source }
+                }
+                if (!jskosMapping.toScheme && sssomMetadata.object_source) {
+                  jskosMapping.toScheme = { uri: sssomMetadata.object_source }
+                }
+              }
+              stream.push(adjust(jskosMapping))
             } catch (err) {
               console.warn(`Warning: [sssom-js] Could not convert SSSOM mapping to JSKOS, mapping skipped. (${err.message})`)
             }
