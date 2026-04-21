@@ -53,13 +53,9 @@ describe("Validation endpoint testing", () => {
 
     // Validate difference object types
     for (let type of types) {
-      let typePlural =
-        type.endsWith("y") && !/[aeiou]y$/i.test(type)
-          ? type.slice(0, -1) + "ies"
-          : type + "s"
-      describe(typePlural, () => {
+      describe(type, () => {
         for (let { object, expected, file } of examples[type]) {
-          it(`should validate ${typePlural} (${file})`, done => {
+          it(`should validate ${type} (${file})`, done => {
           // Support for arrays of objects
             let objects = [object]
             if (Array.isArray(object)) {
@@ -74,7 +70,7 @@ describe("Validation endpoint testing", () => {
                 .send(object)
                 .end((error, res) => {
                   assert.equal(error, null)
-                  res.should.have.status(201)
+                  res.should.have.status(200)
                   res.body.should.be.an("array")
                   if (expected) {
                     assert.strictEqual(res.body[0], true)
@@ -99,7 +95,7 @@ describe("Validation endpoint testing", () => {
         .send({})
         .end((error, res) => {
           assert.equal(error, null)
-          res.should.have.status(201)
+          res.should.have.status(200)
           res.body.should.be.an("array")
           assert.equal(res.body[0], true)
           done()
@@ -113,7 +109,7 @@ describe("Validation endpoint testing", () => {
         .send(object)
         .end((error, res) => {
           assert.equal(error, null)
-          res.should.have.status(201)
+          res.should.have.status(200)
           res.body.should.be.an("array")
           res.body[0].should.be.an("array")
           assert.notEqual(res.body[0].length, 0)
@@ -127,7 +123,7 @@ describe("Validation endpoint testing", () => {
             .send(object)
             .end((error, res) => {
               assert.equal(error, null)
-              res.should.have.status(201)
+              res.should.have.status(200)
               res.body.should.be.an("array")
               assert.equal(res.body[0], true)
               done()
@@ -160,7 +156,7 @@ describe("Validation endpoint testing", () => {
         .send(objects)
         .end((error, res) => {
           assert.equal(error, null)
-          res.should.have.status(201)
+          res.should.have.status(200)
           res.body.should.be.an("array")
           assert.equal(res.body.length, objects.length)
           assert.equal(res.body[0], true)
@@ -209,7 +205,7 @@ describe("Validation endpoint testing", () => {
             .send(objects)
             .end((error, res) => {
               assert.equal(error, null)
-              res.should.have.status(201)
+              res.should.have.status(200)
               res.body.should.be.an("array")
               // First concept should pass
               assert.equal(res.body[0], true)

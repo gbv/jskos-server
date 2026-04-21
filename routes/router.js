@@ -2,7 +2,7 @@ import express from "express"
 import { createBodyParser } from "../utils/body-parser.js"
 import { createAdjuster } from "../utils/adjust.js"
 import { addPaginationHeaders } from "../utils/pagination-headers.js"
-import { wrapAsync, supportDownloadFormats, returnJSON, handleDownload, wrapDownload } from "./utils.js"
+import { wrapAsync, supportDownloadFormats, returnJSON, returnJSONCreated, handleDownload, wrapDownload } from "./utils.js"
 import { Authenticator } from "../utils/auth.js"
 
 import { createServices } from "../services/index.js"
@@ -85,7 +85,7 @@ export class Router {
           setApi: req.query?.setApi, // TODO: this is not documented and should not come from query
         })),
         this.adjust,
-        returnJSON,
+        returnJSONCreated,
       )
     }
   }

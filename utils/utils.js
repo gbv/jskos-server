@@ -26,6 +26,7 @@ export function cleanJSON(json, depth = 0) {
       }
     })
   }
+  return json
 }
 
 export function bulkOperationForEntities({ entities, replace = true }) {

@@ -15,7 +15,7 @@ import { getUrisOfUser } from "../utils/users.js"
  *
  * adjusted from: https://thecodebarbarian.com/80-20-guide-to-express-error-handling
  */
-const wrapAsync = (fn) => {
+export const wrapAsync = (fn) => {
   return (req, res, next) => {
     fn(req, res, next).then(data => {
       // On success, save the result of the Promise in req.data.
@@ -34,7 +34,7 @@ const wrapAsync = (fn) => {
 }
 
 // Middleware wrapper that calls the middleware depending on req.query.download
-const wrapDownload = (fn, isDownload = true) => {
+export const wrapDownload = (fn, isDownload = true) => {
   return (req, res, next) => {
     if (!!req.query.download === isDownload) {
       fn(req, res, next)
@@ -49,7 +49,7 @@ const wrapDownload = (fn, isDownload = true) => {
  *
  * @param {Array} formats
  */
-const supportDownloadFormats = (formats) => (req, res, next) => {
+export const supportDownloadFormats = (formats) => (req, res, next) => {
   if (req.query.download && !formats.includes(req.query.download)) {
     req.query.download = null
   }
@@ -57,9 +57,9 @@ const supportDownloadFormats = (formats) => (req, res, next) => {
 }
 
 /**
- * Middleware that returns JSON given in req.data.
+ * Middlewares that returns JSON given in req.data.
  */
-const returnJSON = (req, res) => {
+function resultData(req) {
   // Convert Mongoose documents into plain objects
   let data
   if (Array.isArray(req.data)) {
@@ -69,13 +69,11 @@ const returnJSON = (req, res) => {
   } else {
     data = req.data?.toObject ? req.data?.toObject() : req.data
   }
-  cleanJSON(data, 0)
-  let statusCode = 200
-  if (req.method == "POST") {
-    statusCode = 201
-  }
-  res.status(statusCode).json(data)
+  return cleanJSON(data, 0)
 }
+
+export const returnJSON = (req, res) => res.status(200).json(resultData(req))
+export const returnJSONCreated = (req, res) => res.status(201).json(resultData(req))
 
 /**
  * Middleware that handles download streaming.
@@ -83,7 +81,7 @@ const returnJSON = (req, res) => {
  *
  * @param {String} filename - resulting filename without extension
  */
-const handleDownload = (filename) => (req, res) => {
+export const handleDownload = (filename) => (req, res) => {
   let results = req.data, single = false
   // Convert to stream if necessary
   if (!(results instanceof Readable)) {
@@ -169,7 +167,7 @@ const handleDownload = (filename) => (req, res) => {
  * @param {Object} [options.creator] creator object, usually extracted via `getCreator`
  * @param {Object} options.req request object (necessary for `type`, `user`, `method`, `anonymous`, and `auth`)
  */
-const handleCreatorForObject = ({ object, existing, creator, req }) => {
+export const handleCreatorForObject = ({ object, existing, creator, req }) => {
   if (!object) {
     return object
   }
@@ -251,13 +249,4 @@ const handleCreatorForObject = ({ object, existing, creator, req }) => {
     }
   }
   return object
-}
-
-export {
-  wrapAsync,
-  wrapDownload,
-  supportDownloadFormats,
-  returnJSON,
-  handleDownload,
-  handleCreatorForObject,
 }

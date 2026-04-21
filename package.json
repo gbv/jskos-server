@@ -74,7 +74,7 @@
     "express-ws": "^5.0.2",
     "ipaddr.js": "^2.2.0",
     "jskos-tools": "^1.2.0",
-    "jskos-validate": "1.2.1",
+    "jskos-validate": "1.2.2",
     "json-anystream": "^2.0.1",
     "sssom-js": "^0.4.5",
     "JSONStream": "^1.3.5",

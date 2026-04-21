@@ -809,7 +809,7 @@ All API methods stick to the following rules, unless otherwise specified.
 
 #### Responses
 - `GET` requests will return code 200 on success.
-- `POST` requests will return code 201 on success.
+- `POST` requests will return code 200 or 201 on success.
 - `DELETE` requests will return code 204 on success.
 - For possible error responses, see [Errors](#errors).
 
