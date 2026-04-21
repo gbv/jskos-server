@@ -609,8 +609,8 @@ export class MappingService extends AbstractService {
     })
 
     const from = new Set((Array.isArray(data) ? data : [data])
-      .map(({uri}) => uri)
-      .filter(uri => jskos.isValid(uri)))
+      .filter(rec => "uri" in rec && typeof rec.uri === "string" && jskos.isValidUri(rec.uri))
+      .map(({uri}) => uri))
 
     const mappings = await this.inferMappings({
       ...query,
@@ -631,6 +631,8 @@ export class MappingService extends AbstractService {
     for (let uri in inferred) {
       data.push({ uri, ...inferred[uri] })
     }
+
+    data.statusCode = 200
 
     return data
   }

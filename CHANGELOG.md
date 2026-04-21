@@ -2,6 +2,7 @@
 - Remove support of environment configuration files (`config.{development,production}.json`), set `CONFIG_FILE` instead!
 - Don't write config file if not existing or missing key `namespace`, please generate by hand!
 - Use status code 201 only when data has been created
+- Add endpoint `POST /mappings/apply` to apply mappings
 
 ## 2.4.2
 

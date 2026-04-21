@@ -47,6 +47,13 @@ export default config => {
       express.json(),
       wrapAsync(async req => service.applyMappings(req.body, req.query)),
       returnJSON,
+      (req, res) => {
+        console.log("/apply middleware")
+        console.log(res.statusCode)
+        if (res.statusCode === 201) {
+          res.status(200)
+        }
+      },
     )
   }
 

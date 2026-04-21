@@ -47,6 +47,7 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [PUT /mappings/:\_id](#put-mappings_id)
   - [PATCH /mappings/:\_id](#patch-mappings_id)
   - [DELETE /mappings/:\_id](#delete-mappings_id)
+  - [POST /mappings/apply](#post-mappingsapply)
   - [GET /voc](#get-voc)
   - [POST /voc](#post-voc)
   - [PUT /voc](#put-voc)
@@ -1662,6 +1663,24 @@ Deletes a mapping from the database.
 * **Success Reponse**
 
   Status 204, no content.
+
+### POST /mappings/apply
+Apply mappings to a JSKOS set (*experimental*).
+
+* **URL Params**
+
+  Same as [GET /mappings/infer](#get-mappingsinfer) except `direction` can only be "forward", `cardinality` can only be "1-to-1", `mode` can only be "null" and the parameters `to`, `download`, `from`, `strict`, and `type` are not allowed.
+
+  Mappings can be selected with `fromScheme`, `toScheme`, `partOf`, `identifier`, `creator`, `annotatedBy`, `annotatedFor`, and `annotatedWith`. Inference can be selected with `depth`.
+
+* **Success Reponse**
+
+  JSKOS set with additional concepts if these can be derived based on mappings. Each appended concept has fields:
+
+ - `uri` concept URI
+ - `inScheme` concept scheme of the concept
+ - `MAPPING` URI of the mapping that resulted in this enrichment
+
 
 ### GET /voc
 Lists supported terminologies (concept schemes).
