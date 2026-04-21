@@ -1235,6 +1235,57 @@ describe("Express Server", () => {
         })
     })
 
+    describe("scheme=lookup with concepts in DB", () => {
+      const db = app.connection
+      before(async () => {
+        await db.collection("terminologies").insertMany([
+          { _id: "http://bartoc.org/en/node/241", uri: "http://bartoc.org/en/node/241" },
+          { _id: "http://bartoc.org/en/node/430", uri: "http://bartoc.org/en/node/430" },
+        ])
+        await db.collection("concepts").insertMany([
+          { _id: "http://dewey.info/class/612.112/e23/", uri: "http://dewey.info/class/612.112/e23/", inScheme: [{ uri: "http://bartoc.org/en/node/241" }] },
+          { _id: "http://d-nb.info/gnd/4074195-3", uri: "http://d-nb.info/gnd/4074195-3", inScheme: [{ uri: "http://bartoc.org/en/node/430" }] },
+        ])
+      })
+      after(async () => {
+        await db.collection("terminologies").deleteMany({ _id: { $in: ["http://bartoc.org/en/node/241", "http://bartoc.org/en/node/430"] } })
+        await db.collection("concepts").deleteMany({ _id: { $in: ["http://dewey.info/class/612.112/e23/", "http://d-nb.info/gnd/4074195-3"] } })
+      })
+
+      it("should POST a mapping with scheme=lookup and resolve fromScheme/toScheme from DB", async () => {
+        const mappingWithoutSchemes = {
+          type: ["http://www.w3.org/2004/02/skos/core#exactMatch"],
+          from: { memberSet: [{ uri: "http://dewey.info/class/612.112/e23/" }] },
+          to: { memberSet: [{ uri: "http://d-nb.info/gnd/4074195-3" }] },
+        }
+        const res = await chai.request.execute(app)
+          .post("/mappings")
+          .query({ scheme: "lookup" })
+          .set("Authorization", `Bearer ${token}`)
+          .send(mappingWithoutSchemes)
+        res.should.have.status(201)
+        assert.ok(res.body.fromScheme?.uri, "fromScheme should be resolved via lookup")
+        assert.ok(res.body.toScheme?.uri, "toScheme should be resolved via lookup")
+      })
+    })
+
+    it("should reject a mapping with scheme=lookup when scheme cannot be determined", done => {
+      const mappingUnknownUris = {
+        type: ["http://www.w3.org/2004/02/skos/core#exactMatch"],
+        from: { memberSet: [{ uri: "http://unknown.example.org/concept/1" }] },
+        to: { memberSet: [{ uri: "http://unknown.example.org/concept/2" }] },
+      }
+      chai.request.execute(app)
+        .post("/mappings")
+        .query({ scheme: "lookup" })
+        .set("Authorization", `Bearer ${token}`)
+        .send(mappingUnknownUris)
+        .end((err, res) => {
+          res.should.have.status(422)
+          done()
+        })
+    })
+
     it("should bulk POST mappings properly", done => {
       const fromScheme = { uri: "urn:test:fromScheme" }
       const toScheme = { uri: "urn:test:toScheme" }

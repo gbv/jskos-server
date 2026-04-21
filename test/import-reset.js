@@ -138,6 +138,18 @@ describe("Import and Reset Script", () => {
       assert.ok(results.length >= 1, "Expected at least 1 mapping imported with --scheme ignore")
     })
 
+    it("should resolve fromScheme/toScheme via DB lookup when --scheme lookup is set", async () => {
+      await exec("NODE_ENV=test ./bin/import.js schemes ./test/terminologies/terminologies-ddc-gnd.ndjson")
+      await exec("NODE_ENV=test ./bin/import.js concepts ./test/concepts/concepts-ddc-gnd-lookup.ndjson")
+      await exec("NODE_ENV=test ./bin/import.js mappings ./test/mappings/mapping-ddc-gnd.sssom.tsv --scheme lookup")
+      const results = await db.collection("mappings").find({ "from.memberSet.uri": "http://dewey.info/class/612.112/e23/" }).toArray()
+      assert.ok(results.length >= 1, "Expected at least 1 mapping imported with --scheme lookup")
+      results.forEach(mapping => {
+        assert.ok(mapping.fromScheme?.uri, "fromScheme should be resolved via lookup")
+        assert.ok(mapping.toScheme?.uri, "toScheme should be resolved via lookup")
+      })
+    })
+
     it("should set fromScheme/toScheme from SSSOM metadata when --scheme given is set", async () => {
       await exec("NODE_ENV=test ./bin/import.js schemes ./test/terminologies/terminologies-ddc-gnd.ndjson")
       await exec("NODE_ENV=test ./bin/import.js mappings ./test/mappings/mapping-ddc-gnd-given.sssom.tsv --scheme given")

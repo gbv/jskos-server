@@ -662,6 +662,25 @@ export class MappingService extends AbstractService {
     }
     // Add mapping schemes if necessary (e.g. from concepts' `inScheme` property)
     addMappingSchemes(mapping)
+    // For lookup mode, try to resolve missing fromScheme/toScheme via concept DB lookup
+    if (scheme === "lookup") {
+      for (const side of ["from", "to"]) {
+        const field = `${side}Scheme`
+        if (!mapping[field]) {
+          const concepts = jskos.conceptsOfMapping(mapping, side)
+          for (const concept of concepts) {
+            if (concept?.uri) {
+              const fullConcept = await this.conceptService.retrieveItem(concept.uri)
+              const schemeUri = fullConcept?.inScheme?.[0]?.uri
+              if (schemeUri) {
+                mapping[field] = { uri: schemeUri }
+                break
+              }
+            }
+          }
+        }
+      }
+    }
     // Check if schemes are available and replace them with URI/notation only
     await this.schemeService.replaceSchemeProperties(mapping, ["fromScheme", "toScheme"])
     // Reject mapping if either fromScheme or toScheme is missing (unless scheme=ignore)

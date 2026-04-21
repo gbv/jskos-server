@@ -20,7 +20,8 @@ Options
   --scheme                -s          For concepts: Adds imported concepts to a scheme for specified URI.
                                       The scheme must already exist. (topConceptOf still needs to be set if applicable.)
                                       For mappings: Controls fromScheme/toScheme handling.
-                                      Values: ignore (accept even if missing), given (SSSOM only: use subject_source/object_source from SSSOM metadata).
+                                      Values: ignore (accept even if missing), lookup (resolve via DB concept lookup),
+                                      given (SSSOM only: use subject_source/object_source from SSSOM metadata).
   --concordance           -c          Only for mappings. Adds imported mappings into a concordance for specified URI.
                                       The concordance must already exist.
   --noreplace             -n          EXPERIMENTAL. When given, bulk writing will use insertOne instead of replaceOne,
@@ -133,8 +134,8 @@ if (!indexes && !type) {
 }
 if (cli.flags.scheme) {
   if (type === "mapping") {
-    if (!["ignore", "given"].includes(cli.flags.scheme)) {
-      help(`For type mapping, --scheme must be "ignore" or "given". Got: ${cli.flags.scheme}`)
+    if (!["ignore", "lookup", "given"].includes(cli.flags.scheme)) {
+      help(`For type mapping, --scheme must be "ignore", "lookup", or "given". Got: ${cli.flags.scheme}`)
     }
   } else if (type !== "concept") {
     help(`The --scheme option is not compatible with type ${type}.`)
@@ -370,6 +371,25 @@ async function doImport({ input, format, type, concordance }) {
       }
       // Set fromScheme and toScheme from concordance / concept inScheme
       addMappingSchemes(object, { concordance })
+      // For lookup mode, resolve missing fromScheme/toScheme via concept DB lookup
+      if (schemeMode === "lookup") {
+        for (const side of ["from", "to"]) {
+          const field = `${side}Scheme`
+          if (!object[field]) {
+            const concepts = jskos.conceptsOfMapping(object, side)
+            for (const concept of concepts) {
+              if (concept?.uri) {
+                const fullConcept = await services.concept.retrieveItem(concept.uri)
+                const schemeUri = fullConcept?.inScheme?.[0]?.uri
+                if (schemeUri) {
+                  object[field] = { uri: schemeUri }
+                  break
+                }
+              }
+            }
+          }
+        }
+      }
       // Check if schemes are available and replace them with URI/notation only
       await services.scheme.replaceSchemeProperties(object, ["fromScheme", "toScheme"])
       // Reject mapping if either fromScheme or toScheme is missing (unless scheme=ignore)
@@ -378,11 +398,13 @@ async function doImport({ input, format, type, concordance }) {
           if (!object[field]) {
             const side = field === "fromScheme" ? "from" : "to"
             const conceptUri = object[side]?.memberSet?.[0]?.uri || "unknown"
-            const hint = schemeMode === "given"
-              ? "no `subject_source`/`object_source` found in SSSOM metadata"
-              : isSSSOM
-                ? "no `subject_source`/`object_source` in SSSOM data and no --concordance given"
-                : "field missing in data and no --concordance given"
+            const hint = schemeMode === "lookup"
+              ? "scheme could not be determined via DB lookup"
+              : schemeMode === "given"
+                ? "no `subject_source`/`object_source` found in SSSOM metadata"
+                : isSSSOM
+                  ? "no `subject_source`/`object_source` in SSSOM data and no --concordance given"
+                  : "field missing in data and no --concordance given"
             error(`[jskos-server] Skipping mapping number ${total}: \`${field}\` missing for <${conceptUri}> (${hint})`)
             continue mappingLoop
           }
