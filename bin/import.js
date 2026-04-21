@@ -373,22 +373,7 @@ async function doImport({ input, format, type, concordance }) {
       addMappingSchemes(object, { concordance })
       // For lookup mode, resolve missing fromScheme/toScheme via concept DB lookup
       if (schemeMode === "lookup") {
-        for (const side of ["from", "to"]) {
-          const field = `${side}Scheme`
-          if (!object[field]) {
-            const concepts = jskos.conceptsOfMapping(object, side)
-            for (const concept of concepts) {
-              if (concept?.uri) {
-                const fullConcept = await services.concept.retrieveItem(concept.uri)
-                const schemeUri = fullConcept?.inScheme?.[0]?.uri
-                if (schemeUri) {
-                  object[field] = { uri: schemeUri }
-                  break
-                }
-              }
-            }
-          }
-        }
+        await services.mapping.lookupMappingSchemes(object)
       }
       // Check if schemes are available and replace them with URI/notation only
       await services.scheme.replaceSchemeProperties(object, ["fromScheme", "toScheme"])
