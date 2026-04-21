@@ -786,11 +786,12 @@ All API methods stick to the following rules, unless otherwise specified.
 
 #### Requests
 - All URL parameters are optional.
-- `POST`/`PUT`/`PATCH` requests require a JSON body.
+- `POST`/`PUT`/`PATCH` requests require a JSON equest body
 - Alternatively, `POST` can also receive the following inputs:
   - any kind of JSON stream
+  - SSSOM/TSV for [POST /mappings](#post-mappings), indicated  with Content-Type request header `application/sssom+tsv` or `text/tab-separated-values`
   - mutlipart/form-data with the file in `data`
-  - a URL with JSON data as `url` in the request params
+  - a URL with JSON as `url` in the request params
   - Note: The `type` request param might be required (either `json`, `ndjson`, or `multipart`)
 - All `GET` endpoints returning a certain type of JSKOS data offer the `properties=[list]` parameter, with `[list]` being a comma-separated list of properties.
   - All JSKOS types allow removing properties by prefixing the property with `-`. All following properties in the list will also be removed.
@@ -1623,11 +1624,13 @@ Returns a specific mapping.
   ```
 
 ### POST /mappings
-Saves a mapping or multiple mappings in the database.
+Saves a mapping or multiple mappings in the database. Mappings can be provided in JSKOS or SSSOM/TSV format. Mappings must include JSKOS fields `fromScheme` and `toScheme`.  For JSKOS these fields can either be given with SSSOM/TSV metadata fields `subject_source` and `object_source` if URL parameter `scheme` is set to `given` or they can be inferred from concepts in the database with `scheme=lookup`.
 
 * **URL Params**
 
   `bulk=[boolean]` `1` or `true` enable bulk mode for importing multiple mappings into the database. Errors for individual mappings will be ignored and existing mappings will be overridden. The resulting set will only include the `id` for each mapping that was written into the database.
+
+  `scheme=given|lookup` whether take `fromScheme`/`toScheme` from passed data (`given` as default) or to look up concept URIs in the database (`lookup`).
 
 * **Success Reponse**
 

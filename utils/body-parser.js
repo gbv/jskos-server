@@ -88,7 +88,7 @@ export function createBodyParser(services) {
           next(new InvalidBodyError("SSSOM/TSV is only supported for the mappings endpoint."))
           return
         }
-        const schemeMode = req.query?.scheme
+        const schemeMode = req.query?.scheme || "given"
         const stream = new Readable({ objectMode: true, read() {} })
         let sssomMetadata = {}
         new TSVReader(req, { liberal: true })
