@@ -259,13 +259,20 @@ export class AbstractService {
       isMultiple = false
     })
 
-    const items = await new Promise((resolve) => {
+    const items = await new Promise((resolve, reject) => {
       const body = []
       bodyStream.on("data", item => {
         body.push(item)
       })
       bodyStream.on("end", () => {
         resolve(body)
+      })
+      bodyStream.on("error", err => {
+        const error = new MalformedBodyError(err.message || "Failed to parse request")
+        if (err.position) {
+          error.position = err.position
+        }
+        reject(error)
       })
     })
 
