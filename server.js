@@ -182,11 +182,15 @@ app.use("/validate", createRouter.validate(config))
 app.use((error, req, res, next) => {
   // Check if error is defined in errors
   if (Object.values(errors).includes(error.constructor)) {
-    res.status(error.statusCode).send({
+    const body = {
       error: error.constructor.name,
       status: error.statusCode,
       message: error.message,
-    })
+    }
+    if (error.position !== undefined) {
+      body.position = error.position
+    }
+    res.status(error.statusCode).send(body)
   } else {
     next(error)
   }

@@ -1178,6 +1178,20 @@ describe("Express Server", () => {
         })
     })
 
+    it("should return 400 MalformedBodyError for malformed SSSOM/TSV", done => {
+      chai.request.execute(app)
+        .post("/mappings")
+        .set("Authorization", `Bearer ${token}`)
+        .set("Content-Type", "application/sssom+tsv")
+        .send("xxx")
+        .end((err, res) => {
+          res.should.have.status(400)
+          res.body.should.have.property("error", "MalformedBodyError")
+          res.body.should.have.property("position")
+          done()
+        })
+    })
+
     it("should reject SSSOM/TSV body on non-mappings endpoint", done => {
       const sssomTsv = "subject_id\tpredicate_id\tobject_id\tmapping_justification\n"
       chai.request.execute(app)
