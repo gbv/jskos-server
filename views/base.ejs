@@ -17,17 +17,17 @@
   </p>
   <h3>General</h3>
   <ul>
-    <li>GET <a href="status">/status</a> - Returns a status object
+    <li>GET <a href="status">/status</a> - Return a status object
       (<a href="status.schema.json">JSON Schema</a>)
       [%- include("icons",{ ref: "get-status" }) %]
     </li>
-    <li>GET <a href="checkAuth">/checkAuth</a> - Endpoint to check whether a user is authorized
+    <li>GET <a href="checkAuth">/checkAuth</a> - Check whether a user is authorized
       [%- include("icons",{ ref: "get-checkauth" }) %]
     </li>
-    <li>POST/GET <a href="validate">/validate</a> - Endpoint to validate JSKOS data
+    <li>POST/GET <a href="validate">/validate</a> - Validate JSKOS data
       [%- include("icons",{ ref: "post-validate" }) %]
     </li>
-    <li>GET <a href="data">/data</a> - Returns data for a certain URI or URIs (terminologies, concepts, concordances,
+    <li>GET <a href="data">/data</a> - Return data for a certain URI or URIs (terminologies, concepts, concordances,
       mappings, annotations, registries)
       [%- include("icons",{ ref: "get-data" }) %]
     </li>
@@ -35,16 +35,16 @@
   [% if (config.schemes) { %]
   [%- include("section", { title: "Terminologies", api: "voc" }) %]
   <ul>
-    <li>GET <a href="voc">/voc</a> - Returns a list of vocabularies (terminologies)
+    <li>GET <a href="voc">/voc</a> - Return a list of vocabularies (terminologies)
       [%- include("icons",{ api: config.schemes.read, ref: "get-voc" }) %]
     </li>
-    <li>GET <a href="voc/top">/voc/top</a> - Lists top concepts for a terminology
+    <li>GET <a href="voc/top">/voc/top</a> - Return top concepts for a terminology
       [%- include("icons",{ api: config.schemes.read, ref: "get-voctop" }) %]
     </li>
-    <li>GET <a href="voc/concepts">/voc/concepts</a> - Lists concepts for a terminology
+    <li>GET <a href="voc/concepts">/voc/concepts</a> - Return concepts for a terminology
       [%- include("icons",{ api: config.schemes.read, ref: "get-vocconcepts" }) %]
     </li>
-    <li>GET <a href="voc/suggest">/voc/suggest</a> - Returns terminology suggestions in OpenSearch Suggest Format
+    <li>GET <a href="voc/suggest">/voc/suggest</a> - Return terminology suggestions in OpenSearch Suggest Format
       [%- include("icons",{ api: config.schemes.read, ref: "get-vocsuggest" }) %]
     </li>
     <li>GET <a href="voc/search">/voc/search</a> - Concept scheme search
@@ -56,17 +56,17 @@
     </li>
     [% } %]
     [% if (config.schemes.create) { %]
-    <li>POST /voc - Saves a terminology or multiple terminologies in the database
+    <li>POST /voc - Save a terminology or multiple terminologies in the database
       [%- include("icons",{ api: config.schemes.create, ref: "post-voc" }) %]
     </li>
     [% } %]
     [% if (config.schemes.update) { %]
-    <li>PUT /voc - Updates a terminology in the database
+    <li>PUT /voc - Update a terminology in the database
       [%- include("icons",{ api: config.schemes.update, ref: "put-voc" }) %]
     </li>
     [% } %]
     [% if (config.schemes.delete) { %]
-    <li>DELETE /voc - Deletes a terminology from the database
+    <li>DELETE /voc - Delete a terminology from the database
       [%- include("icons",{ api: config.schemes.delete, ref: "delete-voc" }) %]
     </li>
     [% } %]
@@ -75,33 +75,33 @@
   [% if (config.concepts) { %]
   [%- include("section", { title: "Concepts", api: "concepts" }) %]
   <ul>
-    <li>GET <a href="concepts">/concepts</a> - Returns detailed data for concepts or terminologies
+    <li>GET <a href="concepts">/concepts</a> - Return detailed data for concepts or terminologies
       [%- include("icons", { api: config.concepts.read, ref: "get-concepts" }) %]
     </li>
-    <li>GET <a href="concepts/narrower">/concepts/narrower</a> - Returns narrower concepts for a concept
+    <li>GET <a href="concepts/narrower">/concepts/narrower</a> - Return narrower concepts for a concept
       [%- include("icons", { api: config.concepts.read, ref: "get-conceptsnarrower" }) %]
     </li>
-    <li>GET <a href="ancestors">/concepts/ancestors</a> - Returns ancestor concepts for a concept
+    <li>GET <a href="ancestors">/concepts/ancestors</a> - Return ancestor concepts for a concept
       [%- include("icons", { api: config.concepts.read, ref: "get-conceptsancestors" }) %]
     </li>
-    <li>GET <a href="suggest">/concepts/suggest</a> - Returns concept suggestions
+    <li>GET <a href="suggest">/concepts/suggest</a> - Return concept suggestions
       [%- include("icons", { api: config.concepts.read, ref: "get-conceptssuggest" }) %]
     </li>
     <li>GET <a href="search">/concepts/search</a> - Concept search
       [%- include("icons", { api: config.concepts.read, ref: "get-conceptssearch" }) %]
     </li>
     [% if (config.concepts.create) { %]
-    <li>POST /concepts - Saves a concept or multiple concepts in the database
+    <li>POST /concepts - Save a concept or multiple concepts in the database
       [%- include("icons", { api: config.concepts.create, ref: "post-concepts" }) %]
     </li>
     [% } %]
     [% if (config.concepts.update) { %]
-    <li>PUT /concepts - Updates a concept in the database
+    <li>PUT /concepts - Update a concept in the database
       [%- include("icons", { api: config.concepts.update, ref: "put-concepts" }) %]
     </li>
     [% } %]
     [% if (config.concepts.delete) { %]
-    <li>DELETE /concepts - Deletes a concept from the database
+    <li>DELETE /concepts - Delete a concept from the database
       [%- include("icons", { api: config.concepts.delete, ref: "delete-concepts" }) %]
     </li>
     [% } %]
@@ -116,28 +116,28 @@
   [%- include("section", { title: "Concordances", api: "concordances" }) %]
   <ul>
     [% if (config.concordances.read) { %]
-    <li>GET <a href="concordances">/concordances</a> - Returns a list of concordances for mappings
+    <li>GET <a href="concordances">/concordances</a> - Return a list of concordances for mappings
       [%- include("icons", { api: config.concordances.read, ref: "get-concordances" }) %]
     </li>
-    <li>GET /concordances/:_id - Returns a specific concordance
+    <li>GET /concordances/:_id - Return a specific concordance
       [%- include("icons", { api: config.concordances.read, ref: "get-concordances_id" }) %]
     </li>
     [% } %]
     [% if (config.concordances.create) { %]
-    <li>POST /concordances - Saves a concordance in the database
+    <li>POST /concordances - Save a concordance in the database
       [%- include("icons", { api: config.concordances.create, ref: "post-concordances" }) %]
     </li>
     [% } %]
     [% if (config.concordances.update) { %]
-    <li>PUT /concordances/:_id - Updates a concordance in the database
+    <li>PUT /concordances/:_id - Update a concordance in the database
       [%- include("icons", { api: config.concordances.update, ref: "put-concordances_id" }) %]
     </li>
-    <li>PATCH /concordances/:_id - Adjusts a mapping in the database
+    <li>PATCH /concordances/:_id - Adjust a concordance in the database
       [%- include("icons", { api: config.concordances.update, ref: "patch-concordances_id" }) %]
     </li>
     [% } %]
     [% if (config.concordances.delete) { %]
-    <li>DELETE /concordances/:_id - Deletes a mapping from the database
+    <li>DELETE /concordances/:_id - Delete a concordance from the database
       [%- include("icons", { api: config.concordances.delete, ref: "delete-concordances_id" }) %]
     </li>
     [% } %]
@@ -152,40 +152,43 @@
   [%- include("section", { title: "Mappings", api: "mappings" }) %]
   <ul>
     [% if (config.mappings.read) { %]
-    <li>GET <a href="mappings">/mappings</a> - Returns a list of mappings
+    <li>GET <a href="mappings">/mappings</a> - Return a list of mappings
       [%- include("icons",{ api: config.mappings.read, ref: "get-mappings" }) %]
     </li>
-    <li>GET /mappings/:_id - Returns a specific mapping
+    <li>GET /mappings/:_id - Return a specific mapping
       [%- include("icons",{ api: config.mappings.read, ref: "get-mappings_id" }) %]
     </li>
     [% } %]
     [% if (config.mappings.create) { %]
     <li>POST /mappings
-      [%- include("icons", { help: "Saves a mapping in the database", api: config.mappings.create, ref:
+      [%- include("icons", { help: "Save mappings in the database", api: config.mappings.create, ref:
       "post-mappings" }) %]
     </li>
     [% } %]
     [% if (config.mappings.update) { %]
-    <li>PUT /mappings/:_id - Updates a mapping in the database
+    <li>PUT /mappings/:_id - Update a mapping in the database
       [%- include("icons", { api: config.mappings.update, ref: "put-mappings_id" }) %]
     </li>
-    <li>PATCH /mappings/:_id - Adjusts a mapping in the database
+    <li>PATCH /mappings/:_id - Adjust a mapping in the database
       [%- include("icons",{ api: config.mappings.update, ref: "patch-mappings_id" }) %]
     </li>
     [% } %]
     [% if (config.mappings.delete) { %]
-    <li>DELETE /mappings/:_id - Deletes a mapping from the database
+    <li>DELETE /mappings/:_id - Delete a mapping from the database
       [%- include("icons",{ api: config.mappings.delete, ref: "delete-mappings_id" }) %]
     </li>
     [% } %]
-    <li>GET <a href="mappings/infer">/mappings/infer</a> - Returns mappings based on stored mappings and mappings
+    <li>GET <a href="mappings/infer">/mappings/infer</a> - Return mappings based on stored mappings and mappings
       derived by inference
       [%- include("icons",{ api: config.mappings.infer, ref: "get-mappingsinfer" }) %]
     </li>
-    <li>GET <a href="mappings/suggest">/mappings/suggest</a> - Suggests notations used in mappings
+    <li>POST /mappings/apply - Apply mappings to a set of items
+      [%- include("icons",{ api: config.mappings.infer, ref: "get-mappingsapply" }) %]
+    </li>
+    <li>GET <a href="mappings/suggest">/mappings/suggest</a> - Suggest notations used in mappings
       [%- include("icons",{ api: config.mappings.suggest, ref: "get-mappingssuggest" }) %]
     </li>
-    <li>GET <a href="mappings/voc">/mappings/voc</a> - Returns a list of terminologies used in mappings
+    <li>GET <a href="mappings/voc">/mappings/voc</a> - Return a list of terminologies used in mappings
       [%- include("icons",{ api: config.mappings.voc, ref: "get-mappingsvoc" }) %]
     </li>
     [% if (config.changes) { %]
@@ -198,22 +201,22 @@
   [% if (config.registries) { %]
   [%- include("section", { title: "Registries", api: "registries" }) %]
   <ul>
-    <li>GET <a href="registries">/registries</a> - Returns a list of registries
+    <li>GET <a href="registries">/registries</a> - Return a list of registries
       [%- include("icons", { api: config.registries.read, ref: "get-registries" }) %]
     </li>
-    <li>GET <a href="registries/suggest">/registries/suggest</a> - Returns registry suggestions
+    <li>GET <a href="registries/suggest">/registries/suggest</a> - Return registry suggestions
       [%- include("icons", { api: config.registries.read, ref: "get-registriessuggest" }) %]
     </li>
-    <li>POST /registries - Saves registries in the database
+    <li>POST /registries - Save registries in the database
       [%- include("icons", { api: config.registries.create, ref: "post-registries" }) %]
     </li>
-    <li>PUT /registries - Updates a registry in the database
+    <li>PUT /registries - Update a registry in the database
       [%- include("icons", { api: config.registries.update, ref: "put-registries" }) %]
     </li>
-    <li>PATCH /registries/:_id - Adjusts a registry in the database
+    <li>PATCH /registries/:_id - Adjust a registry in the database
       [%- include("icons", { api: config.registries.update, ref: "patch-registries_id" }) %]
     </li>
-    <li>DELETE /registries - Deletes registries from the database
+    <li>DELETE /registries - Delete registries from the database
       [%- include("icons", { api: config.registries.delete, ref: "delete-registries" }) %]
     </li>
     [% if (config.changes) { %]
@@ -227,28 +230,28 @@
   [%- include("section", { title: "Annotations", api: "annotations" }) %]
   <ul>
     [% if (config.annotations.read) { %]
-    <li>GET <a href="annotations">/annotations</a> - Returns a list of annotations
+    <li>GET <a href="annotations">/annotations</a> - Return a list of annotations
       [%- include("icons", { api: config.annotations.read, ref: "get-annotations" }) %]
     </li>
-    <li>GET /annotations/:_id - Returns a specific annotation
+    <li>GET /annotations/:_id - Return a specific annotation
       [%- include("icons", { api: config.annotations.read, ref: "get-annotations_id" }) %]
     </li>
     [% } %]
     [% if (config.annotations.create) { %]
-    <li>POST /annotations - Saves an annotation in the database
+    <li>POST /annotations - Save an annotation in the database
       [%- include("icons", { api: config.annotations.create, ref: "post-annotations" }) %]
     </li>
     [% } %]
     [% if (config.annotations.update) { %]
-    <li>PUT /annotations/:_id - Updates an annotation in the database
+    <li>PUT /annotations/:_id - Update an annotation in the database
       [%- include("icons", { api: config.annotations.update, ref: "put-annotations_id" }) %]
     </li>
-    <li>PATCH /annotations/:_id - Adjusts an annotation in the database
+    <li>PATCH /annotations/:_id - Adjust an annotation in the database
       [%- include("icons", { api: config.annotations.update, ref: "patch-annotations_id" }) %]
     </li>
     [% } %]
     [% if (config.annotations.delete) { %]
-    <li>DELETE /annotations/:_id - Deletes an annotation from the database
+    <li>DELETE /annotations/:_id - Delete an annotation from the database
       [%- include("icons", { api: config.annotations.delete, ref: "delete-annotations_id" }) %]
     </li>
     [% } %]

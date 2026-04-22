@@ -1,2 +1,5 @@
 <h3 id="[%=api%]" onclick="showUserInterface('[%=api%]')">[%= title %] <span></span></h3>
-<script>updateTotalCount("[%=api%]")</script>
+<script>
+  var api="[%=api%]";
+  if (api != "concepts") updateTotalCount("[%=api%]")
+</script>
