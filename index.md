@@ -47,6 +47,7 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [PUT /mappings/:\_id](#put-mappings_id)
   - [PATCH /mappings/:\_id](#patch-mappings_id)
   - [DELETE /mappings/:\_id](#delete-mappings_id)
+  - [POST /mappings/apply](#post-mappingsapply)
   - [GET /voc](#get-voc)
   - [POST /voc](#post-voc)
   - [PUT /voc](#put-voc)
@@ -110,15 +111,9 @@ The easiest way to install and use JSKOS Server as stand-alone application is wi
 
 ### Configuration
 
-You can customize the application settings via a configuration file. By default, this configuration file resides in `config/config.json`. However, it is possible to adjust this path via the `CONFIG_FILE` environment variable. Note that the given path has to be either absolute (i.e. starting with `/`) or relative to the `config/` folder (i.e. it defaults to `./config.json`). **Note** that the path to the configuration file needs to be valid and writable because a `namespace` key will be generated and written to the file if it doesn't currently exist. **Note** that if the file exists and contains invalid JSON data, JSKOS Server will refuse to start.
+You can customize the application settings via a configuration file. By default, this configuration file resides in `config/config.json`. However, it is possible to adjust this path via the `CONFIG_FILE` environment variable. Note that the given path has to be either absolute (i.e. starting with `/`) or relative to the `config/` folder. The configuration file is validated and JSKOS Server will refuse to start on configuration errors.
 
-Currently, there are only two environment variables:
-- `NODE_ENV` - either `development` (default) or `production`; currently, the only difference is that in `production`, HTTPS URIs are forced for entities created on POST requests.
-- `CONFIG_FILE` - alternate path to a configuration file, relative to the `config/` folder; defaults to `./config.json`.
-
-You can either provide the environment variables during the command to start the server, or in a `.env` file in the root folder.
-
-It is also possible to have more specific configuration based on the environment. These are set in `config/config.development.json` or `config/config.production.json`. Values from these files have precedent over the user configuration.
+Configuration is also affected by environment variable `NODE_ENV` being either `development` (default), `test` (when run with `npm test`), or `production`. In `test` the default config file is `./config.test.json` instead of `config.json`. In `production` HTTPS URIs are forced for entities created on POST requests. Environment variable `CONFIG_FILE` can also be set in `.env` file in the root folder unless `NODE_ENV` is `test`.
 
 #### Validation of configuration
 
@@ -730,7 +725,7 @@ NODE_ENV=production node ./server.js
 
 ### Supplemental Scripts
 
-In addition to [data import](#data-import) there are some supplemental scripts that were added to deal with specific sitatuations. These can be called with `npm run extra name-of-script`. The following scripts are available:
+In addition to [data import](#data-import) there are some supplemental scripts that were added to deal with specific sitatuations. These can be called with `npm run script name-of-script`. The following scripts are available:
 
 - `supplementNotationsInMappings`: This will look for mappings where the field `notation` is missing for any of the concepts, and it will attempt to supplement those notations. This only works for vocabularies which are also imported into the same jskos-server instance and where either `uriPattern` or `namespace` are given.
 
@@ -768,7 +763,7 @@ This will:
 4. **Drop** the database before and after each test suite, ensuring full isolation.
 5. **Tear down** the in-memory server when the suite completes.
 
-Code coverage can be calculated with `npm run coverage` but numbers should be taken with a grain of salt. By the way, lines of code can be calculated with `cloc $(git ls-files)`.
+Code coverage can be calculated with `npm run coverage` but numbers should be taken with a grain of salt. By the way, lines of code can be calculated with `npm run loc` (if command line tool `cloc` is installed) and an internal dependency tree (excluding tests) can be generated with `npm run deps`.
 
 You can also start an in-memory MongoDB with local configuration:
 
@@ -791,11 +786,12 @@ All API methods stick to the following rules, unless otherwise specified.
 
 #### Requests
 - All URL parameters are optional.
-- `POST`/`PUT`/`PATCH` requests require a JSON body.
+- `POST`/`PUT`/`PATCH` requests require a JSON equest body
 - Alternatively, `POST` can also receive the following inputs:
   - any kind of JSON stream
+  - SSSOM/TSV for [POST /mappings](#post-mappings), indicated  with Content-Type request header `application/sssom+tsv` or `text/tab-separated-values`
   - mutlipart/form-data with the file in `data`
-  - a URL with JSON data as `url` in the request params
+  - a URL with JSON as `url` in the request params
   - Note: The `type` request param might be required (either `json`, `ndjson`, or `multipart`)
 - All `GET` endpoints returning a certain type of JSKOS data offer the `properties=[list]` parameter, with `[list]` being a comma-separated list of properties.
   - All JSKOS types allow removing properties by prefixing the property with `-`. All following properties in the list will also be removed.
@@ -815,7 +811,7 @@ All API methods stick to the following rules, unless otherwise specified.
 
 #### Responses
 - `GET` requests will return code 200 on success.
-- `POST` requests will return code 201 on success.
+- `POST` requests will return code 200 or 201 on success.
 - `DELETE` requests will return code 204 on success.
 - For possible error responses, see [Errors](#errors).
 
@@ -1413,7 +1409,7 @@ Lists all concept schemes used in mappings.
   ```
 
 ### GET /mappings/infer
-Returns mappings based on stored mappings and mappings derived by inference. If a request to [GET /mappings](#get-mappings) results in stored mappings, only those are returned. If no stored mappings match the request, the following algorithm is applied to infer virtual mappings (this is experimental and not all source schemes are supported):
+Returns mappings based on stored mappings and mappings derived by inference. If a request to [GET /mappings](#get-mappings) results in stored mappings, only those are returned. If no stored mappings match the request, the following algorithm is applied to infer virtual mappings:
 
 - Ancestors of the requested concept (`from`) are traversed from narrower to broader until matching mapping(s) from one of the ancestor concepts are found.
 
@@ -1427,9 +1423,14 @@ Returns mappings based on stored mappings and mappings derived by inference. If 
 
 Inferred mappings don't have fields such as `uri`, `identifier`, `creator`, `created`... but `uri` of the mapping used for inference is included in `source`.
 
+Retrieval of ancestors depends on existence of parameter `fromScheme` (*this is experimental, details may change*):
+
+- if missing, ancestors are searched for in the database (see [GET /concepts/ancestors](#get-conceptsancestors))
+- otherwise the concept scheme must exist in in the database with a supported external API to query ancestors
+
 * **URL Params**
 
-  This endpoint takes the same parameters as [GET /mappings](#get-mappings), except that `to`, `download`, and `cardinality` (fixed to "1-to-1") are not supported. Parameter `direction` only supports the default value "forward". Parameters `from` and `fromScheme` are mandatory to get a non-empty result.
+  This endpoint takes the same parameters as [GET /mappings](#get-mappings), except that `to` and `download` are not allowed, `cardinality` can only be "1-to-1" and `direction` can only be "forward". An empty set is returned if parameter `from` is missing or if `from` is no URI and the concept scheme identified by `fromScheme` does not have a `namespace` to map `from` to an URI.  In addition there are parameters:
 
   `strict=[boolean]` values `1` or `true` disallow mapping type "closeMatch" for inferred mappings (default `false`)
 
@@ -1623,11 +1624,13 @@ Returns a specific mapping.
   ```
 
 ### POST /mappings
-Saves a mapping or multiple mappings in the database.
+Saves a mapping or multiple mappings in the database. Mappings can be provided in JSKOS or SSSOM/TSV format. Mappings must include JSKOS fields `fromScheme` and `toScheme`.  For JSKOS these fields can either be given with SSSOM/TSV metadata fields `subject_source` and `object_source` if URL parameter `scheme` is set to `given` or they can be inferred from concepts in the database with `scheme=lookup`.
 
 * **URL Params**
 
   `bulk=[boolean]` `1` or `true` enable bulk mode for importing multiple mappings into the database. Errors for individual mappings will be ignored and existing mappings will be overridden. The resulting set will only include the `id` for each mapping that was written into the database.
+
+  `scheme=given|lookup` whether take `fromScheme`/`toScheme` from passed data (`given` as default) or to look up concept URIs in the database (`lookup`).
 
 * **Success Reponse**
 
@@ -1663,6 +1666,24 @@ Deletes a mapping from the database.
 * **Success Reponse**
 
   Status 204, no content.
+
+### POST /mappings/apply
+Apply mappings to a JSKOS set (*experimental*).
+
+* **URL Params**
+
+  Same as [GET /mappings/infer](#get-mappingsinfer) except `direction` can only be "forward", `cardinality` can only be "1-to-1", `mode` can only be "null" and the parameters `to`, `download`, `from`, `strict`, and `type` are not allowed.
+
+  Mappings can be selected with `fromScheme`, `toScheme`, `partOf`, `identifier`, `creator`, `annotatedBy`, `annotatedFor`, and `annotatedWith`. Inference can be selected with `depth`.
+
+* **Success Reponse**
+
+  JSKOS set with additional concepts if these can be derived based on mappings. Each appended concept has fields:
+
+ - `uri` concept URI
+ - `inScheme` concept scheme of the concept
+ - `MAPPING` URI of the mapping that resulted in this enrichment
+
 
 ### GET /voc
 Lists supported terminologies (concept schemes).
