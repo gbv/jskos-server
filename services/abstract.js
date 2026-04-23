@@ -233,7 +233,7 @@ export class AbstractService {
    * @param {*} model a mongoose model
    * @param {*} pipeline an aggregation pipeline
    */
-  async _count(model, pipeline) {
+  async _count(model, pipeline=[{$match:{}}]) {
     if (pipeline.length === 1 && pipeline[0].$match && isQueryEmpty(pipeline[0].$match)) {
       // It's an empty query, i.e. we can use estimatedDocumentCount()
       return await model.estimatedDocumentCount()

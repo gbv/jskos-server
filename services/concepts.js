@@ -78,7 +78,9 @@ export class ConceptService extends AbstractService {
    */
   async queryItems(query) {
     if (!_.intersection(Object.keys(query), ["uri", "notation", "voc", "near"]).length) {
-      return []
+      const concepts = [] // don't return all concepts without query
+      concepts.totalCount = await this._count(Concept)
+      return concepts
     }
     const criteria = []
     const mongoQuery = { $and: criteria }

@@ -1695,7 +1695,7 @@ describe("Express Server", () => {
           res.should.have.status(200)
           res.should.have.header("Link")
           res.should.have.header("X-Total-Count")
-          res.headers["x-total-count"].should.be.eql("0")
+          res.headers["x-total-count"].should.be.eql("4")
           res.body.should.be.a("array")
           res.body.length.should.be.eql(0)
           done()
