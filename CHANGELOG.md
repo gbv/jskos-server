@@ -1,3 +1,8 @@
+# 2.5.1
+
+- Fix total number of concepts for empty concept query (#269)
+- Update jskos-validate to allow field `basedOn`
+
 # 2.5.0
 
 - Support uploading mappings in SSSOM/TSV format (#260)
