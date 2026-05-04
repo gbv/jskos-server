@@ -596,21 +596,26 @@ export class MappingService extends AbstractService {
 
   }
 
-  async applyMappings(data, query) {
+  async applyMappings(query, data=[]) {
     restrictQueryParameters(query, {
       direction: "forward",
       cardinality: "1-to-1",
       to: null,
       download: null,
       mode: "or",
-      from: null,
       strict: null,
       type: null,
     })
 
-    const from = new Set((Array.isArray(data) ? data : [data])
-      .filter(rec => "uri" in rec && typeof rec.uri === "string" && jskos.isValidUri(rec.uri))
-      .map(({uri}) => uri))
+    data = Array.isArray(data) ? data : [data]
+
+    let from
+    if (query.from) {
+      from = query.from.split("|")
+    } else {
+      from = data.map(item => item?.uri).filter(uri => typeof uri === "string")
+    }
+    from = new Set(from.filter(uri => jskos.isValidUri(uri)))
 
     const mappings = await this.inferMappings({
       ...query,
@@ -631,8 +636,6 @@ export class MappingService extends AbstractService {
     for (let uri in inferred) {
       data.push({ uri, ...inferred[uri] })
     }
-
-    data.statusCode = 200
 
     return data
   }

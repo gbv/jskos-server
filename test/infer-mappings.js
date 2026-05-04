@@ -349,14 +349,28 @@ describe("/mappings/{infer,apply}", () => {
       {},
     ]
 
-    it("should apply mapping", done => {
+    const uri = _.last(concepts).uri
+
+    it("should apply mapping (GET)", done => {
+      chai.request.execute(app)
+        .get("/mappings/apply")
+        .query({from: `${uri}|x:y`})
+        .end((error, res) => {
+          res.should.have.status(200)
+          res.body.should.be.an("array")
+          assert.equal(res.body.length, 1)
+          assert.ok(res.body[0]?.MAPPING)
+          done()
+        })
+    })
+
+    it("should apply mapping (POST)", done => {
       chai.request.execute(app)
         .post("/mappings/apply")
         .send(data)
         .end((error, res) => {
           res.should.have.status(200)
           res.body.should.be.an("array")
-
           assert.equal(res.body.length, 5)
           assert.deepStrictEqual(res.body.slice(0,4), data)
           assert.equal(res.body[4].uri, "urn:test:target-scheme:7")

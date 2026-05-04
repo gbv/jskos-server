@@ -1,3 +1,8 @@
+# 2.5.2
+
+- Add GET /mappings/apply (#282)
+- Return all concepts at GET /concepts (#285)
+
 # 2.5.1
 
 - Fix total number of concepts for empty concept query (#269)

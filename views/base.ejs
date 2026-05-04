@@ -182,8 +182,12 @@
       derived by inference
       [%- include("icons",{ api: config.mappings.infer, ref: "get-mappingsinfer" }) %]
     </li>
-    <li>POST /mappings/apply - Apply mappings to a set of items
+    <li>GET <a href="mappings/apply">/mappings/apply</a> -
+      Apply mappings to a set of uris
       [%- include("icons",{ api: config.mappings.infer, ref: "get-mappingsapply" }) %]
+    </li>
+    <li>POST /mappings/apply - Apply mappings to a set of items
+      [%- include("icons",{ api: config.mappings.infer, ref: "post-mappingsapply" }) %]
     </li>
     <li>GET <a href="mappings/suggest">/mappings/suggest</a> - Suggest notations used in mappings
       [%- include("icons",{ api: config.mappings.suggest, ref: "get-mappingssuggest" }) %]

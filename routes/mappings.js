@@ -41,15 +41,20 @@ export default config => {
       returnJSON,
     )
 
+    router.get(
+      "/apply",
+      router.authenticate(mappings.read.auth),
+      wrapAsync(async req => service.applyMappings(req.query)),
+      returnJSON,
+    )
+
     router.post(
       "/apply",
       router.authenticate(mappings.read.auth),
       express.json(),
-      wrapAsync(async req => service.applyMappings(req.body, req.query)),
+      wrapAsync(async req => service.applyMappings(req.query, req.body)),
       returnJSON,
       (req, res) => {
-        console.log("/apply middleware")
-        console.log(res.statusCode)
         if (res.statusCode === 201) {
           res.status(200)
         }
