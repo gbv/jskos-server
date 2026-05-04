@@ -78,7 +78,6 @@ export class ConceptService extends AbstractService {
    */
   async queryItems(query) {
     const criteria = []
-    const mongoQuery = {}
     const uris = query.uri ? query.uri.split("|") : []
     const notations = query.notation ? query.notation.split("|") : []
     if (uris.length || notations.length) {
@@ -97,6 +96,7 @@ export class ConceptService extends AbstractService {
       }
       criteria.push({ $or: uris.map(uri => ({ "inScheme.uri": uri })) })
     }
+    const mongoQuery = {}
     if (criteria.length) {
       mongoQuery.$and = criteria
     }
