@@ -47,6 +47,7 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
   - [PUT /mappings/:\_id](#put-mappings_id)
   - [PATCH /mappings/:\_id](#patch-mappings_id)
   - [DELETE /mappings/:\_id](#delete-mappings_id)
+  - [GET /mappings/apply](#get-mappingsapply)
   - [POST /mappings/apply](#post-mappingsapply)
   - [GET /voc](#get-voc)
   - [POST /voc](#post-voc)
@@ -1667,12 +1668,12 @@ Deletes a mapping from the database.
 
   Status 204, no content.
 
-### POST /mappings/apply
-Apply mappings to a JSKOS set (*experimental*).
+### GET /mappings/apply
+Apply mappings to a set of URIs, given by query parameter `from`.
 
 * **URL Params**
 
-  Same as [GET /mappings/infer](#get-mappingsinfer) except `direction` can only be "forward", `cardinality` can only be "1-to-1", `mode` can only be "null" and the parameters `to`, `download`, `from`, `strict`, and `type` are not allowed.
+  Same as [GET /mappings/infer](#get-mappingsinfer) except `direction` can only be "forward", `cardinality` can only be "1-to-1", `mode` can only be "null" and the parameters `to`, `download`, `strict`, and `type` are not allowed.
 
   Mappings can be selected with `fromScheme`, `toScheme`, `partOf`, `identifier`, `creator`, `annotatedBy`, `annotatedFor`, and `annotatedWith`. Inference can be selected with `depth`.
 
@@ -1684,6 +1685,8 @@ Apply mappings to a JSKOS set (*experimental*).
  - `inScheme` concept scheme of the concept
  - `MAPPING` URI of the mapping that resulted in this enrichment
 
+### POST /mappings/apply
+Apply mappings to a JSKOS set, given as request body. Query parameters and response are same as GET /mappings/apply.
 
 ### GET /voc
 Lists supported terminologies (concept schemes).
@@ -1869,7 +1872,7 @@ Returns concept scheme suggestions.
 Currently the same as `/voc/suggest` with parameter `format=jskos`.
 
 ### GET /concepts
-Returns detailed data for concepts. Note that there is no certain order to the result set (but it should be consistent across requests). Note that no data is returned if no filtering parameter is given (one of `uri`, `notation`, `voc`, or `near`).
+Returns detailed data for concepts. Note that there is no certain order to the result set (but it should be consistent across requests).
 
 * **URL Params**
 
