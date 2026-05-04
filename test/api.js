@@ -1688,7 +1688,7 @@ describe("Express Server", () => {
 
   describe("GET /concepts", () => {
 
-    it("should GET empty list when no URL is provided", done => {
+    it("should GET concepts without query", done => {
       chai.request.execute(app)
         .get("/concepts")
         .end((err, res) => {
@@ -1697,7 +1697,7 @@ describe("Express Server", () => {
           res.should.have.header("X-Total-Count")
           res.headers["x-total-count"].should.be.eql("4")
           res.body.should.be.a("array")
-          res.body.length.should.be.eql(0)
+          res.body.length.should.be.eql(4)
           done()
         })
     })

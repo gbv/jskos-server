@@ -77,13 +77,8 @@ export class ConceptService extends AbstractService {
    * Return a Promise with an array of concepts.
    */
   async queryItems(query) {
-    if (!_.intersection(Object.keys(query), ["uri", "notation", "voc", "near"]).length) {
-      const concepts = [] // don't return all concepts without query
-      concepts.totalCount = await this._count(Concept)
-      return concepts
-    }
     const criteria = []
-    const mongoQuery = { $and: criteria }
+    const mongoQuery = {}
     const uris = query.uri ? query.uri.split("|") : []
     const notations = query.notation ? query.notation.split("|") : []
     if (uris.length || notations.length) {
@@ -101,6 +96,9 @@ export class ConceptService extends AbstractService {
         uris = [query.voc]
       }
       criteria.push({ $or: uris.map(uri => ({ "inScheme.uri": uri })) })
+    }
+    if (criteria.length) {
+      mongoQuery.$and = criteria
     }
     if (query.near) {
       const [latitude, longitude] = query.near.split(",").map(parseFloat)
