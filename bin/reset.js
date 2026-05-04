@@ -198,25 +198,23 @@ import { models } from "../models/index.js"
     }
     totalCount += count
   }
-  if (totalCount == 0) {
-    logError({
-      message: "Did not find any entities to be deleted, aborting...",
-      exit: true,
+  if (totalCount > 0) {
+    if (totalCount > 50000) {
+      question += "This will take a while.\n"
+    }
+    question += "Is that okay?"
+    const ok = await yesno({
+      question,
+      defaultValue: false,
     })
-  }
-  if (totalCount > 50000) {
-    question += "This will take a while.\n"
-  }
-  question += "Is that okay?"
-  const ok = await yesno({
-    question,
-    defaultValue: false,
-  })
-  if (!ok) {
-    logError({
-      message: "Aborting...",
-      exit: true,
-    })
+    if (!ok) {
+      logError({
+        message: "Aborting...",
+        exit: true,
+      })
+    }
+  } else {
+    log("Did not find any entities to be deleted.")
   }
   log()
 

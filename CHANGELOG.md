@@ -1,6 +1,7 @@
 # 2.5.2
 
 - Add GET /mappings/apply (#282)
+- Ignore empty database on reset script (#284)
 - Return all concepts at GET /concepts (#285)
 
 # 2.5.1

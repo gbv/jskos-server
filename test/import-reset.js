@@ -293,7 +293,7 @@ describe("Import and Reset Script", () => {
       assert.strictEqual(results.length, lengthBefore - uris.length)
     })
 
-    const abortMessageForNoEntities = "Did not find any entities to be deleted, aborting"
+    const abortMessageForNoEntities = "Did not find any entities to be deleted."
 
     it("should fail when -s and -c are given", async () => {
       try {
@@ -332,20 +332,10 @@ describe("Import and Reset Script", () => {
     })
 
     it("should clear the whole database", async () => {
-      // Clear database
       await exec("yes | NODE_ENV=test ./bin/reset.js")
       for (let collection of ["concepts", "mappings", "terminologies"]) {
         const result = await db.collection(collection).find({}).toArray()
         assert.strictEqual(result.length, 0)
-      }
-    })
-
-    it("should fail if trying to clear the database a second time", async () => {
-      try {
-        await exec("yes | NODE_ENV=test ./bin/reset.js")
-        assert.fail("Expected reset script to fail if there are no entities to delete.")
-      } catch (error) {
-        assert(error.stderr.includes(abortMessageForNoEntities))
       }
     })
 
