@@ -10,7 +10,7 @@ import { Annotation } from "../models/annotations.js"
 import { SchemeService } from "./schemes.js"
 import { ConcordanceService } from "./concordances.js"
 import { ConceptService } from "./concepts.js"
-import { MalformedRequestError, EntityNotFoundError, InvalidBodyError, DatabaseAccessError, BackendError } from "../errors/index.js"
+import { MalformedRequestError, EntityNotFoundError, InvalidBodyError, BackendError } from "../errors/index.js"
 
 const validateMapping = (mapping) => {
   const valid = validate.mapping(mapping)
@@ -761,19 +761,16 @@ export class MappingService extends AbstractService {
       mapping.type = ["http://www.w3.org/2004/02/skos/core#mappingRelation"]
     }
 
-    const result = await this.model.replaceOne({ _id: existing._id }, mapping)
-    if (result.acknowledged && result.matchedCount) {
-      // Update concordances if necessary
-      if (existing.partOf && existing.partOf[0]) {
-        await this.concordanceService.postAdjustmentForConcordance(existing.partOf[0].uri)
-      }
-      if (body.partOf && body.partOf[0]) {
-        await this.concordanceService.postAdjustmentForConcordance(body.partOf[0].uri)
-      }
-      return mapping
-    } else {
-      throw new DatabaseAccessError()
+    await this._replaceItem(existing._id, mapping)
+
+    // Update concordances if necessary
+    if (existing.partOf && existing.partOf[0]) {
+      await this.concordanceService.postAdjustmentForConcordance(existing.partOf[0].uri)
     }
+    if (body.partOf && body.partOf[0]) {
+      await this.concordanceService.postAdjustmentForConcordance(body.partOf[0].uri)
+    }
+    return mapping
   }
 
   async patch({ body, existing }) {
@@ -825,19 +822,15 @@ export class MappingService extends AbstractService {
     }
     this.checkWhitelists(mapping)
 
-    const result = await this.model.replaceOne({ _id: newMapping._id }, newMapping)
-    if (result.acknowledged) {
-      // Update concordances if necessary
-      if (existing.partOf && existing.partOf[0]) {
-        await this.concordanceService.postAdjustmentForConcordance(existing.partOf[0].uri)
-      }
-      if (body.partOf && body.partOf[0]) {
-        await this.concordanceService.postAdjustmentForConcordance(body.partOf[0].uri)
-      }
-      return newMapping
-    } else {
-      throw new DatabaseAccessError()
+    await this._replaceItem(newMapping._id, newMapping)
+    // Update concordances if necessary
+    if (existing.partOf && existing.partOf[0]) {
+      await this.concordanceService.postAdjustmentForConcordance(existing.partOf[0].uri)
     }
+    if (body.partOf && body.partOf[0]) {
+      await this.concordanceService.postAdjustmentForConcordance(body.partOf[0].uri)
+    }
+    return newMapping
   }
 
   async deleteItem({ existing }) {

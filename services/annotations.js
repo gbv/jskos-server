@@ -4,7 +4,7 @@ import jskos from "jskos-tools"
 import { validate } from "jskos-validate"
 import _ from "lodash"
 import { Annotation, Mapping, Concept } from "../models/index.js"
-import { DatabaseAccessError, InvalidBodyError, ForbiddenAccessError } from "../errors/index.js"
+import { InvalidBodyError, ForbiddenAccessError } from "../errors/index.js"
 
 import { AbstractService } from "./abstract.js"
 
@@ -157,11 +157,11 @@ export class AnnotationService extends AbstractService {
     if (!annotation) {
       throw new InvalidBodyError()
     }
-    // Add modified date.
+
     annotation.modified = (new Date()).toISOString()
-    // Remove type property
-    _.unset(annotation, "type")
-    // Validate annotation
+
+    delete annotation["type"]
+
     await this.validateAnnotation(annotation)
 
     // Always preserve certain existing properties
@@ -176,12 +176,8 @@ export class AnnotationService extends AbstractService {
       annotation.target = { id: annotation.target }
     }
 
-    const result = await Annotation.replaceOne({ _id: existing._id }, annotation)
-    if (result.acknowledged && result.matchedCount) {
-      return annotation
-    } else {
-      throw new DatabaseAccessError()
-    }
+    await this._replaceItem(existing._id, annotation)
+    return annotation
   }
 
   async patch({ body, existing }) {
@@ -189,7 +185,6 @@ export class AnnotationService extends AbstractService {
     if (!annotation) {
       throw new InvalidBodyError()
     }
-
     annotation.modified = (new Date()).toISOString()
 
     for (let key of ["_id", "id", "type", "created"]) {
@@ -208,12 +203,8 @@ export class AnnotationService extends AbstractService {
     // Validate annotation
     await this.validateAnnotation(existing)
 
-    const result = await Annotation.replaceOne({ _id: existing._id }, existing)
-    if (result.acknowledged) {
-      return existing
-    } else {
-      throw new DatabaseAccessError()
-    }
+    await this._replaceItem(existing._id, existing)
+    return existing
   }
 
   async createIndexes() {

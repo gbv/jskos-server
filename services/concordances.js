@@ -11,7 +11,7 @@ import { SchemeService } from "./schemes.js"
 
 const validateConcordance = validate.concordance
 
-import { MalformedRequestError, EntityNotFoundError, InvalidBodyError, DatabaseAccessError } from "../errors/index.js"
+import { MalformedRequestError, EntityNotFoundError, InvalidBodyError } from "../errors/index.js"
 
 import { AbstractService } from "./abstract.js"
 
@@ -168,13 +168,9 @@ export class ConcordanceService extends AbstractService {
       throw new InvalidBodyError()
     }
 
-    const result = await this.model.replaceOne({ _id: existing._id }, concordance)
-    if (result.acknowledged && result.matchedCount) {
-      await this.postAdjustmentForConcordance(existing._id)
-      return concordance
-    } else {
-      throw new DatabaseAccessError()
-    }
+    await this._replaceItem(existing._id, concordance)
+    await this.postAdjustmentForConcordance(existing._id)
+    return concordance
   }
 
   async patch({ body, existing }) {
@@ -208,13 +204,9 @@ export class ConcordanceService extends AbstractService {
       throw new InvalidBodyError()
     }
 
-    const result = await this.model.replaceOne({ _id: existing._id }, existing)
-    if (result.acknowledged) {
-      await this.postAdjustmentForConcordance(existing._id)
-      return existing
-    } else {
-      throw new DatabaseAccessError()
-    }
+    await this._replaceItem(existing._id, existing)
+    await this.postAdjustmentForConcordance(existing._id)
+    return existing
   }
 
   async deleteItem({ existing }) {

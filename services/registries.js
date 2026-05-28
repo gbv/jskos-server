@@ -88,21 +88,11 @@ export class RegistryService extends AbstractService {
    * @throws {DatabaseAccessError} If the database operation fails.
    */
   async updateItem({ body, existing }) {
-    if (!body) {
-      throw new InvalidBodyError()
-    }
+    body = await this.prepareAndCheckItemForAction(body, "update")
 
     body.modified = new Date().toISOString()
 
     delete body.type
-
-    // Validate registry
-    if (!validate.registry(body)) {
-      const msgs = validate.registry?.errorMessages || []
-      throw new InvalidBodyError(
-        msgs.join("; ") || "Registry validation failed",
-      )
-    }
 
     await this.processMembers(body)
 
@@ -113,16 +103,8 @@ export class RegistryService extends AbstractService {
     body.id = existing.id
     body._id = existing._id
 
-    // Replace in database
-    const result = await this.model.replaceOne({ _id: existing._id }, body)
-    if (!result.matchedCount) {
-      throw new EntityNotFoundError(`Registry not found: ${existing._id}`)
-    }
-
-    // Confirm that the update was acknowledged
-    if (!result.acknowledged) {
-      throw new DatabaseAccessError()
-    }
+    // Write item to database
+    await this._replaceItem(existing._id, body)
 
     // Return the updated registry entry
     const doc = await this.model.findById(existing._id).lean()
@@ -163,16 +145,8 @@ export class RegistryService extends AbstractService {
       )
     }
 
-    // Replace in database
-    const result = await this.model.replaceOne({ _id: existing._id }, existing)
-    if (!result.matchedCount) {
-      throw new EntityNotFoundError(`Registry not found: ${existing._id}`)
-    }
-
-    // Confirm that the update was acknowledged
-    if (!result.acknowledged) {
-      throw new DatabaseAccessError()
-    }
+    // Write item to database
+    await this._replaceItem(existing._id, existing)
 
     // Return the updated registry entry
     const doc = await this.model.findById(existing._id).lean()

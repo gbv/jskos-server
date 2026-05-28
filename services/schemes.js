@@ -2,7 +2,7 @@ import _ from "lodash"
 import { validate } from "jskos-validate"
 
 import { addKeywords } from "../utils/searchHelper.js"
-import { MalformedBodyError, MalformedRequestError, EntityNotFoundError, DatabaseAccessError, InvalidBodyError } from "../errors/index.js"
+import { MalformedBodyError, MalformedRequestError, InvalidBodyError } from "../errors/index.js"
 import { Scheme } from "../models/schemes.js"
 import { Concept } from "../models/concepts.js"
 
@@ -128,10 +128,7 @@ export class SchemeService extends AbstractService {
   // Write endpoints start here
 
   async updateItem({ body, existing, ...args }) {
-    let item = body
-
-    // Prepare
-    item = await this.prepareAndCheckItemForAction(item, "update")
+    let item = await this.prepareAndCheckItemForAction(body, "update")
 
     // Override _id, uri, and created properties
     item._id = existing._id
@@ -139,13 +136,7 @@ export class SchemeService extends AbstractService {
     item.created = existing.created
 
     // Write item to database
-    const result = await this.model.replaceOne({ _id: item.uri }, item)
-    if (!result.acknowledged) {
-      throw new DatabaseAccessError()
-    }
-    if (!result.matchedCount) {
-      throw new EntityNotFoundError()
-    }
+    await this._replaceItem(item.uri, item)
 
     return (await this.postAdjustmentsForItems([item], args))[0]
   }

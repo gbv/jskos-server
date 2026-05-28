@@ -267,6 +267,9 @@ export class AbstractService {
 
   // to be implemented by subclasses
   async prepareAndCheckItemForAction(item, _action) {
+    if (!_.isObject(item)) {
+      throw new MalformedBodyError()
+    }
     return item
   }
 
@@ -301,6 +304,20 @@ export class AbstractService {
     }
 
     return isMultiple ? response : response[0]
+  }
+
+  /**
+   * Replace item in database and raise error on failure.
+   */
+  async _replaceItem(_id, item) {
+    const result = await this.model.replaceOne({ _id }, item)
+    if (!result.matchedCount) {
+      throw new EntityNotFoundError(`Item not found: ${_id}`)
+    }
+    if (!result.acknowledged) {
+      throw new DatabaseAccessError()
+    }
+    return item
   }
 
   /**

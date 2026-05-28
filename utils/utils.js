@@ -20,7 +20,7 @@ export function cleanJSON(json, depth = 0) {
   } else if (_.isObject(json)) {
     _.forOwn(json, (value, key) => {
       if (key.startsWith("_")) {
-        _.unset(json, key)
+        delete json[key]
       } else {
         cleanJSON(value, depth + 1)
       }

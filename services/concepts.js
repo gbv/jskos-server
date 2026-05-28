@@ -252,14 +252,7 @@ export class ConceptService extends AbstractService {
   }
 
   async updateItem({ body, existing }) {
-    if (!body) {
-      throw new MalformedBodyError()
-    }
-
-    if (!_.isObject(body)) {
-      throw new MalformedBodyError()
-    }
-    let concept = body
+    let concept = await this.prepareAndCheckItemForAction(body, "update")
 
     // Prepare
     const preparation = await this.prepareAndCheckConcepts([concept])
@@ -276,13 +269,7 @@ export class ConceptService extends AbstractService {
     concept.created = existing.created
 
     // Write concept to database
-    const result = await Concept.replaceOne({ _id: existing._id }, concept)
-    if (!result.acknowledged) {
-      throw new DatabaseAccessError()
-    }
-    if (!result.matchedCount) {
-      throw new EntityNotFoundError()
-    }
+    await this._replaceItem(existing._id, concept)
 
     // ? Can we return the request without waiting for this step?
     await this.postAdjustmentsForItems(preparation)
