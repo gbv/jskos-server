@@ -33,19 +33,6 @@ export class RegistryService extends AbstractService {
   }
 
   /**
-   * Retrieves registry entries.
-   *
-   * @param {Object} query - Query parameters controlling pagination.
-   * @param {number|string} [query.limit=100] - Maximum number of registries to fetch.
-   * @param {number|string} [query.offset=0] - Number of registries to skip before fetching.
-   * @returns {Promise<Object[]>} A promise that resolves to the matching registries.
-   */
-  async queryItems(query) {
-    const { limit, offset } = this._getLimitAndOffset(query)
-    return this.model.find({}).skip(offset).limit(limit).lean().exec()
-  }
-
-  /**
    * Prepares and checks a registry before inserting/updating:
    * - validates object, throws error if it doesn't (create/update)
    * - add `_id` property (create/update)

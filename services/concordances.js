@@ -72,11 +72,7 @@ export class ConcordanceService extends AbstractService {
       // For a download, return a stream
       return this.model.find(mongoQuery).lean().cursor()
     } else {
-      // Otherwise, return results
-      const { limit, offset } = this._getLimitAndOffset(query)
-      const concordances = await this.model.find(mongoQuery).lean().skip(offset).limit(limit).exec()
-      concordances.totalCount = await this._count(this.model, [{ $match: mongoQuery }])
-      return concordances
+      return this._queryItems(this.model, query, mongoQuery)
     }
   }
 

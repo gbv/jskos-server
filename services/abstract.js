@@ -175,6 +175,75 @@ export class AbstractService {
   }
 
   /**
+   * Execute query and add count.
+   */
+  async _queryItems(model, query, mongoQuery) {
+    const { limit, offset } = this._getLimitAndOffset(query)
+    const items = await model.find(mongoQuery).lean().skip(offset).limit(limit).exec()
+    items.totalCount = await this._count(model, [{ $match: mongoQuery }])
+    return items
+  }
+
+  /**
+   * Retrieves items (default implementation).
+   */
+  async queryItems(query) {
+    const mongoQuery = this._commonFieldsQuery(query)
+    return this._queryItems(this.model, query, mongoQuery)
+  }
+
+  /**
+   * Build a MongoDB query from request query to filter by common JSKOS Item fields.
+   */
+  _commonFieldsQuery(query) {
+    const mongoQuery = {}
+
+    const filters = {
+      // JSKOS Resource fields:
+      type: "type",
+      // TODO: created, issued, modified, creator...
+      source: "source.uri",
+      partOf: "partOf.uri",
+      // JSKOS Item fields:
+      url: "url",
+      notation: "notation",
+      // TODO: labels, notes, examples
+      startDate: "startDate",
+      endDate: "endDate",
+      // TODO: relatedDates
+      startPlace: "startPlace.uri",
+      endPlace: "endPlace.uri",
+      place: "place.uri",
+      replacedBy: "replacedBy.uri",
+      basedOn: "basedOn.uri",
+      subject: "subject.uri",
+      subjectOf: "subjectOf.uri",
+      depiction: "depiction",
+      // TODO: media
+      tool: "tool.uri",
+      issue: "issue.uri",
+      issueTracke: "issueTracker.uri",
+      guidelines: "guidelines.uri",
+      version: "version",
+      versionOf: "versionOf.uri",
+      // JSKOS Concept Scheme fields:
+      namespace: "namespace",
+      // Other fields
+      license: "license.uri",
+    }
+
+    for (let key in filters) {
+      const values = query[key]?.split("|").filter(s => s !== "")
+      const index = filters[key]
+      if (values?.length) {
+        mongoQuery[index] = { $in: values }
+      }
+    }
+
+    return mongoQuery
+  }
+
+  /**
    * Returns a Promise with suggestions, either in OpenSearch Suggest Format or JSKOS (?format=jskos).
    */
   async getSuggestions(query) {

@@ -98,11 +98,7 @@ export class AnnotationService extends AbstractService {
     }
 
     const mongoQuery = criteria.length ? { $and: criteria } : {}
-    const { limit, offset } = this._getLimitAndOffset(query)
-    const annotations = await Annotation.find(mongoQuery).lean().skip(offset).limit(limit).exec()
-    annotations.totalCount = await this._count(Annotation, [{ $match: mongoQuery }])
-
-    return annotations
+    return this._queryItems(Annotation, query, mongoQuery)
   }
 
   async prepareAndCheckItemForAction(item, action, { admin, user, bulk }) {

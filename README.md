@@ -1709,6 +1709,8 @@ Lists supported terminologies (concept schemes).
 
   `partOf=URIs` filter by registry URI that is listed in `partOf` field of the scheme, separated by `|`
 
+  `versionOf=URIs` filter by URI that is listed in `versionOf` field of the scheme, separated by `|`
+
   `sort=[property]` sort the results by a certain property. Possible values: `label` (preferred or alternative label in English or other languages), `notation` (string), `created` (timestamp), `modified` (timestamp), `counter` (number after last `/` in URI)
 
   `order=[order]` order to use for sorting. Available are `asc` (default) and `desc`.

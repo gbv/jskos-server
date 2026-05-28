@@ -120,12 +120,13 @@ export class ConceptService extends AbstractService {
         },
       }
     }
+
+    // TODO: move into _queryItems
     if (query.download) {
       return this.retrieveItems(mongoQuery, null, null, false).cursor()
+    } else {
+      return this._queryItems(Concept, query, mongoQuery)
     }
-    const concepts = await this.retrieveItems(mongoQuery, query.offset, query.limit)
-    concepts.totalCount = await this._count(Concept, queryToAggregation(mongoQuery))
-    return concepts
   }
 
   /**
