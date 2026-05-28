@@ -1,3 +1,8 @@
+# 2.5.3
+
+- Add versionOf and more query parameters
+- Remove search by publisher label
+
 # 2.5.2
 
 - Add GET /mappings/apply (#282)

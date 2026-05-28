@@ -20,24 +20,13 @@ export class SchemeService extends AbstractService {
    * Return a Promise with an array of vocabularies.
    */
   async queryItems(query) {
-    let mongoQuery
+    let mongoQuery = this._commonFieldsQuery(query)
 
     if (query.uri) {
-      mongoQuery = {
+      const criteria = {
         $or: query.uri.split("|").map(uri => ({ uri })).concat(query.uri.split("|").map(uri => ({ identifier: uri }))),
       }
-    } else {
-      mongoQuery = this._commonFieldsQuery(query)
-    }
-
-    if (query.languages) {
-      mongoQuery.languages = {
-        $in: query.languages.split(","),
-      }
-    }
-
-    if (query.publisher) {
-      mongoQuery._keywordsPublisher = query.publisher
+      mongoQuery = { $and: [criteria, mongoQuery] }
     }
 
     // Sort order (default: asc = 1)

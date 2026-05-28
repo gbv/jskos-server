@@ -1705,7 +1705,7 @@ Lists supported terminologies (concept schemes).
 
   `license=URIs` license URI(s) to filter schemes, separated by `|`
 
-  `publisher=URI|label` publisher URI or label to filter schemes (only exact matches)
+  `publisher=URIs` publisher URI(s) to filter schemes, separated by `|`
 
   `partOf=URIs` filter by registry URI that is listed in `partOf` field of the scheme, separated by `|`
 

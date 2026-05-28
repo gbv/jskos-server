@@ -96,10 +96,9 @@ export class ConceptService extends AbstractService {
       }
       criteria.push({ $or: uris.map(uri => ({ "inScheme.uri": uri })) })
     }
-    const mongoQuery = {}
-    if (criteria.length) {
-      mongoQuery.$and = criteria
-    }
+
+    const mongoQuery = criteria.length ? { $and: criteria } : {}
+
     if (query.near) {
       const [latitude, longitude] = query.near.split(",").map(parseFloat)
       // distance is given in km, but MongoDB uses meters

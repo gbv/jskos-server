@@ -60,12 +60,8 @@ export class ConcordanceService extends AbstractService {
         ].filter(Boolean))),
       })
     }
-    // Set mode
-    let mode = query.mode
-    if (!["and", "or"].includes(mode)) {
-      mode = "and"
-    }
 
+    const mode = ["and", "or"].includes(query.mode) ? query.mode : "and"
     const mongoQuery = conditions.length ? { [`$${mode}`]: conditions } : {}
 
     if (query.download) {

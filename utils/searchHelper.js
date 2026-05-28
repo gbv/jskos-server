@@ -92,13 +92,6 @@ export function addKeywords(item) {
       return v
     })
     item._keywordsOther = _.flattenDeep(item._keywordsOther)
-    if (item.publisher) {
-      item._keywordsPublisher = _.flattenDeep(
-        item.publisher.map(publisher => {
-          return [publisher.uri].concat(Object.values(publisher.prefLabel || {}))
-        }),
-      )
-    }
   }
 }
 

@@ -196,13 +196,14 @@ export class AbstractService {
    * Build a MongoDB query from request query to filter by common JSKOS Item fields.
    */
   _commonFieldsQuery(query) {
-    const mongoQuery = {}
+    const criteria = []
 
-    const filters = {
+    const fields = {
       // JSKOS Resource fields:
       type: "type",
       // TODO: created, issued, modified, creator...
       source: "source.uri",
+      publisher: "publisher.uri",
       partOf: "partOf.uri",
       // JSKOS Item fields:
       url: "url",
@@ -232,15 +233,22 @@ export class AbstractService {
       license: "license.uri",
     }
 
-    for (let key in filters) {
-      const values = query[key]?.split("|").filter(s => s !== "")
-      const index = filters[key]
-      if (values?.length) {
-        mongoQuery[index] = { $in: values }
+    for (let key in fields) {
+      if (query[key]) {
+        const values = query[key].split("|").filter(s => s)
+        const index = fields[key]
+        if (values.length) {
+          criteria.push({[index]: { $in: values }})
+        }
       }
     }
 
-    return mongoQuery
+    if (query.languages) {
+      const values = query.languages.split(",")
+      criteria.push({ languages: { $in: values } })
+    }
+
+    return criteria.length ? { $and: criteria } : {}
   }
 
   /**
