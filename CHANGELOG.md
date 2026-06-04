@@ -1,7 +1,10 @@
 # 2.5.3
 
-- Add versionOf and more query parameters
-- Remove search by publisher label
+- Add `versionOf` and more common JSKOS query parameters.
+- Remove search by publisher label; `publisher` now filters by URI.
+- Fix `/mappings/apply` with `toScheme`, so only mappings matching the input concept/body are applied.
+- Return an empty result instead of a backend error for unknown concepts during mapping inference.
+- Update dependencies and remove duplicated service code.
 
 # 2.5.2
 
