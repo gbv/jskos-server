@@ -588,6 +588,9 @@ export class MappingService extends AbstractService {
         }
       }
     } catch (error) {
+      if (error instanceof EntityNotFoundError) {
+        return []
+      }
       // This mainly catches errors related to the API requests for ancestors and mappings
       throw new BackendError(`There was an error retrieving ancestors for concept ${from}: ${error.message}`)
     }
@@ -602,7 +605,7 @@ export class MappingService extends AbstractService {
       cardinality: "1-to-1",
       to: null,
       download: null,
-      mode: "or",
+      mode: null,
       strict: null,
       type: null,
     })

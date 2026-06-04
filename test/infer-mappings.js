@@ -350,6 +350,22 @@ describe("/mappings/{infer,apply}", () => {
     ]
 
     const uri = _.last(concepts).uri
+    const extraTargetUri = `${targetScheme.uri}:8`
+
+    before(async () => {
+      const mapping = {
+        from: { memberSet: [{ uri: `${scheme.uri}:3` }] },
+        fromScheme: scheme,
+        to: { memberSet: [{ uri: extraTargetUri }] },
+        toScheme: targetScheme,
+        type: ["http://www.w3.org/2004/02/skos/core#exactMatch"],
+      }
+      const res = await chai.request.execute(app)
+        .post("/mappings")
+        .set("Authorization", `Bearer ${token}`)
+        .send(mapping)
+      res.should.have.status(201)
+    })
 
     it("should apply mapping (GET)", done => {
       chai.request.execute(app)
@@ -376,6 +392,34 @@ describe("/mappings/{infer,apply}", () => {
           assert.equal(res.body[4].uri, "urn:test:target-scheme:7")
           done()
         })
+    })
+
+    it("should combine body and toScheme filters when applying mappings", async () => {
+      const res = await chai.request.execute(app)
+        .post("/mappings/apply")
+        .query({ toScheme: targetScheme.uri })
+        .send([{ uri }])
+
+      res.should.have.status(200)
+      res.body.should.be.an("array")
+      assert.deepStrictEqual(res.body.map(item => item.uri), [uri, `${targetScheme.uri}:7`])
+    })
+
+    it("should not add targets for an unknown body item when toScheme is given", async () => {
+      const body = [
+        {
+          uri: "http://example.org/not-ddc",
+          inScheme: [{ uri: "http://example.org/scheme" }],
+          notation: ["x"],
+        },
+      ]
+      const res = await chai.request.execute(app)
+        .post("/mappings/apply")
+        .query({ toScheme: targetScheme.uri })
+        .send(body)
+
+      res.should.have.status(200)
+      assert.deepStrictEqual(res.body, body)
     })
   })
 })
