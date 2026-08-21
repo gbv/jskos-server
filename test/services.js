@@ -165,6 +165,13 @@ describe("Services Features", () => {
         assert.strictEqual(result.length, annotations.length)
       })
 
+
+      it("should get zero mappings with limit=0", async () => {
+        const result = await services.mapping.queryItems({ limit: 0 })
+        assert.strictEqual(result.length, 0)
+        assert.strictEqual(result.totalCount, 5)
+      })
+
       it("should get correct number of mappings when using annotatedWith param", async () => {
         const annotatedWith = "-1"
         const result = await services.mapping.queryItems({ limit: 10, offset: 0, annotatedWith })

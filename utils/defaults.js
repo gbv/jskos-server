@@ -16,7 +16,7 @@ export const addMiddlewareProperties = config => (req, res, next) => {
     // Limit for pagination
     const defaultLimit = 100
     query.limit = parseInt(req.query.limit)
-    if (isNaN(query.limit) || req.query.limit <= 0) {
+    if (isNaN(query.limit) || req.query.limit < 0) {
       query.limit = defaultLimit
     }
     // Offset for pagination

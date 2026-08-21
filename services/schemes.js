@@ -77,7 +77,7 @@ export class SchemeService extends AbstractService {
     pipeline.push({ $skip: offset })
     pipeline.push({ $limit: limit })
 
-    const schemes = await this.model.aggregate(pipeline)
+    const schemes = limit ? await this.model.aggregate(pipeline) : []
     schemes.totalCount = await this._count(Scheme, [{ $match: mongoQuery }])
 
     return schemes

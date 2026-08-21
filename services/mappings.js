@@ -440,8 +440,12 @@ export class MappingService extends AbstractService {
       return pipeline.model.aggregate(pipeline).cursor()
     } else {
       // Otherwise, return results
-      const normalizedPagination = this._getLimitAndOffset({ limit, offset })
-      const mappings = await pipeline.model.aggregate(pipeline.concat({ $skip: normalizedPagination.offset }, { $limit: normalizedPagination.limit }), { allowDiskUse: true }).exec()
+      const pagination = this._getLimitAndOffset({ limit, offset })
+
+      const mappings = pagination.limit
+        ? await pipeline.model.aggregate(pipeline.concat({ $skip: pagination.offset }, { $limit: pagination.limit }), { allowDiskUse: true }).exec()
+        : []
+
       // Handle negative annotation assertions differently because counting is inefficient
       if (negativeAnnotationAssertion) {
         // Instead, count by building a pipeline without `annotatedFor`, then another pipeline with the opposite `annotatedFor`, count for both and calculate the difference
