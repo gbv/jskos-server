@@ -179,7 +179,7 @@ export class AbstractService {
    */
   async _queryItems(model, query, mongoQuery) {
     const { limit, offset } = this._getLimitAndOffset(query)
-    const items = await model.find(mongoQuery).lean().skip(offset).limit(limit).exec()
+    const items = limit ? await model.find(mongoQuery).lean().skip(offset).limit(limit).exec() : []
     items.totalCount = await this._count(model, [{ $match: mongoQuery }])
     return items
   }

@@ -33,27 +33,29 @@ export function addPaginationHeaders(base) {
     // rel: first
     query.offset = 0
     links.push(urlForLinkHeader({ base, req, query, rel: "first" }))
-    // rel: prev
-    if (offset > 0) {
-      query.offset = Math.max(offset - limit, 0)
-      links.push(urlForLinkHeader({ base, req, query, rel: "prev" }))
-    }
-    // rel: next
-    if (total && limit + offset < total || req.data && req.data.length === limit) {
-      query.offset = offset + limit
-      links.push(urlForLinkHeader({ base, req, query, rel: "next" }))
-    }
-    // rel: last
-    if (total !== null) {
-      let current = 0
-      while (current + limit < total) {
-        current += limit
+    if (limit > 0) {
+      // rel: prev
+      if (offset > 0) {
+        query.offset = Math.max(offset - limit, 0)
+        links.push(urlForLinkHeader({ base, req, query, rel: "prev" }))
       }
-      query.offset = current
-      links.push(urlForLinkHeader({ base, req, query, rel: "last" }))
-    } else if (req.data.length < limit) {
-    // Current page is last
-      links.push(urlForLinkHeader({ base, req, query, rel: "last" }))
+      // rel: next
+      if (total && limit + offset < total || req.data && req.data.length === limit) {
+        query.offset = offset + limit
+        links.push(urlForLinkHeader({ base, req, query, rel: "next" }))
+      }
+      // rel: last
+      if (total !== null) {
+        let current = 0
+        while (current + limit < total) {
+          current += limit
+        }
+        query.offset = current
+        links.push(urlForLinkHeader({ base, req, query, rel: "last" }))
+      } else if (req.data.length < limit) {
+        // Current page is last
+        links.push(urlForLinkHeader({ base, req, query, rel: "last" }))
+      }
     }
     // Push existing Link header to the back
     links.push(res.get("Link"))

@@ -683,6 +683,21 @@ describe("Express Server", () => {
         })
     })
 
+    it("should not include items for limit=0", done => {
+      chai.request.execute(app)
+        .get("/mappings")
+        .query({
+          limit: 0,
+        })
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.headers["x-total-count"].should.be.eql("3")
+          res.body.should.be.a("array")
+          res.body.length.should.be.eql(0)
+          done()
+        })
+    })
+
     it("should paginate mappings properly", done => {
       chai.request.execute(app)
         .get("/mappings")
