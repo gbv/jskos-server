@@ -207,7 +207,6 @@ describe("Express Server", () => {
           res.should.have.status(200)
           res.body.should.be.a("object")
           assert.ok(validateStatus(res.body))
-          console.log(res.body.config.auth)
           res.body.config.auth.should.deep.equal({
             algorithm: "HS256",
             key: "", // don't leak symmetric key
