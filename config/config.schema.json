@@ -153,6 +153,10 @@
             "key": {
               "description": "The public key or symmetric secret of the login-server that is used for authentication",
               "type": "string"
+            },
+            "server": {
+              "description": "The login-server recommended to be used for authentication",
+              "$ref": "#/definitions/uri"
             }
           },
           "required": ["algorithm", "key"]
