@@ -2,7 +2,8 @@
   "title": "Testing",
   "auth": {
     "algorithm": "HS256",
-    "key": "test"
+    "key": "test",
+    "server": "https://example.org/login"
   },
   "schemes": {
     "read": {

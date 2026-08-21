@@ -200,13 +200,19 @@ describe("Express Server", () => {
         })
     })
 
-    it("should pass JSON schema", done => {
+    it("should pass JSON schema and contain expected values", done => {
       chai.request.execute(app)
         .get("/status")
         .end((err, res) => {
           res.should.have.status(200)
           res.body.should.be.a("object")
           assert.ok(validateStatus(res.body))
+          console.log(res.body.config.auth)
+          res.body.config.auth.should.deep.equal({
+            algorithm: "HS256",
+            key: "", // don't leak symmetric key
+            server: "https://example.org/login",
+          })
           done()
         })
     })
