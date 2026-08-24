@@ -1,3 +1,9 @@
+# 2.6.0
+
+- Update dependencies
+- Support configuring a public login server instance in auth
+- Omit records when limit=0
+
 # 2.5.3
 
 - Add `versionOf` and more common JSKOS query parameters.
