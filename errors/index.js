@@ -38,7 +38,7 @@ export class DuplicateEntityError extends Error {
 
 export class InvalidBodyError extends Error {
   constructor(message) {
-    message = message || "The body of the request is well formed, but could not be validated."
+    message = message || "The body of the request is well formed, but not valid."
     super(message)
     this.statusCode = 422
   }

@@ -2606,7 +2606,7 @@ Status code 400. Will be returned if a required parameter is missing (currently 
 Status code 422. Will be returned for `POST` if an entity with the same ID/URI already exists in the database.
 
 #### InvalidBodyError
-Status code 422. Will be returned for `POST`/`PUT`/`PATCH` if the body was valid JSON, but could not be validated (e.g. does not pass the JSKOS Schema).
+Status code 422. Will be returned for `POST`/`PUT`/`PATCH` if the body was JSON, but did not pass content validation.
 
 #### CreatorDoesNotMatchError
 Status code 403. Will be returned by `PUT`/`PATCH`/`DELETE` endpoints if the authenticated creator does not match the creator of the entity that is being edited.
