@@ -1,13 +1,44 @@
 import _ from "lodash"
 import jskos from "jskos-tools"
 import { validate } from "jskos-validate"
-import { bulkOperationForEntities, queryToAggregation } from "../utils/utils.js"
+import { bulkOperationForEntities } from "../utils/utils.js"
 import { addKeywords } from "../utils/searchHelper.js"
 import { Concept } from "../models/concepts.js"
 import { SchemeService } from "../services/schemes.js"
 import { MalformedBodyError, MalformedRequestError, EntityNotFoundError, InvalidBodyError, DatabaseAccessError } from "../errors/index.js"
 
 import { AbstractService } from "./abstract.js"
+
+/**
+ * Converts a MongoDB "find" query to an aggregation pipeline.
+ *
+ * In most cases, this will simply be a single $match stage, but there's special handling for
+ * $nearSquere queries on the field `location` that is converted into a $geoNear stage.
+ *
+ * @param {*} query
+ * @returns array with aggregation pipeline
+ */
+export function queryToAggregation(query) {
+  const pipeline = []
+  // Transform location $nearSphere query into $geoNear aggregation stage
+  if (query.location) {
+    const locationQuery = query.location.$nearSphere
+    pipeline.push({
+      $geoNear: {
+        spherical: true,
+        maxDistance: locationQuery.$maxDistance,
+        query: _.omit(query, ["location"]),
+        near: locationQuery.$geometry,
+        distanceField: "_distance",
+      },
+    })
+  } else {
+    pipeline.push({
+      $match: query,
+    })
+  }
+  return pipeline
+}
 
 export class ConceptService extends AbstractService {
 

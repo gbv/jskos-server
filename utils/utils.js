@@ -1,4 +1,3 @@
-import _ from "lodash"
 import * as jskos from "jskos-tools"
 
 // remove object properties when its value is null
@@ -20,36 +19,6 @@ export function bulkOperationForEntities({ entities, replace = true }) {
   }))
 }
 
-/**
- * Converts a MongoDB "find" query to an aggregation pipeline.
- *
- * In most cases, this will simply be a single $match stage, but there's special handling for
- * $nearSquere queries on the field `location` that is converted into a $geoNear stage.
- *
- * @param {*} query
- * @returns array with aggregation pipeline
- */
-export function queryToAggregation(query) {
-  const pipeline = []
-  // Transform location $nearSphere query into $geoNear aggregation stage
-  if (query.location) {
-    const locationQuery = query.location.$nearSphere
-    pipeline.push({
-      $geoNear: {
-        spherical: true,
-        maxDistance: locationQuery.$maxDistance,
-        query: _.omit(query, ["location"]),
-        near: locationQuery.$geometry,
-        distanceField: "_distance",
-      },
-    })
-  } else {
-    pipeline.push({
-      $match: query,
-    })
-  }
-  return pipeline
-}
 
 /**
  *
