@@ -1,13 +1,4 @@
-import _ from "lodash"
-import { AnnotationService } from "../services/annotations.js"
-import { ConceptService } from "../services/concepts.js"
-
-function createAdjuster(config) {
-  const services = {
-    annotations: new AnnotationService(config),
-    concepts: new ConceptService(config),
-  }
-
+function createAdjuster(config, services) {
   const { baseUrl } = config
 
   // Adjust data in req.data based on req.type (which is set by `addMiddlewareProperties`)
@@ -41,7 +32,7 @@ function createAdjuster(config) {
     }
     if (adjust[type]) {
       let addProperties = [], removeProperties = [], mode = 0 // mode 0 = add, mode 1 = remove
-      for (let prop of _.get(req, "query.properties", "").split(",")) {
+      for (let prop of (req.query?.properties || "").split(",")) {
         if (prop.startsWith("*")) {
           addProperties.push("narrower")
           addProperties.push("ancestors")

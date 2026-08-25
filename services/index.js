@@ -4,8 +4,10 @@ import { ConcordanceService } from "./concordances.js"
 import { MappingService } from "./mappings.js"
 import { SchemeService } from "./schemes.js"
 import { RegistryService } from "./registries.js"
+import { DataService } from "./data.js"
+import { ValidateService } from "./validate.js"
 
-export function createServices(config) {
+function createServices(config) {
   const annotationService = new AnnotationService(config)
   const conceptService = new ConceptService(config)
   const concordanceService = new ConcordanceService(config)
@@ -32,3 +34,5 @@ export function createServices(config) {
 
   return services
 }
+
+export { DataService, ValidateService, createServices }

@@ -1,12 +1,12 @@
 import express from "express"
-import { ValidateService } from "../services/validate.js"
+import { Router } from "./router.js"
 import { wrapAsync, returnJSON } from "./utils.js"
 import axios from "axios"
 import { MalformedRequestError } from "../errors/index.js"
 
 export default config => {
-  const router = express.Router()
-  const service = new ValidateService(config)
+  const router = new Router(config)
+  const service = router.validateService
 
   router.get(
     "/",
@@ -33,5 +33,5 @@ export default config => {
     returnJSON,
   )
 
-  return router
+  return router.router
 }
