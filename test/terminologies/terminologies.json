@@ -68,6 +68,12 @@
       "en",
       "fr",
       "de"
+    ],
+    "services": [
+      {
+        "api": "http://bartoc.org/api-type/jskos",
+        "endpoint": "https://coli-conc.gbv.de/api/"
+      }
     ]
   }
   ,

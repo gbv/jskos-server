@@ -1,3 +1,14 @@
+import jskos from "jskos-tools"
+import _ from "lodash"
+
+function addUnique(item, field, value) {
+  if (!item[field]) {
+    item[field] = [value]
+  } else if (!item[field].find(x => _.isEqual(x,value))) {
+    item[field].push(value)
+  }
+}
+
 function createAdjuster(config, services) {
   const { baseUrl } = config
 
@@ -141,47 +152,34 @@ function createAdjuster(config, services) {
     return await Promise.all(mappings.map(mapping => adjust.mapping(mapping, properties)))
   }
 
-  // Add @context and type to schemes.
   adjust.scheme = (scheme) => {
     if (scheme) {
+      // Add @context and type to schemes.
       scheme["@context"] = "https://gbv.github.io/jskos/context.json"
       scheme.type = scheme.type || ["http://www.w3.org/2004/02/skos/core#ConceptScheme"]
+
       // Remove existing "distributions" array (except for external URLs)
-      scheme.distributions = (scheme.distributions || []).filter(dist => !dist.download || !dist.download.startsWith(baseUrl))
+      scheme.distributions = (scheme.distributions || []).filter(dist => !(dist.download?.startsWith(baseUrl)))
       if (scheme.concepts && scheme.concepts.length) {
-      // If this instance contains concepts for this scheme, add distribution for it
-        scheme.distributions = [
-          {
-            download: `${baseUrl}voc/concepts?uri=${encodeURIComponent(scheme.uri)}&download=ndjson`,
+        addUnique(scheme, "API", { type: "http://bartoc.org/api-type/jskos", url: baseUrl })
+        addUnique(scheme, "services", { api: "http://bartoc.org/api-type/jskos", endpoint: baseUrl })
+      }
+
+      // If there is a JSKOS API service, there are also a download distributions
+      const apis = scheme.services || scheme.API?.map(({type, url})=>({api:type, endpoint: url})) || []
+      apis.filter(api => api.api === "http://bartoc.org/api-type/jskos").forEach(api => {
+        const download = `${api.endpoint}voc/concepts?uri=${encodeURIComponent(scheme.uri)}`
+        if (jskos.isValidUri(download) && /^https?:/.test(download)) {
+          addUnique(scheme, "distributions", {
+            download: `${download}&download=ndjson`,
             format: "http://format.gbv.de/jskos",
             mimetype: "application/x-ndjson; charset=utf-8",
-          },
-          {
-            download: `${baseUrl}voc/concepts?uri=${encodeURIComponent(scheme.uri)}&download=json`,
+          })
+          addUnique(scheme, "distributions", {
+            download: `${download}&download=json`,
             mimetype: "application/json; charset=utf-8",
-          },
-        ].concat(scheme.distributions)
-        // Also add `API` field if it does not exist
-        if (!scheme.API) {
-          scheme.API = [
-            {
-              type: "http://bartoc.org/api-type/jskos",
-              url: baseUrl,
-            },
-          ]
+          })
         }
-      }
-      // Add distributions based on API field
-      (scheme.API || []).filter(api => api.type === "http://bartoc.org/api-type/jskos" && api.url !== baseUrl).forEach(api => {
-        scheme.distributions.push({
-          download: `${api.url}voc/concepts?uri=${encodeURIComponent(scheme.uri)}&download=ndjson`,
-          format: "http://format.gbv.de/jskos",
-          mimetype: "application/x-ndjson; charset=utf-8",
-        })
-        scheme.distributions.push({
-          download: `${api.url}voc/concepts?uri=${encodeURIComponent(scheme.uri)}&download=json`,
-          mimetype: "application/json; charset=utf-8",
-        })
       })
       if (!scheme.distributions.length) {
         delete scheme.distributions

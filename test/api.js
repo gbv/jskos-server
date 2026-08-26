@@ -1540,11 +1540,28 @@ describe("Express Server", () => {
         })
     })
 
-    it("should support filtering by notation", done => {
+    it("should support filtering by notation and enrich distributions", done => {
       chai.request.execute(app)
         .get("/voc?notation=DDC")
         .end((err, res) => {
           res.body.length.should.be.eql(1)
+          const download = "/voc/concepts?uri=http%3A%2F%2Fdewey.info%2Fscheme%2Fedition%2Fe23%2F"
+          const distributions = res.body[0].distributions?.sort((a,b) => a.download.localeCompare(b.download))
+          assert.deepEqual(distributions, [{
+            download: `http://localhost:3000${download}&download=json`,
+            mimetype: "application/json; charset=utf-8",
+          },{
+            download: `http://localhost:3000${download}&download=ndjson`,
+            format: "http://format.gbv.de/jskos",
+            mimetype: "application/x-ndjson; charset=utf-8",
+          },{
+            download: `https://coli-conc.gbv.de/api${download}&download=json`,
+            mimetype: "application/json; charset=utf-8",
+          },{
+            download: `https://coli-conc.gbv.de/api${download}&download=ndjson`,
+            format: "http://format.gbv.de/jskos",
+            mimetype: "application/x-ndjson; charset=utf-8",
+          }])
           done()
         })
     })
