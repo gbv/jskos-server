@@ -117,7 +117,7 @@ function createAdjuster(config, services) {
     if (concordance) {
       concordance["@context"] = "https://gbv.github.io/jskos/context.json"
       // Remove existing "distributions" array (except for external URLs)
-      concordance.distributions = (concordance.distributions || []).filter(dist => !dist.download || !dist.download.startsWith(baseUrl))
+      concordance.distributions = (concordance.distributions || []).filter(dist => !dist.download?.startsWith(baseUrl))
       // Add distributions for JSKOS and CSV
       concordance.distributions = [
         {
@@ -158,18 +158,23 @@ function createAdjuster(config, services) {
       scheme["@context"] = "https://gbv.github.io/jskos/context.json"
       scheme.type = scheme.type || ["http://www.w3.org/2004/02/skos/core#ConceptScheme"]
 
-      // Remove existing "distributions" array (except for external URLs)
+      // Remove existing distributions from this server JSKOS API, add services instead
       scheme.distributions = (scheme.distributions || []).filter(dist => !(dist.download?.startsWith(baseUrl)))
       if (scheme.concepts && scheme.concepts.length) {
         addUnique(scheme, "API", { type: "http://bartoc.org/api-type/jskos", url: baseUrl })
-        addUnique(scheme, "services", { api: "http://bartoc.org/api-type/jskos", endpoint: baseUrl })
       }
 
+      // Copy API to services: https://github.com/gbv/jskos-server/issues/303
+      scheme.API?.forEach(({type, url}) => {
+        if (jskos.isValidUri(type) && jskos.isValidUri(url) && /^https?:/.test(url)) {
+          addUnique(scheme, "services", { api: type, endpoint: url })
+        }
+      })
+
       // If there is a JSKOS API service, there are also a download distributions
-      const apis = scheme.services || scheme.API?.map(({type, url})=>({api:type, endpoint: url})) || []
-      apis.filter(api => api.api === "http://bartoc.org/api-type/jskos").forEach(api => {
-        const download = `${api.endpoint}voc/concepts?uri=${encodeURIComponent(scheme.uri)}`
-        if (jskos.isValidUri(download) && /^https?:/.test(download)) {
+      for (let {api, endpoint} of scheme.services || []) {
+        if (api === "http://bartoc.org/api-type/jskos") {
+          const download = `${endpoint}voc/concepts?uri=${encodeURIComponent(scheme.uri)}`
           addUnique(scheme, "distributions", {
             download: `${download}&download=ndjson`,
             format: "http://format.gbv.de/jskos",
@@ -180,7 +185,7 @@ function createAdjuster(config, services) {
             mimetype: "application/json; charset=utf-8",
           })
         }
-      })
+      }
       if (!scheme.distributions.length) {
         delete scheme.distributions
       }
