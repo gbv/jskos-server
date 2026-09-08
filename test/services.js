@@ -7,8 +7,12 @@ import { teardownInMemoryMongo, setupInMemoryMongo, createCollectionsAndIndexes,
 import { InvalidBodyError } from "../errors/index.js"
 
 import { createServices } from "../index.js"
-import config from "../config/config.test.json" with { type: "json" }
-const services = createServices(config)
+
+const services = createServices({
+  annotations: {
+    mismatchTagVocabulary: { uri: "https://uri.gbv.de/terminology/mismatch/" },
+  },
+})
 
 describe("Services Features", () => {
   before(async () => {
@@ -460,6 +464,14 @@ describe("Services Features", () => {
       }
     })
 
+    it("should return ids in bulk mode response", async () => {
+      const items = [{target:"urn:example:target",motivation:"assessing",bodyValue:"+1"}]
+      const res = await services.annotation.createItem({
+        bodyStream: await arrayToStream(items),
+        bulk: true,
+      })
+      assert.ok(res.length === 1 && "id" in res[0])
+    })
   })
 
   describe("Registry Service", () => {
