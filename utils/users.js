@@ -28,11 +28,11 @@ export const getUser = req => {
     }
   }
 
-  return user
+  return user.uri || user.name ? user : null
 }
 
 export const getCreator = req => {
-  const { uri, name } = getUser(req)
+  const { uri, name } = getUser(req) ?? {}
   const creator = {}
 
   if (uri) {

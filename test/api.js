@@ -90,6 +90,7 @@ let mapping = {
   ],
 }
 
+/*
 const userNotOnWhitelist = {
   uri: "http://test2.user",
   name: "Test User",
@@ -98,6 +99,7 @@ const userNotOnWhitelist = {
   },
 }
 const tokenNotOnWhitelist = jwt.sign({ user: userNotOnWhitelist }, "test")
+*/
 
 const userMissingIdentity = {
   uri: "http://test.user",
@@ -111,7 +113,47 @@ describe("GET /checkAuth", () => {
     {
       test: "",
       token,
-      body: { user: { name: "Test User", uri: "http://test.user" } },
+      body: {
+        user: { name: "Test User", uri: "http://test.user" },
+        access: {
+          annotations: {
+            create: true,
+            delete: true,
+            read: true,
+            update: true,
+          },
+          concepts: {
+            create: true,
+            delete: false,
+            read: true,
+            update: true,
+          },
+          concordances: {
+            create: true,
+            delete: true,
+            read: true,
+            update: true,
+          },
+          mappings: {
+            create: true,
+            delete: true,
+            read: true,
+            update: true,
+          },
+          registries: {
+            create: true,
+            delete: true,
+            read: true,
+            update: true,
+          },
+          schemes: {
+            create: true,
+            delete: true,
+            read: true,
+            update: true,
+          },
+        },
+      },
     },
     {
       test: "user in group",
@@ -119,6 +161,7 @@ describe("GET /checkAuth", () => {
       query: { type: "concepts", action: "delete", identityName: "42" },
       body: { user: { name: "42", uri: "http://in-group.user" } },
     },
+    /*
     {
       test: "user not on whitelist",
       token: tokenNotOnWhitelist,
@@ -127,6 +170,7 @@ describe("GET /checkAuth", () => {
       test: "missing identity",
       token: tokenMissingIdentity,
     },
+    */
     {
       // identityProviders is set to null for annotations.delete
       test: "userMissingIdentity for delete annotations",

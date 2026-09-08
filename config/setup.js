@@ -7,6 +7,7 @@ import configSchema from "./config.schema.json" with { type: "json" }
 import statusSchema from "../status.schema.json" with { type: "json" }
 import configDefault from "./config.default.json" with { type: "json" }
 import info from "../package.json" with { type: "json" }
+import allTypes from "../utils/types.js"
 
 const ajv = new AJV({ allErrors: true })
 addAjvFormats(ajv)
@@ -119,7 +120,6 @@ export function setupConfig(config) {
       crossUser: false,
     },
   }
-  const allTypes = ["schemes", "concepts", "mappings", "concordances", "annotations", "registries"]
   for (let type of allTypes) {
     if (config[type] === true) {
     // Default is read-only without authentication

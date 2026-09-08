@@ -1,3 +1,7 @@
+# 2.7.0
+
+- Change `/checkAuth` endpoint to return all rights if no type or action was specified
+
 # 2.6.0
 
 - Update dependencies

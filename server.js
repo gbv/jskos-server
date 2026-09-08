@@ -149,8 +149,12 @@ app.use(ipcheck(config))
 
 // /checkAuth
 const authenticator = new Authenticator(config)
-app.get("/checkAuth", authenticator.authenticate(true), (req, res) => {
-  res.json({ user: getUser(req) })
+app.get("/checkAuth", authenticator.checkAuth(), (req, res) => {
+  const info = { user: getUser(req) }
+  if (res.access) {
+    info.access = res.access
+  }
+  res.json(info)
 })
 
 // Database check middleware

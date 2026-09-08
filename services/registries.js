@@ -4,6 +4,7 @@ import { validate } from "jskos-validate"
 import { Registry } from "../models/registries.js"
 import { addKeywords } from "../utils/searchHelper.js"
 import { EntityNotFoundError, DatabaseAccessError, InvalidBodyError, MalformedBodyError } from "../errors/index.js"
+import allTypes from "../utils/types.js"
 
 import { AbstractService } from "./abstract.js"
 
@@ -11,7 +12,6 @@ import { AbstractService } from "./abstract.js"
 import { models } from "../models/index.js"
 
 export class RegistryService extends AbstractService {
-  static allMemberTypes = ["schemes", "concepts", "mappings", "concordances", "annotations", "registries"]
 
   constructor(config) {
     super(config)
@@ -21,7 +21,7 @@ export class RegistryService extends AbstractService {
     this.model = Registry
 
     // TODO: duplicated code in config.setup
-    for (let type of RegistryService.allMemberTypes) {
+    for (let type of allTypes) {
       this.types[type] = config.types?.[type]
       if (this.types[type] === true) {
         this.types[type] = { mustExist: false, skipInvalid: false }
@@ -218,7 +218,7 @@ export class RegistryService extends AbstractService {
    * @throws {InvalidBodyError} When a disallowed membership field is present.
    */
   async processMembers(registry) {
-    const usedTypes = RegistryService.allMemberTypes.filter(type => registry[type])
+    const usedTypes = allTypes.filter(type => registry[type])
 
     if (!this.config.mixedTypes) {
       if (usedTypes.length > 1) {

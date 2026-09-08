@@ -949,7 +949,7 @@ Note that certain properties from the actual configuration will not be shown in 
 
 ### GET /checkAuth
 
-Endpoint to check whether a user is authorized (see [user accounts](#user-accounts) and [access control](#access-control)). If `type` or `action` are not set, it will use `identities`, `identityProviders`, and `identityGroups` that are defined directly under config.
+Endpoint to check whether a user is authorized and which access rights are granted (see [user accounts](#user-accounts) and [access control](#access-control)).
 
 * **URL Params**
 
@@ -961,11 +961,9 @@ Endpoint to check whether a user is authorized (see [user accounts](#user-accoun
 
   `identityName` optional identity name
 
-* **Success Response**
+* **Response**
 
-  JSON Object with field `user` containing the [user data](#user-acounts). This data can be written into the database (`uri` and/or `name`).
-
-Returns an error response (HTTP status 403) if authentication failed or the selected action is not allowed.
+  JSON Object with field `user` containing the [user data](#user-acounts) and field `access` containing the access rights, grouped by object type and action. If one of query parameters `type` and `action` is given, the `access` is filtered to these. If *both* are given, an error response (HTTP status 403) is returned if no access is granted.
 
 ### POST /validate
 

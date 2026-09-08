@@ -8,6 +8,7 @@ passport.use(new AnonymousStrategy())
 
 import { expandIdentities } from "./users.js"
 import { ForbiddenAccessError } from "../errors/index.js"
+import allTypes from "../utils/types.js"
 
 
 export class Authenticator {
@@ -19,8 +20,8 @@ export class Authenticator {
   }
 
   constructor(config) {
-    this.optional = []
     this.config = config // auth, [type], identityGroups
+    const optional = []
 
     // Prepare authorization via JWT
     if (config.auth) {
@@ -37,9 +38,9 @@ export class Authenticator {
       const name = `jwt-${hash}`
 
       passport.use(name, strategy)
-      this.optional.push(name)
+      optional.push(name)
 
-      this.auth = (req, res, next) => {
+      this.requiredAuth = (req, res, next) => {
         passport.authenticate(name, { session: false }, (error, user) => {
           if (error || !user) {
             return next(new ForbiddenAccessError("Access forbidden. Could not authenticate via JWT."))
@@ -48,19 +49,30 @@ export class Authenticator {
           return next()
         })(req, res, next)
       }
+    } else {
+      this.requiredAuth = (req, res, next) =>
+        next(new ForbiddenAccessError("Access forbidden. No authentication configured."))
     }
 
     // Also use anonymous strategy for endpoints that can be used authenticated or not authenticated
-    this.optional.push("anonymous")
+    optional.push("anonymous")
+    this.optionalAuth = (req, res, next) => {
+      passport.authenticate(optional, { session: false }, (error, user) => {
+        if (!error && user) {
+          req.user = user
+        }
+        return next()
+      })(req, res, next)
+    }
   }
 
   /**
    * Checks if action on type is allowed, throws an execption otherwise.
    */
-  checkAccess({ type, action, whitelist, providers, user }) {
+  checkAccess({ type, action, user }) {
     const config = this.config
 
-    if (!config[type]?.[action]?.auth && type !== "checkAuth") {
+    if (!config[type]?.[action]?.auth) {
       // If action does not require auth at all, the request is authorized
       return true
     } else if (!user) {
@@ -69,10 +81,8 @@ export class Authenticator {
       throw new ForbiddenAccessError("Access forbidden. Could not authenticate via JWT.")
     }
 
-    if (whitelist === undefined) {
-      whitelist = expandIdentities(config[type]?.[action]?.identities, config.identityGroups)
-    }
-    providers = providers ?? config[type]?.[action]?.identityProviders
+    const whitelist = expandIdentities(config[type]?.[action]?.identities, config.identityGroups)
+    const providers = config[type]?.[action]?.identityProviders
 
     const uris = [user.uri].concat(Object.values(user.identities || {}).map(id => id.uri)).filter(Boolean)
     if (whitelist && _.intersection(whitelist, uris).length == 0) {
@@ -87,48 +97,61 @@ export class Authenticator {
   }
 
   /**
-   * Returns middleware for required or optional authentication.
+   * Returns middleware for required authentication, if enabled.
    */
   authenticate(required) {
     if (required) {
-      const auth = this.auth || ((req, res, next) => {
-        next(new ForbiddenAccessError("Access forbidden. No authentication configured."))
-      })
       return [
-        auth, // sets req.user on success
-        (req, res, next) => this._authAuthorize(req, res, next),
+        this.requiredAuth,
+        (req, res, next) => {
+          try {
+            this.checkAccess({
+              type: req.type,
+              action: Authenticator.actions[req.method] || "read",
+              user: req.user,
+            })
+            next()
+          } catch (error) {
+            next(error)
+          }
+        },
       ]
     } else {
-      return [passport.authenticate(this.optional, { session: false })]
+      return []
     }
   }
 
-  _authAuthorize(req, res, next) {
-    let whitelist, providers
-
-    let action = Authenticator.actions[req.method] || "read"
-    let type = req.type
-
-    if (req.type == "checkAuth") {
-      ({ type, action } = req.query || {})
-      if (type && action && this.config[type][action]) {
-        whitelist = this.config[type][action].identities
-        providers = this.config[type][action].identityProviders
-      } else {
-        whitelist = this.config.identities
-        providers = this.config.identityProviders
-      }
-    }
-
-    whitelist = expandIdentities(whitelist, this.config.identityGroups)
-
-    try {
-      type = type || req.type
-      action = action || "read"
-      this.checkAccess({ type, action, whitelist, providers, user: req.user })
-      next()
-    } catch (error) {
-      next(error)
-    }
+  checkAuth() {
+    return [
+      this.optionalAuth,
+      (req, res, next) => {
+        const { type, action } = req.query || {}
+        const user = req.user
+        if (type && action) {
+          try {
+            this.checkAccess({ type, action, user })
+            next()
+          } catch (error) {
+            next(error)
+          }
+        } else {
+          res.access = {}
+          for (let t of type ? [type] : allTypes) {
+            if (this.config[t]) {
+              res.access[t] = {}
+              for (let a of action ? [action] : ["read", "create", "update", "delete"]) {
+                try {
+                  this.checkAccess({ type: t, action: a, user })
+                  res.access[t][a] = true
+                } catch {
+                  res.access[t][a] = false
+                }
+              }
+            }
+          }
+          next()
+        }
+      },
+    ]
   }
 }
