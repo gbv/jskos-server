@@ -297,7 +297,7 @@ export class AbstractService {
       // Use bulkWrite for most efficiency
       items.length && await this.model.bulkWrite(bulkOperationForEntities({ entities: items, replace: bulkReplace }))
       items = await this.postAdjustmentsForItems(items, { bulk })
-      response = items.map(s => ({ uri: s.uri }))
+      response = items.map(s => ({ uri: s.uri ?? s.id }))
     } else {
       items = await this.model.insertMany(items, { lean: true })
       response = await this.postAdjustmentsForItems(items, { bulk })

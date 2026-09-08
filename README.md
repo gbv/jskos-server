@@ -1633,7 +1633,7 @@ Saves a mapping or multiple mappings in the database. Mappings can be provided i
 
 * **URL Params**
 
-  `bulk=[boolean]` `1` or `true` enable bulk mode for importing multiple mappings into the database. Errors for individual mappings will be ignored and existing mappings will be overridden. The resulting set will only include the `id` for each mapping that was written into the database.
+  `bulk=[boolean]` `1` or `true` enable bulk mode for importing multiple mappings into the database. Errors for individual mappings will be ignored and existing mappings will be overridden. The resulting set will only include the `uri` for each mapping that was written into the database.
 
   `scheme=given|lookup` whether take `fromScheme`/`toScheme` from passed data (`given` as default) or to look up concept URIs in the database (`lookup`).
 
@@ -1774,7 +1774,7 @@ Saves a concept scheme or multiple concept schemes in the database. Each concept
 
 * **URL Params**
 
-  `bulk=[boolean]` `1` or `true` enable bulk mode for importing multiple concept schemes into the database. Errors for individual concept schemes will be ignored and existing concept schemes will be overridden. The resulting set will only include the `id` for each concept scheme that was written into the database.
+  `bulk=[boolean]` `1` or `true` enable bulk mode for importing multiple concept schemes into the database. Errors for individual concept schemes will be ignored and existing concept schemes will be overridden. The resulting set will only include the `uri` for each concept scheme that was written into the database.
 
 * **Success Reponse**
 
@@ -1947,7 +1947,7 @@ Saves a concept or multiple concepts in the database. Each concept has to have a
 
 * **URL Params**
 
-  `bulk=[boolean]` `1` or `true` enable bulk mode for importing multiple concepts into the database. Errors for individual concepts will be ignored and existing concepts will be overridden. The resulting set will only include the URI for each concept that was written into the database.
+  `bulk=[boolean]` `1` or `true` enable bulk mode for importing multiple concepts into the database. Errors for individual concepts will be ignored and existing concepts will be overridden. The resulting set will only include the `uri` for each concept that was written into the database.
 
 * **Success Reponse**
 
