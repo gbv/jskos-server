@@ -111,19 +111,13 @@ describe("GET /checkAuth", () => {
     {
       test: "",
       token,
-      body: {
-        name: "Test User",
-        uri: "http://test.user",
-      },
+      body: { user: { name: "Test User", uri: "http://test.user" } },
     },
     {
       test: "user in group",
       token: tokenWithGroup,
       query: { type: "concepts", action: "delete", identityName: "42" },
-      body: {
-        name: "42",
-        uri: "http://in-group.user",
-      },
+      body: { user: { name: "42", uri: "http://in-group.user" } },
     },
     {
       test: "user not on whitelist",
@@ -138,7 +132,7 @@ describe("GET /checkAuth", () => {
       test: "userMissingIdentity for delete annotations",
       query: { type: "annotations", action: "delete" },
       token: tokenMissingIdentity,
-      body: { uri: "http://test.user", name: "Test User" },
+      body: { user: { uri: "http://test.user", name: "Test User" } },
     },
     {
       test: "missing identity for create annotations",

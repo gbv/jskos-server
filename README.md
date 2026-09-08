@@ -963,7 +963,9 @@ Endpoint to check whether a user is authorized (see [user accounts](#user-accoun
 
 * **Success Response**
 
-  JSON Object with [user data](#user-acounts) that can be written into the database (`uri` and/or `name`).
+  JSON Object with field `user` containing the [user data](#user-acounts). This data can be written into the database (`uri` and/or `name`).
+
+Returns an error response (HTTP status 403) if authentication failed or the selected action is not allowed.
 
 ### POST /validate
 
