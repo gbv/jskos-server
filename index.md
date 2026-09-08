@@ -949,7 +949,7 @@ Note that certain properties from the actual configuration will not be shown in 
 
 ### GET /checkAuth
 
-Endpoint to check whether a user is authorized (see [user accounts](#user-accounts) and [access control](#access-control)). If `type` or `action` are not set, it will use `identities`, `identityProviders`, and `identityGroups` that are defined directly under config.
+Endpoint to check whether a user is authorized and which access rights are granted (see [user accounts](#user-accounts) and [access control](#access-control)).
 
 * **URL Params**
 
@@ -961,9 +961,9 @@ Endpoint to check whether a user is authorized (see [user accounts](#user-accoun
 
   `identityName` optional identity name
 
-* **Success Response**
+* **Response**
 
-  JSON Object with [user data](#user-acounts) that can be written into the database (`uri` and/or `name`).
+  JSON Object with field `user` containing the [user data](#user-acounts) and field `access` containing the access rights, grouped by object type and action. If one of query parameters `type` and `action` is given, the `access` is filtered to these. If *both* are given, an error response (HTTP status 403) is returned if no access is granted.
 
 ### POST /validate
 
@@ -1631,7 +1631,7 @@ Saves a mapping or multiple mappings in the database. Mappings can be provided i
 
 * **URL Params**
 
-  `bulk=[boolean]` `1` or `true` enable bulk mode for importing multiple mappings into the database. Errors for individual mappings will be ignored and existing mappings will be overridden. The resulting set will only include the `id` for each mapping that was written into the database.
+  `bulk=[boolean]` `1` or `true` enable bulk mode for importing multiple mappings into the database. Errors for individual mappings will be ignored and existing mappings will be overridden. The resulting set will only include the `uri` for each mapping that was written into the database.
 
   `scheme=given|lookup` whether take `fromScheme`/`toScheme` from passed data (`given` as default) or to look up concept URIs in the database (`lookup`).
 
@@ -1772,7 +1772,7 @@ Saves a concept scheme or multiple concept schemes in the database. Each concept
 
 * **URL Params**
 
-  `bulk=[boolean]` `1` or `true` enable bulk mode for importing multiple concept schemes into the database. Errors for individual concept schemes will be ignored and existing concept schemes will be overridden. The resulting set will only include the `id` for each concept scheme that was written into the database.
+  `bulk=[boolean]` `1` or `true` enable bulk mode for importing multiple concept schemes into the database. Errors for individual concept schemes will be ignored and existing concept schemes will be overridden. The resulting set will only include the `uri` for each concept scheme that was written into the database.
 
 * **Success Reponse**
 
@@ -1945,7 +1945,7 @@ Saves a concept or multiple concepts in the database. Each concept has to have a
 
 * **URL Params**
 
-  `bulk=[boolean]` `1` or `true` enable bulk mode for importing multiple concepts into the database. Errors for individual concepts will be ignored and existing concepts will be overridden. The resulting set will only include the URI for each concept that was written into the database.
+  `bulk=[boolean]` `1` or `true` enable bulk mode for importing multiple concepts into the database. Errors for individual concepts will be ignored and existing concepts will be overridden. The resulting set will only include the `uri` for each concept that was written into the database.
 
 * **Success Reponse**
 
@@ -2606,7 +2606,7 @@ Status code 400. Will be returned if a required parameter is missing (currently 
 Status code 422. Will be returned for `POST` if an entity with the same ID/URI already exists in the database.
 
 #### InvalidBodyError
-Status code 422. Will be returned for `POST`/`PUT`/`PATCH` if the body was valid JSON, but could not be validated (e.g. does not pass the JSKOS Schema).
+Status code 422. Will be returned for `POST`/`PUT`/`PATCH` if the body was JSON, but did not pass content validation.
 
 #### CreatorDoesNotMatchError
 Status code 403. Will be returned by `PUT`/`PATCH`/`DELETE` endpoints if the authenticated creator does not match the creator of the entity that is being edited.
