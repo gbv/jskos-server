@@ -1,5 +1,3 @@
-import _ from "lodash"
-
 import passport from "passport"
 import { Strategy as JwtStrategy, ExtractJwt } from "passport-jwt"
 import { Strategy as AnonymousStrategy } from "passport-anonymous"
@@ -85,11 +83,12 @@ export class Authenticator {
     const providers = config[type]?.[action]?.identityProviders
 
     const uris = [user.uri].concat(Object.values(user.identities || {}).map(id => id.uri)).filter(Boolean)
-    if (whitelist && _.intersection(whitelist, uris).length == 0) {
+
+    if (whitelist && !whitelist.some(uri => uris.includes(uri))) {
       throw new ForbiddenAccessError("Access forbidden. A whitelist is in place, but authenticated user is not on the whitelist.")
     }
 
-    if (providers && !_.intersection(providers, Object.keys(user?.identities || {})).length) {
+    if (providers && !Object.keys(user.identities || {}).some(uri => providers.includes(uri))) {
       throw new ForbiddenAccessError("Access forbidden, missing identity provider. One of the following providers is necessary: " + providers.join(", "))
     }
 

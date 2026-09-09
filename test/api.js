@@ -785,8 +785,8 @@ describe("Express Server", () => {
           res.headers["x-total-count"].should.be.eql("1")
           res.body.should.be.a("array")
           res.body.length.should.be.eql(1)
-          const mapping = _.get(res, "body[0]")
-          _.get(mapping, "from.memberChoice[0].uri").should.be.eql("http://dewey.info/class/612.112/e22/")
+          const mapping = res.body[0]
+          mapping.from.memberChoice[0].uri.should.be.eql("http://dewey.info/class/612.112/e22/")
           mapping.uri.should.be.a("string")
           mapping.uri.endsWith("dc2f1987-de06-5237-b58c-aff2c066cb92").should.be.eql(true)
           done()
@@ -807,7 +807,7 @@ describe("Express Server", () => {
           res.headers["x-total-count"].should.be.eql("1")
           res.body.should.be.a("array")
           res.body.length.should.be.eql(1)
-          _.get(res, "body[0].from.memberChoice[0].uri").should.be.eql("http://dewey.info/class/612.112/e22/")
+          res.body[0].from.memberChoice[0].uri.should.be.eql("http://dewey.info/class/612.112/e22/")
           done()
         })
     })
@@ -1555,8 +1555,8 @@ describe("Express Server", () => {
         })
       // Unordered comparison through lodash
       assert(_.isEqual(
-        _.sortBy(res.body, "uri"),
-        _.sortBy(vocs, "uri"),
+        res.body.sort((a,b) => a.uri.localeCompare(b.uri)),
+        vocs.sort((a,b) => a.uri.localeCompare(b.uri)),
       ))
     })
 
@@ -1833,8 +1833,8 @@ describe("Express Server", () => {
           assert.ok(Array.isArray(res.body))
           assert.equal(res.body.length, 1)
           const first = res.body[0]
-          assert.ok(_.isObject(first))
-          assert.equal(_.get(first, "prefLabel.de"), "Technik, Medizin, angewandte Wissenschaften")
+          assert.ok(typeof first === "object")
+          assert.equal(first.prefLabel?.de, "Technik, Medizin, angewandte Wissenschaften")
           // Check for properties
           assert.ok(Array.isArray(first.narrower))
           assert.ok(Array.isArray(first.ancestors))
@@ -1869,7 +1869,7 @@ describe("Express Server", () => {
       assert.ok(Array.isArray(res.body))
       assert.equal(res.body.length, 1)
       const first = res.body[0]
-      assert.ok(_.isObject(first))
+      assert.ok(typeof first === "object")
       assert.ok(!first.prefLabel)
       assert.ok(!!first.notation)
       assert.equal(first.uri, "http://dewey.info/class/61/e23/")
@@ -2160,7 +2160,7 @@ describe("Express Server", () => {
           // Save id for later use
           annotation.id = res.body.id
           res.body.creator.should.be.eql({ id: user.uri, name: user.name }) // Creator gets decoded from base64
-          _.get(res.body, "target.id", res.body.target).should.be.eql(annotation.target.id)
+          ;(res.body.target?.id || res.body.target).should.be.eql(annotation.target.id)
           res.body.motivation.should.be.eql(annotation.motivation)
           res.body.bodyValue.should.be.eql(annotation.bodyValue)
           done()
@@ -2287,7 +2287,7 @@ describe("Express Server", () => {
 
     it("should PUT an annotation", done => {
       let _id = annotation.id.substring(annotation.id.lastIndexOf("/") + 1)
-      let annotation2 = _.clone(annotation)
+      let annotation2 = structuredClone(annotation)
       annotation2.motivation = "commenting"
       annotation2.bodyValue = "hello"
       chai.request.execute(app)
@@ -2421,7 +2421,7 @@ describe("Express Server", () => {
           res.body.should.be.a("object")
           res.body.id.should.be.a("string")
           res.body.creator.should.be.eql({ id: userWithModerating.uri, name: userWithModerating.name }) // Creator gets decoded from base64
-          _.get(res.body, "target.id", res.body.target).should.be.eql(annotationModerating.target)
+          ;(res.body.target?.id || res.body.target).should.be.eql(annotationModerating.target)
           res.body.motivation.should.be.eql(annotationModerating.motivation)
           done()
         })
@@ -2523,9 +2523,9 @@ describe("Express Server", () => {
     const defaultRegistriesConfig = {
       mixedTypes: false,
       types: {
-        ..._.cloneDeep(config.registries.types),
+        ...structuredClone(config.registries.types),
         concordances: {
-          ..._.cloneDeep(config.registries.types.concordances),
+          ...structuredClone(config.registries.types.concordances),
           uriRequired: true,
           mustExist: false,
           skipInvalid: false,
@@ -2542,7 +2542,7 @@ describe("Express Server", () => {
 
     beforeEach(() => {
       config.registries.mixedTypes = true
-      config.registries.types = _.cloneDeep(defaultRegistriesConfig.types)
+      config.registries.types = structuredClone(defaultRegistriesConfig.types)
     })
 
     after(() => {
@@ -2631,7 +2631,7 @@ describe("Express Server", () => {
       config.registries.types.concordances.mustExist = false
       config.registries.mixedTypes = false
 
-      const registry = _.cloneDeep(baseRegistry)
+      const registry = structuredClone(baseRegistry)
       registry.uri = "http://example.org/registry/membership-mixed-types"
       registry.concordances = [{ uri: "http://example.org/concordance/1" }]
       registry.schemes = [{ uri: "http://example.org/scheme/1" }]
@@ -2650,7 +2650,7 @@ describe("Express Server", () => {
     it("should allow mixed membership types (mixedTypes=true)", done => {
       config.registries.mixedTypes = true
 
-      const registry = _.cloneDeep(baseRegistry)
+      const registry = structuredClone(baseRegistry)
       registry.uri = "http://example.org/registry/membership-mixed-types-allowed"
       registry.concordances = [{ uri: "http://example.org/concordance/2" }]
       registry.schemes = [{ uri: "http://example.org/scheme/2" }]

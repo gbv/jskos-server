@@ -12,6 +12,8 @@ import { ConcordanceService } from "./concordances.js"
 import { ConceptService } from "./concepts.js"
 import { MalformedRequestError, EntityNotFoundError, InvalidBodyError, BackendError } from "../errors/index.js"
 
+import { AbstractService, escapeRegExp, getPath } from "./abstract.js"
+
 const validateMapping = (mapping) => {
   const valid = validate.mapping(mapping)
   if (!valid) {
@@ -39,8 +41,6 @@ function restrictQueryParameters(query, params) {
   }
   return query
 }
-
-import { AbstractService } from "./abstract.js"
 
 export class MappingService extends AbstractService {
 
@@ -108,7 +108,7 @@ export class MappingService extends AbstractService {
     // Currently only supports truncated search like that, no arbitrary regex possible.
     const regex = value => {
       if (value.endsWith("*")) {
-        return { $regex: `^${_.escapeRegExp(value.substring(0, value.length - 1))}` }
+        return { $regex: `^${escapeRegExp(value.substring(0, value.length - 1))}` }
       } else {
         return value
       }
@@ -264,11 +264,11 @@ export class MappingService extends AbstractService {
     if (creator) {
       let creators = creator.split("|")
       mongoQuery5 = {
-        $or: _.flatten(creators.map(creator => [
-          jskos.isValidUri(creator) ? null : { "creator.prefLabel.de": new RegExp(_.escapeRegExp(creator), "i") },
-          jskos.isValidUri(creator) ? null : { "creator.prefLabel.en": new RegExp(_.escapeRegExp(creator), "i") },
+        $or: creators.map(creator => [
+          jskos.isValidUri(creator) ? null : { "creator.prefLabel.de": new RegExp(escapeRegExp(creator), "i") },
+          jskos.isValidUri(creator) ? null : { "creator.prefLabel.en": new RegExp(escapeRegExp(creator), "i") },
           jskos.isValidUri(creator) ? { "creator.uri": creator } : null,
-        ].filter(Boolean))),
+        ].flat().filter(Boolean)),
       }
     }
 
@@ -953,7 +953,7 @@ export class MappingService extends AbstractService {
     // TODO: - Implement mode.
     let paths = ["from.memberSet", "to.memberSet", "to.memberList", "to.memberChoice"]
     for (let path of paths) {
-      or.push({ [path + ".notation"]: { $regex: `^${_.escapeRegExp(search)}` } })
+      or.push({ [path + ".notation"]: { $regex: `^${escapeRegExp(search)}` } })
     }
     and.push({ $or: or })
     mongoQuery = { $and: and }
@@ -962,7 +962,7 @@ export class MappingService extends AbstractService {
     let descriptions = []
     for (let mapping of mappings) {
       for (let path of paths) {
-        let concepts = _.get(mapping, path, null)
+        let concepts = getPath(mapping, path) ?? null
         if (!concepts) {
           continue
         }
@@ -971,7 +971,7 @@ export class MappingService extends AbstractService {
           notations = notations.concat(concept.notation)
         }
         for (let notation of notations) {
-          if (_.lowerCase(notation).startsWith(_.lowerCase(search))) {
+          if (notation.toLowerCase().startsWith(search.toLowerCase())) {
             let index = results.indexOf(notation)
             if (index == -1) {
               results.push(notation)
@@ -983,15 +983,15 @@ export class MappingService extends AbstractService {
         }
       }
     }
-    let zippedResults = _.zip(results, descriptions)
-    zippedResults.sort((a, b) => {
+
+    const zippedResults = results.map((r, i) => [r, descriptions[i]]).sort((a,b) => {
       return b[1] - a[1] || a[0] > b[0]
-    })
-    let unzippedResults = _.unzip(zippedResults.slice(query.offset, query.offset + query.limit))
+    }).slice(query.offset, query.offset + query.limit)
+
     const toBeReturned = [
       search,
-      unzippedResults[0] || [],
-      unzippedResults[1] || [],
+      zippedResults.map(r => r[0]),
+      zippedResults.map(r => r[1]),
       [],
     ]
     toBeReturned.totalCount = zippedResults.length

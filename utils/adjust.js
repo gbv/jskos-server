@@ -1,11 +1,11 @@
 import jskos from "jskos-tools"
 import _ from "lodash"
 
-function addUnique(item, field, value) {
+function addUniqueObject(item, field, obj) {
   if (!item[field]) {
-    item[field] = [value]
-  } else if (!item[field].find(x => _.isEqual(x,value))) {
-    item[field].push(value)
+    item[field] = [obj]
+  } else if (!item[field].find(x => _.isEqual(x,obj))) {
+    item[field].push(obj)
   }
 }
 
@@ -161,13 +161,13 @@ function createAdjuster(config, services) {
       // Remove existing distributions from this server JSKOS API, add services instead
       scheme.distributions = (scheme.distributions || []).filter(dist => !(dist.download?.startsWith(baseUrl)))
       if (scheme.concepts && scheme.concepts.length) {
-        addUnique(scheme, "API", { type: "http://bartoc.org/api-type/jskos", url: baseUrl })
+        addUniqueObject(scheme, "API", { type: "http://bartoc.org/api-type/jskos", url: baseUrl })
       }
 
       // Copy API to services: https://github.com/gbv/jskos-server/issues/303
       scheme.API?.forEach(({type, url}) => {
         if (jskos.isValidUri(type) && jskos.isValidUri(url) && /^https?:/.test(url)) {
-          addUnique(scheme, "services", { api: type, endpoint: url })
+          addUniqueObject(scheme, "services", { api: type, endpoint: url })
         }
       })
 
@@ -175,12 +175,12 @@ function createAdjuster(config, services) {
       for (let {api, endpoint} of scheme.services || []) {
         if (api === "http://bartoc.org/api-type/jskos") {
           const download = `${endpoint}voc/concepts?uri=${encodeURIComponent(scheme.uri)}`
-          addUnique(scheme, "distributions", {
+          addUniqueObject(scheme, "distributions", {
             download: `${download}&download=ndjson`,
             format: "http://format.gbv.de/jskos",
             mimetype: "application/x-ndjson; charset=utf-8",
           })
-          addUnique(scheme, "distributions", {
+          addUniqueObject(scheme, "distributions", {
             download: `${download}&download=json`,
             mimetype: "application/json; charset=utf-8",
           })

@@ -47,7 +47,7 @@ export function makePrefixes(values) {
  */
 export function getAllLabelsSorted(item, language = "en") {
   function extractAndSortLabels(labels, languages) {
-    return _.toPairs(labels).sort((a, b) => {
+    return Object.entries(labels).sort((a, b) => {
       const bIndex = languages.indexOf(b[0]), aIndex = languages.indexOf(a[0])
       if (bIndex === -1) {
         return -1
@@ -86,7 +86,7 @@ export function addKeywords(item) {
     // Make sure to flatten both arrays and objects
     item._keywordsOther = _.flattenDeep(item._keywordsOther)
     item._keywordsOther = item._keywordsOther.map(v => {
-      if (_.isObject(v)) {
+      if (typeof v === "object") {
         return Object.values(v)
       }
       return v
@@ -121,7 +121,7 @@ export function toOpenSearchSuggestFormat({ query, results }) {
     const language = (query.language || "").split(",").filter(lang => lang)
     let prefLabel
     for (const lang of language) {
-      prefLabel = _.get(result, `prefLabel.${lang}`)
+      prefLabel = result.prefLabel?.[lang]
       if (prefLabel) {
         break
       }

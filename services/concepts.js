@@ -1,7 +1,6 @@
-import _ from "lodash"
 import jskos from "jskos-tools"
 import { validate } from "jskos-validate"
-import { bulkOperationForEntities } from "../utils/utils.js"
+import { bulkOperationForEntities, uniq } from "../utils/utils.js"
 import { addKeywords } from "../utils/searchHelper.js"
 import { Concept } from "../models/concepts.js"
 import { SchemeService } from "../services/schemes.js"
@@ -21,14 +20,14 @@ import { AbstractService } from "./abstract.js"
 export function queryToAggregation(query) {
   const pipeline = []
   // Transform location $nearSphere query into $geoNear aggregation stage
-  if (query.location) {
-    const locationQuery = query.location.$nearSphere
+  const { location, ...queryData } = query
+  if (location) {
     pipeline.push({
       $geoNear: {
         spherical: true,
-        maxDistance: locationQuery.$maxDistance,
-        query: _.omit(query, ["location"]),
-        near: locationQuery.$geometry,
+        maxDistance: location.$nearSphere.$maxDistance,
+        query: queryData,
+        near: location.$nearSphere.$geometry,
         distanceField: "_distance",
       },
     })
@@ -71,10 +70,10 @@ export class ConceptService extends AbstractService {
         },
       })
     }
-    if (_.isNumber($skip)) {
+    if (typeof $skip === "number") {
       pipeline.push({ $skip })
     }
-    if (_.isNumber($limit)) {
+    if (typeof $limit === "number") {
       pipeline.push({ $limit })
     }
     return Concept.aggregate(pipeline)
@@ -134,7 +133,7 @@ export class ConceptService extends AbstractService {
       const [latitude, longitude] = query.near.split(",").map(parseFloat)
       // distance is given in km, but MongoDB uses meters
       const distance = (query.distance || 1) * 1000
-      if (!_.isFinite(latitude) || !_.isFinite(longitude) || !(latitude >= -90 && latitude <= 90) || !(longitude >= -180 && longitude <= 180)) {
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || !(latitude >= -90 && latitude <= 90) || !(longitude >= -180 && longitude <= 180)) {
         throw new MalformedRequestError(`Parameter \`near\` (${query.near}) is malformed. The correct format is "latitude,longitude" with latitude between -90 and 90 and longitude between -180 and 180.`)
       }
       if (!distance) {
@@ -245,7 +244,7 @@ export class ConceptService extends AbstractService {
           concepts.length && await Concept.bulkWrite(bulkOperationForEntities({ entities: concepts, replace: bulkReplace }))
           preparation.concepts = preparation.concepts.concat(concepts.map(c => ({ uri: c.uri })))
           preparation.errors = preparation.errors.concat(errors.map(c => ({ uri: c.uri })))
-          preparation.schemeUrisToAdjust = _.uniq(preparation.schemeUrisToAdjust.concat(schemeUrisToAdjust))
+          preparation.schemeUrisToAdjust = uniq(preparation.schemeUrisToAdjust.concat(schemeUrisToAdjust))
         }
         const promises = []
         bodyStream.on("data", (concept) => {

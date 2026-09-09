@@ -2,11 +2,10 @@ import { uuid, isValidUuid } from "../utils/uuid.js"
 import { removeNullProperties } from "../utils/utils.js"
 import jskos from "jskos-tools"
 import { validate } from "jskos-validate"
-import _ from "lodash"
 import { Annotation, Mapping, Concept } from "../models/index.js"
 import { InvalidBodyError, ForbiddenAccessError } from "../errors/index.js"
 
-import { AbstractService } from "./abstract.js"
+import { AbstractService, escapeRegExp } from "./abstract.js"
 
 export class AnnotationService extends AbstractService {
 
@@ -20,17 +19,18 @@ export class AnnotationService extends AbstractService {
   // Wrapper around validate.annotation that also checks the `body` field and throws errors if necessary.
   async validateAnnotation(data, options) {
     // TODO: Due to an issue with lax schemas in jskos-validate (see https://github.com/gbv/jskos-validate/issues/17), we need a workaround here.
-    const result = validate.annotation(_.omit(data, "body"), options)
-    if (!result || (data.body && !Array.isArray(data.body))) {
+    const { body, ...rest } = data
+    const result = validate.annotation(rest, options)
+    if (!result || (body && !Array.isArray(body))) {
       throw new InvalidBodyError()
     }
     // Check `body` property
-    if (data.body?.length) {
+    if (body?.length) {
       const mismatchTagConcepts = await Concept.find({ "inScheme.uri": this.config.mismatchTagVocabulary?.uri })
       if (data.bodyValue !== "-1") {
         throw new InvalidBodyError("Property `body` is currently only allowed with when `bodyValue` is set to \"-1\".")
       }
-      for (const tag of data.body) {
+      for (const tag of body) {
         if (tag.type !== "SpecificResource") {
           throw new InvalidBodyError("Currently, the only allowed `type` of body values in annotations is \"SpecificResource\".")
         }
@@ -71,11 +71,11 @@ export class AnnotationService extends AbstractService {
     if (query.creator) {
       const creators = query.creator.split("|")
       criteria.push({
-        $or: _.flatten(creators.map(creator => [
-          jskos.isValidUri(creator) ? null : { "creator.name": new RegExp(_.escapeRegExp(creator), "i") },
+        $or: creators.map(creator => [
+          jskos.isValidUri(creator) ? null : { "creator.name": new RegExp(escapeRegExp(creator), "i") },
           jskos.isValidUri(creator) ? { "creator.id": creator } : null,
           { creator },
-        ].filter(Boolean))),
+        ].flat().filter(Boolean)),
       })
     }
     if (query.target) {
@@ -109,8 +109,7 @@ export class AnnotationService extends AbstractService {
     if (!admin && item.motivation == "moderating") {
       let uris = [user.uri].concat(Object.values(user.identities || {}).map(id => id.uri)).filter(uri => uri != null)
       let whitelist = this.config.moderatingIdentities
-      if (whitelist && _.intersection(whitelist, uris).length == 0) {
-        // Disallow
+      if (whitelist && !whitelist.some(uri => uris.includes(uri))) {
         throw new ForbiddenAccessError("Access forbidden, user is not allowed to create items of type \"moderating\".")
       }
     }
@@ -137,7 +136,7 @@ export class AnnotationService extends AbstractService {
       item.id = this.baseUri + item._id
     }
     // Change target to object and add mapping content identifier if possible
-    const target = _.get(item, "target.id", item.target)
+    const target = item.target?.id || item.target
     if (!item.target?.state?.id) {
       const mapping = await Mapping.findOne({ uri: target })
       const contentId = mapping && (mapping.identifier || []).find(id => id.startsWith("urn:jskos:mapping:content:"))
@@ -172,7 +171,7 @@ export class AnnotationService extends AbstractService {
     annotation._id = existing._id
 
     // Change target property to object if necessary
-    if (_.isString(annotation.target)) {
+    if (typeof annotation.target === "string") {
       annotation.target = { id: annotation.target }
     }
 
@@ -191,10 +190,10 @@ export class AnnotationService extends AbstractService {
       delete annotation[key]
     }
 
-    _.assign(existing, annotation)
+    Object.assign(existing, annotation)
 
     // Change target property to object if necessary
-    if (_.isString(annotation.target)) {
+    if (typeof annotation.target === "string") {
       annotation.target = { id: annotation.target }
     }
 

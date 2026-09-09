@@ -1,26 +1,27 @@
-import _ from "lodash"
-
 export function serverStatus(config, ok) {
-  const { baseUrl } = config
-  const status = {
-    config: _.omit(_.cloneDeep(config), ["verbosity", "port", "mongo", "namespace", "proxies", "ips"]),
-  }
+  // eslint-disable-next-line no-unused-vars
+  const { log, warn, error, verbosity, port, mongo, namespace, proxies, ips, ...publicConfig } = config
+  config = structuredClone(publicConfig)
+
   // Remove `ips` property from all actions
   for (let type of ["schemes", "concepts", "mappings", "concordances", "annotations"]) {
-    if (status.config[type]) {
-      delete status.config[type].ips
+    if (config[type]) {
+      delete config[type].ips
       for (let action of ["read", "create", "update", "delete"]) {
-        if (status.config[type][action]) {
-          delete status.config[type][action].ips
+        if (config[type][action]) {
+          delete config[type][action].ips
         }
       }
     }
   }
+
   // Purge `key` from auth config if a symmetric algorithm is used
-  if (["HS256", "HS384", "HS512"].includes(status?.config?.auth?.algorithm)) {
-    status.config.auth.key = ""
+  if (["HS256", "HS384", "HS512"].includes(config.auth?.algorithm)) {
+    config.auth.key = ""
   }
-  status.config.baseUrl = baseUrl
+
+  const status = { config }
+
   // Set all available endpoints to `null` first
   for (let type of [
     "data",
@@ -41,31 +42,33 @@ export function serverStatus(config, ok) {
   ]) {
     status[type] = null
   }
+
+  const { baseUrl } = config
   status.data = `${baseUrl}data`
-  if (status.config.schemes) {
+  if (config.schemes) {
     status.schemes = `${baseUrl}voc`
     status.top = `${baseUrl}voc/top`
     status["voc-search"] = `${baseUrl}voc/search`
     status["voc-suggest"] = `${baseUrl}voc/suggest`
     status["voc-concepts"] = `${baseUrl}voc/concepts`
   }
-  if (status.config.concepts) {
+  if (config.concepts) {
     status.concepts = `${baseUrl}concepts`
     status.narrower = `${baseUrl}concepts/narrower`
     status.ancestors = `${baseUrl}concepts/ancestors`
     status.search = `${baseUrl}concepts/search`
     status.suggest = `${baseUrl}concepts/suggest`
   }
-  if (status.config.mappings) {
+  if (config.mappings) {
     status.mappings = `${baseUrl}mappings`
   }
-  if (status.config.concordances) {
+  if (config.concordances) {
     status.concordances = `${baseUrl}concordances`
   }
-  if (status.config.annotations) {
+  if (config.annotations) {
     status.annotations = `${baseUrl}annotations`
   }
-  if (status.config.registries) {
+  if (config.registries) {
     status.registries = `${baseUrl}registries`
   }
   status.types = null // not supported in jskos-server yet

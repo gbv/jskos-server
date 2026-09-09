@@ -1,11 +1,10 @@
 import jskos from "jskos-tools"
-import _ from "lodash"
 import assert from "node:assert"
 
 import { teardownInMemoryMongo, setupInMemoryMongo, createCollectionsAndIndexes, assertIndexes, assertMongoDB, dropDatabaseBeforeAndAfter, arrayToStream } from "./test-utils.js"
 
 import { InvalidBodyError } from "../errors/index.js"
-
+import { uniq } from "../utils/utils.js"
 import { createServices } from "../index.js"
 
 const services = createServices({
@@ -179,7 +178,7 @@ describe("Services Features", () => {
       it("should get correct number of mappings when using annotatedWith param", async () => {
         const annotatedWith = "-1"
         const result = await services.mapping.queryItems({ limit: 10, offset: 0, annotatedWith })
-        const expected = _.uniq(annotations.filter(a => a.bodyValue === annotatedWith).map(a => a.target)).sort()
+        const expected = uniq(annotations.filter(a => a.bodyValue === annotatedWith).map(a => a.target)).sort()
         assert.deepStrictEqual(result.map(r => r.uri).sort(), expected)
       })
 
@@ -194,7 +193,7 @@ describe("Services Features", () => {
             annotatedWith = `=${annotatedWith}`
           }
           const expected = mappings.filter(m => {
-            if (from && from !== _.get(m, "from.memberSet[0].uri") || to && to !== _.get(m, "to.memberSet[0].uri")) {
+            if (from && from !== m?.from?.memberSet?.[0]?.uri || to && to !== m?.to?.memberSet?.[0]?.uri) {
               return false
             }
             const annotationSum = annotations.filter(a => a.target === m.uri).reduce((prev, cur) => {
@@ -212,14 +211,14 @@ describe("Services Features", () => {
       it("should get correct number of mappings when using annotatedFor param", async () => {
         const annotatedFor = "assessing"
         const result = await services.mapping.queryItems({ limit: 10, offset: 0, annotatedFor })
-        const expected = _.uniq(annotations.filter(a => a.motivation === annotatedFor).map(a => a.target)).sort()
+        const expected = uniq(annotations.filter(a => a.motivation === annotatedFor).map(a => a.target)).sort()
         assert.deepStrictEqual(result.map(r => r.uri).sort(), expected)
       })
 
       it("should get correct number of mappings when using annotatedFor param with value `any`", async () => {
         const annotatedFor = "any"
         const result = await services.mapping.queryItems({ limit: 10, offset: 0, annotatedFor })
-        const expected = _.uniq(annotations.map(a => a.target)).sort()
+        const expected = uniq(annotations.map(a => a.target)).sort()
         assert.deepStrictEqual(result.map(r => r.uri).sort(), expected)
       })
 
@@ -240,7 +239,7 @@ describe("Services Features", () => {
       it("should get correct number of mappings when using annotatedBy param", async () => {
         const annotatedBy = "urn:test:creator|urn:other:uri"
         const result = await services.mapping.queryItems({ limit: 10, offset: 0, annotatedBy })
-        const expected = _.uniq(annotations.filter(a => annotatedBy.split("|").includes(_.get(a, "creator.id"))).map(a => a.target)).sort()
+        const expected = uniq(annotations.filter(a => annotatedBy.split("|").includes(a?.creator?.id)).map(a => a.target)).sort()
         assert.deepStrictEqual(result.map(r => r.uri).sort(), expected)
       })
 
@@ -249,12 +248,12 @@ describe("Services Features", () => {
         const annotatedFor = "moderating"
         // First only annotatedFor
         result = await services.mapping.queryItems({ limit: 10, offset: 0, annotatedFor })
-        expected = _.uniq(annotations.filter(a => a.motivation === annotatedFor).map(a => a.target)).sort()
+        expected = uniq(annotations.filter(a => a.motivation === annotatedFor).map(a => a.target)).sort()
         assert.deepStrictEqual(result.map(r => r.uri).sort(), expected)
         // Then with annotatedBy
         const annotatedBy = "urn:test:creator|urn:other:uri"
         result = await services.mapping.queryItems({ limit: 10, offset: 0, annotatedFor, annotatedBy })
-        expected = _.uniq(annotations.filter(a => annotatedBy.split("|").includes(_.get(a, "creator.id")) && a.motivation === annotatedFor).map(a => a.target)).sort()
+        expected = uniq(annotations.filter(a => annotatedBy.split("|").includes(a?.creator?.id) && a.motivation === annotatedFor).map(a => a.target)).sort()
         assert.deepStrictEqual(result.map(r => r.uri).sort(), expected)
       })
 
@@ -263,7 +262,7 @@ describe("Services Features", () => {
         const annotatedWith = "+1"
         // First only annotatedWith
         result = await services.mapping.queryItems({ limit: 10, offset: 0, annotatedWith })
-        expected = _.uniq(annotations.filter(a => a.bodyValue === annotatedWith).map(a => a.target)).sort()
+        expected = uniq(annotations.filter(a => a.bodyValue === annotatedWith).map(a => a.target)).sort()
         assert.deepStrictEqual(result.map(r => r.uri).sort(), expected)
         // Then with to
         const to = "urn:test:concept"

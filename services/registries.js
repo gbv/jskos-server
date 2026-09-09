@@ -1,4 +1,3 @@
-import _ from "lodash"
 import { removeNullProperties } from "../utils/utils.js"
 import { validate } from "jskos-validate"
 import { Registry } from "../models/registries.js"
@@ -131,7 +130,7 @@ export class RegistryService extends AbstractService {
     }
 
     // Merge existing with updates
-    _.assign(existing, body)
+    Object.assign(existing, body)
 
     removeNullProperties(existing)
 

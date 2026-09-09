@@ -1,4 +1,3 @@
-import _ from "lodash"
 import jskos from "jskos-tools"
 import { validate } from "jskos-validate"
 
@@ -13,7 +12,7 @@ const validateConcordance = validate.concordance
 
 import { MalformedRequestError, EntityNotFoundError, InvalidBodyError } from "../errors/index.js"
 
-import { AbstractService } from "./abstract.js"
+import { AbstractService, escapeRegExp } from "./abstract.js"
 
 export class ConcordanceService extends AbstractService {
 
@@ -53,11 +52,11 @@ export class ConcordanceService extends AbstractService {
     if (query.creator) {
       const creators = query.creator.split("|")
       conditions.push({
-        $or: _.flatten(creators.map(creator => [
-          jskos.isValidUri(creator) ? null : { "creator.prefLabel.de": new RegExp(_.escapeRegExp(creator), "i") },
-          jskos.isValidUri(creator) ? null : { "creator.prefLabel.en": new RegExp(_.escapeRegExp(creator), "i") },
+        $or: creators.map(creator => [
+          jskos.isValidUri(creator) ? null : { "creator.prefLabel.de": new RegExp(escapeRegExp(creator), "i") },
+          jskos.isValidUri(creator) ? null : { "creator.prefLabel.en": new RegExp(escapeRegExp(creator), "i") },
           jskos.isValidUri(creator) ? { "creator.uri": creator } : null,
-        ].filter(Boolean))),
+        ].flat().filter(Boolean)),
       })
     }
 
@@ -191,11 +190,9 @@ export class ConcordanceService extends AbstractService {
 
     let concordance = body
 
-    // Add modified date.
     concordance.modified = (new Date()).toISOString()
 
-    // Use lodash merge to merge concordance objects
-    _.assign(existing, concordance)
+    Object.assign(existing, concordance)
 
     removeNullProperties(existing)
 

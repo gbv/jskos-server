@@ -5,6 +5,8 @@ export function removeNullProperties(obj) {
   return Object.keys(obj).filter(key => obj[key] === null).forEach(key => delete obj[key])
 }
 
+export const uniq = array => [...new Set(array)]
+
 export function bulkOperationForEntities({ entities, replace = true }) {
   return entities.map(e => (replace ? {
     replaceOne: {

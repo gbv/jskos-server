@@ -1,9 +1,20 @@
-import _ from "lodash"
 import jskos from "jskos-tools"
 
 import { bulkOperationForEntities } from "../utils/utils.js"
 import { MalformedRequestError, MalformedBodyError, EntityNotFoundError, DatabaseAccessError } from "../errors/index.js"
 import { toOpenSearchSuggestFormat } from "../utils/searchHelper.js"
+
+export const escapeRegExp = string => string.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&")
+
+export const getPath = (obj, path) => {
+  for (let field of path.split(".")) {
+    if (typeof obj === "object") {
+      obj = obj[field]
+    }
+  }
+  return obj
+}
+
 
 export class AbstractService {
   constructor(config) {
@@ -51,7 +62,7 @@ export class AbstractService {
       return []
     }
     // Prepare search query for use in regex
-    const searchRegExp = new RegExp(`^${_.escapeRegExp(search).toUpperCase()}`)
+    const searchRegExp = new RegExp(`^${escapeRegExp(search).toUpperCase()}`)
     let query, queryOr = [{ _id: search }]
     // let projectAndSort = {}
     if (search.length > 2) {
@@ -113,7 +124,7 @@ export class AbstractService {
       for (let [labelType, factor] of [["prefLabel", 2.0], ["altLabel", 1.0], ["creator.prefLabel", 0.8], ["definition", 0.7]]) {
         let labels = []
         // Collect all labels
-        for (let label of Object.values(_.get(result, labelType, {}))) {
+        for (let label of Object.values(getPath(result, labelType) ?? {})) {
           if (Array.isArray(label)) {
             labels = labels.concat(label)
           } else {
@@ -267,7 +278,7 @@ export class AbstractService {
 
   // to be implemented by subclasses
   async prepareAndCheckItemForAction(item, _action) {
-    if (!_.isObject(item)) {
+    if (typeof item !== "object") {
       throw new MalformedBodyError()
     }
     return item

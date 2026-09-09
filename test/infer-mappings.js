@@ -4,7 +4,6 @@ import { app } from "../server.js"
 import assert from "node:assert"
 import { assertIndexes, assertMongoDB, dropDatabaseBeforeAndAfter, setupInMemoryMongo, createCollectionsAndIndexes, teardownInMemoryMongo } from "./test-utils.js"
 
-import _ from "lodash"
 import config from "../config/index.js"
 
 // Prepare jwt
@@ -108,7 +107,7 @@ describe("/mappings/{infer,apply}", () => {
       chai.request.execute(app)
         .get("/mappings/infer")
         .query({
-          from: _.last(concepts).uri,
+          from: concepts.at(-1).uri,
           fromScheme: scheme.uri,
           toScheme: targetScheme.uri,
         })
@@ -138,7 +137,7 @@ describe("/mappings/{infer,apply}", () => {
           chai.request.execute(app)
             .get("/mappings/infer")
             .query({
-              from: _.last(concepts).uri,
+              from: concepts.at(-1).uri,
               fromScheme: scheme.uri,
               toScheme: targetScheme.uri,
             })
@@ -158,7 +157,7 @@ describe("/mappings/{infer,apply}", () => {
       chai.request.execute(app)
         .get("/mappings/infer")
         .query({
-          from: _.last(concepts).uri.replace(scheme.namespace, ""),
+          from: concepts.at(-1).uri.replace(scheme.namespace, ""),
           fromScheme: scheme.uri,
           toScheme: targetScheme.uri,
         })
@@ -174,7 +173,7 @@ describe("/mappings/{infer,apply}", () => {
       chai.request.execute(app)
         .get("/mappings/infer")
         .query({
-          from: _.last(concepts).uri,
+          from: concepts.at(-1).uri,
           fromScheme: scheme.uri,
           toScheme: targetScheme.uri,
           depth: 1,
@@ -206,7 +205,7 @@ describe("/mappings/{infer,apply}", () => {
           chai.request.execute(app)
             .get("/mappings/infer")
             .query({
-              from: _.last(concepts).uri,
+              from: concepts.at(-1).uri,
               fromScheme: scheme.uri,
               toScheme: targetScheme.uri,
             })
@@ -226,7 +225,7 @@ describe("/mappings/{infer,apply}", () => {
       chai.request.execute(app)
         .get("/mappings/infer")
         .query({
-          from: _.last(concepts).uri,
+          from: concepts.at(-1).uri,
           fromScheme: scheme.uri,
           toScheme: targetScheme.uri,
           depth: 0,
@@ -243,7 +242,7 @@ describe("/mappings/{infer,apply}", () => {
       chai.request.execute(app)
         .get("/mappings/infer")
         .query({
-          from: _.last(concepts).uri,
+          from: concepts.at(-1).uri,
           fromScheme: scheme.uri,
           toScheme: targetScheme.uri,
           strict: "true",
@@ -260,7 +259,7 @@ describe("/mappings/{infer,apply}", () => {
 
     it("should add a mapping for the requested concept and return it instead", done => {
       const mapping = {
-        from: { memberSet: [_.last(concepts)] },
+        from: { memberSet: [concepts.at(-1)] },
         fromScheme: scheme,
         to: { memberSet: [{ uri: `${targetScheme.uri}:7` }] },
         toScheme: targetScheme,
@@ -277,7 +276,7 @@ describe("/mappings/{infer,apply}", () => {
           chai.request.execute(app)
             .get("/mappings/infer")
             .query({
-              from: _.last(concepts).uri,
+              from: concepts.at(-1).uri,
               fromScheme: scheme.uri,
               toScheme: targetScheme.uri,
               depth: 0,
@@ -297,7 +296,7 @@ describe("/mappings/{infer,apply}", () => {
       chai.request.execute(app)
         .get("/mappings/infer")
         .query({
-          from: _.last(concepts).uri,
+          from: concepts.at(-1).uri,
           fromScheme: scheme.uri,
           toScheme: targetScheme.uri,
           type: "http://www.w3.org/2004/02/skos/core#broadMatch",
@@ -314,7 +313,7 @@ describe("/mappings/{infer,apply}", () => {
       chai.request.execute(app)
         .get("/mappings/infer")
         .query({
-          from: _.last(concepts).uri,
+          from: concepts.at(-1).uri,
           fromScheme: scheme.uri,
           to: "test",
           toScheme: targetScheme.uri,
@@ -329,7 +328,7 @@ describe("/mappings/{infer,apply}", () => {
       chai.request.execute(app)
         .get("/mappings/infer")
         .query({
-          from: _.last(concepts).uri,
+          from: concepts.at(-1).uri,
           fromScheme: scheme.uri,
           toScheme: targetScheme.uri,
           direction: "backward",
@@ -344,12 +343,12 @@ describe("/mappings/{infer,apply}", () => {
   describe("/mappings/apply", () => {
     const data = [
       { uri: `${scheme.uri}:2` },
-      { uri: _.last(concepts).uri },
-      { uri: _.last(concepts).uri },
+      { uri: concepts.at(-1).uri },
+      { uri: concepts.at(-1).uri },
       {},
     ]
 
-    const uri = _.last(concepts).uri
+    const uri = concepts.at(-1).uri
     const extraTargetUri = `${targetScheme.uri}:8`
 
     before(async () => {

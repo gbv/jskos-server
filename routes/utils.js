@@ -1,4 +1,3 @@
-import _ from "lodash"
 import jskos from "jskos-tools"
 import { DuplicateEntityError } from "../errors/index.js"
 
@@ -18,14 +17,14 @@ import { getUrisOfUser } from "../utils/users.js"
 export function cleanJSON(json, depth = 0) {
   if (Array.isArray(json)) {
     json.forEach(value => cleanJSON(value, depth))
-  } else if (_.isObject(json)) {
-    _.forOwn(json, (value, key) => {
+  } else if (typeof json === "object") {
+    for (let key in json) {
       if (key.startsWith("_")) {
         delete json[key]
       } else {
-        cleanJSON(value, depth + 1)
+        cleanJSON(json[key], depth + 1)
       }
-    })
+    }
   }
   return json
 }
@@ -46,7 +45,7 @@ export const wrapAsync = (fn) => {
     }).catch(error => {
       // Catch and change certain errors
       if (error.code === 11000) {
-        const _id = _.get(error, "keyValue._id") || _.get(error, "writeErrors[0].err.op._id")
+        const _id = error.keyValue?._id ||error.writeErrors?.[0]?.err?.op?._id
         error = new DuplicateEntityError(null, `${_id} (${req.type})`)
       }
       // Pass error to the next error middleware.

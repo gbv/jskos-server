@@ -1,4 +1,3 @@
-import _ from "lodash"
 import { EntityNotFoundError, CreatorDoesNotMatchError, DatabaseInconsistencyError, InvalidBodyError } from "../errors/index.js"
 
 import { Readable } from "node:stream"
@@ -36,11 +35,12 @@ const matchesCreator = ({ req = {}, object, withContributors = false }) => {
   }
   const userUris = getUrisOfUser(user)
   // TODO: crossUser could also be identityGroup. Use authenticator with expandWhitelist
-  if (crossUser === true || _.intersection(crossUser || [], userUris).length) {
+  if (crossUser === true || crossUser?.some(uri => userUris.includes(uri))) {
     return true
   }
   // Support arrays, objects, and strings as creators
-  let creators = Array.isArray(object.creator) ? object.creator : (_.isObject(object.creator) ? [object.creator] : [{ uri: object.creator }])
+  let creators = Array.isArray(object.creator) ? object.creator
+    : (typeof object.creator === "object" ? [object.creator] : [{ uri: object.creator }])
   // Also check contributors if requested
   let contributors = withContributors ? (object.contributor || []) : []
   for (let creator of creators.concat(contributors)) {

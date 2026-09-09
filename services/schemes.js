@@ -1,4 +1,3 @@
-import _ from "lodash"
 import { validate } from "jskos-validate"
 
 import { addKeywords } from "../utils/searchHelper.js"
@@ -6,7 +5,7 @@ import { MalformedBodyError, MalformedRequestError, InvalidBodyError } from "../
 import { Scheme } from "../models/schemes.js"
 import { Concept } from "../models/concepts.js"
 
-import { AbstractService } from "./abstract.js"
+import { AbstractService, escapeRegExp } from "./abstract.js"
 
 export class SchemeService extends AbstractService {
 
@@ -92,12 +91,12 @@ export class SchemeService extends AbstractService {
     if (!identifierOrNotation) {
       return null
     }
-    return await this.model.findOne({ $or: [{ uri: identifierOrNotation }, { identifier: identifierOrNotation }, { notation: new RegExp(`^${_.escapeRegExp(identifierOrNotation)}$`, "i") }] }).lean().exec()
+    return await this.model.findOne({ $or: [{ uri: identifierOrNotation }, { identifier: identifierOrNotation }, { notation: new RegExp(`^${escapeRegExp(identifierOrNotation)}$`, "i") }] }).lean().exec()
   }
 
-  async replaceSchemeProperties(entity, propertyPaths, ignoreError = true) {
-    await Promise.all(propertyPaths.map(async path => {
-      const uri = _.get(entity, `${path}.uri`)
+  async replaceSchemeProperties(entity, properties, ignoreError = true) {
+    await Promise.all(properties.map(async key => {
+      const uri = entity?.[key]?.uri
       let scheme
       try {
         scheme = await this.getScheme(uri)
@@ -107,7 +106,13 @@ export class SchemeService extends AbstractService {
         }
       }
       if (scheme) {
-        _.set(entity, path, _.pick(scheme, ["uri", "notation"]))
+        entity[key] = {}
+        if (scheme.uri) {
+          entity[key].uri = scheme.uri
+        }
+        if (scheme.notation) {
+          entity[key].notation = scheme.notation
+        }
       } else if (!ignoreError) {
         throw new InvalidBodyError(`Scheme with URI ${uri} not found. Only known schemes can be used.`)
       }
@@ -165,7 +170,7 @@ export class SchemeService extends AbstractService {
    * @returns {Object} prepared concept scheme
    */
   async prepareAndCheckItemForAction(scheme, action) {
-    if (!_.isObject(scheme)) {
+    if (typeof scheme !== "object") {
       throw new MalformedBodyError()
     }
     if (["create", "update"].includes(action)) {
@@ -231,9 +236,9 @@ export class SchemeService extends AbstractService {
           ].concat(API)
         }
         if (API.length) {
-          _.set(update, "$set.API", API)
+          update.$set.API = API
         } else {
-          _.set(update, "$unset.API", "")
+          update.$unset.API = ""
         }
       }
       if (bulk) {

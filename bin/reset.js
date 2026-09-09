@@ -5,7 +5,6 @@ import { createDatabase } from "../utils/db.js"
 const db = createDatabase(config)
 import yesno from "yesno"
 import jskos from "jskos-tools"
-import _ from "lodash"
 
 
 import meow from "meow"
@@ -223,7 +222,9 @@ import { models } from "../models/index.js"
       continue
     }
     log(`Dealing with ${type}s...`)
-    for (let chunk of _.chunk(toBeDeleted[type], 50000)) {
+    const entities = toBeDeleted[type]
+    while (entities.length) {
+      const chunk = entities.splice(0,50000)
       const query = { _id: { $in: chunk } }
       // For concepts, get all schemes to be adjusted later
       let schemeUrisToAdjust = []
