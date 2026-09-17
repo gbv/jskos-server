@@ -16,6 +16,7 @@ export class Router {
 
     this.router = router
     this.config = config
+    this.spec = {} // OpenAPI Paths Object
 
     // middleware
     this.adjust = createAdjuster(config, this.services)
@@ -139,17 +140,10 @@ export class Router {
     }
   }
 
-  // low level
-  get(...args) {
-    this.router.get(...args)
-  }
-
-  post(...args) {
-    this.router.post(...args)
-  }
-
-  del(...args) {
-    this.router.delete(...args)
+  // low level registering of an endpoint
+  endpoint(method, path, summary, ...args) {
+    (this.spec[path] ??= {})[method] = { summary }
+    this.router[method](path, ...args)
   }
 
 }

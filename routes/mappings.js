@@ -10,8 +10,10 @@ export default config => {
 
   // order of routes matters:
 
-  router.get(
+  router.endpoint(
+    "get",
     "/suggest",
+    "Suggests notations used in mappings",
     router.authenticate(concepts?.read?.auth),
     wrapAsync(async (req) => {
       return await service.getNotationSuggestions(req.query)
@@ -20,8 +22,10 @@ export default config => {
     returnJSON,
   )
 
-  router.get(
+  router.endpoint(
+    "get",
     "/voc",
+    "Returns all concept schemes used in mappings",
     router.authenticate(schemes?.read?.auth),
     wrapAsync(async (req) => {
       return await service.getMappingSchemes(req.query)
@@ -32,8 +36,10 @@ export default config => {
   )
 
   if (mappings.read) {
-    router.get(
+    router.endpoint(
+      "get",
       "/infer",
+      "Returns mappings based on stored mappings and mappings derived by inference",
       router.authenticate(mappings.read.auth),
       wrapAsync(async req => service.inferMappings(req.query)),
       router.paginationHeaders,
@@ -41,15 +47,19 @@ export default config => {
       returnJSON,
     )
 
-    router.get(
+    router.endpoint(
+      "get",
       "/apply",
+      "Apply mappings to a JSKOS set",
       router.authenticate(mappings.read.auth),
       wrapAsync(async req => service.applyMappings(req.query)),
       returnJSON,
     )
 
-    router.post(
+    router.endpoint(
+      "post",
       "/apply",
+      "Apply mappings to a JSKOS set",
       router.authenticate(mappings.read.auth),
       express.json(),
       wrapAsync(async req => service.applyMappings(req.query, req.body)),

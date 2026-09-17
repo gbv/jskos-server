@@ -8,8 +8,10 @@ export default config => {
   const router = new Router(config)
   const service = router.validateService
 
-  router.get(
-    "/",
+  router.endpoint(
+    "get",
+    "",
+    "Validate JSKOS objects",
     wrapAsync(async req => {
       const url = req.query.url
       if (!url) {
@@ -26,8 +28,10 @@ export default config => {
     returnJSON,
   )
 
-  router.post(
+  router.endpoint(
+    "post",
     "/",
+    "Validate JSKOS objects",
     express.json(),
     wrapAsync(async req => service.validate(req.body, req.query)),
     returnJSON,

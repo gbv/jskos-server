@@ -17,8 +17,10 @@ export default config => {
   if (concepts) {
     const conceptService = router.services.concept
 
-    router.get(
+    router.endpoint(
+      "get",
       "/top",
+      "Returns top concepts of a concept scheme",
       router.authenticate(concepts.read.auth),
       supportDownloadFormats([]),
       wrapAsync(async (req) => {
@@ -29,8 +31,10 @@ export default config => {
       returnJSON,
     )
 
-    router.get(
+    router.endpoint(
+      "get",
       "/concepts",
+      "Returns all concepts of a concept scheme",
       router.authenticate(concepts.read.auth),
       supportDownloadFormats(["json", "ndjson"]),
       wrapAsync(async (req) => {
@@ -48,8 +52,10 @@ export default config => {
     )
 
     if (concepts.delete) {
-      router.del(
+      router.endpoint(
+        "delete",
         "/concepts",
+        "Deletes all concepts of a certain concept scheme",
         router.authenticate(concepts.delete.auth),
         router.bodyParser,
         wrapAsync(async (req) => {

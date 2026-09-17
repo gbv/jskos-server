@@ -4,8 +4,10 @@ import { Router } from "./router.js"
 export default config => {
   const router = new Router(config)
 
-  router.get(
-    "/",
+  router.endpoint(
+    "get",
+    "",
+    "Returns data for objects identified by their URI",
     router.authenticate(false),
     supportDownloadFormats([]),
     wrapAsync(async req => router.dataService.getData(req, router.authenticator, router.adjust)),

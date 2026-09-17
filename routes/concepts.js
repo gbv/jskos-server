@@ -21,8 +21,10 @@ export default config => {
 
       for (const prefix of ["", "/concepts"]) {
 
-        router.get(
-          prefix + "/narrower",
+        router.endpoint(
+          "get",
+          `${prefix}/narrower`,
+          "Returns narrower concepts of a concept",
           router.authenticate(concepts.read.auth),
           supportDownloadFormats([]),
           wrapAsync(async req => service.getNarrower(req.query)),
@@ -31,8 +33,10 @@ export default config => {
           returnJSON,
         )
 
-        router.get(
-          prefix + "/ancestors",
+        router.endpoint(
+          "get",
+          `${prefix}/ancestors`,
+          "Returns ancestor concepts of a concept",
           router.authenticate(concepts.read.auth),
           supportDownloadFormats([]),
           wrapAsync(async req => service.getAncestors(req.query)),
@@ -43,8 +47,10 @@ export default config => {
 
         router.suggest(prefix + "/suggest", concepts.read, service)
 
-        router.get(
-          prefix + "/search",
+        router.endpoint(
+          "get",
+          `${prefix}/search`,
+          "Returns concept search suggestions in JSKOS format",
           router.authenticate(concepts.read.auth),
           supportDownloadFormats([]),
           wrapAsync(async req => await service.search(req.query)),
