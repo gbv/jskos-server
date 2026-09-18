@@ -14,6 +14,7 @@ export class AnnotationService extends AbstractService {
     this.baseUri = config.baseUrl + "annotations/"
     this.config = config.annotations || {}
     this.model = Annotation
+    this.modelName = ["an annotation", "annotations"]
   }
 
   // Wrapper around validate.annotation that also checks the `body` field and throws errors if necessary.

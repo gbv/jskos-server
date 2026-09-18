@@ -7,7 +7,7 @@ export default config => {
   const service = router.services.scheme
   const { schemes, concepts } = config
 
-  router.read("/", schemes.read, service, "schemes")
+  router.read("/", schemes.read, service)
   router.create("/", schemes.create, service)
   router.update("/", schemes.update, service)
   router.delete("/", schemes.delete, service)
@@ -69,5 +69,5 @@ export default config => {
     }
   }
 
-  return router.router
+  return router
 }

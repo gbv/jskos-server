@@ -30,12 +30,12 @@ export default config => {
 
   router.endpoint(
     "post",
-    "/",
+    "",
     "Validate JSKOS objects",
     express.json(),
     wrapAsync(async req => service.validate(req.body, req.query)),
     returnJSON,
   )
 
-  return router.router
+  return router
 }

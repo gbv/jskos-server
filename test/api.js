@@ -234,6 +234,7 @@ describe("Express Server", () => {
           res.body.should.be.a("object")
           res.body.ok.should.be.eql(1)
           res.body.config.should.be.a("object")
+          res.headers["link"].should.contain("/openapi.json>; rel=\"service-desc\"")
           done()
         })
     })
@@ -263,6 +264,57 @@ describe("Express Server", () => {
         })
     })
 
+  })
+
+  describe("GET /openapi.json", () => {
+    it("should return service description", done => {
+      chai.request.execute(app)
+        .get("/openapi.json")
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.body.should.be.a("object")
+          const openapi = res.body.paths
+          assert.deepEqual(Object.keys(openapi).sort(), [
+            "/ancestors",
+            "/annotations/",
+            "/annotations/{id}",
+            "/checkAuth",
+            "/concepts",
+            "/concepts/ancestors",
+            "/concepts/narrower",
+            "/concepts/search",
+            "/concepts/suggest",
+            "/concordances/",
+            "/concordances/{id}",
+            "/data",
+            "/mappings/",
+            "/mappings/apply",
+            "/mappings/infer",
+            "/mappings/suggest",
+            "/mappings/voc",
+            "/mappings/{id}",
+            "/narrower",
+            "/openapi.json",
+            "/registries/",
+            "/registries/suggest",
+            "/search",
+            "/status",
+            "/suggest",
+            "/validate",
+            "/voc/",
+            "/voc/concepts",
+            "/voc/suggest",
+            "/voc/top",
+          ])
+          assert.deepEqual(Object.keys(openapi).filter(path => openapi[path].get?.deprecated).sort(), [
+            "/ancestors",
+            "/narrower",
+            "/search",
+          ])
+          // TODO: check against schema
+          done()
+        })
+    })
   })
 
   describe("GET /concordances", () => {

@@ -7,7 +7,7 @@ import nocache from "nocache"
 
 import createRouter from "./routes/index.js"
 
-import { serverStatus } from "./utils/status.js"
+import { serverStatus, OpenAPI } from "./utils/status.js"
 import { Authenticator } from "./utils/auth.js"
 import { urlForLinkHeader } from "./utils/url-for-link-header.js"
 import { ipcheck } from "./utils/ipcheck.js"
@@ -20,6 +20,17 @@ import { setupChangesApi } from "./utils/changes.js"
 const __dirname = import.meta.dirname
 
 const db = createDatabase(config)
+const openapi = new OpenAPI(config)
+
+function getEndpoint(path, summary, ...callback) {
+  app.use(path, ...callback)
+  openapi.getEndpoint(path, { summary })
+}
+
+function enableRoutes(basePath, router) {
+  app.use(basePath, router.router)
+  openapi.enableRoutes(basePath, router.spec)
+}
 
 config.log(`Running in ${config.env} mode.`)
 
@@ -36,7 +47,7 @@ if (!config.baseUrl) {
 // Initialize express with settings
 const app = express()
 
-app.use(express.static("public"))
+app.use(express.static("public")) // JS and CSS of UI at root
 
 // Initialize WebSocket support
 expressWs(app)
@@ -104,16 +115,19 @@ app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Methods", "GET,PUT,POST,PATCH,DELETE")
   res.setHeader("Access-Control-Expose-Headers", "X-Total-Count, Link")
   res.setHeader("Content-Type", "application/json; charset=utf-8")
+
+  const links = [
+    urlForLinkHeader({ base: config.baseUrl, req: { path: "/openapi.json" }, rel: "service-desc" }),
+  ]
   // Deprecation headers for /narrower, /ancestors, /search, and /suggest
   // TODO for 3.0: Remove these headers
   if (["/narrower", "/ancestors", "/search", "/suggest"].includes(req.path)) {
     res.setHeader("Deprecation", true)
-    const links = []
     links.push(urlForLinkHeader({ base: config.baseUrl, req, rel: "alternate" }))
     links[0] = links[0].replace(req.path, `/concepts${req.path}`)
     links.push("<https://github.com/gbv/jskos-server/releases/tag/v2.0.0>; rel=\"deprecation\"")
-    res.set("Link", links.join(","))
   }
+  res.set("Link", links.join(","))
   next()
 })
 
@@ -138,24 +152,32 @@ app.get("/", (req, res) => {
 // JSON Schema for /status
 app.use("/status.schema.json", express.static(__dirname + "/status.schema.json"))
 
-// Status page /status
-app.get("/status",
-  (req, res) => {
-    res.status(200).json(serverStatus(config, db.connection.readyState === 1))
-  })
+getEndpoint(
+  "/status",
+  "Returns status of the service",
+  (req, res) => res.json(serverStatus(config, db.connection.readyState === 1)))
+
+getEndpoint(
+  "/openapi.json",
+  "Return API specification as OpenAPI Description",
+  (req, res) => res.json(openapi.description))
 
 // IP check middleware
 app.use(ipcheck(config))
 
 // /checkAuth
 const authenticator = new Authenticator(config)
-app.get("/checkAuth", authenticator.checkAuth(), (req, res) => {
-  const info = { user: getUser(req) }
-  if (res.access) {
-    info.access = res.access
-  }
-  res.json(info)
-})
+getEndpoint(
+  "/checkAuth",
+  "Check whether a user is authorized and which access rights are granted",
+  authenticator.checkAuth(),
+  (req, res) => {
+    const info = { user: getUser(req) }
+    if (res.access) {
+      info.access = res.access
+    }
+    res.json(info)
+  })
 
 // Database check middleware
 app.use((req, res, next) => {
@@ -167,20 +189,21 @@ app.use((req, res, next) => {
   }
 })
 
+
 // Add conditional routes
 for (let type of ["schemes", "mappings", "concordances", "annotations", "registries"]) {
   if (config[type]) {
     const path = type === "schemes" ? "voc" : type
-    app.use(`/${path}`, createRouter[type](config))
+    enableRoutes(`/${path}`, createRouter[type](config))
   }
 }
 if (config.concepts) {
-  app.use(createRouter.concepts(config))
+  enableRoutes("", createRouter.concepts(config))
 }
 
 // These routes are always enabled
-app.use("/data", createRouter.data(config))
-app.use("/validate", createRouter.validate(config))
+enableRoutes("/data", createRouter.data(config))
+enableRoutes("/validate", createRouter.validate(config))
 
 // Error handling
 app.use((error, req, res, next) => {
@@ -205,6 +228,7 @@ connect()
 
 // Changes API
 if (config.changes) {
+  // TODO: add to openapi
   await setupChangesApi(app, config, db)
 }
 

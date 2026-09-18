@@ -21,6 +21,7 @@ export class ConcordanceService extends AbstractService {
     this.schemeService = new SchemeService(config)
     this.uriBase = config.baseUrl + "concordances/"
     this.model = Concordance
+    this.modelName = ["a concordance", "concordances"]
   }
 
   /**

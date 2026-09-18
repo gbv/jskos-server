@@ -49,6 +49,7 @@ export class MappingService extends AbstractService {
     this.baseUri = config.baseUrl + "mappings/"
     this.config = config.mappings || {}
     this.model = Mapping
+    this.modelName = ["a mapping", "mappings"]
     this.schemeService = new SchemeService(config)
     this.concordanceService = new ConcordanceService(config)
     this.conceptService = new ConceptService(config)

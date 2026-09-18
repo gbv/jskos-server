@@ -28,6 +28,7 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
 - [API](#api)
   - [General](#general)
   - [GET /status](#get-status)
+  - [GET /openapi.json](#get-openapijson)
   - [GET /checkAuth](#get-checkauth)
   - [POST /validate](#post-validate)
   - [GET /validate](#get-validate)
@@ -946,6 +947,11 @@ Note that certain properties from the actual configuration will not be shown in 
 * **Error Response**
 
   In case of an error, for instance a failed database connection, the value of response property `ok` is set to `0`.
+
+### GET /openapi.json
+
+Returns API specification as [OpenAPI Description](https://spec.openapis.org/oas/latest#openapi-description-structure).
+This does not include [Change Stream Endpoints](change-stream-endpoints) an no parameters or response format.
 
 ### GET /checkAuth
 

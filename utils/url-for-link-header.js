@@ -1,5 +1,5 @@
 export function urlForLinkHeader({ base, query, rel, req }) {
-  let url = base.substring(0, base.length - 1) + req.path
+  let url = base.substring(0, base.length - 1) + (req?.path ?? "")
   // eslint-disable-next-line no-unused-vars
   const { bulk, ...vars } = query || req?.query || {} // omit "bulk"
   let index = 0

@@ -72,15 +72,11 @@ export default config => {
     )
   }
 
-  router.read("/", mappings.read, service, "mappings", ["json", "ndjson", "csv", "tsv"])
-  router.readOne(mappings.read, service, "mappings", ["json", "ndjson", "csv", "tsv"])
-
+  router.read("/", mappings.read, service, ["json", "ndjson", "csv", "tsv"])
+  router.readOne(mappings.read, service, ["json", "ndjson", "csv", "tsv"])
   router.create("/", mappings.create, service)
-
-  router.update("/", mappings.update, service)
   router.update("/:_id", mappings.update, service)
-
   router.delete("/:_id", mappings.delete, service)
 
-  return router.router
+  return router
 }

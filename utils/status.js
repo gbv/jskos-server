@@ -1,3 +1,44 @@
+export class OpenAPI {
+  constructor(config) {
+    this.baseUrl = config.baseUrl
+    this.description = {
+      openapi: "3.2.0",
+      info: {
+        title: config.title,
+      },
+      servers: {
+        url: config.baseUrl,
+      },
+      paths: {},
+      externalDocs: {
+        description: "full documentation",
+        url: "https://github.com/gbv/jskos-server#readme",
+      },
+    }
+  }
+
+  addPath(path, item) {
+    this.description.paths[path] = item
+    for (let method in item) {
+      path = path.replaceAll("{",":_").replaceAll(/[^a-z_]/g,"")
+      item[method].externalDocs = {
+        description: "documentation",
+        url: `https://github.com/gbv/jskos-server#${method}-${path}`,
+      }
+    }
+  }
+
+  getEndpoint(path, operation) {
+    this.addPath(path, { get: operation })
+  }
+
+  enableRoutes(basePath, paths) {
+    for (let [path,item] of Object.entries(paths)) {
+      this.addPath(basePath + path, item)
+    }
+  }
+}
+
 export function serverStatus(config, ok) {
   // eslint-disable-next-line no-unused-vars
   const { log, warn, error, verbosity, port, mongo, namespace, proxies, ips, ...publicConfig } = config

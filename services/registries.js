@@ -18,6 +18,7 @@ export class RegistryService extends AbstractService {
     this.types = {}
 
     this.model = Registry
+    this.modelName = ["a registry", "registries"]
 
     // TODO: duplicated code in config.setup
     for (let type of allTypes) {

@@ -45,6 +45,7 @@ export class ConceptService extends AbstractService {
     super(config)
     this.schemeService = new SchemeService(config)
     this.model = Concept
+    this.modelName = ["a concept", "concepts"]
   }
 
   retrieveItems(query, $skip, $limit, narrower = true) {

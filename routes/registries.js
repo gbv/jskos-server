@@ -14,5 +14,5 @@ export default config => {
     router.suggest("/suggest", registries.read, service)
   }
 
-  return router.router
+  return router
 }

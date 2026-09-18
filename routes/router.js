@@ -35,6 +35,8 @@ export class Router {
 
   read(path, config, service, name, formats = []) {
     if (config) {
+      const name = service.modelName[1]
+      this.about("get", path, `Returns details of ${name}`)
       this.router.get(
         path,
         this.authenticate(config.auth),
@@ -50,20 +52,24 @@ export class Router {
 
   readOne(config, service, name, formats = []) {
     if (config) {
+      const name = service.modelName[0]
+      const path = "/:_id"
+      this.about("get", path, `Returns ${name}`)
       this.router.get(
-        "/:_id",
+        path,
         this.authenticate(config.auth),
         supportDownloadFormats(formats),
         wrapAsync(async req => service.getItem(req.params._id)),
         wrapDownload(this.adjust, false),
         wrapDownload(returnJSON, false),
-        wrapDownload(handleDownload(name), true),
+        wrapDownload(handleDownload(name.split(" ")[1]), true),
       )
     }
   }
 
   suggest(path, config, service) {
     if (config) {
+      this.about("get", path, `Returns suggestions for ${service.modelName[1]} OpenSearch Suggest Format`)
       this.router.get(
         path,
         this.authenticate(config.auth),
@@ -72,11 +78,13 @@ export class Router {
         this.paginationHeaders,
         returnJSON,
       )
+      this.about("put", path, `Update ${service.modelName[0]} in the database`)
     }
   }
 
   create(path, config, service) {
     if (config) {
+      this.about("post", path, `Save ${service.modelName[1]} in the database`)
       this.router.post(
         path,
         this.authenticate(config.auth),
@@ -96,6 +104,7 @@ export class Router {
 
   update(path, config, service) {
     if (config) {
+      this.about("put", path, `Update ${service.modelName[0]} in the database`)
       this.router.put(
         path,
         this.authenticate(config.auth),
@@ -109,6 +118,7 @@ export class Router {
         returnJSON,
       )
       if (service.patch) { // TODO: implement for all services
+        this.about("patch", path, `Adjust ${service.modelName[0]} in the database`)
         this.router.patch(
           path,
           this.authenticate(config.auth),
@@ -126,6 +136,7 @@ export class Router {
 
   delete(path, config, service) {
     if (config) {
+      this.about("delete", path, `Deletes ${service.modelName[0]} from the database`)
       this.router.delete(
         path,
         this.authenticate(config.auth),
@@ -140,10 +151,16 @@ export class Router {
     }
   }
 
-  // low level registering of an endpoint
-  endpoint(method, path, summary, ...args) {
-    (this.spec[path] ??= {})[method] = { summary }
+  // low level registering of an endpoint operation
+  endpoint(method, path, operation, ...args) {
+    this.about(method, path, operation)
     this.router[method](path, ...args)
   }
 
+  // add documentation of an endpoint operation
+  about(method, path, operation) {
+    path = path.replace(":_id","{id}")
+    ;(this.spec[path] ??= {})[method] =
+      typeof operation === "string" ? { summary: operation } : operation
+  }
 }

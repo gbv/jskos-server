@@ -8,7 +8,7 @@ export default config => {
   if (concepts) {
     const service = router.services.concept
 
-    router.read("/concepts", concepts.read, service, "concepts", ["json", "ndjson"])
+    router.read("/concepts", concepts.read, service, ["json", "ndjson"])
     router.create("/concepts", concepts.create, service)
     router.update("/concepts", concepts.update, service)
     router.delete("/concepts", concepts.delete, service)
@@ -20,11 +20,12 @@ export default config => {
     // See also: https://github.com/gbv/jskos-server/issues/193#issuecomment-1508038432
 
       for (const prefix of ["", "/concepts"]) {
+        const deprecated = prefix === ""
 
         router.endpoint(
           "get",
           `${prefix}/narrower`,
-          "Returns narrower concepts of a concept",
+          { summary: "Returns narrower concepts of a concept", deprecated },
           router.authenticate(concepts.read.auth),
           supportDownloadFormats([]),
           wrapAsync(async req => service.getNarrower(req.query)),
@@ -36,7 +37,7 @@ export default config => {
         router.endpoint(
           "get",
           `${prefix}/ancestors`,
-          "Returns ancestor concepts of a concept",
+          { summary: "Returns ancestor concepts of a concept", deprecated },
           router.authenticate(concepts.read.auth),
           supportDownloadFormats([]),
           wrapAsync(async req => service.getAncestors(req.query)),
@@ -50,7 +51,7 @@ export default config => {
         router.endpoint(
           "get",
           `${prefix}/search`,
-          "Returns concept search suggestions in JSKOS format",
+          { summary: "Returns concept search suggestions in JSKOS format", deprecated },
           router.authenticate(concepts.read.auth),
           supportDownloadFormats([]),
           wrapAsync(async req => await service.search(req.query)),
@@ -62,5 +63,5 @@ export default config => {
     }
   }
 
-  return router.router
+  return router
 }

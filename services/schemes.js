@@ -13,6 +13,7 @@ export class SchemeService extends AbstractService {
     super(config)
     this.baseUrl = config.baseUrl
     this.model = Scheme
+    this.modelName = ["a concept scheme", "concept schemes"]
   }
 
   /**

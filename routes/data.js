@@ -14,5 +14,5 @@ export default config => {
     returnJSON,
   )
 
-  return router.router
+  return router
 }
