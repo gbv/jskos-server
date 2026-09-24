@@ -46,19 +46,8 @@ export default config => {
           returnJSON,
         )
 
-        router.suggest(prefix + "/suggest", concepts.read, service)
-
-        router.endpoint(
-          "get",
-          `${prefix}/search`,
-          { summary: "Returns concept search suggestions in JSKOS format", deprecated },
-          router.authenticate(concepts.read.auth),
-          supportDownloadFormats([]),
-          wrapAsync(async req => await service.search(req.query)),
-          router.paginationHeaders,
-          router.adjust,
-          returnJSON,
-        )
+        router.suggest(`${prefix}/suggest`, concepts.read, service, deprecated)
+        router.search(`${prefix}/search`, concepts.read, service, deprecated)
       }
     }
   }

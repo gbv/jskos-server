@@ -146,7 +146,7 @@ app.use(addMiddlewareProperties(config))
 // Root path for static page
 app.get("/", (req, res) => {
   res.setHeader("Content-Type", "text/html")
-  res.render("base", { config })
+  res.render("base", openapi.description)
 })
 
 // JSON Schema for /status
@@ -155,7 +155,11 @@ app.use("/status.schema.json", express.static(__dirname + "/status.schema.json")
 getEndpoint(
   "/status",
   "Returns status of the service",
-  (req, res) => res.json(serverStatus(config, db.connection.readyState === 1)))
+  (req, res) => {
+    const status = serverStatus(config, db.connection.readyState === 1)
+    status.openapi = openapi.description
+    return res.json(status)
+  })
 
 getEndpoint(
   "/openapi.json",

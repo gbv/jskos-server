@@ -822,6 +822,8 @@ All API methods stick to the following rules, unless otherwise specified.
 ### GET /status
 Returns a status object.
 
+*This endpoint is going to be replaced by [/openapi.json](#get-openapijson) so use the latter, of possible. The status object also contains full OpenAPI description in field `openapi` to facilitate switching from /status to /openapi.json*.
+
 There is a [JSON Schema](https://json-schema.org) for the format of this endpoint. It is available under `/status.schema.json` for every jskos-server installation (starting from version 1.0.0). The most recent schema can be accessed here: https://gbv.github.io/jskos-server/status.schema.json
 
 Note that certain properties from the actual configuration will not be shown in the result for `/status`:

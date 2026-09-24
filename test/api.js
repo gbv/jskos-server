@@ -303,6 +303,7 @@ describe("Express Server", () => {
             "/validate",
             "/voc/",
             "/voc/concepts",
+            "/voc/search",
             "/voc/suggest",
             "/voc/top",
           ])
@@ -310,6 +311,7 @@ describe("Express Server", () => {
             "/ancestors",
             "/narrower",
             "/search",
+            "/suggest",
           ])
           // TODO: check against schema
           done()

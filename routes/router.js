@@ -36,7 +36,7 @@ export class Router {
   read(path, config, service, name, formats = []) {
     if (config) {
       const name = service.modelName[1]
-      this.about("get", path, `Returns details of ${name}`)
+      this.about("get", path, { summary: `Lists details of ${name}`, auth: config.auth })
       this.router.get(
         path,
         this.authenticate(config.auth),
@@ -54,7 +54,7 @@ export class Router {
     if (config) {
       const name = service.modelName[0]
       const path = "/:_id"
-      this.about("get", path, `Returns ${name}`)
+      this.about("get", path, { summary: `Returns ${name}`, auth: config.auth })
       this.router.get(
         path,
         this.authenticate(config.auth),
@@ -67,9 +67,13 @@ export class Router {
     }
   }
 
-  suggest(path, config, service) {
+  suggest(path, config, service, deprecated) {
     if (config) {
-      this.about("get", path, `Returns suggestions for ${service.modelName[1]} OpenSearch Suggest Format`)
+      this.about("get", path, {
+        summary: `Return search suggestions for ${service.modelName[1]}`,
+        deprecated,
+        auth: config.auth,
+      })
       this.router.get(
         path,
         this.authenticate(config.auth),
@@ -78,13 +82,34 @@ export class Router {
         this.paginationHeaders,
         returnJSON,
       )
-      this.about("put", path, `Update ${service.modelName[0]} in the database`)
+    }
+  }
+
+  search(path, config, service, deprecated) {
+    if (config) {
+      this.about("get", path, {
+        summary: `Search for ${service.modelName[1]}`,
+        deprecated,
+        auth: config.auth,
+      })
+      this.router.get(
+        path,
+        this.authenticate(config.auth),
+        supportDownloadFormats([]),
+        wrapAsync(async req => service.search(req.query)),
+        this.paginationHeaders,
+        this.adjust,
+        returnJSON,
+      )
     }
   }
 
   create(path, config, service) {
     if (config) {
-      this.about("post", path, `Save ${service.modelName[1]} in the database`)
+      this.about("post", path, {
+        summary: `Save ${service.modelName[1]} in the database`,
+        auth: config.auth,
+      })
       this.router.post(
         path,
         this.authenticate(config.auth),
@@ -104,7 +129,10 @@ export class Router {
 
   update(path, config, service) {
     if (config) {
-      this.about("put", path, `Update ${service.modelName[0]} in the database`)
+      this.about("put", path, {
+        summary: `Update ${service.modelName[0]} in the database`,
+        auth: config.auth,
+      })
       this.router.put(
         path,
         this.authenticate(config.auth),
@@ -118,7 +146,10 @@ export class Router {
         returnJSON,
       )
       if (service.patch) { // TODO: implement for all services
-        this.about("patch", path, `Adjust ${service.modelName[0]} in the database`)
+        this.about("patch", path, {
+          summary: `Adjust ${service.modelName[0]} in the database`,
+          auth: config.auth,
+        })
         this.router.patch(
           path,
           this.authenticate(config.auth),
@@ -136,7 +167,10 @@ export class Router {
 
   delete(path, config, service) {
     if (config) {
-      this.about("delete", path, `Deletes ${service.modelName[0]} from the database`)
+      this.about("delete", path, {
+        summary: `Deletes ${service.modelName[0]} from the database`,
+        auth: config.auth,
+      })
       this.router.delete(
         path,
         this.authenticate(config.auth),
@@ -160,7 +194,16 @@ export class Router {
   // add documentation of an endpoint operation
   about(method, path, operation) {
     path = path.replace(":_id","{id}")
-    ;(this.spec[path] ??= {})[method] =
-      typeof operation === "string" ? { summary: operation } : operation
+    if (typeof operation === "string") {
+      operation = { summary: operation }
+    } else {
+      if (operation.auth) {
+        operation.security = [{bearerJWT:[]}]
+      }
+      //: operation
+      // TODO: remove auth
+      delete operation.auth
+    }
+    ;(this.spec[path] ??= {})[method] = operation
   }
 }

@@ -13,6 +13,7 @@ export default config => {
   router.delete("/", schemes.delete, service)
 
   router.suggest("/suggest", schemes.read, service)
+  router.search("/search", schemes.read, service)
 
   if (concepts) {
     const conceptService = router.services.concept

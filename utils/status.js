@@ -1,19 +1,36 @@
+import info from "../package.json" with { type: "json" }
+
 export class OpenAPI {
   constructor(config) {
     this.baseUrl = config.baseUrl
     this.description = {
       openapi: "3.2.0",
       info: {
+        title: "JSKOS API",
+        version: info.apiVersion,
+      },
+      servers: [{
         title: config.title,
-      },
-      servers: {
         url: config.baseUrl,
-      },
+      }],
       paths: {},
       externalDocs: {
         description: "full documentation",
         url: "https://github.com/gbv/jskos-server#readme",
       },
+    }
+
+    if (config.auth) {
+      this.description.components = {
+        securitySchemes: {
+          bearerJWT: {
+            // TODO: algorithm, key, server
+            type: "http",
+            scheme: "bearer",
+            bearerFormat: "JWT",
+          },
+        },
+      }
     }
   }
 

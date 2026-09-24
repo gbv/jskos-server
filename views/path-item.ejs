@@ -1,0 +1,14 @@
+[% for(let method of ["get", "post", "put", "patch", "delete"].filter(m => m in item).filter(m => !item[m].deprecated)) { %]
+<li>
+  [%= method.toUpperCase() %]
+  [% if (method === "get" && !/{/.test(path)) { %]
+    <a href="[%= path %]">[%= path %]</a>
+  [% } else { %]
+    [%= path %]
+  [% } %]
+  —
+  [%= item[method].summary %]
+  [% if (item[method].security) { %]<span title="restricted access">🔒</span>[% } %]
+  <a href="https://github.com/gbv/jskos-server#[%= method %]-[%= path.replace('{id}','_:id').replaceAll(/[^a-z_]/g,'') %]" target="_blank" title="documentation">&#x1F6C8;</a>
+</li>
+[% } %]

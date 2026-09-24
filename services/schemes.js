@@ -122,11 +122,13 @@ export class SchemeService extends AbstractService {
 
   /**
    * Return a Promise with an array of suggestions in JSKOS format.
+   * FIXME: Avoid code duplication in services/concepts.js
    */
   async search(query) {
     let search = query.query || query.search || ""
-    let results = await this._searchItems({ search })
-    const searchResults = results.slice(query.offset, query.offset + query.limit)
+    let results = await this.searchItems({ search, voc: query.voc })
+    const { limit, offset } = this._getLimitAndOffset(query)
+    const searchResults = results.slice(offset, offset + limit)
     searchResults.totalCount = results.length
     return searchResults
   }
