@@ -139,6 +139,9 @@
     "validate": {
       "description": "API URL for types",
       "$ref": "#/definitions/uriOrNull"
+    },
+    "openapi": {
+      "type": "object"
     }
   },
   "additionalProperties": false

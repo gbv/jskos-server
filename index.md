@@ -28,6 +28,7 @@ JSKOS Server implements the JSKOS API web service and storage for [JSKOS] data s
 - [API](#api)
   - [General](#general)
   - [GET /status](#get-status)
+  - [GET /openapi.json](#get-openapijson)
   - [GET /checkAuth](#get-checkauth)
   - [POST /validate](#post-validate)
   - [GET /validate](#get-validate)
@@ -821,6 +822,8 @@ All API methods stick to the following rules, unless otherwise specified.
 ### GET /status
 Returns a status object.
 
+*This endpoint is going to be replaced by [/openapi.json](#get-openapijson) so use the latter, of possible. The status object also contains full OpenAPI description in field `openapi` to facilitate switching from /status to /openapi.json*.
+
 There is a [JSON Schema](https://json-schema.org) for the format of this endpoint. It is available under `/status.schema.json` for every jskos-server installation (starting from version 1.0.0). The most recent schema can be accessed here: https://gbv.github.io/jskos-server/status.schema.json
 
 Note that certain properties from the actual configuration will not be shown in the result for `/status`:
@@ -946,6 +949,11 @@ Note that certain properties from the actual configuration will not be shown in 
 * **Error Response**
 
   In case of an error, for instance a failed database connection, the value of response property `ok` is set to `0`.
+
+### GET /openapi.json
+
+Returns API specification as [OpenAPI Description](https://spec.openapis.org/oas/latest#openapi-description-structure).
+This does not include [Change Stream Endpoints](change-stream-endpoints) an no parameters or response format.
 
 ### GET /checkAuth
 
@@ -2152,6 +2160,8 @@ Returns concept suggestions.
 * **URL Params**
 
   `search=[keyword|notation]` specifies the keyword or notation (prefix) to search for
+
+  `voc=[uri|notation]` specifies the terminology to search in
 
   `language=[string]` comma-separated priority list of languages for labels in results
 
