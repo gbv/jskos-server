@@ -2,7 +2,7 @@
 <li>
   [%= method.toUpperCase() %]
   [% if (method === "get" && !/{/.test(path)) { %]
-    <a href="[%= path %]">[%= path %]</a>
+    <a href="[%= path.slice(1) %]">[%= path %]</a>
   [% } else { %]
     [%= path %]
   [% } %]

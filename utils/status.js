@@ -12,6 +12,7 @@ export class OpenAPI {
       servers: [{
         title: config.title,
         url: config.baseUrl,
+        "x-version": info.version,
       }],
       paths: {},
       externalDocs: {
