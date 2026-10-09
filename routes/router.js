@@ -33,7 +33,7 @@ export class Router {
 
   // action methods
 
-  read(path, config, service, name, formats = []) {
+  read(path, config, service, formats = []) {
     if (config) {
       const name = service.modelName[1]
       this.about("get", path, { summary: `Lists details of ${name}`, auth: config.auth })

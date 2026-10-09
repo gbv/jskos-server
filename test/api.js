@@ -761,6 +761,48 @@ describe("Express Server", () => {
       })
     })
 
+    it("should GET mappings as download=json", done => {
+      chai.request.execute(app)
+        .get("/mappings")
+        .query({ download: "json" })
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.headers["content-disposition"].should.be.eql("attachment; filename=mappings.json")
+          res.headers["content-type"].should.be.eql("application/json; charset=utf-8")
+          res.body.should.be.a("array")
+          res.body.length.should.be.eql(3)
+          done()
+        })
+    })
+
+    it("should GET mappings as download=ndjson", done => {
+      chai.request.execute(app)
+        .get("/mappings")
+        .query({ download: "ndjson" })
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.headers["content-disposition"].should.be.eql("attachment; filename=mappings.ndjson")
+          res.headers["content-type"].should.be.eql("application/x-ndjson; charset=utf-8")
+          res.body.toString().split("\n").filter(Boolean).map(JSON.parse).length.should.be.eql(3)
+          done()
+        })
+    })
+
+    it("should GET mappings as download=csv", done => {
+      chai.request.execute(app)
+        .get("/mappings")
+        .query({ download: "csv" })
+        .end((err, res) => {
+          res.should.have.status(200)
+          res.headers["content-disposition"].should.be.eql("attachment; filename=mappings.csv")
+          res.headers["content-type"].should.be.eql("text/csv; charset=utf-8")
+          const csv = res.text.split("\n").filter(Boolean)
+          csv.length.should.be.eql(4)
+          csv[0].should.be.eql("\"fromScheme\",\"fromNotation\",\"toScheme\",\"toNotation\",\"toNotation2\",\"toNotation3\",\"toNotation4\",\"toNotation5\",\"type\",\"creator\"")
+          done()
+        })
+    })
+
     it("should sort mappings by mappingRelevance ascending", done => {
       chai.request.execute(app)
         .get("/mappings")
