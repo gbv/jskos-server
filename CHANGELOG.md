@@ -1,3 +1,11 @@
+# 2.7.2
+
+- Fix and document download parameter (#110)
+
+# 2.7.1
+
+- Add basic OpenAPI Specification document
+
 # 2.7.0
 
 - Change `/checkAuth` endpoint to return all rights if no type or action was specified

@@ -805,7 +805,7 @@ All API methods stick to the following rules, unless otherwise specified.
   - Example: `properties=*,-narrower,notation` will add properties `annotations` and `ancestors`, and remove the `notation` property from all return items.
   - Properties can be explicitly re-added by prefixing them with `+`, e.g. `properties=-from,to,+from` will only remove the `to` property.
   - Note that the `+` sign has to be properly encoded as `%2B`, otherwise it will be interpreted as a space.
-- All `GET` endpoints (except for `/status` and those with `:_id`) offer pagination via `limit=[number]` (default: 100) and `offset=[number]` (default: 0) parameters. In the response, there will be a `Link` header like described in the [GitHub API documentation](https://developer.github.com/v3/#pagination), as well as a `X-Total-Count` header containing the total number of results.
+- All `GET` endpoints (except for `/status` and those with `:_id`) offer pagination via `limit=[number]` (default: 100) and `offset=[number]` (default: 0) parameters. In the response, there will be a `Link` header like described in the [GitHub API documentation](https://developer.github.com/v3/#pagination), as well as a `X-Total-Count` header containing the total number of results. Pagination is disabled when parameter `download` is supported and given.
 
 #### Write access
 - `POST`/`PUT`/`PATCH`/`DELETE` requests require [authentication](#authentication) via a JWT from [login-server](https://github.com/gbv/login-server) in the header. Exception: Authentication for certain actions on certain endpoints can be disabled (see [configuration](#configuration)).
