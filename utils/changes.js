@@ -10,7 +10,7 @@ export const collections = {
   registries: "registries",
 }
 
-export const operationTypeMap = { insert: "create", update: "update", delete: "delete" }
+export const operationTypeMap = { insert: "create", update: "update", replace: "update", delete: "delete" }
 
 // After DB connection, conditionally enable change-stream routes
 export async function setupChangesApi(app, config, db) {

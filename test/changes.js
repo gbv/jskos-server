@@ -1,6 +1,8 @@
 import { assertMongoDB, dropDatabaseBeforeAndAfter, setupInMemoryMongo, teardownInMemoryMongo, createCollectionsAndIndexes } from "./test-utils.js"
 import WebSocket from "ws"
 import assert from "assert"
+import { once } from "node:events"
+import { Readable } from "node:stream"
 
 import config from "../config/index.js"
 config.changes = true
@@ -10,6 +12,7 @@ import { setupChangesApi } from "../utils/changes.js"
 import { createDatabase } from "../utils/db.js"
 import { objectTypes } from "jskos-tools"
 import mongoose from "mongoose"
+import { SchemeService } from "../services/schemes.js"
 
 const db = createDatabase(config)
 
@@ -47,6 +50,41 @@ describe("WebSocket Change‐Streams (integration)", function () {
   for (const [route, info] of Object.entries(routes)) {
     lifecycleTests(route, info)
   }
+
+  it("emits a complete update when an existing vocabulary is imported again", async () => {
+    const schemes = new SchemeService(config)
+    const uri = "urn:test:reimported-vocabulary"
+    const type = objectTypes.ConceptScheme.type[0]
+    const importScheme = label => schemes.createItem({
+      bodyStream: Readable.from([{
+        uri,
+        type: [type],
+        prefLabel: { en: label },
+      }]),
+      bulk: true,
+    })
+
+    await importScheme("Original")
+    const ws = new WebSocket(`ws://localhost:${config.port}/voc/changes`)
+    try {
+      await once(ws, "open")
+      const message = once(ws, "message")
+      await importScheme("Re-imported")
+      const [raw] = await message
+      const evt = JSON.parse(raw)
+
+      assert.strictEqual(evt.objectType, "ConceptScheme")
+      assert.strictEqual(evt.type, "update")
+      assert.strictEqual(evt.id, uri)
+      assert.strictEqual(evt.document._id, uri)
+      assert.strictEqual(evt.document.uri, uri)
+      assert.strictEqual(evt.document.prefLabel.en, "Re-imported")
+      assert.ok(evt.timestamp)
+      assertOptionalIsoTimestamp(evt.timestamp)
+    } finally {
+      ws.close()
+    }
+  })
 
 })
 
