@@ -2,44 +2,43 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>[%= servers[0].title %]</title>
+  <title><%= servers[0].title %></title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="styles.css">
   <script src="scripts.js"></script>
 </head>
 <body>
-  <h1>[%= servers[0].title %]</h1>
+  <h1><%= servers[0].title %></h1>
   <h2>Available Endpoints</h2>
   <p>
-    This service provides a subset of JSKOS API [%= info.version %]. All the following endpoints are available on this
+    This service provides a subset of JSKOS API <%= info.version %>. All the following endpoints are available on this
     instance of jskos-server. See documentation <a href="https://github.com/gbv/jskos-server" target="_blank">on GitHub</a> for details.
   </p>
-  [% const sections = [
+  <% const sections = [
     { title: "Terminologies", api: "voc" },
     { title: "Concepts", api: "concepts" },
     { title: "Concordances", api: "concordances" },
     { title: "Mappings", api: "mappings" },
     { title: "Registries", api: "registries" },
     { title: "Annotations", api: "annotations" },
-  ] %]
+  ] %>
   <h3>General</h3>
   <ul>
-    [% for (let path of Object.keys(paths).filter(p => !/^.(voc|concepts|concordances|mappings|registries|annotations)/.test(p))) { %]
-      [%- include("path-item", { path, item: paths[path] }) %]
-    [% } %]
+    <% for (let path of Object.keys(paths).filter(p => !/^.(voc|concepts|concordances|mappings|registries|annotations)/.test(p))) { %>
+      <%- include("path-item", { path, item: paths[path] }) %>
+    <% } %>
   </ul>
-  [% for (let sec of sections.filter(s => Object.keys(paths).find(p => p.startsWith("/"+s.api)) )) { %]
-    <h3 id="[%=sec.api%]" onclick="showUserInterface('[%=sec.api%]')">[%= sec.title %] <span></span></h3>
-    <script>updateTotalCount("[%=sec.api%]")</script>
+  <% for (let sec of sections.filter(s => Object.keys(paths).find(p => p.startsWith("/"+s.api)) )) { %>
+    <h3 id="<%=sec.api%>" onclick="showUserInterface('<%=sec.api%>')"><%= sec.title %> <span></span></h3>
+    <script>updateTotalCount("<%=sec.api%>")</script>
     <ul>
-    [% for (let path of Object.keys(paths).filter(p => p.startsWith("/"+sec.api))) { %]
-      [%- include("path-item", { path, item: paths[path] }) %]
-    [% } %]
+    <% for (let path of Object.keys(paths).filter(p => p.startsWith("/"+sec.api))) { %>
+      <%- include("path-item", { path, item: paths[path] }) %>
+    <% } %>
     </ul>
-  [% } %]
+  <% } %>
   <footer>
-    <a href="https://github.com/gbv/jskos-server" target="_blank">jskos-server</a> [%= servers[0]["x-version"] %]
+    <a href="https://github.com/gbv/jskos-server" target="_blank">jskos-server</a> <%= servers[0]["x-version"] %>
   </footer>
 </body>
-
 </html>
