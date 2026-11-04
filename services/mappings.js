@@ -472,9 +472,70 @@ export class MappingService extends AbstractService {
   }
 
   /**
+   * See https://github.com/gbv/jskos-server/issues/35
+   */
+  async indirectMappings({ via, ...query } ) {
+    restrictQueryParameters(query, {
+      direction: "forward",
+      cardinality: "1-to-1",
+      to: null,
+      type: "http://www.w3.org/2004/02/skos/core#exactMatch",
+      strict: true,
+      depth: null,
+      download: null,
+    })
+
+    if (!jskos.isValidUri(query.from) || !via) {
+      return []
+    }
+
+    // TODO: don't ignore fromScheme
+
+    const intermediate = await this.queryItems({ ...query, toScheme: via })
+    const targets = {}
+
+    for (let m of intermediate) {
+      // TODO: support other mapping types as well
+      if (m.type.includes("http://www.w3.org/2004/02/skos/core#exactMatch") && m.to?.memberSet?.length === 1) {
+        const target = m.to.memberSet[0]?.uri
+        if (target) {
+          const source = { // TODO: duplicated below in inferMappings: which fields to include?
+            uri: m.uri,
+            creator: m.creator,
+            created: m.created,
+            modified: m.modified,
+            from: m.from,
+            type: m.type,
+          }
+          if (target in targets) {
+            targets[target] = source
+          } else {
+            targets[target].push(source)
+          }
+        }
+      }
+    }
+
+    return Object.entries(targets).map(([target, sources]) => {
+      const mapping = {
+        from: { memberSet: [ { uri: query.from } ] },
+        to: { memberSet: [ { uri: target } ] },
+        type: [ "http://www.w3.org/2004/02/skos/core#exactMatch" ],
+        // TODO: fromScheme and toScheme
+        source: sources,
+      }
+      return jskos.addMappingIdentifiers(mapping)
+    })
+  }
+
+  /**
    * Infer mappings based on the source concept's ancestors. (see https://github.com/gbv/jskos-server/issues/177)
    */
   async inferMappings({ strict, depth, ...query }) {
+    if (query.via) {
+      return this.indirectMappings({ strict, depth, query })
+    }
+
     restrictQueryParameters(query, {
       direction: "forward",
       cardinality: "1-to-1",
