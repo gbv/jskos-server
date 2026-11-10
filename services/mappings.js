@@ -474,58 +474,65 @@ export class MappingService extends AbstractService {
   /**
    * See https://github.com/gbv/jskos-server/issues/35
    */
-  async indirectMappings({ via, ...query } ) {
+  async indirectMappings({ via, from, fromScheme, to, toScheme, ...query } ) {
     restrictQueryParameters(query, {
       direction: "forward",
       cardinality: "1-to-1",
-      to: null,
       type: "http://www.w3.org/2004/02/skos/core#exactMatch",
       strict: true,
       depth: null,
       download: null,
     })
 
-    if (!jskos.isValidUri(query.from) || !via) {
+    if (!via || !jskos.isValidUri(from)) {
       return []
     }
 
-    // TODO: don't ignore fromScheme
+    via = await this.schemeService.getScheme(via)
+    if (!via) {
+      return []
+    }
 
-    const intermediate = await this.queryItems({ ...query, toScheme: via })
-    const targets = {}
+    const between = {}
+    const firstMappings = await this.queryItems({ from, fromScheme, toScheme: via.uri, ...query })
 
-    for (let m of intermediate) {
+    for (let m of firstMappings) {
       // TODO: support other mapping types as well
       if (m.type.includes("http://www.w3.org/2004/02/skos/core#exactMatch") && m.to?.memberSet?.length === 1) {
         const target = m.to.memberSet[0]?.uri
         if (target) {
-          const source = { // TODO: duplicated below in inferMappings: which fields to include?
-            uri: m.uri,
-            creator: m.creator,
-            created: m.created,
-            modified: m.modified,
-            from: m.from,
-            type: m.type,
-          }
-          if (target in targets) {
-            targets[target] = source
+          const source = { uri: m.uri }
+          if (between[target]) {
+            between[target].push(source)
           } else {
-            targets[target].push(source)
+            between[target] = [source]
           }
         }
       }
     }
 
-    return Object.entries(targets).map(([target, sources]) => {
-      const mapping = {
-        from: { memberSet: [ { uri: query.from } ] },
-        to: { memberSet: [ { uri: target } ] },
-        type: [ "http://www.w3.org/2004/02/skos/core#exactMatch" ],
-        // TODO: fromScheme and toScheme
-        source: sources,
+    const results = []
+
+    // TODO: limit parameter?
+
+    for (let fromVia in between) {
+      const ms = await this.queryItems({ from: fromVia, to, toScheme, ...query })
+      for (let m of ms) {
+        const mapping = {
+          type: m.type, // TODO: other types as well
+          from,
+          fromScheme,
+          to: m.to,
+          toScheme: m.toScheme,
+          source: [ ...between[fromVia], { uri: m.uri } ],
+          justification: "https://w3id.org/semapv/vocab/MappingChaining",
+        }
+        jskos.addMappingIdentifiers(mapping)
+        results.push(mapping)
       }
-      return jskos.addMappingIdentifiers(mapping)
-    })
+    }
+
+    return results
   }
 
   /**
@@ -533,7 +540,7 @@ export class MappingService extends AbstractService {
    */
   async inferMappings({ strict, depth, ...query }) {
     if (query.via) {
-      return this.indirectMappings({ strict, depth, query })
+      return this.indirectMappings({ strict, depth, ...query })
     }
 
     restrictQueryParameters(query, {

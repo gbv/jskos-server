@@ -1419,8 +1419,20 @@ Lists all concept schemes used in mappings.
   ]
   ```
 
+
 ### GET /mappings/infer
-Returns mappings based on stored mappings and mappings derived by inference. If a request to [GET /mappings](#get-mappings) results in stored mappings, only those are returned. If no stored mappings match the request, the following algorithm is applied to infer virtual mappings:
+
+Returns mappings based on chains of stored mappings or mappings derived by inference.
+
+If query parameter `via` is given, the endpoint only returns mappings inferred from a chain of two mappings A and B meeting the following conditions:
+
+- A is a mapping from `from` to X with X a concept in concept scheme `via`
+- B is a mapping from X to a concept optionally restricted with query parameters `to` and/or `toScheme`
+- Mapping type of both A and B is `http://www.w3.org/2004/02/skos/core#exactMatch`
+
+*This functionality is experimental and will likely be expanded to more mapping types in a later release*
+
+If query parameter `via` is not given, the endpoint tries to derive mappings as following: If a request to [GET /mappings](#get-mappings) results in stored mappings, only those are returned. If no stored mappings match the request, the following algorithm is applied to infer virtual mappings:
 
 - Ancestors of the requested concept (`from`) are traversed from narrower to broader until matching mapping(s) from one of the ancestor concepts are found.
 
@@ -1443,9 +1455,11 @@ Retrieval of ancestors depends on existence of parameter `fromScheme` (*this is 
 
   This endpoint takes the same parameters as [GET /mappings](#get-mappings), except that `to` and `download` are not allowed, `cardinality` can only be "1-to-1" and `direction` can only be "forward". An empty set is returned if parameter `from` is missing or if `from` is no URI and the concept scheme identified by `fromScheme` does not have a `namespace` to map `from` to an URI.  In addition there are parameters:
 
-  `strict=[boolean]` values `1` or `true` disallow mapping type "closeMatch" for inferred mappings (default `false`)
+  `strict=[boolean]` values `1` or `true` disallow mapping type "closeMatch" for inferred mappings (default `false` unless `via` is given). MUST not be false when `via` is given.
 
-  `depth=[number]` a non-negative number of the depth used to infer mappings (not set by default); `0` means no inference, `1` means only the next ancestor concept (= broader) is used for inference, etc.
+  `depth=[number]` a non-negative number of the depth used to infer mappings (not set by default); `0` means no inference, `1` means only the next ancestor concept (= broader) is used for inference, etc. MUST not set if `via` is given.
+
+  `via=URI` an URI of a concept scheme used as hub for chains of mappings.
 
 * **Success Response**
 
