@@ -1,6 +1,7 @@
 // Tests for /validate endpoints
 
 import chai from "./chai.js"
+import fetchMock from "fetch-mock"
 import { app } from "../server.js"
 import { globSync } from "glob"
 import fs from "node:fs"
@@ -93,6 +94,20 @@ describe("Validation endpoint testing", () => {
       chai.request.execute(app)
         .post("/validate")
         .send({})
+        .end((error, res) => {
+          assert.equal(error, null)
+          res.should.have.status(200)
+          res.body.should.be.an("array")
+          assert.equal(res.body[0], true)
+          done()
+        })
+    })
+
+    it("should fetch data from url with url parameter", done => {
+      const url = "http://example.org/data.json"
+      fetchMock.mockGlobal().route(url, {prefLabel:{en:"x"}})
+      chai.request.execute(app)
+        .get(`/validate?url=${url}&type=concept`)
         .end((error, res) => {
           assert.equal(error, null)
           res.should.have.status(200)

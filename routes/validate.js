@@ -1,7 +1,6 @@
 import express from "express"
 import { Router } from "./router.js"
 import { wrapAsync, returnJSON } from "./utils.js"
-import axios from "axios"
 import { MalformedRequestError } from "../errors/index.js"
 
 export default config => {
@@ -18,7 +17,7 @@ export default config => {
         throw new MalformedRequestError("Please use HTTP POST or provide an URL to load data from!")
       }
       try {
-        const data = (await axios.get(url)).data
+        const data = await fetch(url).then(res => res.json())
         return await service.validate(data, req.query)
       } catch (error) {
         console.log(error)
