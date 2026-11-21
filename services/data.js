@@ -1,4 +1,4 @@
-import { models } from "../models/index.js"
+import { models } from "../src/models.js"
 import { AbstractService } from "./abstract.js"
 
 export class DataService extends AbstractService {

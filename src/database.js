@@ -1,6 +1,6 @@
 import { Upgrader } from "../utils/version.js"
 
-import { Meta } from "../models/meta.js"
+import { Meta, models } from "../src/models.js"
 import mongoose from "mongoose"
 
 // Set mongoose buffering options
@@ -8,35 +8,42 @@ mongoose.set("bufferCommands", true)
 mongoose.set("bufferTimeoutMS", 30000)
 mongoose.set("strictQuery", false)
 
+export class Database {
+  constructor(config) {
+    this.log = config
+    this.mongo = config.mongo
+    this.serverVersion = config.serverVersion
+    this.upgrader = new Upgrader(config)
 
-export function createDatabase(config) {
-  const upgrader = new Upgrader(config)
-  const connection = mongoose.connection
+    this.connection = mongoose.connection
 
-  connection.on("connected", () => {
-    config.warn("Connected to database")
-  })
-  const onDisconnected = () => {
-    config.warn("Disconnected from database, waiting for automatic reconnect...")
+    this.connection.on("connected", () => {
+      this.log.warn("Connected to database")
+    })
+    this._onDisconnected = () => {
+      this.log.warn("Disconnected from database, waiting for automatic reconnect...")
+    }
   }
 
-  async function connect() {
-    connection.on("disconnected", onDisconnected)
-    connection.on("error", (error) => {
-      config.error("Database error", error)
+  model(type) {
+    return type === "meta" ? Meta : models[type]
+  }
+
+  async connect() {
+    this.connection.on("disconnected", this._onDisconnected)
+    this.connection.on("error", (error) => {
+      this.log.error("Database error", error)
     })
-    async function _connect() {
-      const mongoUri = process.env.MONGO_URI || `${config.mongo.url}/${config.mongo.db}`
-      return await mongoose.connect(mongoUri, config.mongo.options)
-    }
-    const result = await _connect()
+    const mongoUri = process.env.MONGO_URI || `${this.mongo.url}/${this.mongo.db}`
+    const result = await mongoose.connect(mongoUri, this.mongo.options)
+
     let collections, meta
     try {
       // Check meta collection whether upgrade script is necessary.
-      collections = (await connection.db.listCollections().toArray()).map(c => c.name)
+      collections = (await this.connection.db.listCollections().toArray()).map(c => c.name)
       if (!collections.length) {
         // no collections = first launch of jskos-server
-        meta = new Meta({ version: config.serverVersion })
+        meta = new Meta({ version: this.serverVersion })
         await meta.save()
       } else if (!collections.includes("meta")) {
         // meta does not exist = upgrade from <= 1.1.9
@@ -46,7 +53,7 @@ export function createDatabase(config) {
         // get version from meta
         meta = await Meta.findOne()
       }
-      if (meta && upgrader.getUpgrades(meta.version).length) {
+      if (meta && this.upgrader.getUpgrades(meta.version).length) {
         console.warn("Info: jskos-server was updated. Please run \"npm run upgrade\" to perform necessary upgrades to ensure full functionalities of all features.")
       }
     } catch (error) {
@@ -55,9 +62,9 @@ export function createDatabase(config) {
     return result
   }
 
-  function disconnect() {
-    connection.removeListener("disconnected", onDisconnected)
-    config.log("Disconnected from database (on purpose)")
+  disconnect() {
+    this.connection.removeListener("disconnected", this._onDisconnected)
+    this.log.log("Disconnected from database (on purpose)")
     return mongoose.disconnect()
   }
 
@@ -65,10 +72,10 @@ export function createDatabase(config) {
    * Waits for the MongoDB replica set to become available
    * by retrying replSetGetStatus until success or timeout.
    */
-  async function waitForReplicaSet({ retries = 10, interval = 3000 } = {}) {
+  async waitForReplicaSet({ retries = 10, interval = 3000 } = {}) {
     for (let i = 0; i < retries; i++) {
       try {
-        await connection.db.admin().command({ replSetGetStatus: 1 })
+        await this.connection.db.admin().command({ replSetGetStatus: 1 })
         return true
       } catch (err) {
         console.log(
@@ -79,13 +86,4 @@ export function createDatabase(config) {
     }
     return false
   }
-
-  return {
-    connection,
-    connect,
-    disconnect,
-    waitForReplicaSet,
-  }
 }
-
-

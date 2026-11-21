@@ -5,13 +5,12 @@ import config from "../config/index.js"
 
 const upgrader = new Upgrader(config)
 
-import { createDatabase } from "../utils/db.js"
-const db = createDatabase(config)
-import { Meta } from "../models/meta.js"
+import { Database } from "../src/database.js"
+const db = new Database(config)
 
 await (async () => {
   await db.connect({ upgrade: false })
-  const meta = await Meta.findOne()
+  const meta = await db.model("meta").findOne()
   const list = upgrader.getUpgrades(meta.version, { forceLatest: process.argv.includes("-f") || process.argv.includes("--force-latest") })
   console.log()
   if (list.length) {

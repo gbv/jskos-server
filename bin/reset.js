@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 import config from "../config/index.js"
-import { createDatabase } from "../utils/db.js"
-const db = createDatabase(config)
+import { Database } from "../src/database.js"
+const db = new Database(config)
 import yesno from "yesno"
 import jskos from "jskos-tools"
 
@@ -127,7 +127,6 @@ if (cli.flags.scheme && cli.flags.concordance) {
 
 import { createServices } from "../services/index.js"
 const services = createServices(config)
-import { models } from "../models/index.js"
 
 ;
 (async () => {
@@ -144,7 +143,7 @@ import { models } from "../models/index.js"
   log()
 
   // 2. Figure out what will get deleted (default: all types).
-  const types = type ? [type] : Object.keys(models)
+  const types = type ? [type] : Object.keys(services)
   // Prepare scheme/concordance URIs
   let filterUris
   if (cli.flags.scheme) {
@@ -176,7 +175,7 @@ import { models } from "../models/index.js"
     } else {
       query[type === "annotation" ? "id" : "uri"] = { $in: uris }
     }
-    toBeDeleted[type] = (await models[type].find(query, { _id: 1 }).lean()).map(r => r._id)
+    toBeDeleted[type] = (await services[type].model.find(query, { _id: 1 }).lean()).map(r => r._id)
   }
 
   let question = `Deleting ${uris.length ? "" : "all "}${type ? `${type}s` : "data"}${typeInferred ? " (inferred)" : ""}`
@@ -229,15 +228,15 @@ import { models } from "../models/index.js"
       // For concepts, get all schemes to be adjusted later
       let schemeUrisToAdjust = []
       if (type == "concept") {
-        schemeUrisToAdjust = await models.concept.distinct("inScheme.uri", query).lean()
+        schemeUrisToAdjust = await services.concept.model.distinct("inScheme.uri", query).lean()
       }
       // For mappings, get all concordances to be adjusted later
       let concordanceUrisToAdjust = []
       if (type == "mapping") {
-        concordanceUrisToAdjust = await models.mapping.distinct("partOf.uri", query).lean()
+        concordanceUrisToAdjust = await services.mapping.model.distinct("partOf.uri", query).lean()
       }
       // Delete entities...
-      const result = await models[type].deleteMany(query)
+      const result = await services[type].model.deleteMany(query)
       log(`- ${result.deletedCount} ${type}s deleted.`)
       // Adjust schemes
       if (schemeUrisToAdjust.length) {

@@ -197,16 +197,13 @@ import http from "node:http"
 import https from "node:https"
 import * as anystream from "json-anystream"
 import { TSVReader, toJskosMapping } from "sssom-js"
-import { createDatabase } from "../utils/db.js"
-const db = createDatabase(config)
+import { Database } from "../src/database.js"
+const db = new Database(config)
 
 import { createServices } from "../services/index.js"
 const services = createServices(config)
 const allTypes = Object.keys(services)
 
-// Also import models for Mapping and Concordance
-// TODO: This won't be needed if these are imported through the service as well.
-import { Mapping, Concordance } from "../models/index.js"
 import { bulkOperationForEntities, addMappingSchemes } from "../utils/utils.js"
 
 ; (async () => {
@@ -325,7 +322,7 @@ async function doImport({ input, format, type, concordance }) {
     let imported = 0
     let total = 0
     const saveMappings = async (mappings) => {
-      const result = await Mapping.bulkWrite(bulkOperationForEntities({ entities: mappings, replace: !cli.flags.noreplace }))
+      const result = await services.mapping.model.bulkWrite(bulkOperationForEntities({ entities: mappings, replace: !cli.flags.noreplace }))
       imported += result.insertedCount + result.upsertedCount + result.modifiedCount
       console.log(`... ${imported} done ...`)
     }
@@ -452,7 +449,7 @@ async function doImport({ input, format, type, concordance }) {
       }
       const uri = concordance.uri
       concordance._id = uri
-      const result = await Concordance.bulkWrite(bulkOperationForEntities({ entities: [concordance], replace: !cli.flags.noreplace }))
+      const result = await services.concordance.model.bulkWrite(bulkOperationForEntities({ entities: [concordance], replace: !cli.flags.noreplace }))
       if (result.insertedCount + result.modifiedCount + result.upsertedCount === 1) {
         imported += 1
         log(`... imported concordance ${uri}, now importing its mappings...`)

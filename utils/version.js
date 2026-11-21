@@ -2,7 +2,7 @@ import { addMappingSchemes } from "./utils.js"
 import { uuid } from "./uuid.js"
 import jskos from "jskos-tools"
 
-import { Scheme, Concordance, Mapping, Annotation } from "../models/index.js"
+import { Scheme, Concordance, Mapping, Annotation } from "../src/models.js"
 import { SchemeService } from "../services/schemes.js"
 import { ConcordanceService } from "../services/concordances.js"
 import { AnnotationService } from "../services/annotations.js"

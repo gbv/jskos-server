@@ -5,8 +5,7 @@ import jskos from "jskos-tools"
 import { validate } from "jskos-validate"
 import { cdk } from "cocoda-sdk"
 
-import { Mapping } from "../models/mappings.js"
-import { Annotation } from "../models/annotations.js"
+import { Mapping, Annotation } from "../src/models.js"
 import { SchemeService } from "./schemes.js"
 import { ConcordanceService } from "./concordances.js"
 import { ConceptService } from "./concepts.js"
@@ -346,7 +345,7 @@ export class MappingService extends AbstractService {
           { $match: query },
           ...(sorting ? [{ $sort: sorting }] : []),
         ]
-        pipeline.model = Mapping
+        pipeline.model = this.model
       } else if (from || to || creator || negativeAnnotationAssertion) {
         // 2. Filter by annotation, and from/to/creator is defined
         // We'll first filter the mappings, then add annotations and filter by those

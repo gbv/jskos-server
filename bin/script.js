@@ -2,13 +2,13 @@
 
 import yesno from "yesno"
 import config from "../config/index.js"
-import { createDatabase } from "../utils/db.js"
-import { SchemeService } from "../services/schemes.js"
-import jskos from "jskos-tools"
-import { Mapping } from "../models/mappings.js"
+import { Database } from "../src/database.js"
+const db = new Database(config)
 
-const db = createDatabase(config)
-const schemeService = new SchemeService(config)
+import { createServices } from "../services/index.js"
+const services = createServices(config)
+
+import jskos from "jskos-tools"
 
 /**
  * Map of async scripts.
@@ -17,7 +17,7 @@ const schemeService = new SchemeService(config)
  */
 const scripts = {
   async supplementNotationsInMappings() {
-    const mappings = await Mapping.find({
+    const mappings = await services.mapping.model.find({
       $or: [
         { "from.memberSet.notation": { $exists: false }, "from.memberSet.uri": { $exists: true } },
         { "to.memberSet.notation": { $exists: false }, "to.memberSet.uri": { $exists: true } },
@@ -41,7 +41,7 @@ const scripts = {
       for (const side of ["from", "to"]) {
         let scheme = mapping[`${side}Scheme`]
         let concepts = mapping[side].memberSet
-        scheme = await schemeService.getScheme(scheme.uri)
+        scheme = await services.scheme.getScheme(scheme.uri)
         scheme = scheme && new jskos.ConceptScheme(scheme)
         if (!scheme) {
           continue

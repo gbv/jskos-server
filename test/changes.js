@@ -9,12 +9,12 @@ config.changes = true
 
 import { app } from "../server.js"
 import { setupChangesApi } from "../utils/changes.js"
-import { createDatabase } from "../utils/db.js"
 import { objectTypes } from "jskos-tools"
 import mongoose from "mongoose"
 import { SchemeService } from "../services/schemes.js"
 
-const db = createDatabase(config)
+import { Database } from "../src/database.js"
+const db = new Database(config)
 
 // Map each route to its collection name and expected JSKOS type
 const routes = {

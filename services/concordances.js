@@ -4,8 +4,7 @@ import { validate } from "jskos-validate"
 import { removeNullProperties } from "../utils/utils.js"
 import { uuid } from "../utils/uuid.js"
 
-import { Concordance } from "../models/concordances.js"
-import { Mapping } from "../models/mappings.js"
+import { Concordance, Mapping } from "../src/models.js"
 import { SchemeService } from "./schemes.js"
 
 const validateConcordance = validate.concordance

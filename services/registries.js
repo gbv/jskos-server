@@ -1,6 +1,6 @@
 import { removeNullProperties } from "../utils/utils.js"
 import { validate } from "jskos-validate"
-import { Registry } from "../models/registries.js"
+import { Registry } from "../src/models.js"
 import { addKeywords } from "../utils/searchHelper.js"
 import { EntityNotFoundError, DatabaseAccessError, InvalidBodyError, MalformedBodyError } from "../errors/index.js"
 import allTypes from "../utils/types.js"
@@ -8,7 +8,7 @@ import allTypes from "../utils/types.js"
 import { AbstractService } from "./abstract.js"
 
 // TODO: get via factory Method
-import { models } from "../models/index.js"
+import { models } from "../src/models.js"
 
 export class RegistryService extends AbstractService {
 
@@ -233,20 +233,21 @@ export class RegistryService extends AbstractService {
 
       const { uriRequired, mustExist, skipInvalid } = this.config.types[type]
 
-      const validator = validate[type.replace(/ies$/,"y").replace(/s$/,"")]
+      const typeSingular = type.replace(/ies$/,"y").replace(/s$/,"")
+      const validator = validate[typeSingular]
 
       let items = []
       for (let item of registry[type].filter(item => item !== null)) {
         let error
         if (uriRequired && !item.uri) {
-          error = `missing ${type} uri in registry`
+          error = `missing ${typeSingular} uri in registry`
         } else if (!validator(item)) {
-          error = `invalid ${type} in registry`
+          error = `invalid ${typeSingular} in registry`
           // TODO: use validator.errors error object
         } else if (mustExist) {
-          const found = await models[type].findOne({ uri: item.uri }).lean()
+          const found = await models[typeSingular].findOne({ uri: item.uri }).lean()
           if (!found) {
-            error = `${type} not found with uri: ${item.uri}`
+            error = `${typeSingular} not found with uri: ${item.uri}`
           }
         }
         if (error) {

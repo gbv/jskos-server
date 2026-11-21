@@ -7,6 +7,7 @@ import { RegistryService } from "./registries.js"
 import { DataService } from "./data.js"
 import { ValidateService } from "./validate.js"
 
+// TODO: make this a class
 function createServices(config) {
   const annotationService = new AnnotationService(config)
   const conceptService = new ConceptService(config)

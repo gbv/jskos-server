@@ -2,7 +2,7 @@ import { uuid, isValidUuid } from "../utils/uuid.js"
 import { removeNullProperties } from "../utils/utils.js"
 import jskos from "jskos-tools"
 import { validate } from "jskos-validate"
-import { Annotation, Mapping, Concept } from "../models/index.js"
+import { Annotation, Mapping, Concept } from "../src/models.js"
 import { InvalidBodyError, ForbiddenAccessError } from "../errors/index.js"
 
 import { AbstractService, escapeRegExp } from "./abstract.js"
@@ -99,7 +99,7 @@ export class AnnotationService extends AbstractService {
     }
 
     const mongoQuery = criteria.length ? { $and: criteria } : {}
-    return this._queryItems(Annotation, query, mongoQuery)
+    return this._queryItems(this.model, query, mongoQuery)
   }
 
   async prepareAndCheckItemForAction(item, action, { admin, user, bulk }) {
