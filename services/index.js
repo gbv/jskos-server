@@ -7,25 +7,21 @@ import { RegistryService } from "./registries.js"
 import { DataService } from "./data.js"
 import { ValidateService } from "./validate.js"
 
-// TODO: make this a class
 function createServices(config) {
-  const annotationService = new AnnotationService(config)
-  const conceptService = new ConceptService(config)
-  const concordanceService = new ConcordanceService(config)
-  const mappingService = new MappingService(config)
-  const schemeService = new SchemeService(config)
-  const registryService = new RegistryService(config)
-
   const services = {
-    scheme: schemeService,
-    concept: conceptService,
-    concordance: concordanceService,
-    mapping: mappingService,
-    annotation: annotationService,
-    registry: registryService,
+    scheme: new SchemeService(config),
+    concept: new ConceptService(config),
+    concordance:  new ConcordanceService(config),
+    mapping: new MappingService(config),
+    annotation: new AnnotationService(config),
+    registry: new RegistryService(config),
+    data: new DataService(config),
+    validate: new ValidateService(config),
+    typeNames: ["scheme", "concept", "concordance", "mapping", "annotation", "registry"],
   }
 
-  for (let type of Object.keys(services)) {
+  // TODO: remove this
+  for (let type of services.typeNames) {
     const plural = type === "registry" ? "registries" : `${type}s`
 
     Object.defineProperty(services, plural, {
@@ -36,4 +32,4 @@ function createServices(config) {
   return services
 }
 
-export { DataService, ValidateService, createServices }
+export { createServices }

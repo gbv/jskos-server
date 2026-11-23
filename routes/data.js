@@ -10,7 +10,7 @@ export default config => {
     "Returns data for objects identified by their URI",
     router.authenticate(false),
     supportDownloadFormats([]),
-    wrapAsync(async req => router.dataService.getData(req, router.authenticator, router.adjust)),
+    wrapAsync(async req => router.services.data.getData(req, router.authenticator, router.adjust)),
     returnJSON,
   )
 

@@ -123,7 +123,7 @@ export async function createCollectionsAndIndexes() {
     }
   }
   // 2. Call each service's createIndexes() method
-  for (const type of Object.keys(services)) {
+  for (const type of services.typeNames) {
     // services[type].createIndexes() should invoke e.g. Model.createIndexes()
     await services[type].createIndexes()
   }

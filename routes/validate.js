@@ -5,7 +5,7 @@ import { MalformedRequestError } from "../errors/index.js"
 
 export default config => {
   const router = new Router(config)
-  const service = router.validateService
+  const service = router.services.validate
 
   router.endpoint(
     "get",

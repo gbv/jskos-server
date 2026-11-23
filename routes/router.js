@@ -5,14 +5,12 @@ import { addPaginationHeaders } from "../utils/pagination-headers.js"
 import { wrapAsync, supportDownloadFormats, returnJSON, returnJSONCreated, handleDownload, wrapDownload } from "./utils.js"
 import { Authenticator } from "../utils/auth.js"
 
-import { createServices, DataService, ValidateService } from "../services/index.js"
+import { createServices } from "../services/index.js"
 
 export class Router {
 
   constructor(config, router = express.Router()) {
     this.services = createServices(config)
-    this.dataService = new DataService(config)
-    this.validateService = new ValidateService(config)
 
     this.router = router
     this.config = config

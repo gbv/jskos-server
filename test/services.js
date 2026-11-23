@@ -32,12 +32,12 @@ describe("Services Features", () => {
   // 🔌 Sanity‐check that mongoose really is connected
   assertMongoDB()
 
-  Object.keys(services).forEach(type => {
+  for (let type of services.typeNames) {
     it(`should return an empty array for ${type} queryItems`, async () => {
       const entities = await services[type].queryItems({ limit: 1, offset: 0 })
       assert.strictEqual(entities.length, 0)
     })
-  })
+  }
 
   describe("Concordance Service", () => {
 

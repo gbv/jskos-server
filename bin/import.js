@@ -202,7 +202,6 @@ const db = new Database(config)
 
 import { createServices } from "../services/index.js"
 const services = createServices(config)
-const allTypes = Object.keys(services)
 
 import { bulkOperationForEntities, addMappingSchemes } from "../utils/utils.js"
 
@@ -217,7 +216,7 @@ import { bulkOperationForEntities, addMappingSchemes } from "../utils/utils.js"
 
   if (indexes) {
     log("Creating indexes...")
-    let types = type ? [type] : allTypes
+    let types = type ? [type] : services.typeNames
     for (let type of types) {
       await services[type].createIndexes()
       log(`... done (${type})`)

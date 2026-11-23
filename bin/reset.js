@@ -143,7 +143,7 @@ const services = createServices(config)
   log()
 
   // 2. Figure out what will get deleted (default: all types).
-  const types = type ? [type] : Object.keys(services)
+  const types = type ? [type] : services.typeNames
   // Prepare scheme/concordance URIs
   let filterUris
   if (cli.flags.scheme) {
