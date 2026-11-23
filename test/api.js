@@ -1679,8 +1679,9 @@ describe("Express Server", () => {
         .get("/voc?notation=DDC")
         .end((err, res) => {
           res.body.length.should.be.eql(1)
+          const voc = res.body[0]
           const download = "/voc/concepts?uri=http%3A%2F%2Fdewey.info%2Fscheme%2Fedition%2Fe23%2F"
-          const distributions = res.body[0].distributions?.sort((a,b) => a.download.localeCompare(b.download))
+          const distributions = voc.distributions?.sort((a,b) => a.download.localeCompare(b.download))
           assert.deepEqual(distributions, [{
             download: `http://localhost:3000${download}&download=json`,
             mimetype: "application/json; charset=utf-8",
@@ -1696,7 +1697,16 @@ describe("Express Server", () => {
             format: "http://format.gbv.de/jskos",
             mimetype: "application/x-ndjson; charset=utf-8",
           }])
-          done()
+          // don't duplicate distributions
+          voc.distributions.push(...voc.distributions)
+          chai.request.execute(app).put("/voc")
+            .set("Authorization", `Bearer ${token}`)
+            .send(voc)
+            .end((err, res) => {
+              res.should.have.status(200)
+              res.body.distributions.length.should.be.eql(4)
+              done()
+            })
         })
     })
 

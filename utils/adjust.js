@@ -9,6 +9,21 @@ function addUniqueObject(item, field, obj) {
   }
 }
 
+function removeDuplicateMembers(set) {
+  for (let i=0; i<set.length; i++) {
+    if (i > 0) {
+      for (let j=0; j<i; j++) {
+        if (_.isEqual(set[i], set[j])) {
+          set.splice(i,1)
+          i--
+          break
+        }
+      }
+    }
+  }
+}
+
+
 function createAdjuster(config, services) {
   const { baseUrl } = config
 
@@ -174,19 +189,22 @@ function createAdjuster(config, services) {
       // If there is a JSKOS API service, there are also a download distributions
       for (let {api, endpoint} of scheme.services || []) {
         if (api === "http://bartoc.org/api-type/jskos") {
+          scheme.distributions = scheme.distributions || []
           const download = `${endpoint}voc/concepts?uri=${encodeURIComponent(scheme.uri)}`
-          addUniqueObject(scheme, "distributions", {
+          scheme.distributions.push({
             download: `${download}&download=ndjson`,
             format: "http://format.gbv.de/jskos",
             mimetype: "application/x-ndjson; charset=utf-8",
           })
-          addUniqueObject(scheme, "distributions", {
+          scheme.distributions.push({
             download: `${download}&download=json`,
             mimetype: "application/json; charset=utf-8",
           })
         }
       }
-      if (!scheme.distributions.length) {
+      if (scheme.distributions.length) {
+        removeDuplicateMembers(scheme.distributions)
+      } else {
         delete scheme.distributions
       }
     }
