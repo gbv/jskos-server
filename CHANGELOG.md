@@ -1,3 +1,9 @@
+# 2.7.3
+
+- Update sssom-js for more liberal parsing
+- Fix bug #320 (duplicated distributions)
+- Internal refactoring
+
 # 2.7.2
 
 - Fix and document download parameter (#110)
